@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    - main
+
+jobs:
+  clippy and fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Run clippy for native
+        run: cargo clippy --all --all-targets -- -D warnings 
+      - name: Run fmt
+        run: cargo fmt -- --check
+ 
+ test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Run tests
+        run: cargo test --all --all-targets -- --nocapture

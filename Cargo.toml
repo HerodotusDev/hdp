@@ -1,0 +1,5 @@
+[workspace]
+resolver = "2"
+members = ["crates/decoder", "crates/evaluator", "crates/event-watcher", "crates/fetcher", "crates/task-generator", "crates/types"]
+
+[workspace.dependencies]
