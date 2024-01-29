@@ -1,5 +1,7 @@
 # Herodotus Data Processor (HDP)
 
+[![CI](https://github.com/HerodotusDev/hdp/actions/workflows/ci.yml/badge.svg)](https://github.com/HerodotusDev/hdp/actions/workflows/ci.yml)
+
 ## Main Workflow in `main.rs`
 
 - **`EventWatcher`**: Scrapes events from `HreExecutionStore.sol`.
