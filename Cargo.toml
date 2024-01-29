@@ -1,5 +1,14 @@
 [workspace]
 resolver = "2"
-members = ["crates/decoder", "crates/evaluator", "crates/event-watcher", "crates/fetcher", "crates/task-generator", "crates/types"]
+members = [
+    "crates/cli",
+    "crates/decoder",
+    "crates/evaluator",
+    "crates/event-watcher",
+    "crates/fetcher",
+    "crates/task-generator",
+    "crates/types",
+]
 
 [workspace.dependencies]
+tokio = { version = "1", features = ["full"] }
