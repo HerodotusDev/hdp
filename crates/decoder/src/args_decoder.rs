@@ -1,7 +1,16 @@
 use alloy_dyn_abi::DynSolType;
 use alloy_primitives::hex::FromHex;
 use anyhow::{Ok, Result};
-use types::{block_datalake::BlockDatalake, task::ComputationalTask};
+use types::{
+    block_datalake::BlockDatalake, dynamic_layout_datalake::DynamicLayoutDatalake,
+    task::ComputationalTask,
+};
+
+#[derive(Debug)]
+pub enum DatalakeType {
+    Block(BlockDatalake),
+    DynamicLayout(DynamicLayoutDatalake),
+}
 
 pub fn tasks_decoder(serialized_tasks_batch: String) -> Result<Vec<ComputationalTask>> {
     let tasks_type: DynSolType = "bytes[]".parse()?;
@@ -19,17 +28,24 @@ pub fn tasks_decoder(serialized_tasks_batch: String) -> Result<Vec<Computational
     Ok(decoded_tasks)
 }
 
-pub fn datalake_decoder(serialized_datalakes_batch: String) -> Result<Vec<BlockDatalake>> {
+pub fn datalake_decoder(serialized_datalakes_batch: String) -> Result<Vec<DatalakeType>> {
     let datalakes_type: DynSolType = "bytes[]".parse()?;
     let bytes = Vec::from_hex(serialized_datalakes_batch).expect("Invalid hex string");
     let serialized_datalakes = datalakes_type.abi_decode(&bytes)?;
+
     let mut decoded_datalakes = Vec::new();
 
     if let Some(datalakes) = serialized_datalakes.as_array() {
         for datalake in datalakes {
-            println!("datalake dageawgwe: {:?}", datalake);
-            let decoded_datalake = BlockDatalake::from_serialized(datalake.as_bytes().unwrap())?;
-            println!("decoded_datalake: {:?}", decoded_datalake);
+            let datalake_bytes = datalake.as_bytes().ok_or("Invalid datalake bytes").unwrap();
+
+            let decoded_datalake = BlockDatalake::from_serialized(datalake_bytes)
+                .map(DatalakeType::Block)
+                .or_else(|_| {
+                    DynamicLayoutDatalake::from_serialized(datalake_bytes)
+                        .map(DatalakeType::DynamicLayout)
+                })?;
+
             decoded_datalakes.push(decoded_datalake);
         }
     }
