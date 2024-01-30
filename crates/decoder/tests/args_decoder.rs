@@ -68,4 +68,4 @@ fn test_block_datalake_decoder() {
     }
 }
 
-// TODO: dynamic layout datalake test
+// TODO: After Solidity calldata format update, update the datalake decoder and write test

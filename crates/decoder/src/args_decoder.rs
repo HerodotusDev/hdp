@@ -29,6 +29,7 @@ pub fn tasks_decoder(serialized_tasks_batch: String) -> Result<Vec<Computational
     Ok(decoded_tasks)
 }
 
+// TODO: Update this to use the new bytes format
 pub fn datalake_decoder(serialized_datalakes_batch: String) -> Result<Vec<DatalakeType>> {
     let datalakes_type: DynSolType = "bytes[]".parse()?;
     let bytes = Vec::from_hex(serialized_datalakes_batch).expect("Invalid hex string");

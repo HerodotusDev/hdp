@@ -1,7 +1,7 @@
 use alloy_dyn_abi::DynSolType;
 use anyhow::Result;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct DynamicLayoutDatalake {
     pub block_number: usize,
     pub account_address: String,
@@ -35,6 +35,7 @@ impl DynamicLayoutDatalake {
             "(uint256,address,uint256,uint256,uint256,uint256)".parse()?;
 
         let decoded = datalake_type.abi_decode(serialized)?;
+
         let value = decoded.as_tuple().unwrap();
         let block_number = value[0].as_uint().unwrap().0.to_string().parse::<usize>()?;
         let account_address = value[1].as_address().unwrap().to_string();
