@@ -5,6 +5,7 @@ use anyhow::Result;
 use crate::{datalake_base::DatalakeBase, utils::bytes32_to_str};
 
 /// ComputationalTask represents a task for certain datalake with a specified aggregate function
+#[derive(Debug)]
 pub struct ComputationalTask {
     pub datalake: Option<DatalakeBase>,
     pub aggregate_fn_id: String,

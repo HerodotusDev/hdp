@@ -1,7 +1,10 @@
+use std::fmt;
+
 /// DataCompiler is a function that returns a vector of DataPoints
 type DataCompiler = dyn Fn() -> Vec<DataPoint>;
 
 /// DataPoint is a type that can be used to store data in a Datalake
+#[derive(Debug, Clone)]
 pub enum DataPoint {
     Int(i32),
     Str(String),
@@ -12,6 +15,16 @@ pub struct DatalakeBase {
     pub identifier: String,
     pub compilation_pipeline: Vec<Box<DataCompiler>>,
     pub datapoints: Vec<DataPoint>,
+}
+
+impl fmt::Debug for DatalakeBase {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("DatalakeBase")
+            .field("identifier", &self.identifier)
+            .field("compilation_pipeline", &"DataCompilers")
+            .field("datapoints", &self.datapoints)
+            .finish()
+    }
 }
 
 impl DatalakeBase {
