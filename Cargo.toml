@@ -11,4 +11,9 @@ members = [
 ]
 
 [workspace.dependencies]
+types = { version = "0.1.0", path = "crates/types" }
+decoder = { version = "0.1.0", path = "crates/decoder" }
 tokio = { version = "1", features = ["full"] }
+alloy-dyn-abi = "0.6.2"
+alloy-primitives = "0.6.2"
+anyhow = "1.0.79"

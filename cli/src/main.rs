@@ -1,4 +1,5 @@
 use clap::Parser;
+use decoder::args_decoder::{datalake_decoder, tasks_decoder};
 
 #[derive(Debug, Parser)]
 struct Cli {
@@ -20,7 +21,9 @@ struct Cli {
 
 fn main() {
     let args = Cli::parse();
-    println!("tasks: {}", args.tasks);
-    println!("datalakes: {}", args.datalakes);
+    let tasks = tasks_decoder(args.tasks).unwrap();
+    let datalakes = datalake_decoder(args.datalakes).unwrap();
+    println!("tasks: {:?}", tasks);
+    println!("datalakes: {:?}", datalakes);
     println!("rpc_url: {:?}", args.rpc_url);
 }
