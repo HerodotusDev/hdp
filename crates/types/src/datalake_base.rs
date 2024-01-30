@@ -1,11 +1,16 @@
+/// DataCompiler is a function that returns a vector of DataPoints
+type DataCompiler = dyn Fn() -> Vec<DataPoint>;
+
+/// DataPoint is a type that can be used to store data in a Datalake
 pub enum DataPoint {
     Int(i32),
     Str(String),
 }
 
+/// DatalakeBase is a type that can be used to store data
 pub struct DatalakeBase {
     pub identifier: String,
-    pub compilation_pipeline: Vec<Box<dyn Fn() -> Vec<DataPoint>>>,
+    pub compilation_pipeline: Vec<Box<DataCompiler>>,
     pub datapoints: Vec<DataPoint>,
 }
 
