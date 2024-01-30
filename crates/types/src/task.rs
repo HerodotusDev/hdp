@@ -2,7 +2,7 @@ use alloy_dyn_abi::{DynSolType, DynSolValue};
 use alloy_primitives::{keccak256, U256};
 use anyhow::Result;
 
-use crate::{datalake_base::DatalakeBase, utils::bytes32_to_str};
+use crate::{datalake::datalake_base::DatalakeBase, utils::bytes32_to_str};
 
 /// ComputationalTask represents a task for certain datalake with a specified aggregate function
 #[derive(Debug)]

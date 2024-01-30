@@ -1,6 +1,6 @@
 use alloy_dyn_abi::{DynSolType, DynSolValue};
 use alloy_primitives::{hex::FromHex, U256};
-use types::{datalake_base::DatalakeBase, task::ComputationalTask, utils::to_u256_bytes};
+use types::{datalake::datalake_base::DatalakeBase, task::ComputationalTask, utils::to_u256_bytes};
 
 #[test]
 fn test_header_encode() {

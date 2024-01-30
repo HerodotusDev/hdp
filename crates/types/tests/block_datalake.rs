@@ -1,4 +1,4 @@
-use types::block_datalake::BlockDatalake;
+use types::datalake::block_datalake::BlockDatalake;
 
 #[test]
 fn test_block_datalake_serialized() {

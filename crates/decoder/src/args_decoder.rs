@@ -2,10 +2,11 @@ use alloy_dyn_abi::DynSolType;
 use alloy_primitives::hex::FromHex;
 use anyhow::{Ok, Result};
 use types::{
-    block_datalake::BlockDatalake, dynamic_layout_datalake::DynamicLayoutDatalake,
+    datalake::{block_datalake::BlockDatalake, dynamic_layout_datalake::DynamicLayoutDatalake},
     task::ComputationalTask,
 };
 
+/// Datatype for decoded datalakes
 #[derive(Debug)]
 pub enum DatalakeType {
     Block(BlockDatalake),
