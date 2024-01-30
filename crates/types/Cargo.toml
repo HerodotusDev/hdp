@@ -7,4 +7,3 @@ edition = "2021"
 alloy-dyn-abi = { workspace = true }
 alloy-primitives = { workspace = true }
 anyhow = { workspace = true }
-serde = "1.0.196"
