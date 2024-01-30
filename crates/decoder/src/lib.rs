@@ -1,1 +1,1 @@
-mod tasks_decoder;
+pub mod tasks_decoder;

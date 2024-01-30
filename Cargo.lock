@@ -550,7 +550,9 @@ name = "decoder"
 version = "0.1.0"
 dependencies = [
  "alloy-dyn-abi",
+ "alloy-primitives",
  "anyhow",
+ "types",
 ]
 
 [[package]]
@@ -1651,6 +1653,7 @@ dependencies = [
  "alloy-dyn-abi",
  "alloy-primitives",
  "anyhow",
+ "serde",
 ]
 
 [[package]]
