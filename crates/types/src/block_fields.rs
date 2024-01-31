@@ -1,3 +1,12 @@
+use std::str::FromStr;
+
+#[derive(Debug, PartialEq)]
+pub enum Collection {
+    Header,
+    Account,
+    Storage,
+}
+
 #[derive(Debug)]
 pub enum HeaderField {
     ParentHash,
@@ -41,6 +50,27 @@ impl HeaderField {
         }
     }
 
+    pub fn to_index(&self) -> Option<usize> {
+        match self {
+            HeaderField::ParentHash => Some(0),
+            HeaderField::OmmerHash => Some(1),
+            HeaderField::Beneficiary => Some(2),
+            HeaderField::StateRoot => Some(3),
+            HeaderField::TransactionsRoot => Some(4),
+            HeaderField::ReceiptsRoot => Some(5),
+            HeaderField::LogsBloom => Some(6),
+            HeaderField::Difficulty => Some(7),
+            HeaderField::Number => Some(8),
+            HeaderField::GasLimit => Some(9),
+            HeaderField::GasUsed => Some(10),
+            HeaderField::Timestamp => Some(11),
+            HeaderField::ExtraData => Some(12),
+            HeaderField::MixHash => Some(13),
+            HeaderField::Nonce => Some(14),
+            HeaderField::BaseFeePerGas => Some(15),
+        }
+    }
+
     pub fn as_str(&self) -> &'static str {
         match self {
             HeaderField::ParentHash => "PARENT_HASH",
@@ -63,12 +93,52 @@ impl HeaderField {
     }
 }
 
+impl FromStr for HeaderField {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "PARENT_HASH" => Ok(HeaderField::ParentHash),
+            "OMMERS_HASH" => Ok(HeaderField::OmmerHash),
+            "BENEFICIARY" => Ok(HeaderField::Beneficiary),
+            "STATE_ROOT" => Ok(HeaderField::StateRoot),
+            "TRANSACTIONS_ROOT" => Ok(HeaderField::TransactionsRoot),
+            "RECEIPTS_ROOT" => Ok(HeaderField::ReceiptsRoot),
+            "LOGS_BLOOM" => Ok(HeaderField::LogsBloom),
+            "DIFFICULTY" => Ok(HeaderField::Difficulty),
+            "NUMBER" => Ok(HeaderField::Number),
+            "GAS_LIMIT" => Ok(HeaderField::GasLimit),
+            "GAS_USED" => Ok(HeaderField::GasUsed),
+            "TIMESTAMP" => Ok(HeaderField::Timestamp),
+            "EXTRA_DATA" => Ok(HeaderField::ExtraData),
+            "MIX_HASH" => Ok(HeaderField::MixHash),
+            "NONCE" => Ok(HeaderField::Nonce),
+            "BASE_FEE_PER_GAS" => Ok(HeaderField::BaseFeePerGas),
+            _ => Err(()),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub enum AccountField {
     Nonce,
     Balance,
     StorageRoot,
     CodeHash,
+}
+
+impl FromStr for AccountField {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "NONCE" => Ok(AccountField::Nonce),
+            "BALANCE" => Ok(AccountField::Balance),
+            "STORAGE_ROOT" => Ok(AccountField::StorageRoot),
+            "CODE_HASH" => Ok(AccountField::CodeHash),
+            _ => Err(()),
+        }
+    }
 }
 
 impl AccountField {
@@ -79,6 +149,15 @@ impl AccountField {
             2 => Some(AccountField::StorageRoot),
             3 => Some(AccountField::CodeHash),
             _ => None,
+        }
+    }
+
+    pub fn to_index(&self) -> Option<usize> {
+        match self {
+            AccountField::Nonce => Some(0),
+            AccountField::Balance => Some(1),
+            AccountField::StorageRoot => Some(2),
+            AccountField::CodeHash => Some(3),
         }
     }
 

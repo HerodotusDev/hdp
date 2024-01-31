@@ -3,6 +3,7 @@ use self::{block_datalake::BlockDatalake, dynamic_layout_datalake::DynamicLayout
 pub mod block_datalake;
 pub mod datalake_base;
 pub mod dynamic_layout_datalake;
+pub mod helpers;
 
 /// Datatype for decoded datalakes
 #[derive(Debug, PartialEq)]

@@ -1,5 +1,6 @@
 use clap::Parser;
 use decoder::args_decoder::{datalake_decoder, tasks_decoder};
+use types::datalake::{datalake_base::Derivable, DatalakeType};
 
 #[derive(Debug, Parser)]
 struct Cli {
@@ -21,8 +22,26 @@ struct Cli {
 
 fn main() {
     let args = Cli::parse();
-    let tasks = tasks_decoder(args.tasks).unwrap();
-    let datalakes = datalake_decoder(args.datalakes).unwrap();
+    let mut tasks = tasks_decoder(args.tasks).unwrap();
+    let mut datalakes = datalake_decoder(args.datalakes).unwrap();
+
+    if tasks.len() != datalakes.len() {
+        panic!("Tasks and datalakes must have the same length");
+    }
+
+    for (datalake_idx, datalake) in datalakes.iter_mut().enumerate() {
+        let task = &mut tasks[datalake_idx];
+
+        task.datalake = match datalake {
+            DatalakeType::Block(block_datalake) => Some(block_datalake.derive()),
+            DatalakeType::DynamicLayout(dynamic_layout_datalake) => {
+                Some(dynamic_layout_datalake.derive())
+            }
+            _ => None,
+        };
+
+        task.datalake.as_mut().unwrap().compile();
+    }
     println!("tasks: {:?}", tasks);
     println!("datalakes: {:?}", datalakes);
     println!("rpc_url: {:?}", args.rpc_url);

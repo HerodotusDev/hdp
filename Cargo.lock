@@ -476,6 +476,7 @@ dependencies = [
  "clap",
  "decoder",
  "tokio",
+ "types",
 ]
 
 [[package]]

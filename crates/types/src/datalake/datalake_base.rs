@@ -46,8 +46,13 @@ impl DatalakeBase {
     // }
 
     pub fn compile(&mut self) {
+        self.datapoints.clear();
         for compiler in &self.compilation_pipeline {
             self.datapoints.extend(compiler());
         }
     }
+}
+
+pub trait Derivable {
+    fn derive(&self) -> DatalakeBase;
 }
