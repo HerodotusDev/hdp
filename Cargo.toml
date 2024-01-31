@@ -6,7 +6,6 @@ members = [
     "crates/evaluator",
     "crates/event-watcher",
     "crates/fetcher",
-    "crates/tasks-compiler",
     "crates/types",
 ]
 
