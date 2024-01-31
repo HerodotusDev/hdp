@@ -1,25 +1,25 @@
-use anyhow::{bail, Result};
+use anyhow::Result;
 
 use crate::datalake::base::DataPoint;
 
 // TODO : WIP
-pub fn get_aggregation_set_from_expression(
-    aggregatable_field: &str,
-    block_range_start: i32,
-    block_range_end: i32,
-    skip_every_nth_block: i32,
+pub fn compile_block_sampled_datalake(
+    block_range_start: usize,
+    block_range_end: usize,
+    sampled_property: &str,
+    increment: usize,
 ) -> Result<Vec<DataPoint>> {
-    let parts: Vec<&str> = aggregatable_field.split('.').collect();
-    let collection = parts[0];
+    let property_parts: Vec<&str> = sampled_property.split('.').collect();
+    let collection = property_parts[0];
 
     let mut aggregation_set: Vec<DataPoint> = Vec::new();
 
     match collection {
         "header" => {
-            let property = parts.get(1).ok_or("Invalid property for header").unwrap();
+            // let property = property_parts[1];
             // Convert property to HeaderField enum variant here
             for i in block_range_start..=block_range_end {
-                if i % skip_every_nth_block != 0 {
+                if i % increment != 0 {
                     continue;
                 }
                 // let header = memoizer
@@ -31,11 +31,11 @@ pub fn get_aggregation_set_from_expression(
             }
         }
         "account" => {
-            let account = parts.get(1).ok_or("Invalid account identifier").unwrap();
-            let property = parts.get(2).ok_or("Invalid property for account").unwrap();
+            let account = property_parts[1];
+            // let property = property_parts[2];
             // Convert property to AccountField enum variant here
             for i in block_range_start..=block_range_end {
-                if i % skip_every_nth_block != 0 {
+                if i % increment != 0 {
                     continue;
                 }
                 // let acc = memoizer
@@ -47,10 +47,10 @@ pub fn get_aggregation_set_from_expression(
             }
         }
         "storage" => {
-            let account = parts.get(1).ok_or("Invalid account identifier").unwrap();
-            let slot = parts.get(2).ok_or("Invalid slot").unwrap();
+            // let account = property_parts[1];
+            let slot = property_parts[2];
             for i in block_range_start..=block_range_end {
-                if i % skip_every_nth_block != 0 {
+                if i % increment != 0 {
                     continue;
                 }
                 // let value = memoizer

@@ -7,7 +7,7 @@ type DataCompiler = dyn Fn() -> Result<Vec<DataPoint>>;
 /// DataPoint is a type that can be used to store data in a Datalake
 #[derive(Debug, Clone)]
 pub enum DataPoint {
-    Int(i32),
+    Int(usize),
     Str(String),
 }
 

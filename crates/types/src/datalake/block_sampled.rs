@@ -11,7 +11,7 @@ use common::{
     utils::bytes_to_hex_string,
 };
 
-use crate::compiler::block_sampled::get_aggregation_set_from_expression;
+use crate::compiler::block_sampled::compile_block_sampled_datalake;
 
 use super::base::{DatalakeBase, Derivable};
 
@@ -101,11 +101,11 @@ impl Derivable for BlockSampledDatalake {
         let sampled_property = self.sampled_property.clone();
 
         DatalakeBase::new(&self.to_string(), move || {
-            get_aggregation_set_from_expression(
+            compile_block_sampled_datalake(
+                block_range_start,
+                block_range_end,
                 &sampled_property,
-                block_range_start as i32,
-                block_range_end as i32,
-                increment as i32,
+                increment,
             )
         })
     }
