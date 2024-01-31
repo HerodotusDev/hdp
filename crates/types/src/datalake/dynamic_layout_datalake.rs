@@ -1,5 +1,6 @@
 use alloy_dyn_abi::DynSolType;
-use anyhow::Result;
+use alloy_primitives::hex::FromHex;
+use anyhow::{bail, Result};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct DynamicLayoutDatalake {
@@ -30,19 +31,25 @@ impl DynamicLayoutDatalake {
         }
     }
 
-    pub fn from_serialized(serialized: &[u8]) -> Result<Self> {
+    pub fn from_serialized(serialized: String) -> Result<Self> {
         let datalake_type: DynSolType =
-            "(uint256,address,uint256,uint256,uint256,uint256)".parse()?;
-
-        let decoded = datalake_type.abi_decode(serialized)?;
+            "(uint256,uint256,address,uint256,uint256,uint256,uint256)".parse()?;
+        let bytes = Vec::from_hex(serialized).expect("Invalid hex string");
+        let decoded = datalake_type.abi_decode(&bytes)?;
 
         let value = decoded.as_tuple().unwrap();
-        let block_number = value[0].as_uint().unwrap().0.to_string().parse::<usize>()?;
-        let account_address = value[1].as_address().unwrap().to_string();
-        let slot_index = value[2].as_uint().unwrap().0.to_string().parse::<usize>()?;
-        let initial_key = value[3].as_uint().unwrap().0.to_string().parse::<usize>()?;
-        let key_boundry = value[4].as_uint().unwrap().0.to_string().parse::<usize>()?;
-        let increment = value[5].as_uint().unwrap().0.to_string().parse::<usize>()?;
+        let datalake_code = value[0].as_uint().unwrap().0.to_string().parse::<usize>()?;
+
+        if datalake_code != 1 {
+            bail!("Serialized datalake is not a dynamic layout datalake");
+        }
+
+        let block_number = value[1].as_uint().unwrap().0.to_string().parse::<usize>()?;
+        let account_address = value[2].as_address().unwrap().to_string();
+        let slot_index = value[3].as_uint().unwrap().0.to_string().parse::<usize>()?;
+        let initial_key = value[4].as_uint().unwrap().0.to_string().parse::<usize>()?;
+        let key_boundry = value[5].as_uint().unwrap().0.to_string().parse::<usize>()?;
+        let increment = value[6].as_uint().unwrap().0.to_string().parse::<usize>()?;
 
         Ok(Self {
             block_number,
@@ -52,5 +59,11 @@ impl DynamicLayoutDatalake {
             key_boundry,
             increment,
         })
+    }
+}
+
+impl Default for DynamicLayoutDatalake {
+    fn default() -> Self {
+        Self::new(0, "".to_string(), 0, 0, 0, 0)
     }
 }
