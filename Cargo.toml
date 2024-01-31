@@ -2,6 +2,7 @@
 resolver = "2"
 members = [
     "cli",
+    "crates/datalake",
     "crates/decoder",
     "crates/evaluator",
     "crates/event-watcher",
@@ -11,6 +12,7 @@ members = [
 
 [workspace.dependencies]
 types = { version = "0.1.0", path = "crates/types" }
+datalake = { version = "0.1.0", path = "crates/datalake" }
 decoder = { version = "0.1.0", path = "crates/decoder" }
 tokio = { version = "1", features = ["full"] }
 alloy-dyn-abi = "0.6.2"

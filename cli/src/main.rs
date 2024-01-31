@@ -1,6 +1,6 @@
 use clap::Parser;
+use datalake::{datalake_base::Derivable, DatalakeType};
 use decoder::args_decoder::{datalake_decoder, tasks_decoder};
-use types::datalake::{datalake_base::Derivable, DatalakeType};
 
 #[derive(Debug, Parser)]
 struct Cli {

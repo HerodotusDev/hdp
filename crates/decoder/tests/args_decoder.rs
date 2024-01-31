@@ -1,5 +1,5 @@
+use datalake::DatalakeType;
 use decoder::args_decoder::{datalake_decoder, tasks_decoder};
-use types::datalake::DatalakeType;
 
 #[test]
 fn test_task_decoder() {

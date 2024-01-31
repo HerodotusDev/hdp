@@ -1,4 +1,4 @@
-use types::datalake::block_datalake::BlockDatalake;
+use datalake::block_datalake::BlockDatalake;
 
 #[test]
 fn test_block_datalake_for_header() {

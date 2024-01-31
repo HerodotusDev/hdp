@@ -1,10 +1,6 @@
-use super::datalake_base::DataPoint;
 use anyhow::{bail, Result};
 
-pub fn test_closer() -> Result<Vec<DataPoint>> {
-    println!("test_closer");
-    Ok(vec![DataPoint::Int(1)])
-}
+use crate::datalake_base::DataPoint;
 
 // TODO : WIP
 pub fn get_aggregation_set_from_expression(
@@ -63,7 +59,7 @@ pub fn get_aggregation_set_from_expression(
                 aggregation_set.push(DataPoint::Str(slot.to_string()));
             }
         }
-        _ => return bail!("Unknown collection type"),
+        _ => todo!(),
     }
 
     Ok(aggregation_set)

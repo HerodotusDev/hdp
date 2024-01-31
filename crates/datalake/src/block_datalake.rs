@@ -6,16 +6,14 @@ use alloy_primitives::{
     keccak256, Address, U256,
 };
 use anyhow::{bail, Result};
-
-use crate::{
+use types::{
     block_fields::{AccountField, Collection, HeaderField},
     utils::bytes_to_hex_string,
 };
 
-use super::{
-    compiler::get_aggregation_set_from_expression,
-    datalake_base::{DatalakeBase, Derivable},
-};
+use crate::compiler::block_datalake::get_aggregation_set_from_expression;
+
+use super::datalake_base::{DatalakeBase, Derivable};
 
 /// BlockDatalake represents a datalake for a block range
 #[derive(Debug, Clone, PartialEq)]

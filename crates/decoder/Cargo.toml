@@ -8,3 +8,4 @@ alloy-dyn-abi = { workspace = true }
 alloy-primitives = { workspace = true }
 anyhow = { workspace = true }
 types = { workspace = true }
+datalake = { workspace = true }

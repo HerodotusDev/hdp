@@ -2,10 +2,9 @@ use alloy_dyn_abi::{DynSolType, DynSolValue};
 use alloy_primitives::{hex::FromHex, keccak256, U256};
 use anyhow::{bail, Result};
 
-use super::{
-    compiler::test_closer,
-    datalake_base::{DatalakeBase, Derivable},
-};
+use crate::compiler::test::test_closer;
+
+use super::datalake_base::{DatalakeBase, Derivable};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct DynamicLayoutDatalake {
