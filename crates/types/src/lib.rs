@@ -1,4 +1,12 @@
-pub mod block_fields;
+use datalake::{block_sampled::BlockSampledDatalake, dynamic_layout::DynamicLayoutDatalake};
+
+pub mod compiler;
 pub mod datalake;
 pub mod task;
-pub mod utils;
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Datalake {
+    BlockSampled(BlockSampledDatalake),
+    DynamicLayout(DynamicLayoutDatalake),
+    Unknown,
+}

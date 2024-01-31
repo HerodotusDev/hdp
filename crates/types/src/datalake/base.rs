@@ -1,12 +1,13 @@
+use anyhow::Result;
 use std::fmt;
 
 /// DataCompiler is a function that returns a vector of DataPoints
-type DataCompiler = dyn Fn() -> Vec<DataPoint>;
+type DataCompiler = dyn Fn() -> Result<Vec<DataPoint>>;
 
 /// DataPoint is a type that can be used to store data in a Datalake
 #[derive(Debug, Clone)]
 pub enum DataPoint {
-    Int(i32),
+    Int(usize),
     Str(String),
 }
 
@@ -30,7 +31,7 @@ impl fmt::Debug for DatalakeBase {
 impl DatalakeBase {
     pub fn new<F>(identifier: &str, compiler: F) -> Self
     where
-        F: Fn() -> Vec<DataPoint> + 'static,
+        F: Fn() -> Result<Vec<DataPoint>> + 'static,
     {
         Self {
             identifier: identifier.to_string(),
@@ -46,8 +47,13 @@ impl DatalakeBase {
     // }
 
     pub fn compile(&mut self) {
+        self.datapoints.clear();
         for compiler in &self.compilation_pipeline {
-            self.datapoints.extend(compiler());
+            self.datapoints.extend(compiler().unwrap());
         }
     }
+}
+
+pub trait Derivable {
+    fn derive(&self) -> DatalakeBase;
 }

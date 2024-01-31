@@ -476,6 +476,7 @@ dependencies = [
  "clap",
  "decoder",
  "tokio",
+ "types",
 ]
 
 [[package]]
@@ -483,6 +484,14 @@ name = "colorchoice"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "acbf1af155f9b9ef647e42cdc158db4b64a1b61f743629225fde6f3e0be2a7c7"
+
+[[package]]
+name = "common"
+version = "0.1.0"
+dependencies = [
+ "alloy-primitives",
+ "anyhow",
+]
 
 [[package]]
 name = "const-hex"
@@ -553,6 +562,7 @@ dependencies = [
  "alloy-dyn-abi",
  "alloy-primitives",
  "anyhow",
+ "common",
  "types",
 ]
 
@@ -1549,10 +1559,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "55937e1799185b12863d447f42597ed69d9928686b8d88a1df17376a097d8369"
 
 [[package]]
-name = "tasks-compiler"
-version = "0.1.0"
-
-[[package]]
 name = "tempfile"
 version = "3.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1654,6 +1660,7 @@ dependencies = [
  "alloy-dyn-abi",
  "alloy-primitives",
  "anyhow",
+ "common",
 ]
 
 [[package]]

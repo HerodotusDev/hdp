@@ -1,6 +1,10 @@
-use alloy_dyn_abi::DynSolType;
-use alloy_primitives::hex::FromHex;
+use alloy_dyn_abi::{DynSolType, DynSolValue};
+use alloy_primitives::{hex::FromHex, keccak256, U256};
 use anyhow::{bail, Result};
+
+use crate::compiler::test::test_closer;
+
+use super::base::{DatalakeBase, Derivable};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct DynamicLayoutDatalake {
@@ -10,6 +14,28 @@ pub struct DynamicLayoutDatalake {
     pub initial_key: usize,
     pub key_boundry: usize,
     pub increment: usize,
+}
+
+impl ToString for DynamicLayoutDatalake {
+    fn to_string(&self) -> String {
+        let blocknumber = DynSolValue::Uint(U256::from(self.block_number), 256);
+        let account_address = DynSolValue::Address(self.account_address.parse().unwrap());
+        let slot_index = DynSolValue::Uint(U256::from(self.slot_index), 256);
+        let initial_key = DynSolValue::Uint(U256::from(self.initial_key), 256);
+        let key_boundry = DynSolValue::Uint(U256::from(self.key_boundry), 256);
+        let increment = DynSolValue::Uint(U256::from(self.increment), 256);
+        let tuple_value = DynSolValue::Tuple(vec![
+            blocknumber,
+            account_address,
+            slot_index,
+            initial_key,
+            key_boundry,
+            increment,
+        ]);
+        let encoded_datalake = tuple_value.abi_encode();
+        let hash = keccak256(encoded_datalake);
+        format!("0x{:x}", hash)
+    }
 }
 
 impl DynamicLayoutDatalake {
@@ -65,5 +91,14 @@ impl DynamicLayoutDatalake {
 impl Default for DynamicLayoutDatalake {
     fn default() -> Self {
         Self::new(0, "".to_string(), 0, 0, 0, 0)
+    }
+}
+
+impl Derivable for DynamicLayoutDatalake {
+    fn derive(&self) -> DatalakeBase
+    where
+        Self: Sized,
+    {
+        DatalakeBase::new(&self.to_string(), test_closer)
     }
 }

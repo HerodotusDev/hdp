@@ -1,11 +1,12 @@
 use alloy_dyn_abi::{DynSolType, DynSolValue};
 use alloy_primitives::{hex::FromHex, U256};
-use types::{datalake::datalake_base::DatalakeBase, task::ComputationalTask, utils::to_u256_bytes};
+use common::utils::to_u256_bytes;
+use types::{compiler::test::test_closer, datalake::base::DatalakeBase, task::ComputationalTask};
 
 #[test]
 fn test_header_encode() {
     let datalake_header_type: DynSolType = "(uint256,uint256,bytes)".parse().unwrap();
-    let datalake = DatalakeBase::new("a1234", Vec::new);
+    let datalake = DatalakeBase::new("a1234", test_closer);
 
     let identifier_value = DynSolValue::Uint(
         U256::from_str_radix(&datalake.identifier, 16).unwrap(), // Consider error handling

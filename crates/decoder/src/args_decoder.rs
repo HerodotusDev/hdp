@@ -1,12 +1,11 @@
 use alloy_dyn_abi::DynSolType;
 use alloy_primitives::hex::FromHex;
 use anyhow::{bail, Ok, Result};
+use common::utils::{bytes_to_hex_string, last_byte_to_u8};
 use types::{
-    datalake::{
-        block_datalake::BlockDatalake, dynamic_layout_datalake::DynamicLayoutDatalake, DatalakeType,
-    },
+    datalake::{block_sampled::BlockSampledDatalake, dynamic_layout::DynamicLayoutDatalake},
     task::ComputationalTask,
-    utils::{bytes_to_hex_string, last_byte_to_u8},
+    Datalake,
 };
 
 pub fn tasks_decoder(serialized_tasks_batch: String) -> Result<Vec<ComputationalTask>> {
@@ -25,7 +24,7 @@ pub fn tasks_decoder(serialized_tasks_batch: String) -> Result<Vec<Computational
     Ok(decoded_tasks)
 }
 
-pub fn datalake_decoder(serialized_datalakes_batch: String) -> Result<Vec<DatalakeType>> {
+pub fn datalake_decoder(serialized_datalakes_batch: String) -> Result<Vec<Datalake>> {
     let datalakes_type: DynSolType = "bytes[]".parse()?;
     let bytes = Vec::from_hex(serialized_datalakes_batch).expect("Invalid hex string");
     let serialized_datalakes = datalakes_type.abi_decode(&bytes)?;
@@ -38,14 +37,16 @@ pub fn datalake_decoder(serialized_datalakes_batch: String) -> Result<Vec<Datala
             let datalake_string = bytes_to_hex_string(datalake.as_bytes().unwrap());
 
             let decoded_datalake = match last_byte_to_u8(datalake_code) {
-                0 => DatalakeType::Block(BlockDatalake::from_serialized(datalake_string)?),
-                1 => DatalakeType::DynamicLayout(DynamicLayoutDatalake::from_serialized(
+                0 => {
+                    Datalake::BlockSampled(BlockSampledDatalake::from_serialized(datalake_string)?)
+                }
+                1 => Datalake::DynamicLayout(DynamicLayoutDatalake::from_serialized(
                     datalake_string,
                 )?),
-                _ => DatalakeType::Unknown,
+                _ => Datalake::Unknown,
             };
 
-            if decoded_datalake == DatalakeType::Unknown {
+            if decoded_datalake == Datalake::Unknown {
                 bail!("Unknown datalake type");
             }
 

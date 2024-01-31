@@ -1,11 +1,8 @@
 [package]
-name = "decoder"
+name = "common"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-alloy-dyn-abi = { workspace = true }
 alloy-primitives = { workspace = true }
 anyhow = { workspace = true }
-common = { workspace = true }
-types = { workspace = true }

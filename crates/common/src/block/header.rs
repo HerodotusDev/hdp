@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 #[derive(Debug)]
 pub enum HeaderField {
     ParentHash,
@@ -41,6 +43,27 @@ impl HeaderField {
         }
     }
 
+    pub fn to_index(&self) -> Option<usize> {
+        match self {
+            HeaderField::ParentHash => Some(0),
+            HeaderField::OmmerHash => Some(1),
+            HeaderField::Beneficiary => Some(2),
+            HeaderField::StateRoot => Some(3),
+            HeaderField::TransactionsRoot => Some(4),
+            HeaderField::ReceiptsRoot => Some(5),
+            HeaderField::LogsBloom => Some(6),
+            HeaderField::Difficulty => Some(7),
+            HeaderField::Number => Some(8),
+            HeaderField::GasLimit => Some(9),
+            HeaderField::GasUsed => Some(10),
+            HeaderField::Timestamp => Some(11),
+            HeaderField::ExtraData => Some(12),
+            HeaderField::MixHash => Some(13),
+            HeaderField::Nonce => Some(14),
+            HeaderField::BaseFeePerGas => Some(15),
+        }
+    }
+
     pub fn as_str(&self) -> &'static str {
         match self {
             HeaderField::ParentHash => "PARENT_HASH",
@@ -63,31 +86,28 @@ impl HeaderField {
     }
 }
 
-#[derive(Debug)]
-pub enum AccountField {
-    Nonce,
-    Balance,
-    StorageRoot,
-    CodeHash,
-}
+impl FromStr for HeaderField {
+    type Err = ();
 
-impl AccountField {
-    pub fn from_index(index: usize) -> Option<Self> {
-        match index {
-            0 => Some(AccountField::Nonce),
-            1 => Some(AccountField::Balance),
-            2 => Some(AccountField::StorageRoot),
-            3 => Some(AccountField::CodeHash),
-            _ => None,
-        }
-    }
-
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            AccountField::Nonce => "NONCE",
-            AccountField::Balance => "BALANCE",
-            AccountField::StorageRoot => "STORAGE_ROOT",
-            AccountField::CodeHash => "CODE_HASH",
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "PARENT_HASH" => Ok(HeaderField::ParentHash),
+            "OMMERS_HASH" => Ok(HeaderField::OmmerHash),
+            "BENEFICIARY" => Ok(HeaderField::Beneficiary),
+            "STATE_ROOT" => Ok(HeaderField::StateRoot),
+            "TRANSACTIONS_ROOT" => Ok(HeaderField::TransactionsRoot),
+            "RECEIPTS_ROOT" => Ok(HeaderField::ReceiptsRoot),
+            "LOGS_BLOOM" => Ok(HeaderField::LogsBloom),
+            "DIFFICULTY" => Ok(HeaderField::Difficulty),
+            "NUMBER" => Ok(HeaderField::Number),
+            "GAS_LIMIT" => Ok(HeaderField::GasLimit),
+            "GAS_USED" => Ok(HeaderField::GasUsed),
+            "TIMESTAMP" => Ok(HeaderField::Timestamp),
+            "EXTRA_DATA" => Ok(HeaderField::ExtraData),
+            "MIX_HASH" => Ok(HeaderField::MixHash),
+            "NONCE" => Ok(HeaderField::Nonce),
+            "BASE_FEE_PER_GAS" => Ok(HeaderField::BaseFeePerGas),
+            _ => Err(()),
         }
     }
 }

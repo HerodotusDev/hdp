@@ -2,15 +2,16 @@
 resolver = "2"
 members = [
     "cli",
+    "crates/types",
     "crates/decoder",
     "crates/evaluator",
     "crates/event-watcher",
     "crates/fetcher",
-    "crates/tasks-compiler",
-    "crates/types",
+    "crates/common",
 ]
 
 [workspace.dependencies]
+common = { version = "0.1.0", path = "crates/common" }
 types = { version = "0.1.0", path = "crates/types" }
 decoder = { version = "0.1.0", path = "crates/decoder" }
 tokio = { version = "1", features = ["full"] }

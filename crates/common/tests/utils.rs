@@ -1,5 +1,5 @@
 use alloy_primitives::hex::FromHex;
-use types::utils::{bytes32_to_utf8_str, bytes_to_hex_string, last_byte_to_u8, to_u256_bytes};
+use common::utils::{bytes32_to_utf8_str, bytes_to_hex_string, last_byte_to_u8, to_u256_bytes};
 
 #[test]
 fn test_to_u256_bytes() {
