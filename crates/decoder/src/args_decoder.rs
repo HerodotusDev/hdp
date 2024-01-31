@@ -1,17 +1,13 @@
 use alloy_dyn_abi::DynSolType;
 use alloy_primitives::hex::FromHex;
-use anyhow::{Ok, Result};
+use anyhow::{bail, Ok, Result};
 use types::{
-    datalake::{block_datalake::BlockDatalake, dynamic_layout_datalake::DynamicLayoutDatalake},
+    datalake::{
+        block_datalake::BlockDatalake, dynamic_layout_datalake::DynamicLayoutDatalake, DatalakeType,
+    },
     task::ComputationalTask,
+    utils::{bytes_to_hex_string, last_byte_to_u8},
 };
-
-/// Datatype for decoded datalakes
-#[derive(Debug)]
-pub enum DatalakeType {
-    Block(BlockDatalake),
-    DynamicLayout(DynamicLayoutDatalake),
-}
 
 pub fn tasks_decoder(serialized_tasks_batch: String) -> Result<Vec<ComputationalTask>> {
     let tasks_type: DynSolType = "bytes[]".parse()?;
@@ -29,7 +25,6 @@ pub fn tasks_decoder(serialized_tasks_batch: String) -> Result<Vec<Computational
     Ok(decoded_tasks)
 }
 
-// TODO: Update this to use the new bytes format
 pub fn datalake_decoder(serialized_datalakes_batch: String) -> Result<Vec<DatalakeType>> {
     let datalakes_type: DynSolType = "bytes[]".parse()?;
     let bytes = Vec::from_hex(serialized_datalakes_batch).expect("Invalid hex string");
@@ -39,14 +34,20 @@ pub fn datalake_decoder(serialized_datalakes_batch: String) -> Result<Vec<Datala
 
     if let Some(datalakes) = serialized_datalakes.as_array() {
         for datalake in datalakes {
-            let datalake_bytes = datalake.as_bytes().ok_or("Invalid datalake bytes").unwrap();
+            let datalake_code = datalake.as_bytes().unwrap().chunks(32).next().unwrap();
+            let datalake_string = bytes_to_hex_string(datalake.as_bytes().unwrap());
 
-            let decoded_datalake = BlockDatalake::from_serialized(datalake_bytes)
-                .map(DatalakeType::Block)
-                .or_else(|_| {
-                    DynamicLayoutDatalake::from_serialized(datalake_bytes)
-                        .map(DatalakeType::DynamicLayout)
-                })?;
+            let decoded_datalake = match last_byte_to_u8(datalake_code) {
+                0 => DatalakeType::Block(BlockDatalake::from_serialized(datalake_string)?),
+                1 => DatalakeType::DynamicLayout(DynamicLayoutDatalake::from_serialized(
+                    datalake_string,
+                )?),
+                _ => DatalakeType::Unknown,
+            };
+
+            if decoded_datalake == DatalakeType::Unknown {
+                bail!("Unknown datalake type");
+            }
 
             decoded_datalakes.push(decoded_datalake);
         }

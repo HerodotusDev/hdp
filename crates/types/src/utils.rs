@@ -1,5 +1,6 @@
 use alloy_primitives::hex::{self, encode};
 use anyhow::{bail, Result};
+use std::fmt::Write;
 use std::str::from_utf8;
 
 const U256_BYTE_SIZE: usize = 32;
@@ -29,4 +30,15 @@ pub fn bytes32_to_str(bytes32: &[u8]) -> Result<String> {
     let result = from_utf8(&bytes)?.to_string(); // Convert to UTF-8 string
 
     Ok(result)
+}
+
+pub fn bytes_to_hex_string(bytes: &[u8]) -> String {
+    bytes.iter().fold(String::new(), |mut acc, &byte| {
+        write!(acc, "{:02x}", byte).expect("Writing to a String should never fail");
+        acc
+    })
+}
+
+pub fn last_byte_to_u8(bytes: &[u8]) -> u8 {
+    *bytes.last().unwrap_or(&0)
 }

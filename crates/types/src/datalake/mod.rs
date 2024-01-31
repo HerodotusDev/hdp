@@ -5,7 +5,7 @@ pub mod datalake_base;
 pub mod dynamic_layout_datalake;
 
 /// Datatype for decoded datalakes
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum DatalakeType {
     Block(BlockDatalake),
     DynamicLayout(DynamicLayoutDatalake),
