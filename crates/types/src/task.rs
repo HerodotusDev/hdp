@@ -2,7 +2,7 @@ use alloy_dyn_abi::{DynSolType, DynSolValue};
 use alloy_primitives::{keccak256, U256};
 use anyhow::Result;
 
-use crate::{datalake::datalake_base::DatalakeBase, utils::bytes32_to_str};
+use crate::{datalake::datalake_base::DatalakeBase, utils::bytes32_to_utf8_str};
 
 /// ComputationalTask represents a task for certain datalake with a specified aggregate function
 #[derive(Debug)]
@@ -31,7 +31,7 @@ impl ComputationalTask {
 
         let value = decoded.as_tuple().unwrap();
 
-        let aggregate_fn_id = bytes32_to_str(value[0].as_fixed_bytes().unwrap().0).unwrap();
+        let aggregate_fn_id = bytes32_to_utf8_str(value[0].as_fixed_bytes().unwrap().0).unwrap();
         let aggregate_fn_ctx = value[1].as_str().map(|s| s.to_string());
 
         Ok(ComputationalTask {

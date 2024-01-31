@@ -1,8 +1,11 @@
 use alloy_dyn_abi::DynSolType;
-use alloy_primitives::Address;
+use alloy_primitives::{hex::FromHex, Address};
 use anyhow::{bail, Result};
 
-use crate::block_fields::{AccountField, HeaderField};
+use crate::{
+    block_fields::{AccountField, HeaderField},
+    utils::bytes_to_hex_string,
+};
 
 /// BlockDatalake represents a datalake for a block range
 #[derive(Debug, Clone, PartialEq)]
@@ -28,17 +31,22 @@ impl BlockDatalake {
         }
     }
 
-    pub fn from_serialized(serialized: &[u8]) -> Result<Self> {
-        let datalake_type: DynSolType = "(uint256,uint256,uint256,bytes)".parse()?;
-        let decoded = datalake_type.abi_decode_sequence(serialized)?;
+    pub fn from_serialized(serialized: String) -> Result<Self> {
+        let datalake_type: DynSolType = "(uint256,uint256,uint256,uint256,bytes)".parse()?;
+        let bytes = Vec::from_hex(serialized).expect("Invalid hex string");
+        let decoded = datalake_type.abi_decode_sequence(&bytes)?;
 
         let value = decoded.as_tuple().unwrap();
+        let datalake_code = value[0].as_uint().unwrap().0.to_string().parse::<usize>()?;
 
-        let block_range_start = value[0].as_uint().unwrap().0.to_string().parse::<usize>()?;
-        let block_range_end = value[1].as_uint().unwrap().0.to_string().parse::<usize>()?;
+        if datalake_code != 0 {
+            bail!("Serialized datalake is not a block datalake");
+        }
 
-        let sampled_property = Self::deserialize_sampled_property(value[3].as_bytes().unwrap())?;
-        let increment = value[2].as_uint().unwrap().0.to_string().parse::<usize>()?;
+        let block_range_start = value[1].as_uint().unwrap().0.to_string().parse::<usize>()?;
+        let block_range_end = value[2].as_uint().unwrap().0.to_string().parse::<usize>()?;
+        let sampled_property = Self::deserialize_sampled_property(value[4].as_bytes().unwrap())?;
+        let increment = value[3].as_uint().unwrap().0.to_string().parse::<usize>()?;
 
         Ok(Self {
             block_range_start,
@@ -80,10 +88,20 @@ impl BlockDatalake {
                 let account = Address::from_slice(&serialized[1..21]);
                 let account_checksum = format!("{:?}", account);
                 let slot = &serialized[21..53];
-                let slot_hex = format!("0x{:x?}", slot);
-                Ok(format!("{}.{}.{}", collection, account_checksum, slot_hex))
+                let slot_string = bytes_to_hex_string(slot);
+
+                Ok(format!(
+                    "{}.{}.{}",
+                    collection, account_checksum, slot_string
+                ))
             }
             _ => bail!("Invalid collection id"),
         }
+    }
+}
+
+impl Default for BlockDatalake {
+    fn default() -> Self {
+        Self::new(0, 0, "".to_string(), 0)
     }
 }
