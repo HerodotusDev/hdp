@@ -13,8 +13,8 @@ use crate::{
 };
 
 use super::{
+    compiler::get_aggregation_set_from_expression,
     datalake_base::{DatalakeBase, Derivable},
-    helpers::test_closer,
 };
 
 /// BlockDatalake represents a datalake for a block range
@@ -44,6 +44,7 @@ impl ToString for BlockDatalake {
         format!("0x{:x}", hash)
     }
 }
+
 impl BlockDatalake {
     pub fn new(
         block_range_start: usize,
@@ -96,7 +97,19 @@ impl Derivable for BlockDatalake {
     where
         Self: Sized,
     {
-        DatalakeBase::new(&self.to_string(), test_closer)
+        let block_range_start = self.block_range_start;
+        let block_range_end = self.block_range_end;
+        let increment = self.increment;
+        let sampled_property = self.sampled_property.clone();
+
+        DatalakeBase::new(&self.to_string(), move || {
+            get_aggregation_set_from_expression(
+                &sampled_property,
+                block_range_start as i32,
+                block_range_end as i32,
+                increment as i32,
+            )
+        })
     }
 }
 

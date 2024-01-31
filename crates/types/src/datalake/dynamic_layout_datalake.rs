@@ -3,8 +3,8 @@ use alloy_primitives::{hex::FromHex, keccak256, U256};
 use anyhow::{bail, Result};
 
 use super::{
+    compiler::test_closer,
     datalake_base::{DatalakeBase, Derivable},
-    helpers::test_closer,
 };
 
 #[derive(Debug, Clone, PartialEq)]
