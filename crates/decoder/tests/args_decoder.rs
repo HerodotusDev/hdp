@@ -1,5 +1,5 @@
-use datalake::DatalakeType;
 use decoder::args_decoder::{datalake_decoder, tasks_decoder};
+use types::Datalake;
 
 #[test]
 fn test_task_decoder() {
@@ -22,7 +22,7 @@ fn test_block_datalake_decoder() {
     let decoded_datalakes = datalake_decoder(batched_block_datalake.to_string()).unwrap();
     assert_eq!(decoded_datalakes.len(), 4);
     for datalake in decoded_datalakes {
-        if let DatalakeType::Block(block_datalake) = datalake {
+        if let Datalake::BlockSampled(block_datalake) = datalake {
             assert_eq!(block_datalake.block_range_start, 10399990);
             assert_eq!(block_datalake.block_range_end, 10400000);
             assert_eq!(
@@ -42,7 +42,7 @@ fn test_dynamic_layout_datalake_decoder() {
     let decoded_datalakes = datalake_decoder(batched_dynamic_layer_datalake.to_string()).unwrap();
     assert_eq!(decoded_datalakes.len(), 4);
     for datalake in decoded_datalakes {
-        if let DatalakeType::DynamicLayout(dynamic_datalake) = datalake {
+        if let Datalake::DynamicLayout(dynamic_datalake) = datalake {
             assert_eq!(dynamic_datalake.block_number, 10399990);
             assert_eq!(
                 dynamic_datalake.account_address,

@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use crate::datalake_base::DataPoint;
+use crate::datalake::base::DataPoint;
 
 pub fn test_closer() -> Result<Vec<DataPoint>> {
     println!("test_closer");

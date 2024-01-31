@@ -1,6 +1,6 @@
 use anyhow::{bail, Result};
 
-use crate::datalake_base::DataPoint;
+use crate::datalake::base::DataPoint;
 
 // TODO : WIP
 pub fn get_aggregation_set_from_expression(

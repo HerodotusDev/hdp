@@ -6,25 +6,25 @@ use alloy_primitives::{
     keccak256, Address, U256,
 };
 use anyhow::{bail, Result};
-use types::{
+use common::{
     block::{account::AccountField, header::HeaderField, Collection},
     utils::bytes_to_hex_string,
 };
 
-use crate::compiler::block_datalake::get_aggregation_set_from_expression;
+use crate::compiler::block_sampled::get_aggregation_set_from_expression;
 
-use super::datalake_base::{DatalakeBase, Derivable};
+use super::base::{DatalakeBase, Derivable};
 
-/// BlockDatalake represents a datalake for a block range
+/// BlockSampledDatalake represents a datalake for a block range
 #[derive(Debug, Clone, PartialEq)]
-pub struct BlockDatalake {
+pub struct BlockSampledDatalake {
     pub block_range_start: usize,
     pub block_range_end: usize,
     pub sampled_property: String,
     pub increment: usize,
 }
 
-impl ToString for BlockDatalake {
+impl ToString for BlockSampledDatalake {
     fn to_string(&self) -> String {
         let block_range_start = DynSolValue::Uint(U256::from(self.block_range_start), 256);
         let block_range_end = DynSolValue::Uint(U256::from(self.block_range_end), 256);
@@ -43,7 +43,7 @@ impl ToString for BlockDatalake {
     }
 }
 
-impl BlockDatalake {
+impl BlockSampledDatalake {
     pub fn new(
         block_range_start: usize,
         block_range_end: usize,
@@ -84,13 +84,13 @@ impl BlockDatalake {
     }
 }
 
-impl Default for BlockDatalake {
+impl Default for BlockSampledDatalake {
     fn default() -> Self {
         Self::new(0, 0, "".to_string(), 0)
     }
 }
 
-impl Derivable for BlockDatalake {
+impl Derivable for BlockSampledDatalake {
     fn derive(&self) -> DatalakeBase
     where
         Self: Sized,

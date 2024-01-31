@@ -4,7 +4,7 @@ use anyhow::{bail, Result};
 
 use crate::compiler::test::test_closer;
 
-use super::datalake_base::{DatalakeBase, Derivable};
+use super::base::{DatalakeBase, Derivable};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct DynamicLayoutDatalake {

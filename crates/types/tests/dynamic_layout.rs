@@ -1,4 +1,4 @@
-use datalake::dynamic_layout_datalake::DynamicLayoutDatalake;
+use types::datalake::dynamic_layout::DynamicLayoutDatalake;
 
 #[test]
 fn test_dynamic_layout_datalake_serialized() {

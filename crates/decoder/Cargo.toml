@@ -7,5 +7,5 @@ edition = "2021"
 alloy-dyn-abi = { workspace = true }
 alloy-primitives = { workspace = true }
 anyhow = { workspace = true }
+common = { workspace = true }
 types = { workspace = true }
-datalake = { workspace = true }

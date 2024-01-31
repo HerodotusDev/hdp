@@ -1,6 +1,6 @@
 use clap::Parser;
-use datalake::{datalake_base::Derivable, DatalakeType};
 use decoder::args_decoder::{datalake_decoder, tasks_decoder};
+use types::{datalake::base::Derivable, Datalake};
 
 #[derive(Debug, Parser)]
 struct Cli {
@@ -33,8 +33,8 @@ fn main() {
         let task = &mut tasks[datalake_idx];
 
         task.datalake = match datalake {
-            DatalakeType::Block(block_datalake) => Some(block_datalake.derive()),
-            DatalakeType::DynamicLayout(dynamic_layout_datalake) => {
+            Datalake::BlockSampled(block_datalake) => Some(block_datalake.derive()),
+            Datalake::DynamicLayout(dynamic_layout_datalake) => {
                 Some(dynamic_layout_datalake.derive())
             }
             _ => None,

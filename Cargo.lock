@@ -474,9 +474,9 @@ name = "cli"
 version = "0.1.0"
 dependencies = [
  "clap",
- "datalake",
  "decoder",
  "tokio",
+ "types",
 ]
 
 [[package]]
@@ -484,6 +484,14 @@ name = "colorchoice"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "acbf1af155f9b9ef647e42cdc158db4b64a1b61f743629225fde6f3e0be2a7c7"
+
+[[package]]
+name = "common"
+version = "0.1.0"
+dependencies = [
+ "alloy-primitives",
+ "anyhow",
+]
 
 [[package]]
 name = "const-hex"
@@ -548,23 +556,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "datalake"
-version = "0.1.0"
-dependencies = [
- "alloy-dyn-abi",
- "alloy-primitives",
- "anyhow",
- "types",
-]
-
-[[package]]
 name = "decoder"
 version = "0.1.0"
 dependencies = [
  "alloy-dyn-abi",
  "alloy-primitives",
  "anyhow",
- "datalake",
+ "common",
  "types",
 ]
 
@@ -1659,8 +1657,10 @@ checksum = "42ff0bf0c66b8238c6f3b578df37d0b7848e55df8577b3f74f92a69acceeb825"
 name = "types"
 version = "0.1.0"
 dependencies = [
+ "alloy-dyn-abi",
  "alloy-primitives",
  "anyhow",
+ "common",
 ]
 
 [[package]]

@@ -1,10 +1,8 @@
 [package]
-name = "datalake"
+name = "common"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-alloy-dyn-abi = { workspace = true }
 alloy-primitives = { workspace = true }
-types = { workspace = true }
 anyhow = { workspace = true }
