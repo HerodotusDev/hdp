@@ -1,2 +1,2 @@
-pub mod block_fields;
+pub mod block;
 pub mod utils;

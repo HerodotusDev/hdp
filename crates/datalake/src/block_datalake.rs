@@ -7,7 +7,7 @@ use alloy_primitives::{
 };
 use anyhow::{bail, Result};
 use types::{
-    block_fields::{AccountField, Collection, HeaderField},
+    block::{account::AccountField, header::HeaderField, Collection},
     utils::bytes_to_hex_string,
 };
 
