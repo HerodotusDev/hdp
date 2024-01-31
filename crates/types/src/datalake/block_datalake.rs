@@ -2,7 +2,10 @@ use alloy_dyn_abi::DynSolType;
 use alloy_primitives::{hex::FromHex, Address};
 use anyhow::{bail, Result};
 
-use crate::block_fields::{AccountField, HeaderField};
+use crate::{
+    block_fields::{AccountField, HeaderField},
+    utils::bytes_to_hex_string,
+};
 
 /// BlockDatalake represents a datalake for a block range
 #[derive(Debug, Clone, PartialEq)]
@@ -85,8 +88,12 @@ impl BlockDatalake {
                 let account = Address::from_slice(&serialized[1..21]);
                 let account_checksum = format!("{:?}", account);
                 let slot = &serialized[21..53];
-                let slot_hex = format!("0x{:x?}", slot);
-                Ok(format!("{}.{}.{}", collection, account_checksum, slot_hex))
+                let slot_string = bytes_to_hex_string(slot);
+
+                Ok(format!(
+                    "{}.{}.{}",
+                    collection, account_checksum, slot_string
+                ))
             }
             _ => bail!("Invalid collection id"),
         }

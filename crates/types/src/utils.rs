@@ -15,7 +15,7 @@ pub fn to_u256_bytes(input: &str) -> Result<[u8; U256_BYTE_SIZE]> {
     Ok(fixed_bytes)
 }
 
-pub fn bytes32_to_str(bytes32: &[u8]) -> Result<String> {
+pub fn bytes32_to_utf8_str(bytes32: &[u8]) -> Result<String> {
     let mut hex_str = encode(bytes32); // Convert to hex string
     while hex_str.ends_with("00") {
         hex_str.pop(); // Remove one '0'
@@ -33,10 +33,16 @@ pub fn bytes32_to_str(bytes32: &[u8]) -> Result<String> {
 }
 
 pub fn bytes_to_hex_string(bytes: &[u8]) -> String {
-    bytes.iter().fold(String::new(), |mut acc, &byte| {
-        write!(acc, "{:02x}", byte).expect("Writing to a String should never fail");
-        acc
-    })
+    let last_non_zero = bytes.iter().rposition(|&b| b != 0).unwrap_or(0);
+
+    let hex_str = bytes[..=last_non_zero]
+        .iter()
+        .fold(String::new(), |mut acc, &byte| {
+            write!(acc, "{:02x}", byte).expect("Failed to write");
+            acc
+        });
+
+    format!("0x{}", hex_str)
 }
 
 pub fn last_byte_to_u8(bytes: &[u8]) -> u8 {
