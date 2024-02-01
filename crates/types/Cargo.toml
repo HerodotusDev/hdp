@@ -8,3 +8,4 @@ alloy-dyn-abi = { workspace = true }
 alloy-primitives = { workspace = true }
 common = { workspace = true }
 anyhow = { workspace = true }
+fetcher = { workspace = true }

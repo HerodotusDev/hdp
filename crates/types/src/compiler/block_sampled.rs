@@ -1,4 +1,8 @@
+use std::{collections::HashMap, str::FromStr};
+
 use anyhow::Result;
+use common::block::header::{decode_header_field, HeaderField};
+use fetcher::{example_data::get_example_headers, memoizer::Memoizer};
 
 use crate::datalake::base::DataPoint;
 
@@ -9,6 +13,8 @@ pub fn compile_block_sampled_datalake(
     sampled_property: &str,
     increment: usize,
 ) -> Result<Vec<DataPoint>> {
+    let header_example = get_example_headers();
+    let memoizer = Memoizer::pre_filled_memoizer(header_example, HashMap::new(), HashMap::new());
     let property_parts: Vec<&str> = sampled_property.split('.').collect();
     let collection = property_parts[0];
 
@@ -16,18 +22,19 @@ pub fn compile_block_sampled_datalake(
 
     match collection {
         "header" => {
-            // let property = property_parts[1];
-            // Convert property to HeaderField enum variant here
+            let property = property_parts[1];
+
             for i in block_range_start..=block_range_end {
                 if i % increment != 0 {
                     continue;
                 }
-                // let header = memoizer
-                //     .get_header(i)?
-                //     .ok_or(format!("No memoized header for block number: {}", i))?;
-                // let value = decode_header_field(&header, &HeaderField::YourFieldHere)?
-                //     .ok_or("Decode failed")?;
-                aggregation_set.push(DataPoint::Int(i));
+                let header = memoizer.get_rlp_header(i).unwrap();
+                let value = decode_header_field(
+                    &header,
+                    HeaderField::from_str(&property.to_uppercase()).unwrap(),
+                );
+
+                aggregation_set.push(DataPoint::Str(value));
             }
         }
         "account" => {

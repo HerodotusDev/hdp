@@ -1,5 +1,8 @@
 use std::str::FromStr;
 
+use alloy_primitives::hex::{encode, FromHex};
+use alloy_rlp::{Decodable, Encodable, RlpDecodable, RlpEncodable};
+
 #[derive(Debug)]
 pub enum HeaderField {
     ParentHash,
@@ -18,6 +21,7 @@ pub enum HeaderField {
     MixHash,
     Nonce,
     BaseFeePerGas,
+    WithdrawalsRoot,
 }
 
 impl HeaderField {
@@ -39,6 +43,7 @@ impl HeaderField {
             13 => Some(HeaderField::MixHash),
             14 => Some(HeaderField::Nonce),
             15 => Some(HeaderField::BaseFeePerGas),
+            16 => Some(HeaderField::WithdrawalsRoot),
             _ => None,
         }
     }
@@ -61,6 +66,7 @@ impl HeaderField {
             HeaderField::MixHash => Some(13),
             HeaderField::Nonce => Some(14),
             HeaderField::BaseFeePerGas => Some(15),
+            HeaderField::WithdrawalsRoot => Some(16),
         }
     }
 
@@ -82,6 +88,7 @@ impl HeaderField {
             HeaderField::MixHash => "MIX_HASH",
             HeaderField::Nonce => "NONCE",
             HeaderField::BaseFeePerGas => "BASE_FEE_PER_GAS",
+            HeaderField::WithdrawalsRoot => "WITHDRAWALS_ROOT",
         }
     }
 }
@@ -107,7 +114,68 @@ impl FromStr for HeaderField {
             "MIX_HASH" => Ok(HeaderField::MixHash),
             "NONCE" => Ok(HeaderField::Nonce),
             "BASE_FEE_PER_GAS" => Ok(HeaderField::BaseFeePerGas),
+            "WITHDRAWALS_ROOT" => Ok(HeaderField::WithdrawalsRoot),
             _ => Err(()),
         }
+    }
+}
+
+#[derive(Debug, RlpDecodable, RlpEncodable, PartialEq)]
+#[rlp(trailing)]
+pub struct BlockHeaderShanghai {
+    pub parent_hash: String,
+    pub uncle_hash: String,
+    pub coinbase: String,
+    pub state_root: String,
+    pub transactions_root: String,
+    pub receipts_root: String,
+    pub logs_bloom: String,
+    pub difficulty: u64,
+    pub number: u64,
+    pub gas_limit: u64,
+    pub gas_used: u64,
+    pub timestamp: u64,
+    pub extra_data: String,
+    pub mix_hash: String,
+    pub nonce: String,
+    pub base_fee_per_gas: Option<u64>,
+    pub withdrawals_root: Option<String>,
+}
+
+impl BlockHeaderShanghai {
+    pub fn from_rlp_hexstring(rlp_hexstring: &str) -> Self {
+        let buffer = Vec::<u8>::from_hex(rlp_hexstring).unwrap();
+        let rlp_decoded_header = BlockHeaderShanghai::decode(&mut buffer.as_slice()).unwrap();
+        rlp_decoded_header
+    }
+
+    pub fn to_rlp_hexstring(&self) -> String {
+        let mut buffer = Vec::<u8>::new();
+        self.encode(&mut buffer);
+        encode(buffer)
+    }
+}
+
+pub fn decode_header_field(header_rlp: &str, field: HeaderField) -> String {
+    let decoded = BlockHeaderShanghai::from_rlp_hexstring(header_rlp);
+
+    match field {
+        HeaderField::ParentHash => decoded.parent_hash,
+        HeaderField::OmmerHash => decoded.uncle_hash,
+        HeaderField::Beneficiary => decoded.coinbase,
+        HeaderField::StateRoot => decoded.state_root,
+        HeaderField::TransactionsRoot => decoded.transactions_root,
+        HeaderField::ReceiptsRoot => decoded.receipts_root,
+        HeaderField::LogsBloom => decoded.logs_bloom,
+        HeaderField::Difficulty => decoded.difficulty.to_string(),
+        HeaderField::Number => decoded.number.to_string(),
+        HeaderField::GasLimit => decoded.gas_limit.to_string(),
+        HeaderField::GasUsed => decoded.gas_used.to_string(),
+        HeaderField::Timestamp => decoded.timestamp.to_string(),
+        HeaderField::ExtraData => decoded.extra_data,
+        HeaderField::MixHash => decoded.mix_hash,
+        HeaderField::Nonce => decoded.nonce,
+        HeaderField::BaseFeePerGas => decoded.base_fee_per_gas.unwrap_or(0).to_string(),
+        HeaderField::WithdrawalsRoot => decoded.withdrawals_root.unwrap_or("".to_string()),
     }
 }

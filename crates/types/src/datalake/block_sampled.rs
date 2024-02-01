@@ -13,7 +13,7 @@ use common::{
 
 use crate::compiler::block_sampled::compile_block_sampled_datalake;
 
-use super::base::{DatalakeBase, Derivable};
+use super::base::{DataPoint, DatalakeBase, Derivable};
 
 /// BlockSampledDatalake represents a datalake for a block range
 #[derive(Debug, Clone, PartialEq)]
@@ -81,6 +81,15 @@ impl BlockSampledDatalake {
             sampled_property,
             increment,
         })
+    }
+
+    pub fn compile(&self) -> Result<Vec<DataPoint>> {
+        compile_block_sampled_datalake(
+            self.block_range_start,
+            self.block_range_end,
+            &self.sampled_property,
+            self.increment,
+        )
     }
 }
 
