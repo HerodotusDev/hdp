@@ -1,8 +1,14 @@
 use std::{collections::HashMap, str::FromStr};
 
 use anyhow::Result;
-use common::block::header::{decode_header_field, HeaderField};
-use fetcher::{example_data::get_example_headers, memoizer::Memoizer};
+use common::block::{
+    account::{decode_account_field, AccountField},
+    header::{decode_header_field, HeaderField},
+};
+use fetcher::{
+    example_data::{get_example_accounts, get_example_headers},
+    memoizer::Memoizer,
+};
 
 use crate::datalake::base::DataPoint;
 
@@ -13,8 +19,10 @@ pub fn compile_block_sampled_datalake(
     sampled_property: &str,
     increment: usize,
 ) -> Result<Vec<DataPoint>> {
-    let header_example = get_example_headers();
-    let memoizer = Memoizer::pre_filled_memoizer(header_example, HashMap::new(), HashMap::new());
+    let prefilled_header = get_example_headers();
+    let prefilled_account = get_example_accounts();
+    let memoizer =
+        Memoizer::pre_filled_memoizer(prefilled_header, prefilled_account, HashMap::new());
     let property_parts: Vec<&str> = sampled_property.split('.').collect();
     let collection = property_parts[0];
 
@@ -39,31 +47,32 @@ pub fn compile_block_sampled_datalake(
         }
         "account" => {
             let account = property_parts[1];
-            // let property = property_parts[2];
-            // Convert property to AccountField enum variant here
+            let property = property_parts[2];
+
             for i in block_range_start..=block_range_end {
                 if i % increment != 0 {
                     continue;
                 }
-                // let acc = memoizer
-                //     .get_account(i, account)?
-                //     .ok_or(format!("No memoized account for block number: {}", i))?;
-                // let value = decode_account_field(&acc, &AccountField::YourFieldHere)?
-                //     .ok_or("Decode failed")?;
-                aggregation_set.push(DataPoint::Str(account.to_string()));
+                let acc = memoizer.get_rlp_account(i, account.to_string()).unwrap();
+                let value = decode_account_field(
+                    &acc,
+                    AccountField::from_str(&property.to_uppercase()).unwrap(),
+                );
+
+                aggregation_set.push(DataPoint::Str(value));
             }
         }
         "storage" => {
-            // let account = property_parts[1];
+            let account = property_parts[1];
             let slot = property_parts[2];
             for i in block_range_start..=block_range_end {
                 if i % increment != 0 {
                     continue;
                 }
-                // let value = memoizer
-                //     .get_storage_slot(i, account, slot)?
-                //     .ok_or(format!("No memoized storage slot for block number: {}", i))?;
-                aggregation_set.push(DataPoint::Str(slot.to_string()));
+                let value = memoizer
+                    .get_rlp_storage(i, account.to_string(), slot.to_string())
+                    .unwrap();
+                aggregation_set.push(DataPoint::Str(value));
             }
         }
         _ => todo!(),

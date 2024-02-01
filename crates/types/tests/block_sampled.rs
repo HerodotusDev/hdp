@@ -39,7 +39,7 @@ fn test_block_datalake_for_storage() {
 }
 
 #[test]
-fn test_blocksampled_compiler() {
+fn test_blocksampled_header_compiler() {
     let block_datalake =
         BlockSampledDatalake::new(10399990, 10399995, "header.base_fee_per_gas".to_string(), 1);
 
@@ -53,6 +53,26 @@ fn test_blocksampled_compiler() {
             DataPoint::Str("14".to_string()),
             DataPoint::Str("14".to_string()),
             DataPoint::Str("15".to_string()),
+        ]
+    );
+}
+
+#[test]
+fn test_blocksampled_account_compiler() {
+    let block_datalake = BlockSampledDatalake::new(
+        10399990,
+        10399992,
+        "account.0x7b2f05ce9ae365c3dbf30657e2dc6449989e83d6.nonce".to_string(),
+        1,
+    );
+
+    let data_points = block_datalake.compile().unwrap();
+    assert_eq!(
+        data_points,
+        vec![
+            DataPoint::Str("1".to_string()),
+            DataPoint::Str("2".to_string()),
+            DataPoint::Str("2".to_string()),
         ]
     );
 }

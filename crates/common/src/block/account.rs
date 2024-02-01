@@ -1,11 +1,49 @@
 use std::str::FromStr;
 
+use alloy_primitives::{hex, FixedBytes, U256};
+use alloy_rlp::{Decodable, Encodable as _, RlpDecodable, RlpEncodable};
+
 #[derive(Debug)]
 pub enum AccountField {
     Nonce,
     Balance,
     StorageRoot,
     CodeHash,
+}
+
+#[derive(Debug, RlpDecodable, RlpEncodable, PartialEq)]
+pub struct Account {
+    pub nonce: u64,
+    pub balance: U256,
+    pub storage_root: FixedBytes<32>,
+    pub code_hash: FixedBytes<32>,
+}
+
+impl Account {
+    pub fn new(
+        nonce: u64,
+        balance: U256,
+        storage_root: FixedBytes<32>,
+        code_hash: FixedBytes<32>,
+    ) -> Self {
+        Account {
+            nonce,
+            balance,
+            storage_root,
+            code_hash,
+        }
+    }
+
+    pub fn rlp_encode(&self) -> String {
+        let mut buffer = Vec::<u8>::new();
+        self.encode(&mut buffer);
+        hex::encode(buffer)
+    }
+
+    pub fn rlp_decode(rlp: &str) -> Self {
+        let decoded = <Account>::decode(&mut hex::decode(rlp).unwrap().as_slice()).unwrap();
+        decoded
+    }
 }
 
 impl FromStr for AccountField {
@@ -49,5 +87,15 @@ impl AccountField {
             AccountField::StorageRoot => "STORAGE_ROOT",
             AccountField::CodeHash => "CODE_HASH",
         }
+    }
+}
+
+pub fn decode_account_field(account_rlp: &str, field: AccountField) -> String {
+    let decoded = <Account>::decode(&mut hex::decode(account_rlp).unwrap().as_slice()).unwrap();
+    match field {
+        AccountField::Nonce => decoded.nonce.to_string(),
+        AccountField::Balance => decoded.balance.to_string(),
+        AccountField::StorageRoot => decoded.storage_root.to_string(),
+        AccountField::CodeHash => decoded.code_hash.to_string(),
     }
 }
