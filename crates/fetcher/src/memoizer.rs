@@ -20,7 +20,7 @@ impl Memoizer {
     pub fn pre_filled_memoizer(
         headers: HashMap<usize, RlpEncodedValue>,
         accounts: HashMap<usize, HashMap<String, RlpEncodedValue>>,
-        storages: HashMap<usize, HashMap<String, HashMap<String, RlpEncodedValue>>>,
+        storages: HashMap<usize, HashMap<String, HashMap<String, String>>>,
     ) -> Memoizer {
         Memoizer {
             headers,
@@ -39,12 +39,12 @@ impl Memoizer {
             .and_then(|accounts| accounts.get(&account).cloned())
     }
 
-    pub fn get_rlp_storage(
+    pub fn get_storage_value(
         &self,
         block_number: usize,
         account: String,
         slot: String,
-    ) -> Option<RlpEncodedValue> {
+    ) -> Option<String> {
         self.storages
             .get(&block_number)
             .and_then(|storages| storages.get(&account))
@@ -65,7 +65,7 @@ impl Memoizer {
         block_number: usize,
         account: String,
         slot: String,
-        value: RlpEncodedValue,
+        value: String,
     ) {
         let storages = self.storages.entry(block_number).or_default();
         let slots = storages.entry(account).or_default();

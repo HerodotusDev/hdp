@@ -40,3 +40,38 @@ pub fn get_example_accounts() -> HashMap<usize, HashMap<String, RlpEncodedValue>
     accounts.insert(10399992, account_10399992);
     accounts
 }
+
+pub fn get_example_storages() -> HashMap<usize, HashMap<String, HashMap<String, String>>> {
+    let mut storages = HashMap::new();
+    let mut storage_10399990 = HashMap::new();
+    storage_10399990.insert("0x00000000000000adc04c56bf30ac9d3c0aaf14dc".to_string(), {
+        let mut storage = HashMap::new();
+        storage.insert(
+            "0x0000000000000000000000000000000000000000000000000000000000000000".to_string(),
+            "0x0000000000000000000000000000000000000000000000000000000000000001".to_string(),
+        );
+        storage
+    });
+    let mut storage_10399991 = HashMap::new();
+    storage_10399991.insert("0x00000000000000adc04c56bf30ac9d3c0aaf14dc".to_string(), {
+        let mut storage = HashMap::new();
+        storage.insert(
+            "0x0000000000000000000000000000000000000000000000000000000000000000".to_string(),
+            "0x0000000000000000000000000000000000000000000000000000000000000002".to_string(),
+        );
+        storage
+    });
+    let mut storage_10399992 = HashMap::new();
+    storage_10399992.insert("0x00000000000000adc04c56bf30ac9d3c0aaf14dc".to_string(), {
+        let mut storage = HashMap::new();
+        storage.insert(
+            "0x0000000000000000000000000000000000000000000000000000000000000000".to_string(),
+            "0x0000000000000000000000000000000000000000000000000000000000000001".to_string(),
+        );
+        storage
+    });
+    storages.insert(10399990, storage_10399990);
+    storages.insert(10399991, storage_10399991);
+    storages.insert(10399992, storage_10399992);
+    storages
+}

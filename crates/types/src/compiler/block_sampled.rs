@@ -1,4 +1,4 @@
-use std::{collections::HashMap, str::FromStr};
+use std::str::FromStr;
 
 use anyhow::Result;
 use common::block::{
@@ -6,7 +6,7 @@ use common::block::{
     header::{decode_header_field, HeaderField},
 };
 use fetcher::{
-    example_data::{get_example_accounts, get_example_headers},
+    example_data::{get_example_accounts, get_example_headers, get_example_storages},
     memoizer::Memoizer,
 };
 
@@ -19,10 +19,12 @@ pub fn compile_block_sampled_datalake(
     sampled_property: &str,
     increment: usize,
 ) -> Result<Vec<DataPoint>> {
+    // TODO: This is a temporary solution to get the example data later we will add fetcher & memoizer logic
     let prefilled_header = get_example_headers();
     let prefilled_account = get_example_accounts();
+    let prefilled_storage = get_example_storages();
     let memoizer =
-        Memoizer::pre_filled_memoizer(prefilled_header, prefilled_account, HashMap::new());
+        Memoizer::pre_filled_memoizer(prefilled_header, prefilled_account, prefilled_storage);
     let property_parts: Vec<&str> = sampled_property.split('.').collect();
     let collection = property_parts[0];
 
@@ -65,13 +67,16 @@ pub fn compile_block_sampled_datalake(
         "storage" => {
             let account = property_parts[1];
             let slot = property_parts[2];
+
             for i in block_range_start..=block_range_end {
                 if i % increment != 0 {
                     continue;
                 }
+
                 let value = memoizer
-                    .get_rlp_storage(i, account.to_string(), slot.to_string())
+                    .get_storage_value(i, account.to_string(), slot.to_string())
                     .unwrap();
+
                 aggregation_set.push(DataPoint::Str(value));
             }
         }

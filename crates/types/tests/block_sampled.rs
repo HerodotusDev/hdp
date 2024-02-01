@@ -76,3 +76,28 @@ fn test_blocksampled_account_compiler() {
         ]
     );
 }
+
+#[test]
+fn test_blocksampled_storage_compiler() {
+    let block_datalake = BlockSampledDatalake::new(
+        10399990,
+        10399992,
+        "storage.0x00000000000000adc04c56bf30ac9d3c0aaf14dc.0x0000000000000000000000000000000000000000000000000000000000000000".to_string(),
+        1,
+    );
+    let data_points = block_datalake.compile().unwrap();
+    assert_eq!(
+        data_points,
+        vec![
+            DataPoint::Str(
+                "0x0000000000000000000000000000000000000000000000000000000000000001".to_string()
+            ),
+            DataPoint::Str(
+                "0x0000000000000000000000000000000000000000000000000000000000000002".to_string()
+            ),
+            DataPoint::Str(
+                "0x0000000000000000000000000000000000000000000000000000000000000001".to_string()
+            ),
+        ]
+    );
+}
