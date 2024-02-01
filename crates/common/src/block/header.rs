@@ -1,7 +1,8 @@
 use std::str::FromStr;
 
-use alloy_primitives::hex::{encode, FromHex};
-use alloy_rlp::{Decodable, Encodable, RlpDecodable, RlpEncodable};
+use alloy_primitives::hex;
+use alloy_rlp::Decodable;
+use reth_primitives::Header;
 
 #[derive(Debug)]
 pub enum HeaderField {
@@ -22,6 +23,9 @@ pub enum HeaderField {
     Nonce,
     BaseFeePerGas,
     WithdrawalsRoot,
+    BlobGasUsed,
+    ExcessBlobGas,
+    ParentBeaconBlockRoot,
 }
 
 impl HeaderField {
@@ -44,29 +48,35 @@ impl HeaderField {
             14 => Some(HeaderField::Nonce),
             15 => Some(HeaderField::BaseFeePerGas),
             16 => Some(HeaderField::WithdrawalsRoot),
+            17 => Some(HeaderField::BlobGasUsed),
+            18 => Some(HeaderField::ExcessBlobGas),
+            19 => Some(HeaderField::ParentBeaconBlockRoot),
             _ => None,
         }
     }
 
-    pub fn to_index(&self) -> Option<usize> {
+    pub fn to_index(&self) -> usize {
         match self {
-            HeaderField::ParentHash => Some(0),
-            HeaderField::OmmerHash => Some(1),
-            HeaderField::Beneficiary => Some(2),
-            HeaderField::StateRoot => Some(3),
-            HeaderField::TransactionsRoot => Some(4),
-            HeaderField::ReceiptsRoot => Some(5),
-            HeaderField::LogsBloom => Some(6),
-            HeaderField::Difficulty => Some(7),
-            HeaderField::Number => Some(8),
-            HeaderField::GasLimit => Some(9),
-            HeaderField::GasUsed => Some(10),
-            HeaderField::Timestamp => Some(11),
-            HeaderField::ExtraData => Some(12),
-            HeaderField::MixHash => Some(13),
-            HeaderField::Nonce => Some(14),
-            HeaderField::BaseFeePerGas => Some(15),
-            HeaderField::WithdrawalsRoot => Some(16),
+            HeaderField::ParentHash => 0,
+            HeaderField::OmmerHash => 1,
+            HeaderField::Beneficiary => 2,
+            HeaderField::StateRoot => 3,
+            HeaderField::TransactionsRoot => 4,
+            HeaderField::ReceiptsRoot => 5,
+            HeaderField::LogsBloom => 6,
+            HeaderField::Difficulty => 7,
+            HeaderField::Number => 8,
+            HeaderField::GasLimit => 9,
+            HeaderField::GasUsed => 10,
+            HeaderField::Timestamp => 11,
+            HeaderField::ExtraData => 12,
+            HeaderField::MixHash => 13,
+            HeaderField::Nonce => 14,
+            HeaderField::BaseFeePerGas => 15,
+            HeaderField::WithdrawalsRoot => 16,
+            HeaderField::BlobGasUsed => 17,
+            HeaderField::ExcessBlobGas => 18,
+            HeaderField::ParentBeaconBlockRoot => 19,
         }
     }
 
@@ -89,6 +99,9 @@ impl HeaderField {
             HeaderField::Nonce => "NONCE",
             HeaderField::BaseFeePerGas => "BASE_FEE_PER_GAS",
             HeaderField::WithdrawalsRoot => "WITHDRAWALS_ROOT",
+            HeaderField::BlobGasUsed => "BLOB_GAS_USED",
+            HeaderField::ExcessBlobGas => "EXCESS_BLOB_GAS",
+            HeaderField::ParentBeaconBlockRoot => "PARENT_BEACON_BLOCK_ROOT",
         }
     }
 }
@@ -115,67 +128,38 @@ impl FromStr for HeaderField {
             "NONCE" => Ok(HeaderField::Nonce),
             "BASE_FEE_PER_GAS" => Ok(HeaderField::BaseFeePerGas),
             "WITHDRAWALS_ROOT" => Ok(HeaderField::WithdrawalsRoot),
+            "BLOB_GAS_USED" => Ok(HeaderField::BlobGasUsed),
+            "EXCESS_BLOB_GAS" => Ok(HeaderField::ExcessBlobGas),
+            "PARENT_BEACON_BLOCK_ROOT" => Ok(HeaderField::ParentBeaconBlockRoot),
             _ => Err(()),
         }
     }
 }
 
-#[derive(Debug, RlpDecodable, RlpEncodable, PartialEq)]
-#[rlp(trailing)]
-pub struct BlockHeaderShanghai {
-    pub parent_hash: String,
-    pub uncle_hash: String,
-    pub coinbase: String,
-    pub state_root: String,
-    pub transactions_root: String,
-    pub receipts_root: String,
-    pub logs_bloom: String,
-    pub difficulty: u64,
-    pub number: u64,
-    pub gas_limit: u64,
-    pub gas_used: u64,
-    pub timestamp: u64,
-    pub extra_data: String,
-    pub mix_hash: String,
-    pub nonce: String,
-    pub base_fee_per_gas: Option<u64>,
-    pub withdrawals_root: Option<String>,
-}
-
-impl BlockHeaderShanghai {
-    pub fn from_rlp_hexstring(rlp_hexstring: &str) -> Self {
-        let buffer = Vec::<u8>::from_hex(rlp_hexstring).unwrap();
-        let rlp_decoded_header = BlockHeaderShanghai::decode(&mut buffer.as_slice()).unwrap();
-        rlp_decoded_header
-    }
-
-    pub fn to_rlp_hexstring(&self) -> String {
-        let mut buffer = Vec::<u8>::new();
-        self.encode(&mut buffer);
-        encode(buffer)
-    }
-}
-
 pub fn decode_header_field(header_rlp: &str, field: HeaderField) -> String {
-    let decoded = BlockHeaderShanghai::from_rlp_hexstring(header_rlp);
+    let decoded =
+        <Header as Decodable>::decode(&mut hex::decode(header_rlp).unwrap().as_slice()).unwrap();
 
     match field {
-        HeaderField::ParentHash => decoded.parent_hash,
-        HeaderField::OmmerHash => decoded.uncle_hash,
-        HeaderField::Beneficiary => decoded.coinbase,
-        HeaderField::StateRoot => decoded.state_root,
-        HeaderField::TransactionsRoot => decoded.transactions_root,
-        HeaderField::ReceiptsRoot => decoded.receipts_root,
-        HeaderField::LogsBloom => decoded.logs_bloom,
+        HeaderField::ParentHash => decoded.parent_hash.to_string(),
+        HeaderField::OmmerHash => decoded.ommers_hash.to_string(),
+        HeaderField::Beneficiary => decoded.beneficiary.to_string(),
+        HeaderField::StateRoot => decoded.state_root.to_string(),
+        HeaderField::TransactionsRoot => decoded.transactions_root.to_string(),
+        HeaderField::ReceiptsRoot => decoded.receipts_root.to_string(),
+        HeaderField::LogsBloom => decoded.logs_bloom.to_string(),
         HeaderField::Difficulty => decoded.difficulty.to_string(),
         HeaderField::Number => decoded.number.to_string(),
         HeaderField::GasLimit => decoded.gas_limit.to_string(),
         HeaderField::GasUsed => decoded.gas_used.to_string(),
         HeaderField::Timestamp => decoded.timestamp.to_string(),
-        HeaderField::ExtraData => decoded.extra_data,
-        HeaderField::MixHash => decoded.mix_hash,
-        HeaderField::Nonce => decoded.nonce,
-        HeaderField::BaseFeePerGas => decoded.base_fee_per_gas.unwrap_or(0).to_string(),
-        HeaderField::WithdrawalsRoot => decoded.withdrawals_root.unwrap_or("".to_string()),
+        HeaderField::ExtraData => decoded.extra_data.to_string(),
+        HeaderField::MixHash => decoded.mix_hash.to_string(),
+        HeaderField::Nonce => decoded.nonce.to_string(),
+        HeaderField::BaseFeePerGas => decoded.base_fee_per_gas.unwrap().to_string(),
+        HeaderField::WithdrawalsRoot => decoded.withdrawals_root.unwrap().to_string(),
+        HeaderField::BlobGasUsed => decoded.blob_gas_used.unwrap().to_string(),
+        HeaderField::ExcessBlobGas => decoded.excess_blob_gas.unwrap().to_string(),
+        HeaderField::ParentBeaconBlockRoot => decoded.parent_beacon_block_root.unwrap().to_string(),
     }
 }

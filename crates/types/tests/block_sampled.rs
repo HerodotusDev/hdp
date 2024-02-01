@@ -41,8 +41,18 @@ fn test_block_datalake_for_storage() {
 #[test]
 fn test_blocksampled_compiler() {
     let block_datalake =
-        BlockSampledDatalake::new(10399990, 10399990, "header.base_fee_per_gas".to_string(), 1);
+        BlockSampledDatalake::new(10399990, 10399995, "header.base_fee_per_gas".to_string(), 1);
 
     let data_points = block_datalake.compile().unwrap();
-    assert_eq!(data_points, vec![DataPoint::Str("13".to_string())]);
+    assert_eq!(
+        data_points,
+        vec![
+            DataPoint::Str("13".to_string()),
+            DataPoint::Str("13".to_string()),
+            DataPoint::Str("14".to_string()),
+            DataPoint::Str("14".to_string()),
+            DataPoint::Str("14".to_string()),
+            DataPoint::Str("15".to_string()),
+        ]
+    );
 }

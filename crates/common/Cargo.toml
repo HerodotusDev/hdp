@@ -7,3 +7,4 @@ edition = "2021"
 alloy-primitives = { workspace = true }
 alloy-rlp = { workspace = true }
 anyhow = { workspace = true }
+reth-primitives = { workspace = true }

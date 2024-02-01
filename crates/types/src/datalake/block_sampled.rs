@@ -138,14 +138,10 @@ fn serialize_sampled_property(sampled_property: &str) -> Vec<u8> {
 
     match collection {
         Collection::Header => {
-            if let Some(index) = HeaderField::from_str(tokens[1].to_uppercase().as_str())
+            let index = HeaderField::from_str(tokens[1].to_uppercase().as_str())
                 .unwrap()
-                .to_index()
-            {
-                serialized.push(index as u8);
-            } else {
-                panic!("Invalid header field");
-            }
+                .to_index();
+            serialized.push(index as u8);
         }
         Collection::Account | Collection::Storage => {
             // if !is_address(tokens[1]) {
