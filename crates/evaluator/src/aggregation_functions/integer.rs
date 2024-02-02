@@ -159,7 +159,7 @@ pub fn sum(values: &[DataPoint]) -> Result<DataPoint> {
 /// - 05: Less than or equal
 pub fn count_if(values: &[DataPoint], ctx: &str) -> Result<DataPoint> {
     let logical_operator = &ctx[0..2];
-    let value_to_compare = &DataPoint::Int(usize::from_str_radix(&ctx[2..], 16).unwrap());
+    let value_to_compare = &DataPoint::Int(u64::from_str_radix(&ctx[2..], 16).unwrap());
 
     let mut condition_satisfiability_count = 0;
 

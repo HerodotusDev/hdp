@@ -44,7 +44,7 @@ pub fn compile_block_sampled_datalake(
                     HeaderField::from_str(&property.to_uppercase()).unwrap(),
                 );
 
-                aggregation_set.push(DataPoint::Str(value));
+                aggregation_set.push(value);
             }
         }
         "account" => {
@@ -61,7 +61,7 @@ pub fn compile_block_sampled_datalake(
                     AccountField::from_str(&property.to_uppercase()).unwrap(),
                 );
 
-                aggregation_set.push(DataPoint::Str(value));
+                aggregation_set.push(value);
             }
         }
         "storage" => {

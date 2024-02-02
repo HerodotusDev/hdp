@@ -45,12 +45,9 @@ impl ComputationalTask {
 impl ToString for ComputationalTask {
     fn to_string(&self) -> String {
         let datalake = self.datalake.as_ref().ok_or("Datalake is None").unwrap();
-        println!("datalake: {:?}", datalake);
-        // Convert BigUint to a byte array
 
         let datalake_identifier =
             U256::from_str_radix(&datalake.identifier[2..], 16).expect("Invalid hex string");
-        // Use the converted value
         let identifier_value = DynSolValue::Uint(datalake_identifier, 256);
         let aggregate_fn_id_value = DynSolValue::String(self.aggregate_fn_id.clone());
         let aggregate_fn_ctx_value = match &self.aggregate_fn_ctx {

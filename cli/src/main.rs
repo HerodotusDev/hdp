@@ -23,12 +23,15 @@ struct Cli {
 fn main() {
     let args = Cli::parse();
     let tasks = tasks_decoder(args.tasks).unwrap();
-    println!("tasks: {:?}\n", tasks);
+
     let datalakes = datalake_decoder(args.datalakes).unwrap();
-    println!("datalakes: {:?}\n", datalakes);
+
     if tasks.len() != datalakes.len() {
         panic!("Tasks and datalakes must have the same length");
     }
+
+    println!("tasks: {:?}\n", tasks);
+    println!("datalakes: {:?}\n", datalakes);
 
     let res = evaluator(tasks, Some(datalakes)).unwrap();
     println!("res: {:?}", res.result);
