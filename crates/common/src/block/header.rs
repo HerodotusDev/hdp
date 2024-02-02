@@ -1,5 +1,9 @@
 use std::str::FromStr;
 
+use alloy_primitives::hex;
+use alloy_rlp::Decodable;
+use reth_primitives::Header;
+
 #[derive(Debug)]
 pub enum HeaderField {
     ParentHash,
@@ -18,6 +22,10 @@ pub enum HeaderField {
     MixHash,
     Nonce,
     BaseFeePerGas,
+    WithdrawalsRoot,
+    BlobGasUsed,
+    ExcessBlobGas,
+    ParentBeaconBlockRoot,
 }
 
 impl HeaderField {
@@ -39,28 +47,36 @@ impl HeaderField {
             13 => Some(HeaderField::MixHash),
             14 => Some(HeaderField::Nonce),
             15 => Some(HeaderField::BaseFeePerGas),
+            16 => Some(HeaderField::WithdrawalsRoot),
+            17 => Some(HeaderField::BlobGasUsed),
+            18 => Some(HeaderField::ExcessBlobGas),
+            19 => Some(HeaderField::ParentBeaconBlockRoot),
             _ => None,
         }
     }
 
-    pub fn to_index(&self) -> Option<usize> {
+    pub fn to_index(&self) -> usize {
         match self {
-            HeaderField::ParentHash => Some(0),
-            HeaderField::OmmerHash => Some(1),
-            HeaderField::Beneficiary => Some(2),
-            HeaderField::StateRoot => Some(3),
-            HeaderField::TransactionsRoot => Some(4),
-            HeaderField::ReceiptsRoot => Some(5),
-            HeaderField::LogsBloom => Some(6),
-            HeaderField::Difficulty => Some(7),
-            HeaderField::Number => Some(8),
-            HeaderField::GasLimit => Some(9),
-            HeaderField::GasUsed => Some(10),
-            HeaderField::Timestamp => Some(11),
-            HeaderField::ExtraData => Some(12),
-            HeaderField::MixHash => Some(13),
-            HeaderField::Nonce => Some(14),
-            HeaderField::BaseFeePerGas => Some(15),
+            HeaderField::ParentHash => 0,
+            HeaderField::OmmerHash => 1,
+            HeaderField::Beneficiary => 2,
+            HeaderField::StateRoot => 3,
+            HeaderField::TransactionsRoot => 4,
+            HeaderField::ReceiptsRoot => 5,
+            HeaderField::LogsBloom => 6,
+            HeaderField::Difficulty => 7,
+            HeaderField::Number => 8,
+            HeaderField::GasLimit => 9,
+            HeaderField::GasUsed => 10,
+            HeaderField::Timestamp => 11,
+            HeaderField::ExtraData => 12,
+            HeaderField::MixHash => 13,
+            HeaderField::Nonce => 14,
+            HeaderField::BaseFeePerGas => 15,
+            HeaderField::WithdrawalsRoot => 16,
+            HeaderField::BlobGasUsed => 17,
+            HeaderField::ExcessBlobGas => 18,
+            HeaderField::ParentBeaconBlockRoot => 19,
         }
     }
 
@@ -82,6 +98,10 @@ impl HeaderField {
             HeaderField::MixHash => "MIX_HASH",
             HeaderField::Nonce => "NONCE",
             HeaderField::BaseFeePerGas => "BASE_FEE_PER_GAS",
+            HeaderField::WithdrawalsRoot => "WITHDRAWALS_ROOT",
+            HeaderField::BlobGasUsed => "BLOB_GAS_USED",
+            HeaderField::ExcessBlobGas => "EXCESS_BLOB_GAS",
+            HeaderField::ParentBeaconBlockRoot => "PARENT_BEACON_BLOCK_ROOT",
         }
     }
 }
@@ -107,7 +127,39 @@ impl FromStr for HeaderField {
             "MIX_HASH" => Ok(HeaderField::MixHash),
             "NONCE" => Ok(HeaderField::Nonce),
             "BASE_FEE_PER_GAS" => Ok(HeaderField::BaseFeePerGas),
+            "WITHDRAWALS_ROOT" => Ok(HeaderField::WithdrawalsRoot),
+            "BLOB_GAS_USED" => Ok(HeaderField::BlobGasUsed),
+            "EXCESS_BLOB_GAS" => Ok(HeaderField::ExcessBlobGas),
+            "PARENT_BEACON_BLOCK_ROOT" => Ok(HeaderField::ParentBeaconBlockRoot),
             _ => Err(()),
         }
+    }
+}
+
+pub fn decode_header_field(header_rlp: &str, field: HeaderField) -> String {
+    let decoded =
+        <Header as Decodable>::decode(&mut hex::decode(header_rlp).unwrap().as_slice()).unwrap();
+
+    match field {
+        HeaderField::ParentHash => decoded.parent_hash.to_string(),
+        HeaderField::OmmerHash => decoded.ommers_hash.to_string(),
+        HeaderField::Beneficiary => decoded.beneficiary.to_string(),
+        HeaderField::StateRoot => decoded.state_root.to_string(),
+        HeaderField::TransactionsRoot => decoded.transactions_root.to_string(),
+        HeaderField::ReceiptsRoot => decoded.receipts_root.to_string(),
+        HeaderField::LogsBloom => decoded.logs_bloom.to_string(),
+        HeaderField::Difficulty => decoded.difficulty.to_string(),
+        HeaderField::Number => decoded.number.to_string(),
+        HeaderField::GasLimit => decoded.gas_limit.to_string(),
+        HeaderField::GasUsed => decoded.gas_used.to_string(),
+        HeaderField::Timestamp => decoded.timestamp.to_string(),
+        HeaderField::ExtraData => decoded.extra_data.to_string(),
+        HeaderField::MixHash => decoded.mix_hash.to_string(),
+        HeaderField::Nonce => decoded.nonce.to_string(),
+        HeaderField::BaseFeePerGas => decoded.base_fee_per_gas.unwrap().to_string(),
+        HeaderField::WithdrawalsRoot => decoded.withdrawals_root.unwrap().to_string(),
+        HeaderField::BlobGasUsed => decoded.blob_gas_used.unwrap().to_string(),
+        HeaderField::ExcessBlobGas => decoded.excess_blob_gas.unwrap().to_string(),
+        HeaderField::ParentBeaconBlockRoot => decoded.parent_beacon_block_root.unwrap().to_string(),
     }
 }

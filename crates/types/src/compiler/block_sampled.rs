@@ -1,4 +1,14 @@
+use std::str::FromStr;
+
 use anyhow::Result;
+use common::block::{
+    account::{decode_account_field, AccountField},
+    header::{decode_header_field, HeaderField},
+};
+use fetcher::{
+    example_data::{get_example_accounts, get_example_headers, get_example_storages},
+    memoizer::Memoizer,
+};
 
 use crate::datalake::base::DataPoint;
 
@@ -9,6 +19,12 @@ pub fn compile_block_sampled_datalake(
     sampled_property: &str,
     increment: usize,
 ) -> Result<Vec<DataPoint>> {
+    // TODO: This is a temporary solution to get the example data later we will add fetcher & memoizer logic
+    let prefilled_header = get_example_headers();
+    let prefilled_account = get_example_accounts();
+    let prefilled_storage = get_example_storages();
+    let memoizer =
+        Memoizer::pre_filled_memoizer(prefilled_header, prefilled_account, prefilled_storage);
     let property_parts: Vec<&str> = sampled_property.split('.').collect();
     let collection = property_parts[0];
 
@@ -16,47 +32,52 @@ pub fn compile_block_sampled_datalake(
 
     match collection {
         "header" => {
-            // let property = property_parts[1];
-            // Convert property to HeaderField enum variant here
+            let property = property_parts[1];
+
             for i in block_range_start..=block_range_end {
                 if i % increment != 0 {
                     continue;
                 }
-                // let header = memoizer
-                //     .get_header(i)?
-                //     .ok_or(format!("No memoized header for block number: {}", i))?;
-                // let value = decode_header_field(&header, &HeaderField::YourFieldHere)?
-                //     .ok_or("Decode failed")?;
-                aggregation_set.push(DataPoint::Int(i));
+                let header = memoizer.get_rlp_header(i).unwrap();
+                let value = decode_header_field(
+                    &header,
+                    HeaderField::from_str(&property.to_uppercase()).unwrap(),
+                );
+
+                aggregation_set.push(DataPoint::Str(value));
             }
         }
         "account" => {
             let account = property_parts[1];
-            // let property = property_parts[2];
-            // Convert property to AccountField enum variant here
+            let property = property_parts[2];
+
             for i in block_range_start..=block_range_end {
                 if i % increment != 0 {
                     continue;
                 }
-                // let acc = memoizer
-                //     .get_account(i, account)?
-                //     .ok_or(format!("No memoized account for block number: {}", i))?;
-                // let value = decode_account_field(&acc, &AccountField::YourFieldHere)?
-                //     .ok_or("Decode failed")?;
-                aggregation_set.push(DataPoint::Str(account.to_string()));
+                let acc = memoizer.get_rlp_account(i, account.to_string()).unwrap();
+                let value = decode_account_field(
+                    &acc,
+                    AccountField::from_str(&property.to_uppercase()).unwrap(),
+                );
+
+                aggregation_set.push(DataPoint::Str(value));
             }
         }
         "storage" => {
-            // let account = property_parts[1];
+            let account = property_parts[1];
             let slot = property_parts[2];
+
             for i in block_range_start..=block_range_end {
                 if i % increment != 0 {
                     continue;
                 }
-                // let value = memoizer
-                //     .get_storage_slot(i, account, slot)?
-                //     .ok_or(format!("No memoized storage slot for block number: {}", i))?;
-                aggregation_set.push(DataPoint::Str(slot.to_string()));
+
+                let value = memoizer
+                    .get_storage_value(i, account.to_string(), slot.to_string())
+                    .unwrap();
+
+                aggregation_set.push(DataPoint::Str(value));
             }
         }
         _ => todo!(),
