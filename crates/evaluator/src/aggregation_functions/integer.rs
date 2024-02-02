@@ -1,5 +1,5 @@
 use anyhow::{bail, Result};
-use types::datalake::base::DataPoint;
+use common::datalake::base::DataPoint;
 
 /// Returns the average of the values
 pub fn average(values: &[DataPoint]) -> Result<DataPoint> {

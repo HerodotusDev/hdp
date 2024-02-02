@@ -4,10 +4,12 @@ use std::{collections::HashMap, str::FromStr};
 
 pub mod aggregation_functions;
 
-use types::{
-    datalake::base::{DataPoint, Derivable},
+use common::{
+    datalake::{
+        base::{DataPoint, Derivable},
+        Datalake,
+    },
     task::ComputationalTask,
-    Datalake,
 };
 
 pub struct EvaluationResult {

@@ -2,7 +2,6 @@
 resolver = "2"
 members = [
     "cli",
-    "crates/types",
     "crates/decoder",
     "crates/evaluator",
     "crates/event-watcher",
@@ -12,7 +11,6 @@ members = [
 
 [workspace.dependencies]
 common = { version = "0.1.0", path = "crates/common" }
-types = { version = "0.1.0", path = "crates/types" }
 decoder = { version = "0.1.0", path = "crates/decoder" }
 fetcher = { version = "0.1.0", path = "crates/fetcher" }
 evaluator = { version = "0.1.0", path = "crates/evaluator" }
@@ -22,3 +20,5 @@ alloy-primitives = "0.6.2"
 alloy-rlp = { version = "0.3.4", features = ["derive"] }
 anyhow = "1.0.79"
 reth-primitives = { git = "https://github.com/paradigmxyz/reth", package = "reth-primitives", rev = "01d3df3" }
+num-bigint = "0.4.0"
+num-traits = "0.2.14"

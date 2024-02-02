@@ -1,11 +1,8 @@
 use alloy_dyn_abi::{DynSolType, DynSolValue};
 use alloy_primitives::{keccak256, U256};
 use anyhow::Result;
-use common::utils::bytes32_to_utf8_str;
-use num_bigint::BigUint;
-use num_traits::Num;
 
-use crate::datalake::base::DatalakeBase;
+use crate::{datalake::base::DatalakeBase, utils::bytes32_to_utf8_str};
 
 /// ComputationalTask represents a task for certain datalake with a specified aggregate function
 #[derive(Debug)]

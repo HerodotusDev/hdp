@@ -1,8 +1,8 @@
-use datalake::{block_sampled::BlockSampledDatalake, dynamic_layout::DynamicLayoutDatalake};
+use self::{block_sampled::BlockSampledDatalake, dynamic_layout::DynamicLayoutDatalake};
 
-pub mod compiler;
-pub mod datalake;
-pub mod task;
+pub mod base;
+pub mod block_sampled;
+pub mod dynamic_layout;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Datalake {

@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use anyhow::{bail, Result};
-use types::datalake::base::DataPoint;
+use common::datalake::base::DataPoint;
 
 pub mod integer;
 pub mod string;

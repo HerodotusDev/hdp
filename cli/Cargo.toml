@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 clap = { version = "4.4.4", features = ["derive"] }
 decoder = { workspace = true }
-types = { workspace = true }
+common = { workspace = true }
 evaluator = { workspace = true }
 
 tokio.workspace = true

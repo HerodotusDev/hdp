@@ -1,7 +1,7 @@
+use common::datalake::base::DataPoint;
 use evaluator::aggregation_functions::integer::{
     average, count_if, find_max, find_min, standard_deviation,
 };
-use types::datalake::base::DataPoint;
 
 #[test]
 fn test_avg() {

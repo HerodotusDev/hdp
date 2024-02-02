@@ -1,15 +1,15 @@
 use std::str::FromStr;
 
+use crate::{
+    block::{account::AccountField, header::HeaderField, Collection},
+    utils::bytes_to_hex_string,
+};
 use alloy_dyn_abi::{DynSolType, DynSolValue};
 use alloy_primitives::{
     hex::{self, FromHex},
     keccak256, Address, U256,
 };
 use anyhow::{bail, Result};
-use common::{
-    block::{account::AccountField, header::HeaderField, Collection},
-    utils::bytes_to_hex_string,
-};
 
 use crate::compiler::block_sampled::compile_block_sampled_datalake;
 
