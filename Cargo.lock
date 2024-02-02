@@ -732,6 +732,7 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "decoder",
+ "evaluator",
  "tokio",
  "types",
 ]
@@ -1068,6 +1069,10 @@ dependencies = [
 [[package]]
 name = "evaluator"
 version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "types",
+]
 
 [[package]]
 name = "event-watcher"

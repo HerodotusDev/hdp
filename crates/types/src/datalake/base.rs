@@ -46,11 +46,12 @@ impl DatalakeBase {
     //     self.identifier = format!("{}{}", self.identifier, other.identifier);
     // }
 
-    pub fn compile(&mut self) {
+    pub fn compile(&mut self) -> Vec<DataPoint> {
         self.datapoints.clear();
         for compiler in &self.compilation_pipeline {
             self.datapoints.extend(compiler().unwrap());
         }
+        self.datapoints.clone()
     }
 }
 
