@@ -2781,6 +2781,8 @@ dependencies = [
  "anyhow",
  "common",
  "fetcher",
+ "num-bigint",
+ "num-traits",
 ]
 
 [[package]]

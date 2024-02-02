@@ -51,11 +51,20 @@ pub fn evaluator(
         }
     }
 
+    println!("evaluator compute_expressions: {:?}\n", compute_expressions);
+
     // Evaulate the compute expressions
     for compute_expression in compute_expressions {
+        println!("ohyeah\n");
         let computation_task_id = compute_expression.to_string();
+        println!("computation_task_id: {:?}\n", computation_task_id);
         let datapoints = compute_expression.datalake.unwrap().compile();
+        println!("datapoints: {:?}\n", datapoints);
         let aggregation_fn = AggregationFunction::from_str(&compute_expression.aggregate_fn_id)?;
+        println!(
+            "aggregation_fn: {:?}\n",
+            &compute_expression.aggregate_fn_id
+        );
         let aggregation_fn_ctx = compute_expression.aggregate_fn_ctx;
         let result = aggregation_fn.operation(&datapoints, aggregation_fn_ctx)?;
         results.result.insert(computation_task_id, result);
