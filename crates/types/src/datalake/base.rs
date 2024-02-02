@@ -5,9 +5,10 @@ use std::fmt;
 type DataCompiler = dyn Fn() -> Result<Vec<DataPoint>>;
 
 /// DataPoint is a type that can be used to store data in a Datalake
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum DataPoint {
     Int(usize),
+    Float(f64),
     Str(String),
 }
 

@@ -1,13 +1,17 @@
-use aggregation_functions::get_aggregation_function_type;
+use aggregation_functions::AggregationFunction;
 use anyhow::{bail, Result};
-use std::collections::HashMap;
+use std::{collections::HashMap, str::FromStr};
 
 pub mod aggregation_functions;
 
-use types::{datalake::base::Derivable, task::ComputationalTask, Datalake};
+use types::{
+    datalake::base::{DataPoint, Derivable},
+    task::ComputationalTask,
+    Datalake,
+};
 
 pub struct EvaluationResult {
-    pub result: HashMap<String, usize>,
+    pub result: HashMap<String, DataPoint>,
 }
 
 impl EvaluationResult {
@@ -51,8 +55,9 @@ pub fn evaluator(
     for compute_expression in compute_expressions {
         let computation_task_id = compute_expression.to_string();
         let datapoints = compute_expression.datalake.unwrap().compile();
-        let aggregation_fn = get_aggregation_function_type(compute_expression.aggregate_fn_id);
-        let result = aggregation_fn.operation(&datapoints);
+        let aggregation_fn = AggregationFunction::from_str(&compute_expression.aggregate_fn_id)?;
+        let aggregation_fn_ctx = compute_expression.aggregate_fn_ctx;
+        let result = aggregation_fn.operation(&datapoints, aggregation_fn_ctx)?;
         results.result.insert(computation_task_id, result);
     }
 
