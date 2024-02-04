@@ -20,5 +20,3 @@ alloy-primitives = "0.6.2"
 alloy-rlp = { version = "0.3.4", features = ["derive"] }
 anyhow = "1.0.79"
 reth-primitives = { git = "https://github.com/paradigmxyz/reth", package = "reth-primitives", rev = "01d3df3" }
-num-bigint = "0.4.0"
-num-traits = "0.2.14"

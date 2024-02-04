@@ -765,8 +765,6 @@ dependencies = [
  "alloy-rlp",
  "anyhow",
  "fetcher",
- "num-bigint",
- "num-traits",
  "reth-primitives",
 ]
 
