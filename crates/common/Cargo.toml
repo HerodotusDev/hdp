@@ -6,5 +6,7 @@ edition = "2021"
 [dependencies]
 alloy-primitives = { workspace = true }
 alloy-rlp = { workspace = true }
+alloy-dyn-abi = { workspace = true }
 anyhow = { workspace = true }
 reth-primitives = { workspace = true }
+fetcher = { workspace = true }

@@ -731,9 +731,10 @@ name = "cli"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "common",
  "decoder",
+ "evaluator",
  "tokio",
- "types",
 ]
 
 [[package]]
@@ -759,9 +760,11 @@ checksum = "acbf1af155f9b9ef647e42cdc158db4b64a1b61f743629225fde6f3e0be2a7c7"
 name = "common"
 version = "0.1.0"
 dependencies = [
+ "alloy-dyn-abi",
  "alloy-primitives",
  "alloy-rlp",
  "anyhow",
+ "fetcher",
  "reth-primitives",
 ]
 
@@ -925,7 +928,6 @@ dependencies = [
  "alloy-primitives",
  "anyhow",
  "common",
- "types",
 ]
 
 [[package]]
@@ -1068,6 +1070,10 @@ dependencies = [
 [[package]]
 name = "evaluator"
 version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "common",
+]
 
 [[package]]
 name = "event-watcher"
@@ -2766,17 +2772,6 @@ name = "typenum"
 version = "1.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "42ff0bf0c66b8238c6f3b578df37d0b7848e55df8577b3f74f92a69acceeb825"
-
-[[package]]
-name = "types"
-version = "0.1.0"
-dependencies = [
- "alloy-dyn-abi",
- "alloy-primitives",
- "anyhow",
- "common",
- "fetcher",
-]
 
 [[package]]
 name = "ucd-trie"

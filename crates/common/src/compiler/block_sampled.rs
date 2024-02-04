@@ -1,10 +1,10 @@
 use std::str::FromStr;
 
-use anyhow::Result;
-use common::block::{
+use crate::block::{
     account::{decode_account_field, AccountField},
     header::{decode_header_field, HeaderField},
 };
+use anyhow::Result;
 use fetcher::{
     example_data::{get_example_accounts, get_example_headers, get_example_storages},
     memoizer::Memoizer,
@@ -44,7 +44,7 @@ pub fn compile_block_sampled_datalake(
                     HeaderField::from_str(&property.to_uppercase()).unwrap(),
                 );
 
-                aggregation_set.push(DataPoint::Str(value));
+                aggregation_set.push(value);
             }
         }
         "account" => {
@@ -61,7 +61,7 @@ pub fn compile_block_sampled_datalake(
                     AccountField::from_str(&property.to_uppercase()).unwrap(),
                 );
 
-                aggregation_set.push(DataPoint::Str(value));
+                aggregation_set.push(value);
             }
         }
         "storage" => {

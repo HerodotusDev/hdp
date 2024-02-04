@@ -1,11 +1,11 @@
 use alloy_dyn_abi::DynSolType;
 use alloy_primitives::hex::FromHex;
 use anyhow::{bail, Ok, Result};
+use common::datalake::Datalake;
 use common::utils::{bytes_to_hex_string, last_byte_to_u8};
-use types::{
+use common::{
     datalake::{block_sampled::BlockSampledDatalake, dynamic_layout::DynamicLayoutDatalake},
     task::ComputationalTask,
-    Datalake,
 };
 
 pub fn tasks_decoder(serialized_tasks_batch: String) -> Result<Vec<ComputationalTask>> {

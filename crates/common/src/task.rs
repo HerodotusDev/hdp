@@ -1,9 +1,8 @@
 use alloy_dyn_abi::{DynSolType, DynSolValue};
 use alloy_primitives::{keccak256, U256};
 use anyhow::Result;
-use common::utils::bytes32_to_utf8_str;
 
-use crate::datalake::base::DatalakeBase;
+use crate::{datalake::base::DatalakeBase, utils::bytes32_to_utf8_str};
 
 /// ComputationalTask represents a task for certain datalake with a specified aggregate function
 #[derive(Debug)]
@@ -47,12 +46,15 @@ impl ToString for ComputationalTask {
     fn to_string(&self) -> String {
         let datalake = self.datalake.as_ref().ok_or("Datalake is None").unwrap();
 
-        let identifier = u64::from_str_radix(&datalake.identifier, 16)
-            .expect("Failed to parse identifier as a hexadecimal number");
-        let identifier_value = DynSolValue::Uint(U256::from(identifier), 256);
+        let datalake_identifier =
+            U256::from_str_radix(&datalake.identifier[2..], 16).expect("Invalid hex string");
+        let identifier_value = DynSolValue::Uint(datalake_identifier, 256);
         let aggregate_fn_id_value = DynSolValue::String(self.aggregate_fn_id.clone());
-        let aggregate_fn_ctx_value =
-            DynSolValue::Bytes(self.aggregate_fn_ctx.clone().unwrap().into_bytes());
+        let aggregate_fn_ctx_value = match &self.aggregate_fn_ctx {
+            None => DynSolValue::Bytes("".to_string().into_bytes()),
+            Some(ctx) => DynSolValue::Bytes(ctx.clone().into_bytes()),
+        };
+
         let header_tuple_value = DynSolValue::Tuple(vec![
             identifier_value,
             aggregate_fn_id_value,
