@@ -5,14 +5,12 @@ members = [
     "crates/decoder",
     "crates/evaluator",
     "crates/event-watcher",
-    "crates/fetcher",
     "crates/common",
 ]
 
 [workspace.dependencies]
 common = { version = "0.1.0", path = "crates/common" }
 decoder = { version = "0.1.0", path = "crates/decoder" }
-fetcher = { version = "0.1.0", path = "crates/fetcher" }
 evaluator = { version = "0.1.0", path = "crates/evaluator" }
 tokio = { version = "1", features = ["full"] }
 alloy-dyn-abi = "0.6.2"

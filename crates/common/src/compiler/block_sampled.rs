@@ -1,14 +1,16 @@
 use std::str::FromStr;
 
-use crate::block::{
-    account::{decode_account_field, AccountField},
-    header::{decode_header_field, HeaderField},
+use crate::{
+    block::{
+        account::{decode_account_field, AccountField},
+        header::{decode_header_field, HeaderField},
+    },
+    fetcher::{
+        memory::MemoryFetcher,
+        prefilled_data::{get_example_accounts, get_example_headers, get_example_storages},
+    },
 };
 use anyhow::Result;
-use fetcher::{
-    example_data::{get_example_accounts, get_example_headers, get_example_storages},
-    memoizer::Memoizer,
-};
 
 use crate::datalake::base::DataPoint;
 
@@ -24,7 +26,7 @@ pub fn compile_block_sampled_datalake(
     let prefilled_account = get_example_accounts();
     let prefilled_storage = get_example_storages();
     let memoizer =
-        Memoizer::pre_filled_memoizer(prefilled_header, prefilled_account, prefilled_storage);
+        MemoryFetcher::pre_filled_memoizer(prefilled_header, prefilled_account, prefilled_storage);
     let property_parts: Vec<&str> = sampled_property.split('.').collect();
     let collection = property_parts[0];
 

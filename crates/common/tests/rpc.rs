@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use alloy_primitives::{FixedBytes, U256};
-use common::{block::account::Account, rpc::RpcFetcher};
+use common::{block::account::Account, fetcher::rpc::RpcFetcher};
 use reth_primitives::Header;
 
 #[tokio::test]

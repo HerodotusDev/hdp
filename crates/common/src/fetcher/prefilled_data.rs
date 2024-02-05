@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::memoizer::RlpEncodedValue;
+use super::memory::RlpEncodedValue;
 
 pub fn get_example_headers() -> HashMap<usize, RlpEncodedValue> {
     let mut headers = HashMap::new();

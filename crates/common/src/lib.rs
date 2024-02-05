@@ -1,6 +1,6 @@
 pub mod block;
 pub mod compiler;
 pub mod datalake;
-pub mod rpc;
+pub mod fetcher;
 pub mod task;
 pub mod utils;

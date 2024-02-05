@@ -764,7 +764,6 @@ dependencies = [
  "alloy-primitives",
  "alloy-rlp",
  "anyhow",
- "fetcher",
  "reqwest",
  "reth-primitives",
  "serde",
@@ -1118,10 +1117,6 @@ dependencies = [
  "auto_impl",
  "bytes",
 ]
-
-[[package]]
-name = "fetcher"
-version = "0.1.0"
 
 [[package]]
 name = "ff"
