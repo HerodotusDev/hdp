@@ -10,3 +10,8 @@ alloy-dyn-abi = { workspace = true }
 anyhow = { workspace = true }
 reth-primitives = { workspace = true }
 fetcher = { workspace = true }
+tokio = { workspace = true }
+
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+reqwest = { version = "0.11", features = ["json"] }

@@ -1,8 +1,9 @@
 use std::str::FromStr;
 
-use alloy_primitives::hex;
+use alloy_primitives::{hex, Address, Bloom, Bytes, B256, U256};
 use alloy_rlp::Decodable;
 use reth_primitives::Header;
+use serde::{Deserialize, Serialize};
 
 use crate::datalake::base::DataPoint;
 
@@ -180,6 +181,86 @@ pub fn decode_header_field(header_rlp: &str, field: HeaderField) -> DataPoint {
         }
         HeaderField::ParentBeaconBlockRoot => {
             DataPoint::Str(decoded.parent_beacon_block_root.unwrap().to_string())
+        }
+    }
+}
+
+/// Block header returned from RPC
+/// https://ethereum.org/en/developers/docs/apis/json-rpc#eth_getblockbynumber
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct BlockHeaderFromRpc {
+    pub base_fee_per_gas: Option<String>,
+    pub blob_gas_used: Option<String>,
+    pub difficulty: String,
+    pub excess_blob_gas: Option<String>,
+    pub extra_data: String,
+    pub gas_limit: String,
+    pub gas_used: String,
+    pub hash: String,
+    pub logs_bloom: String,
+    pub miner: String,
+    pub mix_hash: String,
+    pub nonce: String,
+    pub number: String,
+    pub parent_beacon_block_root: Option<String>,
+    pub parent_hash: String,
+    pub receipts_root: String,
+    pub sha3_uncles: String,
+    pub size: String,
+    pub state_root: String,
+    pub timestamp: String,
+    pub total_difficulty: String,
+    pub transactions_root: String,
+    pub withdrawals_root: Option<String>,
+}
+
+impl BlockHeaderFromRpc {
+    pub fn get_block_hash(&self) -> String {
+        self.hash.clone()
+    }
+}
+
+impl From<&BlockHeaderFromRpc> for Header {
+    fn from(value: &BlockHeaderFromRpc) -> Self {
+        Self {
+            parent_hash: B256::from_str(&value.parent_hash).expect("Invalid hex string"),
+            ommers_hash: B256::from_str(&value.sha3_uncles).expect("Invalid hex string"),
+            beneficiary: Address::from_str(&value.miner).expect("Invalid hex string"),
+            state_root: B256::from_str(&value.state_root).expect("Invalid hex string"),
+            transactions_root: B256::from_str(&value.transactions_root)
+                .expect("Invalid hex string"),
+            receipts_root: B256::from_str(&value.receipts_root).expect("Invalid hex string"),
+            logs_bloom: Bloom::from_str(&value.logs_bloom).expect("Invalid hex string"),
+            difficulty: U256::from_str_radix(&value.difficulty[2..], 16)
+                .expect("Invalid hex string"),
+            number: u64::from_str_radix(&value.number[2..], 16).expect("Invalid hex string"),
+            gas_limit: u64::from_str_radix(&value.gas_limit[2..], 16).expect("Invalid hex string"),
+            gas_used: u64::from_str_radix(&value.gas_used[2..], 16).expect("Invalid hex string"),
+            timestamp: u64::from_str_radix(&value.timestamp[2..], 16).expect("Invalid hex string"),
+            extra_data: Bytes::from_str(&value.extra_data).expect("Invalid hex string"),
+            mix_hash: B256::from_str(&value.mix_hash).expect("Invalid hex string"),
+            nonce: u64::from_str_radix(&value.nonce[2..], 16).expect("Invalid hex string"),
+            base_fee_per_gas: value
+                .base_fee_per_gas
+                .clone()
+                .map(|x| u64::from_str_radix(&x[2..], 16).expect("Invalid hex string")),
+            withdrawals_root: value
+                .withdrawals_root
+                .clone()
+                .map(|x| B256::from_str(&x).expect("Invalid hex string")),
+            blob_gas_used: value
+                .blob_gas_used
+                .clone()
+                .map(|x| u64::from_str_radix(&x[2..], 16).expect("Invalid hex string")),
+            excess_blob_gas: value
+                .excess_blob_gas
+                .clone()
+                .map(|x| u64::from_str_radix(&x[2..], 16).expect("Invalid hex string")),
+            parent_beacon_block_root: value
+                .parent_beacon_block_root
+                .clone()
+                .map(|x| B256::from_str(&x).expect("Invalid hex string")),
         }
     }
 }

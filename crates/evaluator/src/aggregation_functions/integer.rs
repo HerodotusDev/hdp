@@ -24,6 +24,7 @@ pub fn average(values: &[DataPoint]) -> Result<DataPoint> {
     Ok(DataPoint::Float(sum / values.len() as f64))
 }
 
+// TODO: Implement bloom_filterize
 pub fn bloom_filterize(_values: &[DataPoint]) -> Result<DataPoint> {
     Ok(DataPoint::Float(0.0))
 }

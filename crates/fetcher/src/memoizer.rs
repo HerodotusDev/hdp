@@ -17,6 +17,8 @@ impl Memoizer {
         }
     }
 
+    /// Create a memoizer with pre-filled data
+    /// * Note: This is used for testing
     pub fn pre_filled_memoizer(
         headers: HashMap<usize, RlpEncodedValue>,
         accounts: HashMap<usize, HashMap<String, RlpEncodedValue>>,
