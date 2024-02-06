@@ -1,12 +1,6 @@
 [workspace]
 resolver = "2"
-members = [
-    "cli",
-    "crates/decoder",
-    "crates/evaluator",
-    "crates/event-watcher",
-    "crates/common",
-]
+members = ["cli", "crates/decoder", "crates/evaluator", "crates/common"]
 
 [workspace.dependencies]
 common = { version = "0.1.0", path = "crates/common" }
