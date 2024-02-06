@@ -13,7 +13,10 @@ use anyhow::{bail, Result};
 
 use crate::compiler::block_sampled::compile_block_sampled_datalake;
 
-use super::base::{DataPoint, DatalakeBase, Derivable};
+use super::{
+    base::{DataPoint, DatalakeBase, Derivable},
+    Datalake,
+};
 
 /// BlockSampledDatalake represents a datalake for a block range
 #[derive(Debug, Clone, PartialEq)]
@@ -101,27 +104,8 @@ impl Default for BlockSampledDatalake {
 }
 
 impl Derivable for BlockSampledDatalake {
-    fn derive(&self) -> DatalakeBase
-    where
-        Self: Sized,
-    {
-        let block_range_start = self.block_range_start;
-        let block_range_end = self.block_range_end;
-        let increment = self.increment;
-        let sampled_property = self.sampled_property.clone();
-
-        DatalakeBase::new(&self.to_string(), move || {
-            let property = sampled_property.clone();
-            Box::pin(async move {
-                compile_block_sampled_datalake(
-                    block_range_start,
-                    block_range_end,
-                    &property,
-                    increment,
-                )
-                .await
-            })
-        })
+    fn derive(&self) -> DatalakeBase {
+        DatalakeBase::new(&self.to_string(), Datalake::BlockSampled(self.clone()))
     }
 }
 
