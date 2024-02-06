@@ -83,13 +83,14 @@ impl BlockSampledDatalake {
         })
     }
 
-    pub fn compile(&self) -> Result<Vec<DataPoint>> {
+    pub async fn compile(&self) -> Result<Vec<DataPoint>> {
         compile_block_sampled_datalake(
             self.block_range_start,
             self.block_range_end,
             &self.sampled_property,
             self.increment,
         )
+        .await
     }
 }
 
@@ -110,12 +111,16 @@ impl Derivable for BlockSampledDatalake {
         let sampled_property = self.sampled_property.clone();
 
         DatalakeBase::new(&self.to_string(), move || {
-            compile_block_sampled_datalake(
-                block_range_start,
-                block_range_end,
-                &sampled_property,
-                increment,
-            )
+            let property = sampled_property.clone();
+            Box::pin(async move {
+                compile_block_sampled_datalake(
+                    block_range_start,
+                    block_range_end,
+                    &property,
+                    increment,
+                )
+                .await
+            })
         })
     }
 }

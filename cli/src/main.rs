@@ -20,7 +20,8 @@ struct Cli {
     rpc_url: Option<String>,
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let args = Cli::parse();
     let tasks = tasks_decoder(args.tasks).unwrap();
 
@@ -33,7 +34,7 @@ fn main() {
     println!("tasks: {:?}\n", tasks);
     println!("datalakes: {:?}\n", datalakes);
 
-    let res = evaluator(tasks, Some(datalakes)).unwrap();
+    let res = evaluator(tasks, Some(datalakes)).await.unwrap();
     println!("res: {:?}", res.result);
     println!("rpc_url: {:?}", args.rpc_url);
 }

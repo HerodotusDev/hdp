@@ -5,28 +5,21 @@ use crate::{
         account::{decode_account_field, AccountField},
         header::{decode_header_field, HeaderField},
     },
-    fetcher::{
-        memory::MemoryFetcher,
-        prefilled_data::{get_example_accounts, get_example_headers, get_example_storages},
-    },
+    fetcher::AbstractFetcher,
 };
 use anyhow::Result;
 
 use crate::datalake::base::DataPoint;
 
-// TODO : WIP
-pub fn compile_block_sampled_datalake(
+pub async fn compile_block_sampled_datalake(
     block_range_start: usize,
     block_range_end: usize,
     sampled_property: &str,
     increment: usize,
 ) -> Result<Vec<DataPoint>> {
-    // TODO: This is a temporary solution to get the example data later we will add fetcher & memoizer logic
-    let prefilled_header = get_example_headers();
-    let prefilled_account = get_example_accounts();
-    let prefilled_storage = get_example_storages();
-    let memoizer =
-        MemoryFetcher::pre_filled_memoizer(prefilled_header, prefilled_account, prefilled_storage);
+    let mut abstract_fetcher = AbstractFetcher::new(
+        "https://eth-goerli.g.alchemy.com/v2/OcJWF4RZDjyeCWGSmWChIlMEV28LtA5c".to_string(),
+    );
     let property_parts: Vec<&str> = sampled_property.split('.').collect();
     let collection = property_parts[0];
 
@@ -40,7 +33,7 @@ pub fn compile_block_sampled_datalake(
                 if i % increment != 0 {
                     continue;
                 }
-                let header = memoizer.get_rlp_header(i).unwrap();
+                let header = abstract_fetcher.get_rlp_header(i).await;
                 let value = decode_header_field(
                     &header,
                     HeaderField::from_str(&property.to_uppercase()).unwrap(),
@@ -57,7 +50,10 @@ pub fn compile_block_sampled_datalake(
                 if i % increment != 0 {
                     continue;
                 }
-                let acc = memoizer.get_rlp_account(i, account.to_string()).unwrap();
+                let acc = abstract_fetcher
+                    .get_rlp_account(i, account.to_string())
+                    .await;
+
                 let value = decode_account_field(
                     &acc,
                     AccountField::from_str(&property.to_uppercase()).unwrap(),
@@ -75,9 +71,9 @@ pub fn compile_block_sampled_datalake(
                     continue;
                 }
 
-                let value = memoizer
+                let value = abstract_fetcher
                     .get_storage_value(i, account.to_string(), slot.to_string())
-                    .unwrap();
+                    .await;
 
                 aggregation_set.push(DataPoint::Str(value));
             }

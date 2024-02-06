@@ -1,8 +1,9 @@
 use anyhow::Result;
-use std::fmt;
+use std::{fmt, future::Future, pin::Pin};
 
 /// DataCompiler is a function that returns a vector of DataPoints
-type DataCompiler = dyn Fn() -> Result<Vec<DataPoint>>;
+type DataCompiler =
+    Box<dyn Fn() -> Pin<Box<dyn Future<Output = Result<Vec<DataPoint>>> + Send>> + Send>;
 
 /// DataPoint is a type that can be used to store data in a Datalake
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
@@ -15,7 +16,7 @@ pub enum DataPoint {
 /// DatalakeBase is a type that can be used to store data
 pub struct DatalakeBase {
     pub identifier: String,
-    pub compilation_pipeline: Vec<Box<DataCompiler>>,
+    pub compilation_pipeline: Vec<DataCompiler>,
     pub datapoints: Vec<DataPoint>,
 }
 
@@ -32,7 +33,7 @@ impl fmt::Debug for DatalakeBase {
 impl DatalakeBase {
     pub fn new<F>(identifier: &str, compiler: F) -> Self
     where
-        F: Fn() -> Result<Vec<DataPoint>> + 'static,
+        F: Fn() -> Pin<Box<dyn Future<Output = Result<Vec<DataPoint>>> + Send>> + Send + 'static,
     {
         Self {
             identifier: identifier.to_string(),
@@ -47,12 +48,14 @@ impl DatalakeBase {
     //     self.identifier = format!("{}{}", self.identifier, other.identifier);
     // }
 
-    pub fn compile(&mut self) -> Vec<DataPoint> {
+    pub async fn compile(&mut self) -> Result<Vec<DataPoint>> {
         self.datapoints.clear();
         for compiler in &self.compilation_pipeline {
-            self.datapoints.extend(compiler().unwrap());
+            // Await the future returned by the compiler and process its result
+            let result = compiler().await?;
+            self.datapoints.extend(result);
         }
-        self.datapoints.clone()
+        Ok(self.datapoints.clone())
     }
 }
 

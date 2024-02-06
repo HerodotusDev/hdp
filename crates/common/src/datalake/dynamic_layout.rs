@@ -99,6 +99,6 @@ impl Derivable for DynamicLayoutDatalake {
     where
         Self: Sized,
     {
-        DatalakeBase::new(&self.to_string(), test_closer)
+        DatalakeBase::new(&self.to_string(), move || Box::pin(test_closer()))
     }
 }

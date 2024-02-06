@@ -33,7 +33,7 @@ impl Default for EvaluationResult {
     }
 }
 
-pub fn evaluator(
+pub async fn evaluator(
     mut compute_expressions: Vec<ComputationalTask>,
     datalake_for_tasks: Option<Vec<Datalake>>,
 ) -> Result<EvaluationResult> {
@@ -56,7 +56,7 @@ pub fn evaluator(
     // Evaulate the compute expressions
     for compute_expression in compute_expressions {
         let computation_task_id = compute_expression.to_string();
-        let datapoints = compute_expression.datalake.unwrap().compile();
+        let datapoints = compute_expression.datalake.unwrap().compile().await?;
         let aggregation_fn = AggregationFunction::from_str(&compute_expression.aggregate_fn_id)?;
         let aggregation_fn_ctx = compute_expression.aggregate_fn_ctx;
         let result = aggregation_fn.operation(&datapoints, aggregation_fn_ctx)?;
