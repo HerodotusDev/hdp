@@ -9,6 +9,11 @@ pub mod memory;
 pub mod prefilled_data;
 pub mod rpc;
 
+/// `AbstractFetcher` abstracts the fetching of data from the RPC and memory.
+///  It uses a `MemoryFetcher` and a `RpcFetcher` to fetch data.
+///
+/// TODO: Lock only rpc fetcher and keep the memory fetcher unlocked
+/// but handle requests so that it would not make duplicate requests
 pub struct AbstractFetcher {
     memory: MemoryFetcher,
     rpc: RpcFetcher,

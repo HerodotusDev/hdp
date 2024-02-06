@@ -1,6 +1,7 @@
 use aggregation_functions::AggregationFunction;
 use anyhow::{bail, Result};
-use std::{collections::HashMap, str::FromStr};
+use std::{collections::HashMap, str::FromStr, sync::Arc};
+use tokio::sync::RwLock;
 
 pub mod aggregation_functions;
 
@@ -9,6 +10,7 @@ use common::{
         base::{DataPoint, Derivable},
         Datalake,
     },
+    fetcher::AbstractFetcher,
     task::ComputationalTask,
 };
 
@@ -36,6 +38,7 @@ impl Default for EvaluationResult {
 pub async fn evaluator(
     mut compute_expressions: Vec<ComputationalTask>,
     datalake_for_tasks: Option<Vec<Datalake>>,
+    fetcher: Arc<RwLock<AbstractFetcher>>,
 ) -> Result<EvaluationResult> {
     let mut results = EvaluationResult::new();
     // If optional datalake_for_tasks is provided, need to assign the datalake to the corresponding task
@@ -56,7 +59,11 @@ pub async fn evaluator(
     // Evaulate the compute expressions
     for compute_expression in compute_expressions {
         let computation_task_id = compute_expression.to_string();
-        let datapoints = compute_expression.datalake.unwrap().compile().await?;
+        let datapoints = compute_expression
+            .datalake
+            .unwrap()
+            .compile(fetcher.clone())
+            .await?;
         let aggregation_fn = AggregationFunction::from_str(&compute_expression.aggregate_fn_id)?;
         let aggregation_fn_ctx = compute_expression.aggregate_fn_ctx;
         let result = aggregation_fn.operation(&datapoints, aggregation_fn_ctx)?;

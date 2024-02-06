@@ -1,7 +1,8 @@
-use std::str::FromStr;
+use std::{str::FromStr, sync::Arc};
 
 use crate::{
     block::{account::AccountField, header::HeaderField, Collection},
+    fetcher::AbstractFetcher,
     utils::bytes_to_hex_string,
 };
 use alloy_dyn_abi::{DynSolType, DynSolValue};
@@ -10,6 +11,7 @@ use alloy_primitives::{
     keccak256, Address, U256,
 };
 use anyhow::{bail, Result};
+use tokio::sync::RwLock;
 
 use crate::compiler::block_sampled::compile_block_sampled_datalake;
 
@@ -86,12 +88,13 @@ impl BlockSampledDatalake {
         })
     }
 
-    pub async fn compile(&self) -> Result<Vec<DataPoint>> {
+    pub async fn compile(&self, fetcher: Arc<RwLock<AbstractFetcher>>) -> Result<Vec<DataPoint>> {
         compile_block_sampled_datalake(
             self.block_range_start,
             self.block_range_end,
             &self.sampled_property,
             self.increment,
+            fetcher,
         )
         .await
     }

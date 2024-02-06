@@ -1,5 +1,8 @@
 use anyhow::{bail, Result};
-use std::fmt;
+use std::{fmt, sync::Arc};
+use tokio::sync::RwLock;
+
+use crate::fetcher::AbstractFetcher;
 
 use super::Datalake;
 
@@ -43,11 +46,14 @@ impl DatalakeBase {
     //     self.identifier = format!("{}{}", self.identifier, other.identifier);
     // }
 
-    pub async fn compile(&mut self) -> Result<Vec<DataPoint>> {
+    pub async fn compile(
+        &mut self,
+        fetcher: Arc<RwLock<AbstractFetcher>>,
+    ) -> Result<Vec<DataPoint>> {
         self.datapoints.clear();
         for datalake_type in &self.datalakes_pipeline {
             let result_datapoints = match datalake_type {
-                Datalake::BlockSampled(datalake) => datalake.compile().await?,
+                Datalake::BlockSampled(datalake) => datalake.compile(fetcher.clone()).await?,
                 Datalake::DynamicLayout(datalake) => datalake.compile().await?,
                 Datalake::Unknown => {
                     bail!("Unknown datalake type");

@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{str::FromStr, sync::Arc};
 
 use crate::{
     block::{
@@ -8,6 +8,7 @@ use crate::{
     fetcher::AbstractFetcher,
 };
 use anyhow::Result;
+use tokio::sync::RwLock;
 
 use crate::datalake::base::DataPoint;
 
@@ -16,10 +17,9 @@ pub async fn compile_block_sampled_datalake(
     block_range_end: usize,
     sampled_property: &str,
     increment: usize,
+    fetcher: Arc<RwLock<AbstractFetcher>>,
 ) -> Result<Vec<DataPoint>> {
-    let mut abstract_fetcher = AbstractFetcher::new(
-        "https://eth-goerli.g.alchemy.com/v2/OcJWF4RZDjyeCWGSmWChIlMEV28LtA5c".to_string(),
-    );
+    let mut abstract_fetcher = fetcher.write().await;
     let property_parts: Vec<&str> = sampled_property.split('.').collect();
     let collection = property_parts[0];
 
