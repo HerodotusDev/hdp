@@ -1,11 +1,81 @@
 use std::str::FromStr;
 
 use alloy_primitives::{hex, Address, Bloom, Bytes, B256, U256};
-use alloy_rlp::Decodable;
+use alloy_rlp::{Decodable, Encodable};
 use reth_primitives::Header;
 use serde::{Deserialize, Serialize};
 
 use crate::datalake::base::DataPoint;
+
+pub struct BlockHeader(Header);
+
+impl BlockHeader {
+    pub fn new_from_header(value: Header) -> Self {
+        BlockHeader(value)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        parent_hash: B256,
+        ommers_hash: B256,
+        beneficiary: Address,
+        state_root: B256,
+        transactions_root: B256,
+        receipts_root: B256,
+        logs_bloom: Bloom,
+        difficulty: U256,
+        number: u64,
+        gas_limit: u64,
+        gas_used: u64,
+        timestamp: u64,
+        extra_data: Bytes,
+        mix_hash: B256,
+        nonce: u64,
+        base_fee_per_gas: Option<u64>,
+        withdrawals_root: Option<B256>,
+        blob_gas_used: Option<u64>,
+        excess_blob_gas: Option<u64>,
+        parent_beacon_block_root: Option<B256>,
+    ) -> Self {
+        BlockHeader(Header {
+            parent_hash,
+            ommers_hash,
+            beneficiary,
+            state_root,
+            transactions_root,
+            receipts_root,
+            logs_bloom,
+            difficulty,
+            number,
+            gas_limit,
+            gas_used,
+            timestamp,
+            extra_data,
+            mix_hash,
+            nonce,
+            base_fee_per_gas,
+            withdrawals_root,
+            blob_gas_used,
+            excess_blob_gas,
+            parent_beacon_block_root,
+        })
+    }
+
+    pub fn rlp_encode(&self) -> String {
+        let mut buffer = Vec::<u8>::new();
+        self.0.encode(&mut buffer);
+        hex::encode(buffer)
+    }
+
+    pub fn rlp_decode(rlp: &str) -> Self {
+        let decoded = <Header>::decode(&mut hex::decode(rlp).unwrap().as_slice()).unwrap();
+        BlockHeader::new_from_header(decoded)
+    }
+
+    pub fn get_block_hash(&self) -> String {
+        self.0.hash_slow().to_string()
+    }
+}
 
 #[derive(Debug)]
 pub enum HeaderField {
@@ -221,9 +291,9 @@ impl BlockHeaderFromRpc {
     }
 }
 
-impl From<&BlockHeaderFromRpc> for Header {
+impl From<&BlockHeaderFromRpc> for BlockHeader {
     fn from(value: &BlockHeaderFromRpc) -> Self {
-        Self {
+        Self(Header {
             parent_hash: B256::from_str(&value.parent_hash).expect("Invalid hex string"),
             ommers_hash: B256::from_str(&value.sha3_uncles).expect("Invalid hex string"),
             beneficiary: Address::from_str(&value.miner).expect("Invalid hex string"),
@@ -261,6 +331,6 @@ impl From<&BlockHeaderFromRpc> for Header {
                 .parent_beacon_block_root
                 .clone()
                 .map(|x| B256::from_str(&x).expect("Invalid hex string")),
-        }
+        })
     }
 }

@@ -1,4 +1,5 @@
 use alloy_primitives::hex::{self, encode};
+use alloy_primitives::keccak256;
 use anyhow::{bail, Result};
 use std::fmt::Write;
 use std::str::from_utf8;
@@ -47,4 +48,8 @@ pub fn bytes_to_hex_string(bytes: &[u8]) -> String {
 
 pub fn last_byte_to_u8(bytes: &[u8]) -> u8 {
     *bytes.last().unwrap_or(&0)
+}
+
+pub fn rlp_string_to_block_hash(rlp_string: &str) -> Result<String> {
+    Ok(keccak256(hex::decode(rlp_string)?).to_string())
 }
