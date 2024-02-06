@@ -1,7 +1,8 @@
-use std::str::FromStr;
+use std::{str::FromStr, sync::Arc};
 
 use crate::{
     block::{account::AccountField, header::HeaderField, Collection},
+    fetcher::AbstractFetcher,
     utils::bytes_to_hex_string,
 };
 use alloy_dyn_abi::{DynSolType, DynSolValue};
@@ -10,10 +11,14 @@ use alloy_primitives::{
     keccak256, Address, U256,
 };
 use anyhow::{bail, Result};
+use tokio::sync::RwLock;
 
 use crate::compiler::block_sampled::compile_block_sampled_datalake;
 
-use super::base::{DataPoint, DatalakeBase, Derivable};
+use super::{
+    base::{DataPoint, DatalakeBase, Derivable},
+    Datalake,
+};
 
 /// BlockSampledDatalake represents a datalake for a block range
 #[derive(Debug, Clone, PartialEq)]
@@ -83,13 +88,15 @@ impl BlockSampledDatalake {
         })
     }
 
-    pub fn compile(&self) -> Result<Vec<DataPoint>> {
+    pub async fn compile(&self, fetcher: Arc<RwLock<AbstractFetcher>>) -> Result<Vec<DataPoint>> {
         compile_block_sampled_datalake(
             self.block_range_start,
             self.block_range_end,
             &self.sampled_property,
             self.increment,
+            fetcher,
         )
+        .await
     }
 }
 
@@ -100,23 +107,8 @@ impl Default for BlockSampledDatalake {
 }
 
 impl Derivable for BlockSampledDatalake {
-    fn derive(&self) -> DatalakeBase
-    where
-        Self: Sized,
-    {
-        let block_range_start = self.block_range_start;
-        let block_range_end = self.block_range_end;
-        let increment = self.increment;
-        let sampled_property = self.sampled_property.clone();
-
-        DatalakeBase::new(&self.to_string(), move || {
-            compile_block_sampled_datalake(
-                block_range_start,
-                block_range_end,
-                &sampled_property,
-                increment,
-            )
-        })
+    fn derive(&self) -> DatalakeBase {
+        DatalakeBase::new(&self.to_string(), Datalake::BlockSampled(self.clone()))
     }
 }
 

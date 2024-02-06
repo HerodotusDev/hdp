@@ -2,27 +2,29 @@ use std::collections::HashMap;
 
 pub type RlpEncodedValue = String;
 
-pub struct Memoizer {
+pub struct MemoryFetcher {
     pub headers: HashMap<usize, String>,
     pub accounts: HashMap<usize, HashMap<String, String>>,
     pub storages: HashMap<usize, HashMap<String, HashMap<String, String>>>,
 }
 
-impl Memoizer {
-    pub fn new() -> Memoizer {
-        Memoizer {
+impl MemoryFetcher {
+    pub fn new() -> MemoryFetcher {
+        MemoryFetcher {
             headers: HashMap::new(),
             accounts: HashMap::new(),
             storages: HashMap::new(),
         }
     }
 
+    /// Create a memoizer with pre-filled data
+    /// * Note: This is used for testing
     pub fn pre_filled_memoizer(
         headers: HashMap<usize, RlpEncodedValue>,
         accounts: HashMap<usize, HashMap<String, RlpEncodedValue>>,
         storages: HashMap<usize, HashMap<String, HashMap<String, String>>>,
-    ) -> Memoizer {
-        Memoizer {
+    ) -> MemoryFetcher {
+        MemoryFetcher {
             headers,
             accounts,
             storages,
@@ -73,8 +75,8 @@ impl Memoizer {
     }
 }
 
-impl Default for Memoizer {
-    fn default() -> Memoizer {
-        Memoizer::new()
+impl Default for MemoryFetcher {
+    fn default() -> MemoryFetcher {
+        MemoryFetcher::new()
     }
 }

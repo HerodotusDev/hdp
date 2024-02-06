@@ -28,6 +28,13 @@ Options:
   -h, --help                    Print help
 ```
 
+## Development
+
+```sh
+# CI check
+cargo clippy --all --all-targets -- -D warnings && cargo fmt -- --check && cargo test --all --all-targets -- --nocapture
+```
+
 ## Main Workflow in `main.rs`
 
 - **`EventWatcher`**: Scrapes events from `HreExecutionStore.sol`.

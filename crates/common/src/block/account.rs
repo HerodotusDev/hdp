@@ -2,6 +2,7 @@ use std::str::FromStr;
 
 use alloy_primitives::{hex, FixedBytes, U256};
 use alloy_rlp::{Decodable, Encodable as _, RlpDecodable, RlpEncodable};
+use serde::{Deserialize, Serialize};
 
 use crate::datalake::base::DataPoint;
 
@@ -101,5 +102,38 @@ pub fn decode_account_field(account_rlp: &str, field: AccountField) -> DataPoint
         }
         AccountField::StorageRoot => DataPoint::Str(decoded.storage_root.to_string()),
         AccountField::CodeHash => DataPoint::Str(decoded.code_hash.to_string()),
+    }
+}
+
+/// Account data from RPC `eth_getProof` response
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct AccountFromRpc {
+    pub account_proof: Vec<String>,
+    pub address: String,
+    pub balance: String,
+    pub code_hash: String,
+    pub nonce: String,
+    pub storage_hash: String,
+    pub storage_proof: Vec<StorageFromRpc>,
+}
+
+/// Storage data from RPC `eth_getProof` response
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct StorageFromRpc {
+    pub key: String,
+    pub proof: Vec<String>,
+    pub value: String,
+}
+
+impl From<&AccountFromRpc> for Account {
+    fn from(account_from_rpc: &AccountFromRpc) -> Self {
+        Account {
+            nonce: u64::from_str_radix(&account_from_rpc.nonce[2..], 16).unwrap(),
+            balance: U256::from_str_radix(&account_from_rpc.balance[2..], 16).unwrap(),
+            storage_root: FixedBytes::from_str(&account_from_rpc.storage_hash[2..]).unwrap(),
+            code_hash: FixedBytes::from_str(&account_from_rpc.code_hash[2..]).unwrap(),
+        }
     }
 }

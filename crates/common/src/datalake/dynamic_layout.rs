@@ -4,7 +4,10 @@ use anyhow::{bail, Result};
 
 use crate::compiler::test::test_closer;
 
-use super::base::{DatalakeBase, Derivable};
+use super::{
+    base::{DataPoint, DatalakeBase, Derivable},
+    Datalake,
+};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct DynamicLayoutDatalake {
@@ -86,6 +89,11 @@ impl DynamicLayoutDatalake {
             increment,
         })
     }
+
+    pub async fn compile(&self) -> Result<Vec<DataPoint>> {
+        test_closer().await?;
+        Ok(vec![])
+    }
 }
 
 impl Default for DynamicLayoutDatalake {
@@ -95,10 +103,10 @@ impl Default for DynamicLayoutDatalake {
 }
 
 impl Derivable for DynamicLayoutDatalake {
-    fn derive(&self) -> DatalakeBase
-    where
-        Self: Sized,
-    {
-        DatalakeBase::new(&self.to_string(), test_closer)
+    fn derive(&self) -> DatalakeBase {
+        DatalakeBase::new(
+            self.to_string().as_str(),
+            Datalake::DynamicLayout(self.clone()),
+        )
     }
 }
