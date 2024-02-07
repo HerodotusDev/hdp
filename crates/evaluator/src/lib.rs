@@ -6,16 +6,13 @@ use tokio::sync::RwLock;
 pub mod aggregation_functions;
 
 use common::{
-    datalake::{
-        base::{DataPoint, Derivable},
-        Datalake,
-    },
+    datalake::{base::Derivable, Datalake},
     fetcher::AbstractFetcher,
     task::ComputationalTask,
 };
 
 pub struct EvaluationResult {
-    pub result: HashMap<String, DataPoint>,
+    pub result: HashMap<String, String>,
 }
 
 impl EvaluationResult {

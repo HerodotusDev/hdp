@@ -5,7 +5,7 @@ use anyhow::{bail, Result};
 use crate::compiler::test::test_closer;
 
 use super::{
-    base::{DataPoint, DatalakeBase, Derivable},
+    base::{DatalakeBase, Derivable},
     Datalake,
 };
 
@@ -90,7 +90,7 @@ impl DynamicLayoutDatalake {
         })
     }
 
-    pub async fn compile(&self) -> Result<Vec<DataPoint>> {
+    pub async fn compile(&self) -> Result<Vec<String>> {
         test_closer().await?;
         Ok(vec![])
     }

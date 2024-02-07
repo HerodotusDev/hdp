@@ -1,8 +1,6 @@
 use anyhow::Result;
 
-use crate::datalake::base::DataPoint;
-
-pub async fn test_closer() -> Result<Vec<DataPoint>> {
+pub async fn test_closer() -> Result<Vec<String>> {
     println!("test_closer");
-    Ok(vec![DataPoint::Int(1)])
+    Ok(vec!["1".to_string()])
 }

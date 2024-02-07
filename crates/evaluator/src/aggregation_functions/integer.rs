@@ -1,8 +1,7 @@
 use anyhow::{bail, Result};
-use common::datalake::base::DataPoint;
 
 /// Returns the average of the values
-pub fn average(values: &[DataPoint]) -> Result<DataPoint> {
+pub fn average(values: &[String]) -> Result<String> {
     if values.is_empty() {
         bail!("No values found");
     }
@@ -10,80 +9,57 @@ pub fn average(values: &[DataPoint]) -> Result<DataPoint> {
     let mut sum = 0.0;
 
     for value in values {
-        match value {
-            DataPoint::Str(_) => bail!("String value found"),
-            DataPoint::Int(int) => {
-                sum += *int as f64;
-            }
-            DataPoint::Float(float) => {
-                sum += *float;
-            }
-        }
+        let value = value.parse::<f64>()?;
+        sum += value;
     }
 
-    Ok(DataPoint::Float(sum / values.len() as f64))
+    Ok((sum / values.len() as f64).to_string())
 }
 
 // TODO: Implement bloom_filterize
-pub fn bloom_filterize(_values: &[DataPoint]) -> Result<DataPoint> {
-    Ok(DataPoint::Float(0.0))
+pub fn bloom_filterize(_values: &[String]) -> Result<String> {
+    Ok((0.0).to_string())
 }
 
 /// Find the maximum value
-pub fn find_max(values: &[DataPoint]) -> Result<DataPoint> {
+pub fn find_max(values: &[String]) -> Result<String> {
     if values.is_empty() {
         bail!("No values found");
     }
 
-    let mut max = 0.0;
+    let mut max = 0;
 
     for value in values {
-        match value {
-            DataPoint::Str(_) => bail!("String value found"),
-            DataPoint::Int(int) => {
-                if *int as f64 > max {
-                    max = *int as f64;
-                }
-            }
-            DataPoint::Float(float) => {
-                if *float > max {
-                    max = *float;
-                }
-            }
+        let value = value.parse::<u64>()?;
+
+        if value > max {
+            max = value;
         }
     }
 
-    Ok(DataPoint::Float(max))
+    Ok(max.to_string())
 }
 
 /// Find the minimum value
-pub fn find_min(values: &[DataPoint]) -> Result<DataPoint> {
+pub fn find_min(values: &[String]) -> Result<String> {
     if values.is_empty() {
         bail!("No values found");
     }
 
-    let mut min = f64::MAX;
+    let mut min = u64::MAX;
     for value in values {
-        match value {
-            DataPoint::Str(_) => bail!("String value found"),
-            DataPoint::Int(int) => {
-                if (*int as f64) < min {
-                    min = *int as f64;
-                }
-            }
-            DataPoint::Float(float) => {
-                if *float < min {
-                    min = *float;
-                }
-            }
+        let value = value.parse::<u64>()?;
+
+        if value < min {
+            min = value;
         }
     }
 
-    Ok(DataPoint::Float(min))
+    Ok(min.to_string())
 }
 
 /// Standard deviation
-pub fn standard_deviation(values: &[DataPoint]) -> Result<DataPoint> {
+pub fn standard_deviation(values: &[String]) -> Result<String> {
     if values.is_empty() {
         bail!("No values found");
     }
@@ -92,57 +68,36 @@ pub fn standard_deviation(values: &[DataPoint]) -> Result<DataPoint> {
     let count = values.len() as f64;
 
     for value in values {
-        match value {
-            DataPoint::Str(_) => bail!("String value found"),
-            DataPoint::Int(int) => {
-                sum += *int as f64;
-            }
-            DataPoint::Float(float) => {
-                sum += *float;
-            }
-        }
+        let value = value.parse::<f64>()?;
+        sum += value;
     }
 
     let avg = sum / count;
 
     let mut variance_sum = 0.0;
     for value in values {
-        match value {
-            DataPoint::Str(_) => bail!("String value found"),
-            DataPoint::Int(int) => {
-                variance_sum += (*int as f64 - avg).powi(2);
-            }
-            DataPoint::Float(float) => {
-                variance_sum += (*float - avg).powi(2);
-            }
-        }
+        let value = value.parse::<f64>()?;
+        variance_sum += (value - avg).powi(2);
     }
 
     let variance = variance_sum / count;
-    Ok(DataPoint::Float(variance.sqrt()))
+    Ok(variance.sqrt().to_string())
 }
 
 /// Sum of values
-pub fn sum(values: &[DataPoint]) -> Result<DataPoint> {
+pub fn sum(values: &[String]) -> Result<String> {
     if values.is_empty() {
         bail!("No values found");
     }
 
-    let mut sum = 0.0;
+    let mut sum = 0;
 
     for value in values {
-        match value {
-            DataPoint::Str(_) => bail!("String value found"),
-            DataPoint::Int(int) => {
-                sum += *int as f64;
-            }
-            DataPoint::Float(float) => {
-                sum += *float;
-            }
-        }
+        let value = value.parse::<u64>()?;
+        sum += value;
     }
 
-    Ok(DataPoint::Float(sum))
+    Ok(sum.to_string())
 }
 
 /// Count number of values that satisfy a condition
@@ -158,13 +113,14 @@ pub fn sum(values: &[DataPoint]) -> Result<DataPoint> {
 /// - 03: Greater than or equal
 /// - 04: Less than
 /// - 05: Less than or equal
-pub fn count_if(values: &[DataPoint], ctx: &str) -> Result<DataPoint> {
+pub fn count_if(values: &[String], ctx: &str) -> Result<String> {
     let logical_operator = &ctx[0..2];
-    let value_to_compare = &DataPoint::Int(u64::from_str_radix(&ctx[2..], 16).unwrap());
+    let value_to_compare = u64::from_str_radix(&ctx[2..], 16).unwrap();
 
     let mut condition_satisfiability_count = 0;
 
     for value in values {
+        let value = value.parse::<u64>()?;
         match logical_operator {
             "00" => {
                 if value == value_to_compare {
@@ -200,5 +156,5 @@ pub fn count_if(values: &[DataPoint], ctx: &str) -> Result<DataPoint> {
         }
     }
 
-    Ok(DataPoint::Int(condition_satisfiability_count))
+    Ok(condition_satisfiability_count.to_string())
 }
