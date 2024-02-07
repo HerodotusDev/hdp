@@ -5,8 +5,6 @@ use alloy_rlp::{Decodable, Encodable};
 use reth_primitives::Header;
 use serde::{Deserialize, Serialize};
 
-use crate::datalake::base::DataPoint;
-
 pub struct BlockHeader(Header);
 
 impl BlockHeader {
@@ -209,49 +207,31 @@ impl FromStr for HeaderField {
     }
 }
 
-pub fn decode_header_field(header_rlp: &str, field: HeaderField) -> DataPoint {
+pub fn decode_header_field(header_rlp: &str, field: HeaderField) -> String {
     let decoded =
         <Header as Decodable>::decode(&mut hex::decode(header_rlp).unwrap().as_slice()).unwrap();
 
     match field {
-        HeaderField::ParentHash => DataPoint::Str(decoded.parent_hash.to_string()),
-        HeaderField::OmmerHash => DataPoint::Str(decoded.ommers_hash.to_string()),
-        HeaderField::Beneficiary => DataPoint::Str(decoded.beneficiary.to_string()),
-        HeaderField::StateRoot => DataPoint::Str(decoded.state_root.to_string()),
-        HeaderField::TransactionsRoot => DataPoint::Str(decoded.transactions_root.to_string()),
-        HeaderField::ReceiptsRoot => DataPoint::Str(decoded.receipts_root.to_string()),
-        HeaderField::LogsBloom => DataPoint::Str(decoded.logs_bloom.to_string()),
-        HeaderField::Difficulty => {
-            DataPoint::Int(u64::from_str(&decoded.difficulty.to_string()).unwrap())
-        }
-        HeaderField::Number => DataPoint::Int(u64::from_str(&decoded.number.to_string()).unwrap()),
-        HeaderField::GasLimit => {
-            DataPoint::Int(u64::from_str(&decoded.gas_limit.to_string()).unwrap())
-        }
-        HeaderField::GasUsed => {
-            DataPoint::Int(u64::from_str(&decoded.gas_used.to_string()).unwrap())
-        }
-        HeaderField::Timestamp => {
-            DataPoint::Int(u64::from_str(&decoded.timestamp.to_string()).unwrap())
-        }
-        HeaderField::ExtraData => DataPoint::Str(decoded.extra_data.to_string()),
-        HeaderField::MixHash => DataPoint::Str(decoded.mix_hash.to_string()),
-        HeaderField::Nonce => DataPoint::Int(u64::from_str(&decoded.nonce.to_string()).unwrap()),
-        HeaderField::BaseFeePerGas => {
-            DataPoint::Int(u64::from_str(&decoded.base_fee_per_gas.unwrap().to_string()).unwrap())
-        }
-        HeaderField::WithdrawalsRoot => {
-            DataPoint::Str(decoded.withdrawals_root.unwrap().to_string())
-        }
-        HeaderField::BlobGasUsed => {
-            DataPoint::Int(u64::from_str(&decoded.blob_gas_used.unwrap().to_string()).unwrap())
-        }
-        HeaderField::ExcessBlobGas => {
-            DataPoint::Int(u64::from_str(&decoded.excess_blob_gas.unwrap().to_string()).unwrap())
-        }
-        HeaderField::ParentBeaconBlockRoot => {
-            DataPoint::Str(decoded.parent_beacon_block_root.unwrap().to_string())
-        }
+        HeaderField::ParentHash => decoded.parent_hash.to_string(),
+        HeaderField::OmmerHash => decoded.ommers_hash.to_string(),
+        HeaderField::Beneficiary => decoded.beneficiary.to_string(),
+        HeaderField::StateRoot => decoded.state_root.to_string(),
+        HeaderField::TransactionsRoot => decoded.transactions_root.to_string(),
+        HeaderField::ReceiptsRoot => decoded.receipts_root.to_string(),
+        HeaderField::LogsBloom => decoded.logs_bloom.to_string(),
+        HeaderField::Difficulty => decoded.difficulty.to_string(),
+        HeaderField::Number => decoded.number.to_string(),
+        HeaderField::GasLimit => decoded.gas_limit.to_string(),
+        HeaderField::GasUsed => decoded.gas_used.to_string(),
+        HeaderField::Timestamp => decoded.timestamp.to_string(),
+        HeaderField::ExtraData => decoded.extra_data.to_string(),
+        HeaderField::MixHash => decoded.mix_hash.to_string(),
+        HeaderField::Nonce => decoded.nonce.to_string(),
+        HeaderField::BaseFeePerGas => decoded.base_fee_per_gas.unwrap().to_string(),
+        HeaderField::WithdrawalsRoot => decoded.withdrawals_root.unwrap().to_string(),
+        HeaderField::BlobGasUsed => decoded.blob_gas_used.unwrap().to_string(),
+        HeaderField::ExcessBlobGas => decoded.excess_blob_gas.unwrap().to_string(),
+        HeaderField::ParentBeaconBlockRoot => decoded.parent_beacon_block_root.unwrap().to_string(),
     }
 }
 

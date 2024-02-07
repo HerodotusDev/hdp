@@ -6,19 +6,11 @@ use crate::fetcher::AbstractFetcher;
 
 use super::Datalake;
 
-/// DataPoint is a type that can be used to store data in a Datalake
-#[derive(Debug, Clone, PartialEq, PartialOrd)]
-pub enum DataPoint {
-    Int(u64),
-    Float(f64),
-    Str(String),
-}
-
 /// DatalakeBase is a type that can be used to store data
 pub struct DatalakeBase {
     pub identifier: String,
     pub datalakes_pipeline: Vec<Datalake>,
-    pub datapoints: Vec<DataPoint>,
+    pub datapoints: Vec<String>,
 }
 
 impl fmt::Debug for DatalakeBase {
@@ -46,10 +38,7 @@ impl DatalakeBase {
     //     self.identifier = format!("{}{}", self.identifier, other.identifier);
     // }
 
-    pub async fn compile(
-        &mut self,
-        fetcher: Arc<RwLock<AbstractFetcher>>,
-    ) -> Result<Vec<DataPoint>> {
+    pub async fn compile(&mut self, fetcher: Arc<RwLock<AbstractFetcher>>) -> Result<Vec<String>> {
         self.datapoints.clear();
         for datalake_type in &self.datalakes_pipeline {
             let result_datapoints = match datalake_type {

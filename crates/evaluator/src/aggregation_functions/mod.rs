@@ -1,7 +1,6 @@
 use std::str::FromStr;
 
 use anyhow::{bail, Result};
-use common::datalake::base::DataPoint;
 
 pub mod integer;
 pub mod string;
@@ -61,7 +60,7 @@ impl AggregationFunction {
         }
     }
 
-    pub fn operation(&self, values: &[DataPoint], ctx: Option<String>) -> Result<DataPoint> {
+    pub fn operation(&self, values: &[String], ctx: Option<String>) -> Result<String> {
         match self {
             AggregationFunction::AVG => integer::average(values),
             AggregationFunction::BLOOM => integer::bloom_filterize(values),

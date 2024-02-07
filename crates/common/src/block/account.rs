@@ -4,8 +4,6 @@ use alloy_primitives::{hex, FixedBytes, U256};
 use alloy_rlp::{Decodable, Encodable as _, RlpDecodable, RlpEncodable};
 use serde::{Deserialize, Serialize};
 
-use crate::datalake::base::DataPoint;
-
 #[derive(Debug)]
 pub enum AccountField {
     Nonce,
@@ -93,15 +91,13 @@ impl AccountField {
     }
 }
 
-pub fn decode_account_field(account_rlp: &str, field: AccountField) -> DataPoint {
+pub fn decode_account_field(account_rlp: &str, field: AccountField) -> String {
     let decoded = <Account>::decode(&mut hex::decode(account_rlp).unwrap().as_slice()).unwrap();
     match field {
-        AccountField::Nonce => DataPoint::Int(u64::from_str(&decoded.nonce.to_string()).unwrap()),
-        AccountField::Balance => {
-            DataPoint::Int(u64::from_str(&decoded.balance.to_string()).unwrap())
-        }
-        AccountField::StorageRoot => DataPoint::Str(decoded.storage_root.to_string()),
-        AccountField::CodeHash => DataPoint::Str(decoded.code_hash.to_string()),
+        AccountField::Nonce => decoded.nonce.to_string(),
+        AccountField::Balance => decoded.balance.to_string(),
+        AccountField::StorageRoot => decoded.storage_root.to_string(),
+        AccountField::CodeHash => decoded.code_hash.to_string(),
     }
 }
 

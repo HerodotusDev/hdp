@@ -10,20 +10,18 @@ use crate::{
 use anyhow::Result;
 use tokio::sync::RwLock;
 
-use crate::datalake::base::DataPoint;
-
 pub async fn compile_block_sampled_datalake(
     block_range_start: usize,
     block_range_end: usize,
     sampled_property: &str,
     increment: usize,
     fetcher: Arc<RwLock<AbstractFetcher>>,
-) -> Result<Vec<DataPoint>> {
+) -> Result<Vec<String>> {
     let mut abstract_fetcher = fetcher.write().await;
     let property_parts: Vec<&str> = sampled_property.split('.').collect();
     let collection = property_parts[0];
 
-    let mut aggregation_set: Vec<DataPoint> = Vec::new();
+    let mut aggregation_set: Vec<String> = Vec::new();
 
     match collection {
         "header" => {
@@ -75,7 +73,7 @@ pub async fn compile_block_sampled_datalake(
                     .get_storage_value(i, account.to_string(), slot.to_string())
                     .await;
 
-                aggregation_set.push(DataPoint::Str(value));
+                aggregation_set.push(value);
             }
         }
         _ => todo!(),
