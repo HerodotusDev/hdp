@@ -26,6 +26,7 @@ struct Cli {
 
 #[tokio::main]
 async fn main() {
+    let start = std::time::Instant::now();
     let args = Cli::parse();
     dotenv::dotenv().ok();
     let config = Config::init(args.rpc_url, args.datalakes, args.tasks).await;
@@ -33,12 +34,12 @@ async fn main() {
     let tasks = tasks_decoder(config.tasks.clone()).unwrap();
     let datalakes = datalake_decoder(config.datalakes.clone()).unwrap();
 
+    println!("tasks: {:?}\n", tasks);
+    println!("datalakes: {:?}\n", datalakes);
+
     if tasks.len() != datalakes.len() {
         panic!("Tasks and datalakes must have the same length");
     }
-
-    println!("tasks: {:?}\n", tasks);
-    println!("datalakes: {:?}\n", datalakes);
 
     let res = evaluator(
         tasks,
@@ -49,4 +50,6 @@ async fn main() {
     .unwrap();
     println!("res: {:?}", res.result);
     println!("rpc_url: {:?}", config.rpc_url);
+    let duration = start.elapsed();
+    println!("Time elapsed in main() is: {:?}", duration);
 }

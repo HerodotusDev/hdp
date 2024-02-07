@@ -31,18 +31,7 @@ pub struct BlockSampledDatalake {
 
 impl ToString for BlockSampledDatalake {
     fn to_string(&self) -> String {
-        let block_range_start = DynSolValue::Uint(U256::from(self.block_range_start), 256);
-        let block_range_end = DynSolValue::Uint(U256::from(self.block_range_end), 256);
-        let sampled_property =
-            DynSolValue::Bytes(serialize_sampled_property(&self.sampled_property));
-        let increment = DynSolValue::Uint(U256::from(self.increment), 256);
-        let tuple_value = DynSolValue::Tuple(vec![
-            block_range_start,
-            block_range_end,
-            increment,
-            sampled_property,
-        ]);
-        let encoded_datalake = tuple_value.abi_encode();
+        let encoded_datalake = self.serialize().unwrap();
         let hash = keccak256(encoded_datalake);
         format!("0x{:x}", hash)
     }
@@ -63,7 +52,27 @@ impl BlockSampledDatalake {
         }
     }
 
-    pub fn from_serialized(serialized: String) -> Result<Self> {
+    pub fn serialize(&self) -> Result<String> {
+        let block_range_start = DynSolValue::Uint(U256::from(self.block_range_start), 256);
+        let block_range_end = DynSolValue::Uint(U256::from(self.block_range_end), 256);
+        let sampled_property =
+            DynSolValue::Bytes(serialize_sampled_property(&self.sampled_property));
+        let increment = DynSolValue::Uint(U256::from(self.increment), 256);
+        let datalake_code = DynSolValue::Uint(U256::from(0), 256);
+
+        let tuple_value = DynSolValue::Tuple(vec![
+            datalake_code,
+            block_range_start,
+            block_range_end,
+            increment,
+            sampled_property,
+        ]);
+
+        let encoded_datalake = tuple_value.abi_encode_sequence().unwrap();
+        Ok(format!("0x{}", hex::encode(encoded_datalake)))
+    }
+
+    pub fn deserialize(serialized: String) -> Result<Self> {
         let datalake_type: DynSolType = "(uint256,uint256,uint256,uint256,bytes)".parse()?;
         let bytes = Vec::from_hex(serialized).expect("Invalid hex string");
         let decoded = datalake_type.abi_decode_sequence(&bytes)?;

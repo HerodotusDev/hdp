@@ -1,5 +1,8 @@
 use alloy_dyn_abi::{DynSolType, DynSolValue};
-use alloy_primitives::{keccak256, U256};
+use alloy_primitives::{
+    hex::{self},
+    keccak256, U256,
+};
 use anyhow::Result;
 
 use crate::{datalake::base::DatalakeBase, utils::bytes32_to_utf8_str};
@@ -25,7 +28,29 @@ impl ComputationalTask {
         }
     }
 
-    pub fn from_serialized(serialized: &[u8]) -> Result<Self> {
+    pub fn serialize(&self) -> Result<String> {
+        let datalake = self.datalake.as_ref().ok_or("Datalake is None").unwrap();
+
+        let datalake_identifier =
+            U256::from_str_radix(&datalake.identifier[2..], 16).expect("Invalid hex string");
+        let identifier_value = DynSolValue::Uint(datalake_identifier, 256);
+        let aggregate_fn_id_value = DynSolValue::String(self.aggregate_fn_id.clone());
+        let aggregate_fn_ctx_value = match &self.aggregate_fn_ctx {
+            None => DynSolValue::Bytes("".to_string().into_bytes()),
+            Some(ctx) => DynSolValue::Bytes(ctx.clone().into_bytes()),
+        };
+
+        let header_tuple_value = DynSolValue::Tuple(vec![
+            identifier_value,
+            aggregate_fn_id_value,
+            aggregate_fn_ctx_value,
+        ]);
+
+        let encoded_datalake = header_tuple_value.abi_encode();
+        Ok(format!("0x{}", hex::encode(encoded_datalake)))
+    }
+
+    pub fn deserialize_aggregate_fn(serialized: &[u8]) -> Result<Self> {
         let aggregate_fn_type: DynSolType = "(bytes32,bytes)".parse()?;
         let decoded = aggregate_fn_type.abi_decode(serialized)?;
 
@@ -44,25 +69,8 @@ impl ComputationalTask {
 
 impl ToString for ComputationalTask {
     fn to_string(&self) -> String {
-        let datalake = self.datalake.as_ref().ok_or("Datalake is None").unwrap();
-
-        let datalake_identifier =
-            U256::from_str_radix(&datalake.identifier[2..], 16).expect("Invalid hex string");
-        let identifier_value = DynSolValue::Uint(datalake_identifier, 256);
-        let aggregate_fn_id_value = DynSolValue::String(self.aggregate_fn_id.clone());
-        let aggregate_fn_ctx_value = match &self.aggregate_fn_ctx {
-            None => DynSolValue::Bytes("".to_string().into_bytes()),
-            Some(ctx) => DynSolValue::Bytes(ctx.clone().into_bytes()),
-        };
-
-        let header_tuple_value = DynSolValue::Tuple(vec![
-            identifier_value,
-            aggregate_fn_id_value,
-            aggregate_fn_ctx_value,
-        ]);
-
-        let datalake_header_encode = header_tuple_value.abi_encode();
-        let hash = keccak256(datalake_header_encode);
+        let encoded_datalake = self.serialize().unwrap();
+        let hash = keccak256(encoded_datalake);
         format!("0x{:x}", hash)
     }
 }

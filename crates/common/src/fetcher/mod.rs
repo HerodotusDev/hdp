@@ -28,6 +28,7 @@ impl AbstractFetcher {
     }
 
     pub async fn get_rlp_header(&mut self, block_number: usize) -> RlpEncodedValue {
+        let start_fetch = std::time::Instant::now();
         match self.memory.get_rlp_header(block_number) {
             Some(header) => header,
             None => {
@@ -39,6 +40,8 @@ impl AbstractFetcher {
                 let block_header = BlockHeader::from(&header_rpc);
                 let rlp_encoded = block_header.rlp_encode();
                 self.memory.set_header(block_number, rlp_encoded.clone());
+                let duration = start_fetch.elapsed();
+                println!("Time elapsed in get_rlp_header() is: {:?}", duration);
                 rlp_encoded
             }
         }

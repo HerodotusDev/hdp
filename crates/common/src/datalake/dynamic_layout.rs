@@ -1,5 +1,8 @@
 use alloy_dyn_abi::{DynSolType, DynSolValue};
-use alloy_primitives::{hex::FromHex, keccak256, U256};
+use alloy_primitives::{
+    hex::{self, FromHex},
+    keccak256, U256,
+};
 use anyhow::{bail, Result};
 
 use crate::compiler::test::test_closer;
@@ -21,21 +24,7 @@ pub struct DynamicLayoutDatalake {
 
 impl ToString for DynamicLayoutDatalake {
     fn to_string(&self) -> String {
-        let blocknumber = DynSolValue::Uint(U256::from(self.block_number), 256);
-        let account_address = DynSolValue::Address(self.account_address.parse().unwrap());
-        let slot_index = DynSolValue::Uint(U256::from(self.slot_index), 256);
-        let initial_key = DynSolValue::Uint(U256::from(self.initial_key), 256);
-        let key_boundry = DynSolValue::Uint(U256::from(self.key_boundry), 256);
-        let increment = DynSolValue::Uint(U256::from(self.increment), 256);
-        let tuple_value = DynSolValue::Tuple(vec![
-            blocknumber,
-            account_address,
-            slot_index,
-            initial_key,
-            key_boundry,
-            increment,
-        ]);
-        let encoded_datalake = tuple_value.abi_encode();
+        let encoded_datalake = self.serialize().unwrap();
         let hash = keccak256(encoded_datalake);
         format!("0x{:x}", hash)
     }
@@ -60,7 +49,30 @@ impl DynamicLayoutDatalake {
         }
     }
 
-    pub fn from_serialized(serialized: String) -> Result<Self> {
+    pub fn serialize(&self) -> Result<String> {
+        let blocknumber = DynSolValue::Uint(U256::from(self.block_number), 256);
+        let account_address = DynSolValue::Address(self.account_address.parse().unwrap());
+        let slot_index = DynSolValue::Uint(U256::from(self.slot_index), 256);
+        let initial_key = DynSolValue::Uint(U256::from(self.initial_key), 256);
+        let key_boundry = DynSolValue::Uint(U256::from(self.key_boundry), 256);
+        let increment = DynSolValue::Uint(U256::from(self.increment), 256);
+        let datalake_code = DynSolValue::Uint(U256::from(1), 256);
+
+        let tuple_value = DynSolValue::Tuple(vec![
+            datalake_code,
+            blocknumber,
+            account_address,
+            slot_index,
+            initial_key,
+            key_boundry,
+            increment,
+        ]);
+
+        let encoded_datalake = tuple_value.abi_encode();
+        Ok(format!("0x{}", hex::encode(encoded_datalake)))
+    }
+
+    pub fn deserialize(serialized: String) -> Result<Self> {
         let datalake_type: DynSolType =
             "(uint256,uint256,address,uint256,uint256,uint256,uint256)".parse()?;
         let bytes = Vec::from_hex(serialized).expect("Invalid hex string");
