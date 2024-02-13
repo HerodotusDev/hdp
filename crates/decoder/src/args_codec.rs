@@ -8,10 +8,13 @@ use common::{
     task::ComputationalTask,
 };
 
+/// Decode a batch of tasks
 pub fn tasks_decoder(serialized_tasks_batch: String) -> Result<Vec<ComputationalTask>> {
     let tasks_type: DynSolType = "bytes[]".parse()?;
     let bytes = Vec::from_hex(serialized_tasks_batch).expect("Invalid hex string");
+
     let serialized_tasks = tasks_type.abi_decode(&bytes)?;
+
     let mut decoded_tasks = Vec::new();
 
     if let Some(tasks) = serialized_tasks.as_array() {
@@ -25,7 +28,15 @@ pub fn tasks_decoder(serialized_tasks_batch: String) -> Result<Vec<Computational
     Ok(decoded_tasks)
 }
 
-pub fn datalake_decoder(serialized_datalakes_batch: String) -> Result<Vec<Datalake>> {
+/// Decode a single task
+pub fn task_decoder(serialized_task: String) -> Result<ComputationalTask> {
+    let computational_task =
+        ComputationalTask::deserialize_aggregate_fn(serialized_task.as_bytes())?;
+    Ok(computational_task)
+}
+
+/// Decode a batch of datalakes
+pub fn datalakes_decoder(serialized_datalakes_batch: String) -> Result<Vec<Datalake>> {
     let datalakes_type: DynSolType = "bytes[]".parse()?;
     let bytes = Vec::from_hex(serialized_datalakes_batch).expect("Invalid hex string");
     let serialized_datalakes = datalakes_type.abi_decode(&bytes)?;
@@ -54,7 +65,26 @@ pub fn datalake_decoder(serialized_datalakes_batch: String) -> Result<Vec<Datala
     Ok(decoded_datalakes)
 }
 
-pub fn datalake_encoder(datalakes: Vec<Datalake>) -> Result<String> {
+/// Decode a single datalake
+pub fn datalake_decoder(serialized_datalake: String) -> Result<Datalake> {
+    let datalake_code = serialized_datalake.as_bytes().chunks(32).next().unwrap();
+    let datalake_string = bytes_to_hex_string(serialized_datalake.as_bytes());
+
+    let decoded_datalake = match last_byte_to_u8(datalake_code) {
+        0 => Datalake::BlockSampled(BlockSampledDatalake::deserialize(datalake_string)?),
+        1 => Datalake::DynamicLayout(DynamicLayoutDatalake::deserialize(datalake_string)?),
+        _ => Datalake::Unknown,
+    };
+
+    if decoded_datalake == Datalake::Unknown {
+        bail!("Unknown datalake type");
+    }
+
+    Ok(decoded_datalake)
+}
+
+/// Encode a batch of datalakes
+pub fn datalakes_encoder(datalakes: Vec<Datalake>) -> Result<String> {
     let mut encoded_datalakes: Vec<DynSolValue> = Vec::new();
 
     for datalake in datalakes {
@@ -72,5 +102,21 @@ pub fn datalake_encoder(datalakes: Vec<Datalake>) -> Result<String> {
     let array_encoded_datalakes = DynSolValue::Array(encoded_datalakes);
     let encoded_datalakes = array_encoded_datalakes.abi_encode();
     let hex_string = hex::encode(encoded_datalakes);
+    Ok(format!("0x{}", hex_string))
+}
+
+/// Encode batch of tasks
+pub fn tasks_encoder(tasks: Vec<ComputationalTask>) -> Result<String> {
+    let mut encoded_tasks: Vec<DynSolValue> = Vec::new();
+
+    for task in tasks {
+        let encoded_task = task.serialize()?;
+        let bytes = Vec::from_hex(encoded_task).expect("Invalid hex string");
+        encoded_tasks.push(DynSolValue::Bytes(bytes));
+    }
+
+    let array_encoded_tasks = DynSolValue::Array(encoded_tasks);
+    let encoded_tasks = array_encoded_tasks.abi_encode();
+    let hex_string = hex::encode(encoded_tasks);
     Ok(format!("0x{}", hex_string))
 }

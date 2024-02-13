@@ -5,7 +5,10 @@ use alloy_primitives::{
 };
 use anyhow::Result;
 
-use crate::{datalake::base::DatalakeBase, utils::bytes32_to_utf8_str};
+use crate::{
+    datalake::base::DatalakeBase,
+    utils::{bytes32_to_utf8_str, utf8_to_fixed_bytes32},
+};
 
 /// ComputationalTask represents a task for certain datalake with a specified aggregate function
 #[derive(Debug)]
@@ -29,25 +32,72 @@ impl ComputationalTask {
     }
 
     pub fn serialize(&self) -> Result<String> {
-        let datalake = self.datalake.as_ref().ok_or("Datalake is None").unwrap();
+        match &self.datalake {
+            None => {
+                let aggregate_fn_id_value = DynSolValue::FixedBytes(
+                    alloy_primitives::FixedBytes(utf8_to_fixed_bytes32(&self.aggregate_fn_id)),
+                    32,
+                );
 
-        let datalake_identifier =
-            U256::from_str_radix(&datalake.identifier[2..], 16).expect("Invalid hex string");
-        let identifier_value = DynSolValue::Uint(datalake_identifier, 256);
-        let aggregate_fn_id_value = DynSolValue::String(self.aggregate_fn_id.clone());
-        let aggregate_fn_ctx_value = match &self.aggregate_fn_ctx {
-            None => DynSolValue::Bytes("".to_string().into_bytes()),
-            Some(ctx) => DynSolValue::Bytes(ctx.clone().into_bytes()),
+                let aggregate_fn_ctx_value = match &self.aggregate_fn_ctx {
+                    None => DynSolValue::Bytes("".to_string().into_bytes()),
+                    Some(ctx) => DynSolValue::Bytes(ctx.clone().into_bytes()),
+                };
+
+                let header_tuple_value =
+                    DynSolValue::Tuple(vec![aggregate_fn_id_value, aggregate_fn_ctx_value]);
+
+                let encoded_datalake = header_tuple_value.abi_encode();
+                Ok(format!("0x{}", hex::encode(encoded_datalake)))
+            }
+            Some(datalake) => {
+                let datalake_identifier = U256::from_str_radix(&datalake.identifier[2..], 16)
+                    .expect("Invalid hex string");
+                let identifier_value = DynSolValue::Uint(datalake_identifier, 256);
+                let aggregate_fn_id_value = DynSolValue::String(self.aggregate_fn_id.clone());
+                let aggregate_fn_ctx_value = match &self.aggregate_fn_ctx {
+                    None => DynSolValue::Bytes("".to_string().into_bytes()),
+                    Some(ctx) => DynSolValue::Bytes(ctx.clone().into_bytes()),
+                };
+
+                let header_tuple_value = DynSolValue::Tuple(vec![
+                    identifier_value,
+                    aggregate_fn_id_value,
+                    aggregate_fn_ctx_value,
+                ]);
+
+                let encoded_datalake = header_tuple_value.abi_encode();
+                Ok(format!("0x{}", hex::encode(encoded_datalake)))
+            }
+        }
+    }
+
+    pub fn deserialize(serialized: &[u8]) -> Result<Self> {
+        let task_type: DynSolType = "(uint256,bytes32,bytes)".parse()?;
+        let decoded = task_type.abi_decode(serialized)?;
+
+        let value = decoded.as_tuple().unwrap();
+
+        let datalake_value = if let Some(datalake) = value[0].as_uint() {
+            let datalake = DatalakeBase {
+                identifier: format!("0x{:x}", datalake.0),
+                datalakes_pipeline: vec![],
+                datapoints: vec![],
+            };
+
+            Some(datalake)
+        } else {
+            None
         };
 
-        let header_tuple_value = DynSolValue::Tuple(vec![
-            identifier_value,
-            aggregate_fn_id_value,
-            aggregate_fn_ctx_value,
-        ]);
+        let aggregate_fn_id = bytes32_to_utf8_str(value[1].as_bytes().unwrap()).unwrap();
+        let aggregate_fn_ctx = value[2].as_str().map(|s| s.to_string());
 
-        let encoded_datalake = header_tuple_value.abi_encode();
-        Ok(format!("0x{}", hex::encode(encoded_datalake)))
+        Ok(ComputationalTask {
+            datalake: datalake_value,
+            aggregate_fn_id,
+            aggregate_fn_ctx,
+        })
     }
 
     pub fn deserialize_aggregate_fn(serialized: &[u8]) -> Result<Self> {
