@@ -14,12 +14,12 @@ use super::{
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct DynamicLayoutDatalake {
-    pub block_number: usize,
+    pub block_number: u64,
     pub account_address: String,
-    pub slot_index: usize,
-    pub initial_key: usize,
-    pub key_boundry: usize,
-    pub increment: usize,
+    pub slot_index: u64,
+    pub initial_key: u64,
+    pub key_boundry: u64,
+    pub increment: u64,
 }
 
 impl ToString for DynamicLayoutDatalake {
@@ -32,12 +32,12 @@ impl ToString for DynamicLayoutDatalake {
 
 impl DynamicLayoutDatalake {
     pub fn new(
-        block_number: usize,
+        block_number: u64,
         account_address: String,
-        slot_index: usize,
-        initial_key: usize,
-        key_boundry: usize,
-        increment: usize,
+        slot_index: u64,
+        initial_key: u64,
+        key_boundry: u64,
+        increment: u64,
     ) -> Self {
         Self {
             block_number,
@@ -79,18 +79,18 @@ impl DynamicLayoutDatalake {
         let decoded = datalake_type.abi_decode(&bytes)?;
 
         let value = decoded.as_tuple().unwrap();
-        let datalake_code = value[0].as_uint().unwrap().0.to_string().parse::<usize>()?;
+        let datalake_code = value[0].as_uint().unwrap().0.to_string().parse::<u64>()?;
 
         if datalake_code != 1 {
             bail!("Serialized datalake is not a dynamic layout datalake");
         }
 
-        let block_number = value[1].as_uint().unwrap().0.to_string().parse::<usize>()?;
+        let block_number = value[1].as_uint().unwrap().0.to_string().parse::<u64>()?;
         let account_address = value[2].as_address().unwrap().to_string();
-        let slot_index = value[3].as_uint().unwrap().0.to_string().parse::<usize>()?;
-        let initial_key = value[4].as_uint().unwrap().0.to_string().parse::<usize>()?;
-        let key_boundry = value[5].as_uint().unwrap().0.to_string().parse::<usize>()?;
-        let increment = value[6].as_uint().unwrap().0.to_string().parse::<usize>()?;
+        let slot_index = value[3].as_uint().unwrap().0.to_string().parse::<u64>()?;
+        let initial_key = value[4].as_uint().unwrap().0.to_string().parse::<u64>()?;
+        let key_boundry = value[5].as_uint().unwrap().0.to_string().parse::<u64>()?;
+        let increment = value[6].as_uint().unwrap().0.to_string().parse::<u64>()?;
 
         Ok(Self {
             block_number,

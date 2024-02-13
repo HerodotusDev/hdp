@@ -62,7 +62,7 @@ impl FromStr for AccountField {
 }
 
 impl AccountField {
-    pub fn from_index(index: usize) -> Option<Self> {
+    pub fn from_index(index: u8) -> Option<Self> {
         match index {
             0 => Some(AccountField::Nonce),
             1 => Some(AccountField::Balance),
@@ -72,7 +72,7 @@ impl AccountField {
         }
     }
 
-    pub fn to_index(&self) -> Option<usize> {
+    pub fn to_index(&self) -> Option<u8> {
         match self {
             AccountField::Nonce => Some(0),
             AccountField::Balance => Some(1),

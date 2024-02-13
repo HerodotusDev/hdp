@@ -100,7 +100,7 @@ pub enum HeaderField {
 }
 
 impl HeaderField {
-    pub fn from_index(index: usize) -> Option<Self> {
+    pub fn from_index(index: u8) -> Option<Self> {
         match index {
             0 => Some(HeaderField::ParentHash),
             1 => Some(HeaderField::OmmerHash),
@@ -126,7 +126,7 @@ impl HeaderField {
         }
     }
 
-    pub fn to_index(&self) -> usize {
+    pub fn to_index(&self) -> u8 {
         match self {
             HeaderField::ParentHash => 0,
             HeaderField::OmmerHash => 1,

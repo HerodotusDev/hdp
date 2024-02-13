@@ -23,10 +23,10 @@ use super::{
 /// BlockSampledDatalake represents a datalake for a block range
 #[derive(Debug, Clone, PartialEq)]
 pub struct BlockSampledDatalake {
-    pub block_range_start: usize,
-    pub block_range_end: usize,
+    pub block_range_start: u64,
+    pub block_range_end: u64,
     pub sampled_property: String,
-    pub increment: usize,
+    pub increment: u64,
 }
 
 impl ToString for BlockSampledDatalake {
@@ -39,10 +39,10 @@ impl ToString for BlockSampledDatalake {
 
 impl BlockSampledDatalake {
     pub fn new(
-        block_range_start: usize,
-        block_range_end: usize,
+        block_range_start: u64,
+        block_range_end: u64,
         sampled_property: String,
-        increment: usize,
+        increment: u64,
     ) -> Self {
         Self {
             block_range_start,
@@ -78,16 +78,16 @@ impl BlockSampledDatalake {
         let decoded = datalake_type.abi_decode_sequence(&bytes)?;
 
         let value = decoded.as_tuple().unwrap();
-        let datalake_code = value[0].as_uint().unwrap().0.to_string().parse::<usize>()?;
+        let datalake_code = value[0].as_uint().unwrap().0.to_string().parse::<u64>()?;
 
         if datalake_code != 0 {
             bail!("Serialized datalake is not a block datalake");
         }
 
-        let block_range_start = value[1].as_uint().unwrap().0.to_string().parse::<usize>()?;
-        let block_range_end = value[2].as_uint().unwrap().0.to_string().parse::<usize>()?;
+        let block_range_start = value[1].as_uint().unwrap().0.to_string().parse::<u64>()?;
+        let block_range_end = value[2].as_uint().unwrap().0.to_string().parse::<u64>()?;
         let sampled_property = deserialize_sampled_property(value[4].as_bytes().unwrap())?;
-        let increment = value[3].as_uint().unwrap().0.to_string().parse::<usize>()?;
+        let increment = value[3].as_uint().unwrap().0.to_string().parse::<u64>()?;
 
         Ok(Self {
             block_range_start,
@@ -142,7 +142,7 @@ fn serialize_sampled_property(sampled_property: &str) -> Vec<u8> {
             let index = HeaderField::from_str(tokens[1].to_uppercase().as_str())
                 .unwrap()
                 .to_index();
-            serialized.push(index as u8);
+            serialized.push(index);
         }
         Collection::Account | Collection::Storage => {
             // if !is_address(tokens[1]) {
@@ -156,7 +156,7 @@ fn serialize_sampled_property(sampled_property: &str) -> Vec<u8> {
                     .unwrap()
                     .to_index()
                 {
-                    serialized.push(index as u8);
+                    serialized.push(index);
                 } else {
                     panic!("Invalid account field");
                 }
@@ -174,12 +174,12 @@ fn serialize_sampled_property(sampled_property: &str) -> Vec<u8> {
 }
 
 fn deserialize_sampled_property(serialized: &[u8]) -> Result<String> {
-    let collection_id = serialized[0] as usize;
-    let collection = ["header", "account", "storage"][collection_id - 1];
+    let collection_id = serialized[0];
+    let collection = ["header", "account", "storage"][collection_id as usize - 1];
 
     match collection {
         "header" => {
-            let header_prop_index = serialized[1] as usize;
+            let header_prop_index = serialized[1];
             let prop = HeaderField::from_index(header_prop_index)
                 .ok_or("Invalid header property index")
                 .unwrap()
@@ -189,7 +189,7 @@ fn deserialize_sampled_property(serialized: &[u8]) -> Result<String> {
         "account" => {
             let account = Address::from_slice(&serialized[1..21]);
             let account_checksum = format!("{:?}", account);
-            let account_prop_index = serialized[21] as usize;
+            let account_prop_index = serialized[21];
             let prop = AccountField::from_index(account_prop_index)
                 .ok_or("Invalid account property index")
                 .unwrap()

@@ -27,16 +27,12 @@ impl AbstractFetcher {
         }
     }
 
-    pub async fn get_rlp_header(&mut self, block_number: usize) -> RlpEncodedValue {
+    pub async fn get_rlp_header(&mut self, block_number: u64) -> RlpEncodedValue {
         let start_fetch = std::time::Instant::now();
         match self.memory.get_rlp_header(block_number) {
             Some(header) => header,
             None => {
-                let header_rpc = self
-                    .rpc
-                    .get_block_by_number(block_number as u64)
-                    .await
-                    .unwrap();
+                let header_rpc = self.rpc.get_block_by_number(block_number).await.unwrap();
                 let block_header = BlockHeader::from(&header_rpc);
                 let rlp_encoded = block_header.rlp_encode();
                 self.memory.set_header(block_number, rlp_encoded.clone());
@@ -47,17 +43,13 @@ impl AbstractFetcher {
         }
     }
 
-    pub async fn get_rlp_account(
-        &mut self,
-        block_number: usize,
-        account: String,
-    ) -> RlpEncodedValue {
+    pub async fn get_rlp_account(&mut self, block_number: u64, account: String) -> RlpEncodedValue {
         match self.memory.get_rlp_account(block_number, account.clone()) {
             Some(account) => account,
             None => {
                 let account_rpc = self
                     .rpc
-                    .get_proof(block_number as u64, account.clone(), None)
+                    .get_proof(block_number, account.clone(), None)
                     .await
                     .unwrap();
                 let retrieved_account = Account::from(&account_rpc);
@@ -71,7 +63,7 @@ impl AbstractFetcher {
 
     pub async fn get_storage_value(
         &mut self,
-        block_number: usize,
+        block_number: u64,
         account: String,
         slot: String,
     ) -> String {
@@ -83,11 +75,7 @@ impl AbstractFetcher {
             None => {
                 let storage_rpc = self
                     .rpc
-                    .get_proof(
-                        block_number as u64,
-                        account.clone(),
-                        Some(vec![slot.clone()]),
-                    )
+                    .get_proof(block_number, account.clone(), Some(vec![slot.clone()]))
                     .await
                     .unwrap();
                 let storage = &storage_rpc.storage_proof[0];

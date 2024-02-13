@@ -11,10 +11,10 @@ use anyhow::Result;
 use tokio::sync::RwLock;
 
 pub async fn compile_block_sampled_datalake(
-    block_range_start: usize,
-    block_range_end: usize,
+    block_range_start: u64,
+    block_range_end: u64,
     sampled_property: &str,
-    increment: usize,
+    increment: u64,
     fetcher: Arc<RwLock<AbstractFetcher>>,
 ) -> Result<Vec<String>> {
     let mut abstract_fetcher = fetcher.write().await;

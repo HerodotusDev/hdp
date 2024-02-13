@@ -47,7 +47,7 @@ impl FromStr for AggregationFunction {
 }
 
 impl AggregationFunction {
-    pub fn get_index(&self) -> usize {
+    pub fn get_index(&self) -> u8 {
         match self {
             AggregationFunction::AVG => 0,
             AggregationFunction::BLOOM => 1,
