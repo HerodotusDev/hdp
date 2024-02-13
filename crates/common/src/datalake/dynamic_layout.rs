@@ -25,7 +25,8 @@ pub struct DynamicLayoutDatalake {
 impl ToString for DynamicLayoutDatalake {
     fn to_string(&self) -> String {
         let encoded_datalake = self.serialize().unwrap();
-        let hash = keccak256(encoded_datalake);
+        let bytes = Vec::from_hex(encoded_datalake).expect("Invalid hex string");
+        let hash = keccak256(bytes);
         format!("0x{:x}", hash)
     }
 }

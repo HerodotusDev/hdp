@@ -1,7 +1,9 @@
+use std::str::FromStr;
+
 use alloy_dyn_abi::{DynSolType, DynSolValue};
 use alloy_primitives::{
-    hex::{self},
-    keccak256, U256,
+    hex::{self, FromHex},
+    keccak256, FixedBytes,
 };
 use anyhow::Result;
 
@@ -51,10 +53,15 @@ impl ComputationalTask {
                 Ok(format!("0x{}", hex::encode(encoded_datalake)))
             }
             Some(datalake) => {
-                let datalake_identifier = U256::from_str_radix(&datalake.identifier[2..], 16)
-                    .expect("Invalid hex string");
-                let identifier_value = DynSolValue::Uint(datalake_identifier, 256);
-                let aggregate_fn_id_value = DynSolValue::String(self.aggregate_fn_id.clone());
+                let identifier_value = DynSolValue::FixedBytes(
+                    FixedBytes::from_str(&datalake.identifier).unwrap(),
+                    32,
+                );
+
+                let aggregate_fn_id_value = DynSolValue::FixedBytes(
+                    FixedBytes(utf8_to_fixed_bytes32(&self.aggregate_fn_id)),
+                    32,
+                );
                 let aggregate_fn_ctx_value = match &self.aggregate_fn_ctx {
                     None => DynSolValue::Bytes("".to_string().into_bytes()),
                     Some(ctx) => DynSolValue::Bytes(ctx.clone().into_bytes()),
@@ -66,7 +73,7 @@ impl ComputationalTask {
                     aggregate_fn_ctx_value,
                 ]);
 
-                let encoded_datalake = header_tuple_value.abi_encode();
+                let encoded_datalake = header_tuple_value.abi_encode_sequence().unwrap();
                 Ok(format!("0x{}", hex::encode(encoded_datalake)))
             }
         }
@@ -120,7 +127,8 @@ impl ComputationalTask {
 impl ToString for ComputationalTask {
     fn to_string(&self) -> String {
         let encoded_datalake = self.serialize().unwrap();
-        let hash = keccak256(encoded_datalake);
+        let bytes = Vec::from_hex(encoded_datalake).expect("Invalid hex string");
+        let hash = keccak256(bytes);
         format!("0x{:x}", hash)
     }
 }

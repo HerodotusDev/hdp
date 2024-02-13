@@ -22,16 +22,16 @@ pub async fn compile_block_sampled_datalake(
     let collection = property_parts[0];
 
     let mut aggregation_set: Vec<String> = Vec::new();
+    let target_block_range: Vec<u64> = (block_range_start..=block_range_end)
+        .step_by(increment as usize)
+        .collect();
 
     match collection {
         "header" => {
             let property = property_parts[1];
 
-            for i in block_range_start..=block_range_end {
-                if i % increment != 0 {
-                    continue;
-                }
-                let header = abstract_fetcher.get_rlp_header(i).await;
+            let headers = abstract_fetcher.get_rlp_headers(target_block_range).await;
+            for header in headers {
                 let value = decode_header_field(
                     &header,
                     HeaderField::from_str(&property.to_uppercase()).unwrap(),

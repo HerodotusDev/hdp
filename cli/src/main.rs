@@ -149,7 +149,7 @@ async fn main() {
             )
             .await
             .unwrap();
-            println!("evaluation result: \n{:?}\n", res.result);
+            println!("res: {:?}", res.result);
             println!("rpc_url: \n{:?}\n", config.rpc_url);
             let duration = start.elapsed();
             println!("Time elapsed in main() is: {:?}", duration);
