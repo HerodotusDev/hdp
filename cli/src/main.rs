@@ -9,7 +9,7 @@ use decoder::args_codec::{
 use evaluator::evaluator;
 use tokio::sync::RwLock;
 
-/// Simple CLI tool to handle tasks and datalakes
+/// Simple Herodotus Data Processor CLI to handle tasks and datalakes
 #[derive(Debug, Parser)]
 #[command(name = "hdp")]
 #[command(version, about, long_about = None)]
@@ -34,7 +34,12 @@ enum Commands {
     ///
     /// Note: Batch tasks and data lakes should be encoded in bytes[] format
     #[command(arg_required_else_help = true)]
-    Decode { tasks: String, datalakes: String },
+    Decode {
+        /// Batched tasks bytes
+        tasks: String,
+        /// Batched datalakes bytes
+        datalakes: String,
+    },
 
     /// Decode one task and one data lake (not batched format)
     #[command(arg_required_else_help = true)]
