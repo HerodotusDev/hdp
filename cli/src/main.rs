@@ -1,4 +1,4 @@
-use std::{sync::Arc, time::Instant};
+use std::sync::Arc;
 
 use clap::{Parser, Subcommand};
 use common::{config::Config, datalake::Datalake, fetcher::AbstractFetcher};
@@ -149,22 +149,10 @@ async fn main() {
             )
             .await
             .unwrap();
-            println!("evaluation result: \n{:?}\n", res.result);
+            println!("res: {:?}", res.result);
             println!("rpc_url: \n{:?}\n", config.rpc_url);
             let duration = start.elapsed();
             println!("Time elapsed in main() is: {:?}", duration);
         }
     }
-
-    // let res = evaluator(
-    //     tasks,
-    //     Some(datalakes),
-    //     Arc::new(RwLock::new(abstract_fetcher)),
-    // )
-    // .await
-    // .unwrap();
-    // println!("res: {:?}", res.result);
-    // println!("rpc_url: {:?}", config.rpc_url);
-    // let duration = start.elapsed();
-    // println!("Time taken (full flow): {:?}", duration);
 }
