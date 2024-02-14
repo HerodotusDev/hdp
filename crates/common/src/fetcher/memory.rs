@@ -15,8 +15,8 @@ pub struct MemoryFetcher {
 /// `StoredMMR` is a map of mmr_id to root, size, and peaks.
 type StoredMMRs = HashMap<u64, (String, u64, Vec<String>)>;
 
-/// `StoredHeader` is a map of block number to a tuple of RLP encoded header and MMR proof and element_index.
-type StoredHeaders = HashMap<u64, (RlpEncodedValue, MPTProof, u64)>;
+/// `StoredHeader` is a map of block number to a tuple of RLP encoded header and MMR proof and element_index and tree_id.
+type StoredHeaders = HashMap<u64, (RlpEncodedValue, MPTProof, u64, u64)>;
 
 /// `StoredAccount` is a map of account address to a tuple of RLP encoded account, MPT proof and stored storage.
 type StoredAccounts = HashMap<String, (RlpEncodedValue, MPTProof, StoredStorages)>;
@@ -47,12 +47,16 @@ impl MemoryFetcher {
         }
     }
 
+    pub fn get_mmr(&self, mmr_id: u64) -> Option<(String, u64, Vec<String>)> {
+        self.cached_mmrs.get(&mmr_id).cloned()
+    }
+
     /// Get RLP encoded headers from the memoizer
     /// Returns a vector of `Option<RlpEncodedValue>` for each block number
     pub fn get_full_headers(
         &self,
         block_numbers: Vec<u64>,
-    ) -> Vec<Option<(RlpEncodedValue, MPTProof, u64)>> {
+    ) -> Vec<Option<(RlpEncodedValue, MPTProof, u64, u64)>> {
         block_numbers
             .iter()
             .map(|block_number| self.get_rlp_header_with_proof(*block_number))
@@ -62,16 +66,18 @@ impl MemoryFetcher {
     pub fn get_rlp_header_with_proof(
         &self,
         block_number: u64,
-    ) -> Option<(RlpEncodedValue, MPTProof, u64)> {
+    ) -> Option<(RlpEncodedValue, MPTProof, u64, u64)> {
         self.cached_headers
             .get(&block_number)
-            .map(|(header, proof, element_index)| (header.clone(), proof.clone(), *element_index))
+            .map(|(header, proof, element_index, tree_id)| {
+                (header.clone(), proof.clone(), *element_index, *tree_id)
+            })
     }
 
-    fn get_rlp_header(&self, block_number: u64) -> Option<RlpEncodedValue> {
+    pub fn get_rlp_header(&self, block_number: u64) -> Option<RlpEncodedValue> {
         self.cached_headers
             .get(&block_number)
-            .map(|(header, _, _)| header.clone())
+            .map(|(header, _, _, _)| header.clone())
     }
 
     /// Get RLP encoded accounts and account proofs from the memoizer for multiple block numbers
@@ -155,7 +161,7 @@ impl MemoryFetcher {
     }
     pub fn set_header(&mut self, block_number: u64, encoded_header: RlpEncodedValue) {
         self.cached_headers
-            .insert(block_number, (encoded_header, vec![], 0));
+            .insert(block_number, (encoded_header, vec![], 0, 0));
     }
 
     pub fn set_header_with_proof(
@@ -164,9 +170,12 @@ impl MemoryFetcher {
         encoded_header: RlpEncodedValue,
         header_proof: MPTProof,
         element_index: u64,
+        tree_id: u64,
     ) {
-        self.cached_headers
-            .insert(block_number, (encoded_header, header_proof, element_index));
+        self.cached_headers.insert(
+            block_number,
+            (encoded_header, header_proof, element_index, tree_id),
+        );
     }
 
     pub fn set_mmr_data(&mut self, mmr_id: u64, root: String, size: u64, peaks: Vec<String>) {

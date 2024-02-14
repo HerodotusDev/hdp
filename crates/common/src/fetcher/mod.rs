@@ -2,10 +2,7 @@ use futures::future::join_all;
 use std::{collections::HashMap, sync::Arc, time::Instant};
 use tokio::sync::RwLock;
 
-use crate::{
-    block::{account::Account, header::BlockHeader},
-    fetcher::memory::MPTProof,
-};
+use crate::block::{account::Account, header::BlockHeader};
 
 use self::{
     memory::{MemoryFetcher, RlpEncodedValue},
@@ -42,17 +39,14 @@ impl AbstractFetcher {
     pub async fn get_rlp_headers(&mut self, block_numbers: Vec<u64>) -> Vec<RlpEncodedValue> {
         let start_fetch = Instant::now();
         //? A map of block numbers to a boolean indicating whether the block was fetched.
-        let blocks_map: Arc<RwLock<HashMap<u64, (bool, RlpEncodedValue, MPTProof, u64)>>> =
+        let blocks_map: Arc<RwLock<HashMap<u64, (bool, RlpEncodedValue)>>> =
             Arc::new(RwLock::new(HashMap::new()));
 
         for block_number in &block_numbers {
             let header = self.memory.get_rlp_header_with_proof(*block_number);
-            if let Some((rlp_header, header_proof, header_element_index)) = header {
+            if let Some((rlp_header, _, _, _)) = header {
                 let mut blocks_map_write = blocks_map.write().await;
-                blocks_map_write.insert(
-                    *block_number,
-                    (true, rlp_header, header_proof, header_element_index),
-                );
+                blocks_map_write.insert(*block_number, (true, rlp_header));
             }
         }
 
@@ -101,6 +95,8 @@ impl AbstractFetcher {
             .get_mmr_from_indexer(&block_numbers)
             .await
             .unwrap();
+        println!("✅ Successfully fetched MMR data from indexer");
+        println!("mmr_data: {:?}", mmr_data);
 
         // Cache the MMR data and header in memory
         block_numbers
@@ -122,6 +118,7 @@ impl AbstractFetcher {
                         header.to_string(),
                         proof.siblings_hashes,
                         proof.element_index,
+                        proof.tree_id,
                     );
                 }
 

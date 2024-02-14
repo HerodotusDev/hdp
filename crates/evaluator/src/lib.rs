@@ -43,21 +43,12 @@ pub async fn evaluator(
 ) -> Result<EvaluationResult> {
     let mut results = EvaluationResult::new();
     // If optional datalake_for_tasks is provided, need to assign the datalake to the corresponding task
-    if let Some(datalake) = datalake_for_tasks {
+    if let Some(datalake) = datalake_for_tasks.clone() {
         for (datalake_idx, datalake) in datalake.iter().enumerate() {
             let task = &mut compute_expressions[datalake_idx];
 
             match datalake {
                 Datalake::BlockSampled(block_datalake) => {
-                    let property = block_datalake.sampled_property.clone();
-                    let encoded_property = serialize_sampled_property(&property);
-                    if encoded_property[0] == 1 {
-                        // handle header proof
-                    } else if encoded_property[0] == 2 {
-                        // handle account proof
-                    } else if encoded_property[0] == 3 {
-                        // handle storage proof
-                    }
                     task.datalake = Some(block_datalake.derive())
                 }
                 Datalake::DynamicLayout(dynamic_layout_datalake) => {
@@ -80,6 +71,34 @@ pub async fn evaluator(
         let aggregation_fn_ctx = compute_expression.aggregate_fn_ctx;
         let result = aggregation_fn.operation(&datapoints, aggregation_fn_ctx)?;
         results.result.insert(computation_task_id, result);
+    }
+
+    // Fetch proofs
+    // Fetching from url is already done in the compile function. So, no need to fetch again in memory fetcher.
+    for datalake in datalake_for_tasks.unwrap() {
+        match datalake {
+            Datalake::BlockSampled(block_datalake) => {
+                let block_range_start = block_datalake.block_range_start;
+                let block_range_end = block_datalake.block_range_end;
+                let sampled_property = serialize_sampled_property(&block_datalake.sampled_property);
+                // if sampled_property is header, then fetch header proofs
+                let mut headers_proof = HashMap::new();
+                let mut accounts_proof = HashMap::new();
+                //    get header proofs from db fetcher
+                // for block_number in block_range_start..block_range_end {
+                //     let header_proof = fetcher
+                //         .read()
+                //         .await
+                //         .get_rlp_headers_proof(block_number, block_number + increment)
+                //         .await?;
+                //     headers_proof.insert(block_number, header_proof);
+                // }
+                results.headers_proof = headers_proof;
+                results.accounts_proof = accounts_proof;
+            }
+            Datalake::DynamicLayout(dynamic_layout_datalake) => {}
+            Datalake::Unknown => {}
+        }
     }
 
     Ok(results)
