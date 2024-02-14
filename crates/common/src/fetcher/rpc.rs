@@ -1,8 +1,13 @@
+use std::collections::HashMap;
+
 use anyhow::{anyhow, bail, Result};
 use reqwest::{header, Client};
 use serde_json::{from_value, json, Value};
 
-use crate::block::{account::AccountFromRpc, header::BlockHeaderFromRpc};
+use crate::block::{
+    account::AccountFromRpc,
+    header::{BlockHeaderFromRpc, MMRFromIndexer, MMRProofFromIndexer},
+};
 
 #[derive(Debug, Clone)]
 pub struct RpcFetcher {
@@ -54,6 +59,10 @@ impl RpcFetcher {
 
         // Deserialize into EvmBlockHeaderFromRpc
         let block_header_from_rpc: BlockHeaderFromRpc = from_value(result.clone())?;
+
+        // try getting mmr proof from indexer
+        // https://ds-indexer.api.herodotus.cloud/mmr-inclusion-proof?deployed_on_chain=5&accumulates_chain=5&block_numbers=10453879&hashing_function=poseidon&whole_tree=false&contract_type=Aggregator
+        //  get siblings hash from response
 
         Ok(block_header_from_rpc)
     }
@@ -107,5 +116,58 @@ impl RpcFetcher {
         let account_from_rpc: AccountFromRpc = from_value(result.clone())?;
 
         Ok(account_from_rpc)
+    }
+
+    pub async fn get_mmr_from_indexer(
+        &self,
+        block_numbers: &[u64],
+    ) -> Result<HashMap<u64, MMRProofFromIndexer>> {
+        let blocks_query_params = block_numbers
+            .iter()
+            .map(|block_number| ("block_numbers".to_string(), block_number.to_string()))
+            .collect::<Vec<(String, String)>>();
+
+        let query_params = vec![
+            ("deployed_on_chain".to_string(), "5".to_string()),
+            ("accumulates_chain".to_string(), "5".to_string()),
+            ("hashing_function".to_string(), "poseidon".to_string()),
+            ("whole_tree".to_string(), "false".to_string()),
+            ("contract_type".to_string(), "Aggregator".to_string()),
+        ];
+
+        let url = format!("{}/mmr-inclusion-proof", &self.url);
+
+        println!("URL: {:?}", url);
+
+        let response = self
+            .client
+            .get(url)
+            .header(header::CONTENT_TYPE, "application/json")
+            .query(&query_params)
+            .query(&blocks_query_params)
+            .send()
+            .await
+            .map_err(|e| anyhow!("Failed to send request: {}", e))?;
+
+        // Check if the response status is success
+        if !response.status().is_success() {
+            bail!("RPC request failed with status: {}", response.status());
+        }
+
+        // Parse the response body as JSON
+        let rpc_response: Value = response
+            .json()
+            .await
+            .map_err(|e| anyhow!("Failed to parse response: {}", e))?;
+
+        let mmr_from_indexer: MMRFromIndexer = from_value(rpc_response)?;
+
+        // format into blocknumber -> mmr proof
+        let mut mmr_from_indexer_map: HashMap<u64, MMRProofFromIndexer> = HashMap::new();
+        for proof in mmr_from_indexer.proofs {
+            mmr_from_indexer_map.insert(proof.block_number, proof);
+        }
+
+        Ok(mmr_from_indexer_map)
     }
 }

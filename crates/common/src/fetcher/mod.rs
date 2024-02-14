@@ -2,7 +2,10 @@ use futures::future::join_all;
 use std::{collections::HashMap, sync::Arc, time::Instant};
 use tokio::sync::RwLock;
 
-use crate::block::{account::Account, header::BlockHeader};
+use crate::{
+    block::{account::Account, header::BlockHeader},
+    fetcher::memory::MPTProof,
+};
 
 use self::{
     memory::{MemoryFetcher, RlpEncodedValue},
@@ -39,14 +42,17 @@ impl AbstractFetcher {
     pub async fn get_rlp_headers(&mut self, block_numbers: Vec<u64>) -> Vec<RlpEncodedValue> {
         let start_fetch = Instant::now();
         //? A map of block numbers to a boolean indicating whether the block was fetched.
-        let blocks_map: Arc<RwLock<HashMap<u64, (bool, RlpEncodedValue)>>> =
+        let blocks_map: Arc<RwLock<HashMap<u64, (bool, RlpEncodedValue, MPTProof, u64)>>> =
             Arc::new(RwLock::new(HashMap::new()));
 
         for block_number in &block_numbers {
-            let header = self.memory.get_rlp_header(*block_number);
-            if let Some(header) = header {
+            let header = self.memory.get_rlp_header_with_proof(*block_number);
+            if let Some((rlp_header, header_proof, header_element_index)) = header {
                 let mut blocks_map_write = blocks_map.write().await;
-                blocks_map_write.insert(*block_number, (true, header));
+                blocks_map_write.insert(
+                    *block_number,
+                    (true, rlp_header, header_proof, header_element_index),
+                );
             }
         }
 
@@ -86,17 +92,55 @@ impl AbstractFetcher {
         // Construct the final result vector from blocks_map
         let blocks_map_read = blocks_map.read().await;
         let duration = start_fetch.elapsed();
-        println!("Time taken (fetch headers): {:?}", duration);
+        println!("✅ Successfully fetched headers from rpc");
+        println!("Time taken (fetch headers from rpc): {:?}", duration);
+
+        // Fetch MMR data from Herodotus indexer
+        let indexer_fetcher = RpcFetcher::new("https://ds-indexer.api.herodotus.cloud".to_string());
+        let mmr_data = indexer_fetcher
+            .get_mmr_from_indexer(&block_numbers)
+            .await
+            .unwrap();
+
+        // Cache the MMR data and header in memory
         block_numbers
             .into_iter()
             .filter_map(|block_number| {
-                blocks_map_read
+                // Get the RLP header and MMR data from the RPC call
+                let rlp_header = blocks_map_read
                     .get(&block_number)
-                    .map(|(_, rlp_encoded)| rlp_encoded.clone())
+                    .map(|(_, rlp_encoded)| rlp_encoded.clone());
+
+                // Get the MMR proof from the indexer
+                // TODO: Handle in proper way later with new endpoint
+                let proof = mmr_data.get(&block_number).cloned().unwrap();
+
+                if let Some(ref header) = rlp_header {
+                    // Cache the header data in memory
+                    self.memory.set_header_with_proof(
+                        block_number,
+                        header.to_string(),
+                        proof.siblings_hashes,
+                        proof.element_index,
+                    );
+                }
+
+                // Cache the MMR data in memory
+                self.memory.set_mmr_data(
+                    proof.tree_id,
+                    //TODO: Need to get the root from the indexer ( update endpoint to get root )
+                    "0x00001".to_string(),
+                    //TODO: Need to get the mmr size from the indexer ( update endpoint to get size )
+                    proof.last_pos,
+                    proof.peaks_hashes,
+                );
+
+                rlp_header
             })
             .collect()
     }
 
+    // Unoptimized version of get_rlp_header, just for testing purposes
     pub async fn get_rlp_header(&mut self, block_number: u64) -> RlpEncodedValue {
         match self.memory.get_rlp_header(block_number) {
             Some(header) => header,

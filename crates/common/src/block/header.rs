@@ -265,6 +265,29 @@ pub struct BlockHeaderFromRpc {
     pub withdrawals_root: Option<String>,
 }
 
+/// MMR metadata and proof returned from indexer
+// TODO: Add MMR metadata in response
+// current https://ds-indexer.api.herodotus.cloud/mmr-inclusion-proof?deployed_on_chain=5&accumulates_chain=5&block_numbers=10453879&hashing_function=poseidon&whole_tree=false&contract_type=Aggregator
+// but need to switch proper hdp endpoint
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct MMRFromIndexer {
+    pub proofs: Vec<MMRProofFromIndexer>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct MMRProofFromIndexer {
+    pub element_index: u64,
+    pub element_hash: String,
+    pub siblings_hashes: Vec<String>,
+    pub peaks_hashes: Vec<String>,
+    pub elements_count: u64,
+    pub tree_id: u64,
+    pub last_pos: u64,
+    pub block_number: u64,
+}
+
 impl BlockHeaderFromRpc {
     pub fn get_block_hash(&self) -> String {
         self.hash.clone()

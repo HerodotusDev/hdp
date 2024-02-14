@@ -6,19 +6,23 @@ use tokio::sync::RwLock;
 pub mod aggregation_functions;
 
 use common::{
-    datalake::{base::Derivable, Datalake},
+    datalake::{base::Derivable, block_sampled::serialize_sampled_property, Datalake},
     fetcher::AbstractFetcher,
     task::ComputationalTask,
 };
 
 pub struct EvaluationResult {
     pub result: HashMap<String, String>,
+    pub headers_proof: HashMap<u64, Vec<String>>,
+    pub accounts_proof: HashMap<String, HashMap<u64, Vec<String>>>,
 }
 
 impl EvaluationResult {
     pub fn new() -> Self {
         EvaluationResult {
             result: HashMap::new(),
+            headers_proof: HashMap::new(),
+            accounts_proof: HashMap::new(),
         }
     }
     pub fn merkle_commit(&self) -> String {
@@ -43,10 +47,21 @@ pub async fn evaluator(
         for (datalake_idx, datalake) in datalake.iter().enumerate() {
             let task = &mut compute_expressions[datalake_idx];
 
-            task.datalake = match datalake {
-                Datalake::BlockSampled(block_datalake) => Some(block_datalake.derive()),
+            match datalake {
+                Datalake::BlockSampled(block_datalake) => {
+                    let property = block_datalake.sampled_property.clone();
+                    let encoded_property = serialize_sampled_property(&property);
+                    if encoded_property[0] == 1 {
+                        // handle header proof
+                    } else if encoded_property[0] == 2 {
+                        // handle account proof
+                    } else if encoded_property[0] == 3 {
+                        // handle storage proof
+                    }
+                    task.datalake = Some(block_datalake.derive())
+                }
                 Datalake::DynamicLayout(dynamic_layout_datalake) => {
-                    Some(dynamic_layout_datalake.derive())
+                    task.datalake = Some(dynamic_layout_datalake.derive())
                 }
                 _ => bail!("Unknown datalake type"),
             };
