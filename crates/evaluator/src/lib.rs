@@ -1,5 +1,5 @@
 use aggregation_functions::AggregationFunction;
-use alloy_merkle_tree::tree::MerkleTree;
+use alloy_merkle_tree::standard_binary_tree::StandardMerkleTree;
 use alloy_primitives::{hex::FromHex, Keccak256, B256, U256};
 use anyhow::{bail, Result};
 use std::{collections::HashMap, str::FromStr, sync::Arc};
@@ -23,24 +23,35 @@ impl EvaluationResult {
             result: HashMap::new(),
         }
     }
-    pub fn merkle_commit(&self) -> (MerkleTree, MerkleTree) {
-        let mut tasks_merkle_tree = MerkleTree::new();
-        let mut results_merkle_tree = MerkleTree::new();
+    pub fn merkle_commit(&self) -> (StandardMerkleTree, StandardMerkleTree) {
+        let mut tasks_leaves = Vec::new();
+        let mut results_leaves = Vec::new();
         for (task_id, result) in self.result.iter() {
-            let task_id_hex = B256::from_hex(task_id).unwrap();
+            tasks_leaves.push(task_id.to_string());
+
             let result = U256::from_str(result).unwrap();
-            tasks_merkle_tree.insert(task_id_hex);
             let mut result_keccak = Keccak256::new();
+            let task_id_hex = Vec::from_hex(task_id).unwrap();
             result_keccak.update(task_id_hex);
             result_keccak.update(B256::from(result));
             let result_hash = result_keccak.finalize();
-            results_merkle_tree.insert(result_hash);
+            results_leaves.push(result_hash.to_string());
         }
-        tasks_merkle_tree.finish();
-        results_merkle_tree.finish();
+        let tasks_merkle_tree = StandardMerkleTree::of(tasks_leaves);
+        let results_merkle_tree = StandardMerkleTree::of(results_leaves);
 
         (tasks_merkle_tree, results_merkle_tree)
     }
+}
+
+pub fn evaluation_result_to_leaf(task_id: &str, result: &str) -> String {
+    let result = U256::from_str(result).unwrap();
+    let mut result_keccak = Keccak256::new();
+    let task_id_hex = Vec::from_hex(task_id).unwrap();
+    result_keccak.update(task_id_hex);
+    result_keccak.update(B256::from(result));
+    let result_hash = result_keccak.finalize();
+    result_hash.to_string()
 }
 
 impl Default for EvaluationResult {
