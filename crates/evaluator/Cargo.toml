@@ -7,3 +7,5 @@ edition = "2021"
 common = { workspace = true }
 anyhow = { workspace = true }
 tokio = { workspace = true }
+alloy-merkle-tree = { workspace = true }
+alloy-primitives = { workspace = true }
