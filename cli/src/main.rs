@@ -6,7 +6,7 @@ use decoder::args_codec::{
     datalake_decoder, datalakes_decoder, datalakes_encoder, task_decoder, tasks_decoder,
     tasks_encoder,
 };
-use evaluator::evaluator;
+use evaluator::{evaluation_result_to_leaf, evaluator};
 use tokio::sync::RwLock;
 
 /// Simple Herodotus Data Processor CLI to handle tasks and datalakes
@@ -154,10 +154,19 @@ async fn main() {
             let duration = start.elapsed();
             println!("Time elapsed in main() is: {:?}", duration);
             let (tasks_merkle_tree, results_merkle_tree) = res.merkle_commit();
-            let task_merkle_root = tasks_merkle_tree.root;
-            let result_merkle_root = results_merkle_tree.root;
+            let task_merkle_root = tasks_merkle_tree.root();
+            let result_merkle_root = results_merkle_tree.root();
             println!("task_merkle_root: {:?}", task_merkle_root);
             println!("result_merkle_root: {:?}", result_merkle_root);
+
+            for (index, (task_id, result)) in res.result.iter().enumerate() {
+                let task_proof = tasks_merkle_tree.get_proof(task_id);
+                let result_leaf = evaluation_result_to_leaf(task_id, result);
+                let result_proof = results_merkle_tree.get_proof(&result_leaf);
+                println!("index: {:?}", index);
+                println!("task_proof: {:?}", task_proof);
+                println!("result_proof: {:?}", result_proof);
+            }
         }
     }
 }
