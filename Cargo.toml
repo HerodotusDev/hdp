@@ -9,6 +9,7 @@ evaluator = { version = "0.1.0", path = "crates/evaluator" }
 tokio = { version = "1", features = ["full"] }
 alloy-dyn-abi = "0.6.2"
 alloy-primitives = "0.6.2"
+alloy-merkle-tree = { version = "0.2.0" }
 alloy-rlp = { version = "0.3.4", features = ["derive"] }
 anyhow = "1.0.79"
 reth-primitives = { git = "https://github.com/paradigmxyz/reth", package = "reth-primitives", rev = "01d3df3" }

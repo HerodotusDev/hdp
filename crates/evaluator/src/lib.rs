@@ -1,4 +1,6 @@
 use aggregation_functions::AggregationFunction;
+use alloy_merkle_tree::tree::MerkleTree;
+use alloy_primitives::{hex::FromHex, Keccak256, B256, U256};
 use anyhow::{bail, Result};
 use std::{collections::HashMap, str::FromStr, sync::Arc};
 use tokio::sync::RwLock;
@@ -21,8 +23,23 @@ impl EvaluationResult {
             result: HashMap::new(),
         }
     }
-    pub fn merkle_commit(&self) -> String {
-        "merkle_commit".to_string()
+    pub fn merkle_commit(&self) -> (MerkleTree, MerkleTree) {
+        let mut tasks_merkle_tree = MerkleTree::new();
+        let mut results_merkle_tree = MerkleTree::new();
+        for (task_id, result) in self.result.iter() {
+            let task_id_hex = B256::from_hex(task_id).unwrap();
+            let result = U256::from_str(result).unwrap();
+            tasks_merkle_tree.insert(task_id_hex);
+            let mut result_keccak = Keccak256::new();
+            result_keccak.update(task_id_hex);
+            result_keccak.update(B256::from(result));
+            let result_hash = result_keccak.finalize();
+            results_merkle_tree.insert(result_hash);
+        }
+        tasks_merkle_tree.finish();
+        results_merkle_tree.finish();
+
+        (tasks_merkle_tree, results_merkle_tree)
     }
 }
 

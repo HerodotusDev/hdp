@@ -13,12 +13,12 @@ pub fn average(values: &[String]) -> Result<String> {
         sum += value;
     }
 
-    Ok((sum / values.len() as f64).to_string())
+    Ok(roundup((sum / values.len() as f64).to_string()))
 }
 
 // TODO: Implement bloom_filterize
 pub fn bloom_filterize(_values: &[String]) -> Result<String> {
-    Ok((0.0).to_string())
+    Ok(roundup((0.0).to_string()))
 }
 
 /// Find the maximum value
@@ -37,7 +37,7 @@ pub fn find_max(values: &[String]) -> Result<String> {
         }
     }
 
-    Ok(max.to_string())
+    Ok(roundup(max.to_string()))
 }
 
 /// Find the minimum value
@@ -55,7 +55,7 @@ pub fn find_min(values: &[String]) -> Result<String> {
         }
     }
 
-    Ok(min.to_string())
+    Ok(roundup(min.to_string()))
 }
 
 /// Standard deviation
@@ -81,7 +81,7 @@ pub fn standard_deviation(values: &[String]) -> Result<String> {
     }
 
     let variance = variance_sum / count;
-    Ok(variance.sqrt().to_string())
+    Ok(roundup(variance.sqrt().to_string()))
 }
 
 /// Sum of values
@@ -97,7 +97,7 @@ pub fn sum(values: &[String]) -> Result<String> {
         sum += value;
     }
 
-    Ok(sum.to_string())
+    Ok(roundup(sum.to_string()))
 }
 
 /// Count number of values that satisfy a condition
@@ -156,5 +156,12 @@ pub fn count_if(values: &[String], ctx: &str) -> Result<String> {
         }
     }
 
-    Ok(condition_satisfiability_count.to_string())
+    Ok(roundup(condition_satisfiability_count.to_string()))
+}
+
+fn roundup(value: String) -> String {
+    let scale_factor = 10u128.pow(18);
+    let scaled_and_rounded_up = value.parse::<f64>().unwrap() * scale_factor as f64;
+    let rounded_up_value = scaled_and_rounded_up.ceil() as u128;
+    rounded_up_value.to_string()
 }
