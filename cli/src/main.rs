@@ -149,7 +149,7 @@ async fn main() {
             )
             .await
             .unwrap();
-            println!("res: {:?}", res.result);
+
             println!("rpc_url: \n{:?}\n", config.rpc_url);
             let duration = start.elapsed();
             println!("Time elapsed in main() is: {:?}", duration);
@@ -161,6 +161,7 @@ async fn main() {
             // sort the result by the task index
             let mut sorted_result: Vec<(&String, &String)> = res.result.iter().collect();
             sorted_result.sort_by_key(|(task_id, _)| res.result_index.get(*task_id).unwrap());
+            println!("res: {:?}", sorted_result);
 
             for (index, (task_id, result)) in sorted_result.iter().enumerate() {
                 let task_proof = tasks_merkle_tree.get_proof(task_id);
