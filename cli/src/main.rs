@@ -158,8 +158,11 @@ async fn main() {
             let result_merkle_root = results_merkle_tree.root();
             println!("task_merkle_root: {:?}", task_merkle_root);
             println!("result_merkle_root: {:?}", result_merkle_root);
+            // sort the result by the task index
+            let mut sorted_result: Vec<(&String, &String)> = res.result.iter().collect();
+            sorted_result.sort_by_key(|(task_id, _)| res.result_index.get(*task_id).unwrap());
 
-            for (index, (task_id, result)) in res.result.iter().enumerate() {
+            for (index, (task_id, result)) in sorted_result.iter().enumerate() {
                 let task_proof = tasks_merkle_tree.get_proof(task_id);
                 let result_leaf = evaluation_result_to_leaf(task_id, result);
                 let result_proof = results_merkle_tree.get_proof(&result_leaf);
