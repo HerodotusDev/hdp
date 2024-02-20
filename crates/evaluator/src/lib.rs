@@ -15,25 +15,31 @@ use common::{
 
 pub struct EvaluationResult {
     pub result: HashMap<String, String>,
+    pub result_index: HashMap<String, usize>,
 }
 
 impl EvaluationResult {
     pub fn new() -> Self {
         EvaluationResult {
             result: HashMap::new(),
+            result_index: HashMap::new(),
         }
     }
     pub fn merkle_commit(&self) -> (StandardMerkleTree, StandardMerkleTree) {
         let mut tasks_leaves = Vec::new();
         let mut results_leaves = Vec::new();
-        for (task_id, result) in self.result.iter() {
-            tasks_leaves.push(task_id.to_string());
+        // sort the result by the task index
+        let mut sorted_result: Vec<(&String, &String)> = self.result.iter().collect();
+        sorted_result.sort_by_key(|(task_id, _)| self.result_index.get(*task_id).unwrap());
 
+        for (task_id, result) in sorted_result {
+            tasks_leaves.push(task_id.to_string());
             let result = U256::from_str(result).unwrap();
             let mut result_keccak = Keccak256::new();
             let task_id_hex = Vec::from_hex(task_id).unwrap();
             result_keccak.update(task_id_hex);
             result_keccak.update(B256::from(result));
+            println!("{:?}", B256::from(result));
             let result_hash = result_keccak.finalize();
             results_leaves.push(result_hash.to_string());
         }
@@ -82,7 +88,7 @@ pub async fn evaluator(
     }
 
     // Evaulate the compute expressions
-    for compute_expression in compute_expressions {
+    for (task_index, compute_expression) in compute_expressions.into_iter().enumerate() {
         let computation_task_id = compute_expression.to_string();
         let datapoints = compute_expression
             .datalake
@@ -92,7 +98,8 @@ pub async fn evaluator(
         let aggregation_fn = AggregationFunction::from_str(&compute_expression.aggregate_fn_id)?;
         let aggregation_fn_ctx = compute_expression.aggregate_fn_ctx;
         let result = aggregation_fn.operation(&datapoints, aggregation_fn_ctx)?;
-        results.result.insert(computation_task_id, result);
+        results.result.insert(computation_task_id.clone(), result);
+        results.result_index.insert(computation_task_id, task_index);
     }
 
     Ok(results)
