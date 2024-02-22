@@ -159,9 +159,8 @@ pub fn count_if(values: &[String], ctx: &str) -> Result<String> {
     Ok(roundup(condition_satisfiability_count.to_string()))
 }
 
+// TODO: Think about better way to handle float values
 fn roundup(value: String) -> String {
-    let scale_factor = 10u128.pow(18);
-    let scaled_and_rounded_up = value.parse::<f64>().unwrap() * scale_factor as f64;
-    let rounded_up_value = scaled_and_rounded_up.ceil() as u128;
+    let rounded_up_value = value.parse::<f64>().unwrap().ceil() as u64; // Use f64 for parsing and ceil to round up
     rounded_up_value.to_string()
 }
