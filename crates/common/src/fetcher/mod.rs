@@ -1,12 +1,9 @@
-use anyhow::{bail, Result};
-use futures::future::join_all;
-use std::{collections::HashMap, sync::Arc, time::Instant};
-use tokio::sync::RwLock;
+use anyhow::Result;
+use std::{collections::HashMap, time::Instant};
 
 use crate::{
     block::{account::Account, header::BlockHeader},
     datalake::base::MMRMetaResult,
-    fetcher::memory::StoredMMR,
 };
 
 use self::{
@@ -154,9 +151,13 @@ impl AbstractFetcher {
         }
     }
 
-    pub async fn get_rlp_account(&mut self, block_number: u64, account: String) -> RlpEncodedValue {
-        match self.memory.get_rlp_account(block_number, account.clone()) {
-            Some(account) => account,
+    pub async fn get_account_with_proof(
+        &mut self,
+        block_number: u64,
+        account: String,
+    ) -> (String, Vec<String>) {
+        match self.memory.get_account(block_number, account.clone()) {
+            Some(account_with_proof) => account_with_proof,
             None => {
                 let account_rpc = self
                     .rpc
@@ -170,22 +171,22 @@ impl AbstractFetcher {
                     block_number,
                     account_rpc.address,
                     rlp_encoded.clone(),
-                    account_proof,
+                    account_proof.clone(),
                 );
-                rlp_encoded
+                (rlp_encoded, account_proof)
             }
         }
     }
 
-    pub async fn get_storage_value(
+    pub async fn get_storage_value_with_proof(
         &mut self,
         block_number: u64,
         account: String,
         slot: String,
-    ) -> String {
+    ) -> (String, Vec<String>) {
         match self
             .memory
-            .get_storage_value(block_number, account.clone(), slot.clone())
+            .get_storage(block_number, account.clone(), slot.clone())
         {
             Some(storage) => storage,
             None => {
@@ -207,9 +208,9 @@ impl AbstractFetcher {
                     account_rpc.account_proof,
                     storage_slot,
                     storage_value.clone(),
-                    storage_proof,
+                    storage_proof.clone(),
                 );
-                storage_value
+                (storage_value, storage_proof)
             }
         }
     }

@@ -77,16 +77,16 @@ async fn test_fetcher_get_rlp_account() {
         "https://eth-goerli.g.alchemy.com/v2/OcJWF4RZDjyeCWGSmWChIlMEV28LtA5c".to_string(),
     );
     let rlp_account = abstract_fetcher
-        .get_rlp_account(0, "0x7b2f05ce9ae365c3dbf30657e2dc6449989e83d6".to_string())
+        .get_account_with_proof(0, "0x7b2f05ce9ae365c3dbf30657e2dc6449989e83d6".to_string())
         .await;
-    assert_eq!(rlp_account, "f8448080a00000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000000");
+    assert_eq!(rlp_account.0, "f8448080a00000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000000");
     let rlp_account = abstract_fetcher
-        .get_rlp_account(
+        .get_account_with_proof(
             10399990,
             "0x7b2f05ce9ae365c3dbf30657e2dc6449989e83d6".to_string(),
         )
         .await;
-    assert_eq!(rlp_account, "f8440180a0480489b48e337887827fd9584f40dc1f51016e49df77ec789d4ee9bcc87bb0ffa0cd4f25236fff0ccac15e82bf4581beb08e95e1b5ba89de6031c75893cd91245c");
+    assert_eq!(rlp_account.0, "f8440180a0480489b48e337887827fd9584f40dc1f51016e49df77ec789d4ee9bcc87bb0ffa0cd4f25236fff0ccac15e82bf4581beb08e95e1b5ba89de6031c75893cd91245c");
 }
 
 #[tokio::test]
@@ -95,27 +95,27 @@ async fn test_fetcher_get_storage_value() {
         "https://eth-goerli.g.alchemy.com/v2/OcJWF4RZDjyeCWGSmWChIlMEV28LtA5c".to_string(),
     );
     let storage_value = abstract_fetcher
-        .get_storage_value(
+        .get_storage_value_with_proof(
             0,
             "0x7b2f05ce9ae365c3dbf30657e2dc6449989e83d6".to_string(),
             "0x0".to_string(),
         )
         .await;
-    assert_eq!(storage_value, "0x0");
+    assert_eq!(storage_value.0, "0x0");
     let storage_value = abstract_fetcher
-        .get_storage_value(
+        .get_storage_value_with_proof(
             10399990,
             "0x7b2f05ce9ae365c3dbf30657e2dc6449989e83d6".to_string(),
             "0x0".to_string(),
         )
         .await;
-    assert_eq!(storage_value, "0x1");
+    assert_eq!(storage_value.0, "0x1");
     let storage_value = abstract_fetcher
-        .get_storage_value(
+        .get_storage_value_with_proof(
             10399980,
             "0x7b2f05ce9ae365c3dbf30657e2dc6449989e83d6".to_string(),
             "0x0".to_string(),
         )
         .await;
-    assert_eq!(storage_value, "0x1");
+    assert_eq!(storage_value.0, "0x1");
 }

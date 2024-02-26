@@ -5,13 +5,10 @@ use crate::{
         account::{decode_account_field, AccountField},
         header::{decode_header_field, HeaderField},
     },
-    datalake::base::{
-        AccountResult, BlockResult, DatalakeResult, MMRMetaResult, MMRResult, StorageResult,
-    },
-    fetcher::{memory::StoredHeader, AbstractFetcher},
+    datalake::base::{AccountResult, BlockResult, DatalakeResult, MMRResult, StorageResult},
+    fetcher::AbstractFetcher,
 };
 use anyhow::Result;
-use reth_primitives::revm_primitives::bitvec::vec;
 use tokio::sync::RwLock;
 
 pub async fn compile_block_sampled_datalake(
@@ -68,11 +65,11 @@ pub async fn compile_block_sampled_datalake(
                 }
                 let fetched_block = full_header_and_proof_result.0.get(&i).unwrap().clone();
                 let acc = abstract_fetcher
-                    .get_rlp_account(i, account.to_string())
+                    .get_account_with_proof(i, account.to_string())
                     .await;
 
                 let value = decode_account_field(
-                    &acc,
+                    &acc.0,
                     AccountField::from_str(&property.to_uppercase()).unwrap(),
                 );
 
@@ -82,9 +79,8 @@ pub async fn compile_block_sampled_datalake(
                     rlp_encoded_header: fetched_block.0,
                     account: Some(AccountResult {
                         address: account.to_string(),
-                        // TODO: account_proof
-                        account_proof: vec![],
-                        rlp_encoded_account: acc,
+                        account_proof: acc.1,
+                        rlp_encoded_account: acc.0,
                         storage: None,
                     }),
                 });
@@ -101,9 +97,11 @@ pub async fn compile_block_sampled_datalake(
                     continue;
                 }
                 let fetched_block = full_header_and_proof_result.0.get(&i).unwrap().clone();
-
+                let acc = abstract_fetcher
+                    .get_account_with_proof(i, account.to_string())
+                    .await;
                 let value = abstract_fetcher
-                    .get_storage_value(i, account.to_string(), slot.to_string())
+                    .get_storage_value_with_proof(i, account.to_string(), slot.to_string())
                     .await;
 
                 blocks.push(BlockResult {
@@ -112,19 +110,16 @@ pub async fn compile_block_sampled_datalake(
                     rlp_encoded_header: fetched_block.0,
                     account: Some(AccountResult {
                         address: account.to_string(),
-                        // TODO: account_proof
-                        account_proof: vec![],
-                        //TODO
-                        rlp_encoded_account: "account".to_string(),
+                        account_proof: acc.1,
+                        rlp_encoded_account: acc.0,
                         storage: Some(StorageResult {
-                            // TODO: storage_proof
-                            storage_proof: vec![],
+                            storage_proof: value.1,
                             storage_key: slot.to_string(),
-                            storage_value: value.clone(),
+                            storage_value: value.0.clone(),
                         }),
                     }),
                 });
-                aggregation_set.push(value);
+                aggregation_set.push(value.0);
             }
         }
         _ => todo!(),
