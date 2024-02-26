@@ -122,7 +122,7 @@ impl Derivable for BlockSampledDatalake {
     }
 }
 
-fn serialize_sampled_property(sampled_property: &str) -> Vec<u8> {
+pub fn serialize_sampled_property(sampled_property: &str) -> Vec<u8> {
     let tokens: Vec<&str> = sampled_property.split('.').collect();
     let collection = match tokens[0] {
         "header" => Collection::Header,

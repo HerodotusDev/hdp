@@ -43,10 +43,10 @@ impl AbstractFetcher {
             Arc::new(RwLock::new(HashMap::new()));
 
         for block_number in &block_numbers {
-            let header = self.memory.get_rlp_header(*block_number);
-            if let Some(header) = header {
+            let header = self.memory.get_full_header_with_proof(*block_number);
+            if let Some((rlp_header, _, _, _)) = header {
                 let mut blocks_map_write = blocks_map.write().await;
-                blocks_map_write.insert(*block_number, (true, header));
+                blocks_map_write.insert(*block_number, (true, rlp_header));
             }
         }
 
@@ -86,17 +86,58 @@ impl AbstractFetcher {
         // Construct the final result vector from blocks_map
         let blocks_map_read = blocks_map.read().await;
         let duration = start_fetch.elapsed();
-        println!("Time taken (fetch headers): {:?}", duration);
+        println!("✅ Successfully fetched headers from rpc");
+        println!("Time taken (fetch headers from rpc): {:?}", duration);
+
+        // Fetch MMR data from Herodotus indexer
+        let indexer_fetcher =
+            RpcFetcher::new("https://rs-indexer.api.herodotus.cloud/accumulators".to_string());
+        let mmr_data = indexer_fetcher
+            .get_mmr_from_indexer(&block_numbers)
+            .await
+            .unwrap();
+        println!("✅ Successfully fetched MMR data from indexer");
+        println!("mmr_data: {:?}", mmr_data);
+
+        // Cache the MMR data and header in memory
         block_numbers
             .into_iter()
             .filter_map(|block_number| {
-                blocks_map_read
+                // Get the RLP header and MMR data from the RPC call
+                let rlp_header = blocks_map_read
                     .get(&block_number)
-                    .map(|(_, rlp_encoded)| rlp_encoded.clone())
+                    .map(|(_, rlp_encoded)| rlp_encoded.clone());
+
+                // Get the MMR proof from the indexer
+                // TODO: Handle in proper way later with new endpoint
+                let mmr_meta = &mmr_data.0;
+                let proof = mmr_data.1.get(&block_number).cloned().unwrap();
+
+                if let Some(ref header) = rlp_header {
+                    // Cache the header data in memory
+                    self.memory.set_full_header_with_proof(
+                        block_number,
+                        header.to_string(),
+                        proof.siblings_hashes,
+                        proof.element_index,
+                        mmr_meta.mmr_id,
+                    );
+                }
+
+                // Cache the MMR data in memory
+                self.memory.set_mmr_data(
+                    mmr_meta.mmr_id,
+                    mmr_meta.mmr_root.clone(),
+                    mmr_meta.mmr_size,
+                    mmr_meta.mmr_peaks.clone(),
+                );
+
+                rlp_header
             })
             .collect()
     }
 
+    // Unoptimized version of get_rlp_header, just for testing purposes
     pub async fn get_rlp_header(&mut self, block_number: u64) -> RlpEncodedValue {
         match self.memory.get_rlp_header(block_number) {
             Some(header) => header,

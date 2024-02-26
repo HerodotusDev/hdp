@@ -18,6 +18,23 @@ pub struct EvaluationResult {
     pub result_index: HashMap<String, usize>,
 }
 
+pub struct HeaderBatchesResult {
+    pub headers: Vec<HeaderResult>,
+    pub mmr_meta: MMRMetaResult,
+}
+
+pub struct HeaderResult {
+    pub leaf_idx: u64,
+    pub mmr_proof: Vec<String>,
+    pub rlp_encoded_header: String,
+}
+pub struct MMRMetaResult {
+    pub mmr_id: u64,
+    pub mmr_peaks: Vec<String>,
+    pub mmr_root: String,
+    pub mmr_size: u64,
+}
+
 impl EvaluationResult {
     pub fn new() -> Self {
         EvaluationResult {
