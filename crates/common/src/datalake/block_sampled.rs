@@ -16,7 +16,7 @@ use tokio::sync::RwLock;
 use crate::compiler::block_sampled::compile_block_sampled_datalake;
 
 use super::{
-    base::{DatalakeBase, Derivable},
+    base::{DatalakeBase, DatalakeResult, Derivable},
     Datalake,
 };
 
@@ -98,7 +98,7 @@ impl BlockSampledDatalake {
         })
     }
 
-    pub async fn compile(&self, fetcher: Arc<RwLock<AbstractFetcher>>) -> Result<Vec<String>> {
+    pub async fn compile(&self, fetcher: Arc<RwLock<AbstractFetcher>>) -> Result<DatalakeResult> {
         compile_block_sampled_datalake(
             self.block_range_start,
             self.block_range_end,

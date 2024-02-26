@@ -10,11 +10,17 @@ pub struct MemoryFetcher {
     pub cached_mmrs: StoredMMRs,
 }
 
+/// `StoredMMR` is a tuple of root, size, and peaks.
+pub type StoredMMR = (String, u64, Vec<String>);
+
 /// `StoredMMR` is a map of mmr_id to root, size, and peaks.
-type StoredMMRs = HashMap<u64, (String, u64, Vec<String>)>;
+type StoredMMRs = HashMap<u64, StoredMMR>;
+
+/// `StoredHeader` is a tuple of RLP encoded header and MMR proof and element_index and mmr_id.
+pub type StoredHeader = (RlpEncodedValue, MPTProof, u64, u64);
 
 /// `StoredHeader` is a map of block number to a tuple of RLP encoded header and MMR proof and element_index and mmr_id.
-type StoredHeaders = HashMap<u64, (RlpEncodedValue, MPTProof, u64, u64)>;
+pub type StoredHeaders = HashMap<u64, StoredHeader>;
 
 /// `StoredAccount` is a map of account address to a tuple of RLP encoded account, MPT proof and stored storage.
 type StoredAccounts = HashMap<String, (RlpEncodedValue, MPTProof, StoredStorages)>;

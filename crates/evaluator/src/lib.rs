@@ -8,31 +8,18 @@ use tokio::sync::RwLock;
 pub mod aggregation_functions;
 
 use common::{
-    datalake::{base::Derivable, Datalake},
+    datalake::{
+        base::{DatalakeResult, Derivable},
+        Datalake,
+    },
     fetcher::AbstractFetcher,
     task::ComputationalTask,
 };
 
 pub struct EvaluationResult {
+    pub meta_data: HashMap<String, DatalakeResult>,
     pub result: HashMap<String, String>,
     pub result_index: HashMap<String, usize>,
-}
-
-pub struct HeaderBatchesResult {
-    pub headers: Vec<HeaderResult>,
-    pub mmr_meta: MMRMetaResult,
-}
-
-pub struct HeaderResult {
-    pub leaf_idx: u64,
-    pub mmr_proof: Vec<String>,
-    pub rlp_encoded_header: String,
-}
-pub struct MMRMetaResult {
-    pub mmr_id: u64,
-    pub mmr_peaks: Vec<String>,
-    pub mmr_root: String,
-    pub mmr_size: u64,
 }
 
 impl EvaluationResult {
@@ -40,6 +27,7 @@ impl EvaluationResult {
         EvaluationResult {
             result: HashMap::new(),
             result_index: HashMap::new(),
+            meta_data: HashMap::new(),
         }
     }
     pub fn merkle_commit(&self) -> (StandardMerkleTree, StandardMerkleTree) {
@@ -107,16 +95,22 @@ pub async fn evaluator(
     // Evaulate the compute expressions
     for (task_index, compute_expression) in compute_expressions.into_iter().enumerate() {
         let computation_task_id = compute_expression.to_string();
-        let datapoints = compute_expression
+        let datalake_result = compute_expression
             .datalake
             .unwrap()
             .compile(fetcher.clone())
             .await?;
         let aggregation_fn = AggregationFunction::from_str(&compute_expression.aggregate_fn_id)?;
         let aggregation_fn_ctx = compute_expression.aggregate_fn_ctx;
-        let result = aggregation_fn.operation(&datapoints, aggregation_fn_ctx)?;
+        let target_mmr = &datalake_result.mmr[0];
+        let result = aggregation_fn.operation(&target_mmr.compiled_result, aggregation_fn_ctx)?;
         results.result.insert(computation_task_id.clone(), result);
-        results.result_index.insert(computation_task_id, task_index);
+        results
+            .result_index
+            .insert(computation_task_id.clone(), task_index);
+        results
+            .meta_data
+            .insert(computation_task_id, datalake_result);
     }
 
     Ok(results)
