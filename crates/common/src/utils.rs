@@ -40,16 +40,15 @@ pub fn utf8_to_fixed_bytes32(s: &str) -> [u8; 32] {
 }
 
 pub fn bytes_to_hex_string(bytes: &[u8]) -> String {
-    let last_non_zero = bytes.iter().rposition(|&b| b != 0).unwrap_or(0);
+    // Start with "0x" prefix for the hex string
+    let mut hex_str = String::from("0x");
 
-    let hex_str = bytes[..=last_non_zero]
-        .iter()
-        .fold(String::new(), |mut acc, &byte| {
-            write!(acc, "{:02x}", byte).expect("Failed to write");
-            acc
-        });
+    // Convert each byte to hex and append to the string
+    for &byte in bytes.iter() {
+        write!(hex_str, "{:02x}", byte).expect("Failed to write");
+    }
 
-    format!("0x{}", hex_str)
+    hex_str
 }
 
 pub fn last_byte_to_u8(bytes: &[u8]) -> u8 {

@@ -52,7 +52,7 @@ impl EvaluationResult {
             let task_id_hex = Vec::from_hex(task_id).unwrap();
             result_keccak.update(task_id_hex);
             result_keccak.update(B256::from(result));
-            println!("{:?}", B256::from(result));
+
             let result_hash = result_keccak.finalize();
             results_leaves.push(result_hash.to_string());
         }
