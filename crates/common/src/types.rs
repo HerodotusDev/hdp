@@ -6,6 +6,15 @@ use starknet::core::types::FieldElement;
 // for int type, use uint type
 // for string type, if formatted, use chunk[] to store field elements
 
+//TODO:
+// Vec<FieldElement> => def bytes_to_8_bytes_chunks_little(input_bytes):
+// # Split the input_bytes into 8-byte chunks
+// byte_chunks = [input_bytes[i : i + 8] for i in range(0, len(input_bytes), 8)]
+// # Convert each chunk to little-endian integers
+// little_endian_ints = [
+//     int.from_bytes(chunk, byteorder="little") for chunk in byte_chunks
+// return hex(little_endian_ints)
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Uint256 {
     pub low: u128,
@@ -22,9 +31,8 @@ pub struct HeaderProof {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct HeaderProofFormatted {
     pub leaf_idx: u64,
-    /// mmr_path_len is the length of mmr_path
-    pub mmr_path_len: u64,
-    pub mmr_path: Vec<Vec<FieldElement>>,
+    // mmr_path is encoded with poseidon
+    pub mmr_path: Vec<FieldElement>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
@@ -39,7 +47,7 @@ pub struct HeaderFormatted {
     pub rlp: Vec<FieldElement>,
     /// rlp_bytes_len is the byte( 8 bit ) length from rlp string
     pub rlp_bytes_len: u64,
-    pub proof: HeaderProof,
+    pub proof: HeaderProofFormatted,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
@@ -54,9 +62,7 @@ pub struct Account {
 pub struct AccountFormatted {
     pub address: Vec<FieldElement>,
     pub account_key: Uint256,
-    /// proofs_len is the length of proofs
-    pub proofs_len: u64,
-    pub proofs: Vec<MPTProof>,
+    pub proofs: Vec<MPTProofFormatted>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
@@ -68,8 +74,6 @@ pub struct MPTProof {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MPTProofFormatted {
     pub block_number: u64,
-    /// proof_len is the length of proof
-    pub proof_len: u64,
     /// proof_bytes_len is the byte( 8 bit ) length from each proof string
     pub proof_bytes_len: Vec<u64>,
     pub proof: Vec<Vec<FieldElement>>,
@@ -87,11 +91,10 @@ pub struct MMRMeta {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MMRMetaFormatted {
     pub id: u64,
-    pub root: Vec<FieldElement>,
+    pub root: FieldElement,
     pub size: u64,
-    /// peaks_len is the length of peaks
-    pub peaks_len: u64,
-    pub peaks: Vec<Vec<FieldElement>>,
+    // Peaks are encoded with poseidon
+    pub peaks: Vec<FieldElement>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
@@ -108,10 +111,9 @@ pub struct Storage {
 pub struct StorageFormatted {
     pub address: Vec<FieldElement>,
     pub account_key: Uint256,
+    // storage key == storage slot
     pub storage_key: Uint256,
-    /// proofs_len is the length of proofs
-    pub proofs_len: u64,
-    pub proofs: Vec<MPTProof>,
+    pub proofs: Vec<MPTProofFormatted>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -122,19 +124,20 @@ pub struct Task {
     pub task_proof: Vec<FixedBytes<32>>,
     pub result_proof: Vec<FixedBytes<32>>,
     pub datalake: String,
+    // ex. dynamic datalake / block sampled datalake
     pub datalake_type: u8,
-    pub property: Vec<u8>,
+    // ex. "header", "account", "storage"
+    pub property_id: u8,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TaskFormatted {
-    computational_bytes_len: u64,
-    computational_task: Vec<FieldElement>,
-    datalake_bytes_len: u64,
-    datalake: Vec<FieldElement>,
-    datalake_type: u8,
-    property_len: u8,
-    pub property: Vec<u8>,
+    pub computational_bytes_len: u64,
+    pub computational_task: Vec<FieldElement>,
+    pub datalake_bytes_len: u64,
+    pub datalake: Vec<FieldElement>,
+    pub datalake_type: u8,
+    pub property_id: u8,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
