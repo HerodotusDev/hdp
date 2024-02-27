@@ -30,6 +30,17 @@ pub struct EvaluationResult {
     pub result: HashMap<String, String>,
     /// ordered task_id
     pub ordered_tasks: Vec<String>,
+    /// serialized tasks
+    pub serialized_tasks: HashMap<String, String>,
+    /// serialized datalakes
+    pub serialized_datalakes: HashMap<String, EvaluatedDatalake>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct EvaluatedDatalake {
+    serialized_datalake: String,
+    datalake_type: u8,
+    property_type: u8,
 }
 
 impl EvaluationResult {
@@ -38,6 +49,8 @@ impl EvaluationResult {
             result: HashMap::new(),
             ordered_tasks: Vec::new(),
             fetched_data: HashMap::new(),
+            serialized_tasks: HashMap::new(),
+            serialized_datalakes: HashMap::new(),
         }
     }
     pub fn build_merkle_tree(&self) -> (StandardMerkleTree, StandardMerkleTree) {
@@ -97,18 +110,19 @@ impl EvaluationResult {
             let task_proof = tasks_merkle_tree.get_proof(task_id);
             let result_leaf = evaluation_result_to_leaf(task_id, result);
             let result_proof = results_merkle_tree.get_proof(&result_leaf);
+            let computational_task = self.serialized_tasks.get(task_id).unwrap().to_string();
+            let datalake = self.serialized_datalakes.get(task_id).unwrap();
 
             procesed_tasks.push(Task {
-                // TODO: datalake and task serialized bytes
-                computational_task: "".to_string(),
+                computational_task,
                 task_commitment: task_id.to_string(),
                 task_proof,
                 result: result.to_string(),
                 result_proof,
-                datalake: "".to_string(),
+                datalake: datalake.serialized_datalake.clone(),
                 // TODO: datalake type and property
-                datalake_type: 0,
-                property: vec![],
+                datalake_type: datalake.datalake_type,
+                property_type: datalake.property_type,
             });
         }
 
@@ -148,6 +162,7 @@ pub async fn evaluator(
     fetcher: Arc<RwLock<AbstractFetcher>>,
 ) -> Result<EvaluationResult> {
     let mut results = EvaluationResult::new();
+
     // If optional datalake_for_tasks is provided, need to assign the datalake to the corresponding task
     if let Some(datalake) = datalake_for_tasks {
         for (datalake_idx, datalake) in datalake.iter().enumerate() {
@@ -166,21 +181,33 @@ pub async fn evaluator(
     // Evaulate the compute expressions
     for compute_expression in compute_expressions {
         let computation_task_id = compute_expression.to_string();
-
-        let datalake_result = compute_expression
-            .datalake
-            .unwrap()
-            .compile(fetcher.clone())
-            .await?;
+        let serialized_task = compute_expression.serialize()?;
+        let mut datalake = compute_expression.datalake.unwrap();
+        // TODO: in v0 we consider datalake pipeline is single datalake
+        let serialized_datalake = datalake.datalakes_pipeline[0].serialize()?;
+        let datalake_result = datalake.compile(fetcher.clone()).await?;
         let aggregation_fn = AggregationFunction::from_str(&compute_expression.aggregate_fn_id)?;
-        let aggregation_fn_ctx = compute_expression.aggregate_fn_ctx;
-        let result =
-            aggregation_fn.operation(&datalake_result.compiled_results, aggregation_fn_ctx)?;
+        let aggregation_fn_ctx = &compute_expression.aggregate_fn_ctx;
+        let result = aggregation_fn.operation(
+            &datalake_result.compiled_results,
+            aggregation_fn_ctx.clone(),
+        )?;
         results.result.insert(computation_task_id.clone(), result);
         results.ordered_tasks.push(computation_task_id.clone());
         results
             .fetched_data
-            .insert(computation_task_id, datalake_result);
+            .insert(computation_task_id.clone(), datalake_result);
+        results
+            .serialized_tasks
+            .insert(computation_task_id.clone(), serialized_task);
+        results.serialized_datalakes.insert(
+            computation_task_id,
+            EvaluatedDatalake {
+                serialized_datalake,
+                datalake_type: datalake.datalakes_pipeline[0].get_datalake_type(),
+                property_type: datalake.datalakes_pipeline[0].get_property_type(),
+            },
+        );
     }
 
     Ok(results)

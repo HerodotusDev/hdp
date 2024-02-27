@@ -53,8 +53,8 @@ impl BlockSampledDatalake {
         }
     }
 
-    pub fn get_property(&self) -> Vec<u8> {
-        serialize_sampled_property(&self.sampled_property)
+    pub fn get_property_type(&self) -> u8 {
+        serialize_sampled_property(&self.sampled_property)[0]
     }
 
     pub fn serialize(&self) -> Result<String> {

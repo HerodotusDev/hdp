@@ -127,7 +127,7 @@ pub struct Task {
     // ex. dynamic datalake / block sampled datalake
     pub datalake_type: u8,
     // ex. "header", "account", "storage"
-    pub property_id: u8,
+    pub property_type: u8,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -137,7 +137,7 @@ pub struct TaskFormatted {
     pub datalake_bytes_len: u64,
     pub datalake: Vec<FieldElement>,
     pub datalake_type: u8,
-    pub property_id: u8,
+    pub property_type: u8,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

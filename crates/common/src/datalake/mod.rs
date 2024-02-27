@@ -41,7 +41,7 @@ impl Datalake {
         }
     }
 
-    pub fn get_type(&self) -> u8 {
+    pub fn get_datalake_type(&self) -> u8 {
         match self {
             Datalake::BlockSampled(_) => 0,
             Datalake::DynamicLayout(_) => 1,
@@ -49,9 +49,9 @@ impl Datalake {
         }
     }
 
-    pub fn get_property(&self) -> Vec<u8> {
+    pub fn get_property_type(&self) -> u8 {
         match self {
-            Datalake::BlockSampled(datalake) => datalake.get_property(),
+            Datalake::BlockSampled(datalake) => datalake.get_property_type(),
             Datalake::DynamicLayout(_) => panic!("Unsupported datalake type"),
             Datalake::Unknown => panic!("Unknown datalake type"),
         }
