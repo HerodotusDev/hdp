@@ -1,58 +1,25 @@
 use anyhow::{bail, Ok, Result};
+use serde::{Deserialize, Serialize};
 use std::{fmt, sync::Arc};
 use tokio::sync::RwLock;
 
-use crate::fetcher::AbstractFetcher;
+use crate::{
+    fetcher::AbstractFetcher,
+    types::{Account, Header, MMRMeta, Storage},
+};
 
 use super::Datalake;
 
 //==============================================================================
 // format for input.json
 // 1 task = batched blocks
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DatalakeResult {
-    pub mmr: Vec<MMRResult>,
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct MMRResult {
-    pub compiled_result: Vec<String>,
-    pub blocks: Vec<BlockResult>,
-    pub mmr_meta: MMRMetaResult,
-}
-
-// depends on the datalake type
-#[derive(Debug, Clone, PartialEq)]
-pub struct BlockResult {
-    // header data
-    pub leaf_idx: u64,
-    pub mmr_proof: Vec<String>,
-    pub rlp_encoded_header: String,
-    // account data
-    pub account: Option<AccountResult>,
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct AccountResult {
-    pub address: String,
-    pub account_proof: Vec<String>,
-    pub rlp_encoded_account: String,
-    pub storage: Option<StorageResult>,
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct StorageResult {
-    pub storage_proof: Vec<String>,
-    pub storage_key: String,
-    pub storage_value: String,
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct MMRMetaResult {
-    pub mmr_id: u64,
-    pub mmr_peaks: Vec<String>,
-    pub mmr_root: String,
-    pub mmr_size: u64,
+    pub compiled_results: Vec<String>,
+    pub headers: Vec<Header>,
+    pub accounts: Vec<Account>,
+    pub storages: Vec<Storage>,
+    pub mmr_meta: MMRMeta,
 }
 
 //==============================================================================

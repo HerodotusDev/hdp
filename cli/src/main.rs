@@ -150,6 +150,8 @@ async fn main() {
             .await
             .unwrap();
 
+            println!("res: \n{:?}\n", res);
+
             println!("rpc_url: \n{:?}\n", config.rpc_url);
             let duration = start.elapsed();
             println!("Time elapsed in main() is: {:?}", duration);

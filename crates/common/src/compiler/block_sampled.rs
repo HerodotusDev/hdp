@@ -5,10 +5,11 @@ use crate::{
         account::{decode_account_field, AccountField},
         header::{decode_header_field, HeaderField},
     },
-    datalake::base::{AccountResult, BlockResult, DatalakeResult, MMRResult, StorageResult},
+    datalake::base::DatalakeResult,
     fetcher::AbstractFetcher,
+    types::{Account, Header, HeaderProof, MPTProof, Storage},
 };
-use anyhow::Result;
+use anyhow::{bail, Result};
 use tokio::sync::RwLock;
 
 pub async fn compile_block_sampled_datalake(
@@ -31,7 +32,9 @@ pub async fn compile_block_sampled_datalake(
         .get_full_header_with_proof(target_block_range.clone())
         .await?;
     let mmr_meta = full_header_and_proof_result.1;
-    let mut blocks: Vec<BlockResult> = vec![];
+    let mut headers: Vec<Header> = vec![];
+    let mut accounts: Vec<Account> = vec![];
+    let mut storages: Vec<Storage> = vec![];
 
     match collection {
         "header" => {
@@ -39,25 +42,29 @@ pub async fn compile_block_sampled_datalake(
 
             for block in target_block_range {
                 let fetched_block = full_header_and_proof_result.0.get(&block).unwrap().clone();
-                let account = None;
+
                 let value = decode_header_field(
                     &fetched_block.0,
                     HeaderField::from_str(&property.to_uppercase()).unwrap(),
                 );
 
-                blocks.push(BlockResult {
-                    leaf_idx: fetched_block.2,
-                    mmr_proof: fetched_block.1,
-                    rlp_encoded_header: fetched_block.0,
-                    account,
+                headers.push(Header {
+                    rlp: fetched_block.0,
+                    proof: HeaderProof {
+                        leaf_idx: fetched_block.2,
+                        mmr_path: fetched_block.1,
+                    },
                 });
 
                 aggregation_set.push(value);
             }
         }
         "account" => {
-            let account = property_parts[1];
+            let address = property_parts[1];
             let property = property_parts[2];
+
+            let mut account_proofs: Vec<MPTProof> = vec![];
+            let mut encoded_account = "".to_string();
 
             for i in block_range_start..=block_range_end {
                 if i % increment != 0 {
@@ -65,32 +72,45 @@ pub async fn compile_block_sampled_datalake(
                 }
                 let fetched_block = full_header_and_proof_result.0.get(&i).unwrap().clone();
                 let acc = abstract_fetcher
-                    .get_account_with_proof(i, account.to_string())
+                    .get_account_with_proof(i, address.to_string())
                     .await;
+                encoded_account = acc.0.clone();
 
                 let value = decode_account_field(
                     &acc.0,
                     AccountField::from_str(&property.to_uppercase()).unwrap(),
                 );
 
-                blocks.push(BlockResult {
-                    leaf_idx: fetched_block.2,
-                    mmr_proof: fetched_block.1,
-                    rlp_encoded_header: fetched_block.0,
-                    account: Some(AccountResult {
-                        address: account.to_string(),
-                        account_proof: acc.1,
-                        rlp_encoded_account: acc.0,
-                        storage: None,
-                    }),
+                headers.push(Header {
+                    rlp: fetched_block.0,
+                    proof: HeaderProof {
+                        leaf_idx: fetched_block.2,
+                        mmr_path: fetched_block.1,
+                    },
                 });
+
+                let account_proof = MPTProof {
+                    block_number: i,
+                    proof: acc.1,
+                };
+
+                account_proofs.push(account_proof);
 
                 aggregation_set.push(value);
             }
+
+            accounts.push(Account {
+                address: address.to_string(),
+                account_key: encoded_account,
+                proofs: account_proofs,
+            });
         }
         "storage" => {
-            let account = property_parts[1];
+            let address = property_parts[1];
             let slot = property_parts[2];
+
+            let mut storage_proofs: Vec<MPTProof> = vec![];
+            let mut encoded_account = "".to_string();
 
             for i in block_range_start..=block_range_end {
                 if i % increment != 0 {
@@ -98,38 +118,44 @@ pub async fn compile_block_sampled_datalake(
                 }
                 let fetched_block = full_header_and_proof_result.0.get(&i).unwrap().clone();
                 let acc = abstract_fetcher
-                    .get_account_with_proof(i, account.to_string())
+                    .get_account_with_proof(i, address.to_string())
                     .await;
+                encoded_account = acc.0.clone();
                 let value = abstract_fetcher
-                    .get_storage_value_with_proof(i, account.to_string(), slot.to_string())
+                    .get_storage_value_with_proof(i, address.to_string(), slot.to_string())
                     .await;
 
-                blocks.push(BlockResult {
-                    leaf_idx: fetched_block.2,
-                    mmr_proof: fetched_block.1,
-                    rlp_encoded_header: fetched_block.0,
-                    account: Some(AccountResult {
-                        address: account.to_string(),
-                        account_proof: acc.1,
-                        rlp_encoded_account: acc.0,
-                        storage: Some(StorageResult {
-                            storage_proof: value.1,
-                            storage_key: slot.to_string(),
-                            storage_value: value.0.clone(),
-                        }),
-                    }),
+                headers.push(Header {
+                    rlp: fetched_block.0,
+                    proof: HeaderProof {
+                        leaf_idx: fetched_block.2,
+                        mmr_path: fetched_block.1,
+                    },
                 });
+
+                storage_proofs.push(MPTProof {
+                    block_number: i,
+                    proof: value.1,
+                });
+
                 aggregation_set.push(value.0);
             }
+
+            storages.push(Storage {
+                address: address.to_string(),
+                account_key: encoded_account,
+                storage_key: slot.to_string(),
+                proofs: storage_proofs,
+            });
         }
-        _ => todo!(),
+        _ => bail!("Unknown collection type"),
     }
 
     Ok(DatalakeResult {
-        mmr: vec![MMRResult {
-            compiled_result: aggregation_set,
-            blocks,
-            mmr_meta,
-        }],
+        compiled_results: aggregation_set,
+        headers,
+        accounts,
+        storages,
+        mmr_meta,
     })
 }

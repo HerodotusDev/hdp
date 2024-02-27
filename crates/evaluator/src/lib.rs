@@ -2,6 +2,7 @@ use aggregation_functions::AggregationFunction;
 use alloy_merkle_tree::standard_binary_tree::StandardMerkleTree;
 use alloy_primitives::{hex::FromHex, Keccak256, B256, U256};
 use anyhow::{bail, Result};
+use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, str::FromStr, sync::Arc};
 use tokio::sync::RwLock;
 
@@ -16,6 +17,7 @@ use common::{
     task::ComputationalTask,
 };
 
+#[derive(Serialize, Deserialize, Debug)]
 pub struct EvaluationResult {
     pub meta_data: HashMap<String, DatalakeResult>,
     pub result: HashMap<String, String>,
@@ -102,8 +104,8 @@ pub async fn evaluator(
             .await?;
         let aggregation_fn = AggregationFunction::from_str(&compute_expression.aggregate_fn_id)?;
         let aggregation_fn_ctx = compute_expression.aggregate_fn_ctx;
-        let target_mmr = &datalake_result.mmr[0];
-        let result = aggregation_fn.operation(&target_mmr.compiled_result, aggregation_fn_ctx)?;
+        let result =
+            aggregation_fn.operation(&datalake_result.compiled_results, aggregation_fn_ctx)?;
         results.result.insert(computation_task_id.clone(), result);
         results
             .result_index

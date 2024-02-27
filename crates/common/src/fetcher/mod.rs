@@ -3,7 +3,7 @@ use std::{collections::HashMap, time::Instant};
 
 use crate::{
     block::{account::Account, header::BlockHeader},
-    datalake::base::MMRMetaResult,
+    types::MMRMeta,
 };
 
 use self::{
@@ -43,15 +43,15 @@ impl AbstractFetcher {
     pub async fn get_full_header_with_proof(
         &mut self,
         block_numbers: Vec<u64>,
-    ) -> Result<(StoredHeaders, MMRMetaResult)> {
+    ) -> Result<(StoredHeaders, MMRMeta)> {
         //? A map of block numbers to a boolean indicating whether the block was fetched.
         let mut blocks_map: HashMap<u64, (bool, StoredHeader)> = HashMap::new();
         // TODO: in v0 we assume all the blocks in data lake are exist in 1 MMR
-        let mut mmr_assume_for_now = MMRMetaResult {
-            mmr_id: 0,
-            mmr_peaks: vec![],
-            mmr_root: "".to_string(),
-            mmr_size: 0,
+        let mut mmr_assume_for_now = MMRMeta {
+            id: 0,
+            root: "".to_string(),
+            size: 0,
+            peaks: vec![],
         };
 
         // 1. Fetch headers from memory
@@ -93,11 +93,11 @@ impl AbstractFetcher {
                             mmr_meta.mmr_size,
                             mmr_meta.mmr_peaks.clone(),
                         );
-                        mmr_assume_for_now = MMRMetaResult {
-                            mmr_id: mmr_meta.mmr_id,
-                            mmr_peaks: mmr_meta.mmr_peaks.clone(),
-                            mmr_root: mmr_meta.mmr_root.clone(),
-                            mmr_size: mmr_meta.mmr_size,
+                        mmr_assume_for_now = MMRMeta {
+                            id: mmr_meta.mmr_id,
+                            root: mmr_meta.mmr_root.clone(),
+                            size: mmr_meta.mmr_size,
+                            peaks: mmr_meta.mmr_peaks.clone(),
                         };
                         blocks_map.insert(
                             *block_number,
