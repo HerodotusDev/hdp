@@ -1,3 +1,4 @@
+use alloy_primitives::FixedBytes;
 use serde::{Deserialize, Serialize};
 use starknet::core::types::FieldElement;
 
@@ -115,10 +116,14 @@ pub struct StorageFormatted {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Task {
-    computational_task: String,
-    datalake: String,
-    datalake_type: u8,
-    property_id: u8,
+    pub computational_task: String,
+    pub task_commitment: String,
+    pub result: String,
+    pub task_proof: Vec<FixedBytes<32>>,
+    pub result_proof: Vec<FixedBytes<32>>,
+    pub datalake: String,
+    pub datalake_type: u8,
+    pub property: Vec<u8>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -128,7 +133,8 @@ pub struct TaskFormatted {
     datalake_bytes_len: u64,
     datalake: Vec<FieldElement>,
     datalake_type: u8,
-    property_id: u8,
+    property_len: u8,
+    pub property: Vec<u8>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

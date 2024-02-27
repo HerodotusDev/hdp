@@ -53,6 +53,10 @@ impl BlockSampledDatalake {
         }
     }
 
+    pub fn get_property(&self) -> Vec<u8> {
+        serialize_sampled_property(&self.sampled_property)
+    }
+
     pub fn serialize(&self) -> Result<String> {
         let block_range_start = DynSolValue::Uint(U256::from(self.block_range_start), 256);
         let block_range_end = DynSolValue::Uint(U256::from(self.block_range_end), 256);

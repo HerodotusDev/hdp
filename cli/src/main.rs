@@ -1,7 +1,12 @@
-use std::sync::Arc;
+use std::{sync::Arc, vec};
 
 use clap::{Parser, Subcommand};
-use common::{config::Config, datalake::Datalake, fetcher::AbstractFetcher};
+use common::{
+    config::Config,
+    datalake::Datalake,
+    fetcher::AbstractFetcher,
+    types::{ProcessedResult, Task},
+};
 use decoder::args_codec::{
     datalake_decoder, datalakes_decoder, datalakes_encoder, task_decoder, tasks_decoder,
     tasks_encoder,
@@ -150,28 +155,44 @@ async fn main() {
             .await
             .unwrap();
 
-            println!("res: \n{:?}\n", res);
-
-            println!("rpc_url: \n{:?}\n", config.rpc_url);
             let duration = start.elapsed();
             println!("Time elapsed in main() is: {:?}", duration);
             let (tasks_merkle_tree, results_merkle_tree) = res.merkle_commit();
             let task_merkle_root = tasks_merkle_tree.root();
             let result_merkle_root = results_merkle_tree.root();
-            println!("task_merkle_root: {:?}", task_merkle_root);
-            println!("result_merkle_root: {:?}", result_merkle_root);
-            // sort the result by the task index
-            let mut sorted_result: Vec<(&String, &String)> = res.result.iter().collect();
-            sorted_result.sort_by_key(|(task_id, _)| res.result_index.get(*task_id).unwrap());
-            println!("result_evaluation: {:?}", sorted_result);
 
-            for (index, (task_id, result)) in sorted_result.iter().enumerate() {
-                let task_proof = tasks_merkle_tree.get_proof(task_id);
-                let result_leaf = evaluation_result_to_leaf(task_id, result);
+            let mut procesed_tasks: Vec<Task> = vec![];
+
+            for task_id in res.ordered_tasks {
+                let result = res.result.get(&task_id).unwrap();
+                let task_proof = tasks_merkle_tree.get_proof(&task_id);
+                let result_leaf = evaluation_result_to_leaf(&task_id, result);
                 let result_proof = results_merkle_tree.get_proof(&result_leaf);
-                println!("index: {:?}", index);
-                println!("task_proof: {:?}", task_proof);
-                println!("result_proof: {:?}", result_proof);
+                let fetched_data = res.fetched_data.get(&task_id).unwrap();
+
+                procesed_tasks.push(Task {
+                    computational_task: "".to_string(),
+                    task_commitment: task_id.to_string(),
+                    task_proof,
+                    result: result.to_string(),
+                    result_proof,
+                    datalake: "".to_string(),
+                    datalake_type: 0,
+                    property: vec![],
+                });
+
+                let processed_result = ProcessedResult {
+                    results_root: result_merkle_root.to_string(),
+                    tasks_root: task_merkle_root.to_string(),
+                    headers: fetched_data.headers.clone(),
+                    accounts: fetched_data.accounts.clone(),
+                    mmr: fetched_data.mmr_meta.clone(),
+                    storages: fetched_data.storages.clone(),
+                    tasks: procesed_tasks.clone(),
+                };
+
+                let j = serde_json::to_string(&processed_result).unwrap();
+                println!("{}", j);
             }
         }
     }

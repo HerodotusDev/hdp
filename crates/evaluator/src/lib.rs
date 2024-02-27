@@ -19,27 +19,28 @@ use common::{
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct EvaluationResult {
-    pub meta_data: HashMap<String, DatalakeResult>,
+    /// task_id -> fetched datalake relevant data
+    pub fetched_data: HashMap<String, DatalakeResult>,
+    /// task_id -> compute result
     pub result: HashMap<String, String>,
-    pub result_index: HashMap<String, usize>,
+    /// ordered task_id
+    pub ordered_tasks: Vec<String>,
 }
 
 impl EvaluationResult {
     pub fn new() -> Self {
         EvaluationResult {
             result: HashMap::new(),
-            result_index: HashMap::new(),
-            meta_data: HashMap::new(),
+            ordered_tasks: Vec::new(),
+            fetched_data: HashMap::new(),
         }
     }
     pub fn merkle_commit(&self) -> (StandardMerkleTree, StandardMerkleTree) {
         let mut tasks_leaves = Vec::new();
         let mut results_leaves = Vec::new();
-        // sort the result by the task index
-        let mut sorted_result: Vec<(&String, &String)> = self.result.iter().collect();
-        sorted_result.sort_by_key(|(task_id, _)| self.result_index.get(*task_id).unwrap());
 
-        for (task_id, result) in sorted_result {
+        for task_id in &self.ordered_tasks {
+            let result = self.result.get(task_id).unwrap();
             tasks_leaves.push(task_id.to_string());
             let result = U256::from_str(result).unwrap();
             let mut result_keccak = Keccak256::new();
@@ -95,8 +96,9 @@ pub async fn evaluator(
     }
 
     // Evaulate the compute expressions
-    for (task_index, compute_expression) in compute_expressions.into_iter().enumerate() {
+    for compute_expression in compute_expressions {
         let computation_task_id = compute_expression.to_string();
+
         let datalake_result = compute_expression
             .datalake
             .unwrap()
@@ -107,11 +109,9 @@ pub async fn evaluator(
         let result =
             aggregation_fn.operation(&datalake_result.compiled_results, aggregation_fn_ctx)?;
         results.result.insert(computation_task_id.clone(), result);
+        results.ordered_tasks.push(computation_task_id.clone());
         results
-            .result_index
-            .insert(computation_task_id.clone(), task_index);
-        results
-            .meta_data
+            .fetched_data
             .insert(computation_task_id, datalake_result);
     }
 
