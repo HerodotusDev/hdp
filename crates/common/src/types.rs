@@ -12,7 +12,7 @@ pub struct Uint256 {
     pub high: u128,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub struct HeaderProof {
     pub leaf_idx: u64,
     pub mmr_path: Vec<String>,
@@ -27,7 +27,7 @@ pub struct HeaderProofFormatted {
     pub mmr_path: Vec<Vec<FieldElement>>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub struct Header {
     pub rlp: String,
     pub proof: HeaderProof,
@@ -42,7 +42,7 @@ pub struct HeaderFormatted {
     pub proof: HeaderProof,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub struct Account {
     pub address: String,
     // U256 type
@@ -59,7 +59,7 @@ pub struct AccountFormatted {
     pub proofs: Vec<MPTProof>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub struct MPTProof {
     pub block_number: u64,
     pub proof: Vec<String>,
@@ -94,7 +94,7 @@ pub struct MMRMetaFormatted {
     pub peaks: Vec<Vec<FieldElement>>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub struct Storage {
     pub address: String,
     // U256 type
