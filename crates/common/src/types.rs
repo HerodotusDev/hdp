@@ -1,22 +1,12 @@
 use alloy_primitives::hex;
 use alloy_primitives::FixedBytes;
 use serde::{Deserialize, Serialize};
-use starknet::core::types::FieldElement;
 
 //==============================================================================
 // for int type, use uint type
 // for string type, if formatted, use chunk[] to store field elements
 
-//TODO:
-// Vec<FieldElement> => def bytes_to_8_bytes_chunks_little(input_bytes):
-// # Split the input_bytes into 8-byte chunks
-// byte_chunks = [input_bytes[i : i + 8] for i in range(0, len(input_bytes), 8)]
-// # Convert each chunk to little-endian integers
-// little_endian_ints = [
-//     int.from_bytes(chunk, byteorder="little") for chunk in byte_chunks
-// return hex(little_endian_ints)
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub struct Uint256 {
     pub low: String,
     pub high: String,
@@ -29,7 +19,7 @@ pub struct HeaderProof {
 }
 
 /// HeaderProofFormatted is the formatted version of HeaderProof
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub struct HeaderProofFormatted {
     pub leaf_idx: u64,
     // mmr_path is encoded with poseidon
@@ -58,7 +48,7 @@ impl Header {
 }
 
 /// HeaderFormatted is the formatted version of Header
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub struct HeaderFormatted {
     pub rlp: Vec<String>,
     /// rlp_bytes_len is the byte( 8 bit ) length from rlp string
@@ -109,7 +99,7 @@ impl Account {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub struct AccountFormatted {
     pub address: Vec<String>,
     pub account_key: Uint256,
@@ -122,15 +112,14 @@ pub struct MPTProof {
     pub proof: Vec<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub struct MPTProofFormatted {
     pub block_number: u64,
     /// proof_bytes_len is the byte( 8 bit ) length from each proof string
     pub proof_bytes_len: Vec<u64>,
     pub proof: Vec<Vec<String>>,
 }
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub struct MMRMeta {
     pub id: u64,
     pub root: String,
@@ -149,16 +138,54 @@ pub struct Storage {
     pub proofs: Vec<MPTProof>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+//TODO: not tested yet
+impl Storage {
+    pub fn to_cairo_format(&self) -> StorageFormatted {
+        let address_chunk_result = hex_to_8_byte_chunks_little_endian(&self.address);
+        let account_key = split_hex_into_key_parts(&self.account_key);
+        let storage_key = split_hex_into_key_parts(&self.storage_key);
+        let proofs = self
+            .proofs
+            .iter()
+            .map(|proof| {
+                let proof_chunk_result: Vec<CairoFormattedChunkResult> = proof
+                    .proof
+                    .iter()
+                    .map(|proof| hex_to_8_byte_chunks_little_endian(proof))
+                    .collect();
+
+                let proof_bytes_len = proof_chunk_result.iter().map(|x| x.chunks_len).collect();
+                let proof_result: Vec<Vec<String>> = proof_chunk_result
+                    .iter()
+                    .map(|x| x.chunks.clone())
+                    .collect();
+
+                MPTProofFormatted {
+                    block_number: proof.block_number,
+                    proof_bytes_len,
+                    proof: proof_result,
+                }
+            })
+            .collect();
+        StorageFormatted {
+            address: address_chunk_result.chunks,
+            account_key,
+            storage_key,
+            proofs,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub struct StorageFormatted {
-    pub address: Vec<FieldElement>,
+    pub address: Vec<String>,
     pub account_key: Uint256,
     // storage key == storage slot
     pub storage_key: Uint256,
     pub proofs: Vec<MPTProofFormatted>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub struct Task {
     pub computational_task: String,
     pub task_commitment: String,
@@ -172,12 +199,28 @@ pub struct Task {
     pub property_type: u8,
 }
 
+impl Task {
+    pub fn to_cairo_format(&self) -> TaskFormatted {
+        let computational_task_chunk_result =
+            hex_to_8_byte_chunks_little_endian(&self.computational_task);
+        let datalake_chunk_result = hex_to_8_byte_chunks_little_endian(&self.datalake);
+        TaskFormatted {
+            computational_bytes_len: computational_task_chunk_result.chunks_len,
+            computational_task: computational_task_chunk_result.chunks,
+            datalake_bytes_len: datalake_chunk_result.chunks_len,
+            datalake: datalake_chunk_result.chunks,
+            datalake_type: self.datalake_type,
+            property_type: self.property_type,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TaskFormatted {
     pub computational_bytes_len: u64,
-    pub computational_task: Vec<FieldElement>,
+    pub computational_task: Vec<String>,
     pub datalake_bytes_len: u64,
-    pub datalake: Vec<FieldElement>,
+    pub datalake: Vec<String>,
     pub datalake_type: u8,
     pub property_type: u8,
 }
@@ -196,7 +239,7 @@ pub struct ProcessedResult {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct ResultFormatted {
+pub struct ProcessedResultFormatted {
     pub results_root: Uint256,
     pub tasks_root: Uint256,
     pub headers: Vec<HeaderFormatted>,

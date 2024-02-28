@@ -1,7 +1,6 @@
 use alloy_primitives::{hex::FromHex, keccak256};
 use common::types::{
-    hex_to_8_byte_chunks_little_endian, split_hex_into_key_parts, Account, Header, HeaderProof,
-    MPTProof, Task, Uint256,
+    split_hex_into_key_parts, Account, Header, HeaderProof, MPTProof, Task, Uint256,
 };
 
 #[test]
@@ -623,10 +622,10 @@ fn cairo_format_tasks() {
         property_type: 2
     };
 
-    let computational_task_format =
-        hex_to_8_byte_chunks_little_endian(&original_task.computational_task);
+    let formatted_task = original_task.to_cairo_format();
+
     assert_eq!(
-        computational_task_format.chunks,
+        formatted_task.computational_task,
         vec![
             "0x8710b1cee89fc623",
             "0xcdcd8890a0b7fe2",
@@ -647,11 +646,10 @@ fn cairo_format_tasks() {
         ]
     );
 
-    assert_eq!(computational_task_format.chunks_len, 128);
+    assert_eq!(formatted_task.computational_bytes_len, 128);
 
-    let datalake_format = hex_to_8_byte_chunks_little_endian(&original_task.datalake);
     assert_eq!(
-        datalake_format.chunks,
+        formatted_task.datalake,
         vec![
             "0x0",
             "0x0",
@@ -684,5 +682,5 @@ fn cairo_format_tasks() {
         ]
     );
 
-    assert_eq!(datalake_format.chunks_len, 224);
+    assert_eq!(formatted_task.datalake_bytes_len, 224);
 }

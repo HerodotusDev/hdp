@@ -19,7 +19,10 @@ use common::{
     },
     fetcher::AbstractFetcher,
     task::ComputationalTask,
-    types::{Account, Header, MMRMeta, ProcessedResult, Storage, Task},
+    types::{
+        split_hex_into_key_parts, Account, AccountFormatted, Header, HeaderFormatted, MMRMeta,
+        ProcessedResult, ProcessedResultFormatted, Storage, StorageFormatted, Task, TaskFormatted,
+    },
 };
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -150,18 +153,33 @@ impl EvaluationResult {
         let result_merkle_root = results_merkle_tree.root();
 
         // 3. flatten the datalake result for all tasks
-        let mut flattened_deaders: HashSet<Header> = HashSet::new();
-        let mut flattened_accounts: HashSet<Account> = HashSet::new();
-        let mut flattened_storages: HashSet<Storage> = HashSet::new();
+        let mut flattened_deaders: HashSet<HeaderFormatted> = HashSet::new();
+        let mut flattened_accounts: HashSet<AccountFormatted> = HashSet::new();
+        let mut flattened_storages: HashSet<StorageFormatted> = HashSet::new();
         let mut assume_mmr_meta: Option<MMRMeta> = None;
 
-        let mut procesed_tasks: Vec<Task> = vec![];
+        let mut procesed_tasks: Vec<TaskFormatted> = vec![];
 
         for task_id in &self.ordered_tasks {
             let datalake_result = self.fetched_data.get(task_id).unwrap();
-            let header_set: HashSet<Header> = datalake_result.headers.iter().cloned().collect();
-            let account_set: HashSet<Account> = datalake_result.accounts.iter().cloned().collect();
-            let storage_set: HashSet<Storage> = datalake_result.storages.iter().cloned().collect();
+            let header_set: HashSet<HeaderFormatted> = datalake_result
+                .headers
+                .iter()
+                .cloned()
+                .map(|h| h.to_cairo_format())
+                .collect();
+            let account_set: HashSet<AccountFormatted> = datalake_result
+                .accounts
+                .iter()
+                .cloned()
+                .map(|a| a.to_cairo_format())
+                .collect();
+            let storage_set: HashSet<StorageFormatted> = datalake_result
+                .storages
+                .iter()
+                .cloned()
+                .map(|s| s.to_cairo_format())
+                .collect();
             flattened_deaders.extend(header_set);
             flattened_accounts.extend(account_set);
             flattened_storages.extend(storage_set);
@@ -173,8 +191,7 @@ impl EvaluationResult {
             let result_proof = results_merkle_tree.get_proof(&result_leaf);
             let computational_task = self.serialized_tasks.get(task_id).unwrap().to_string();
             let datalake = self.serialized_datalakes.get(task_id).unwrap();
-
-            procesed_tasks.push(Task {
+            let task = Task {
                 computational_task,
                 task_commitment: task_id.to_string(),
                 task_proof,
@@ -183,12 +200,14 @@ impl EvaluationResult {
                 datalake: datalake.serialized_datalake.clone(),
                 datalake_type: datalake.datalake_type,
                 property_type: datalake.property_type,
-            });
+            };
+
+            procesed_tasks.push(task.to_cairo_format());
         }
 
-        let processed_result = ProcessedResult {
-            results_root: result_merkle_root.to_string(),
-            tasks_root: task_merkle_root.to_string(),
+        let processed_result = ProcessedResultFormatted {
+            results_root: split_hex_into_key_parts(&result_merkle_root.to_string()),
+            tasks_root: split_hex_into_key_parts(&task_merkle_root.to_string()),
             headers: flattened_deaders.into_iter().collect(),
             accounts: flattened_accounts.into_iter().collect(),
             mmr: assume_mmr_meta.unwrap(),
