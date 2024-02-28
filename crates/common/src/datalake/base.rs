@@ -1,16 +1,34 @@
-use anyhow::{bail, Result};
+use anyhow::{bail, Ok, Result};
+use serde::{Deserialize, Serialize};
 use std::{fmt, sync::Arc};
 use tokio::sync::RwLock;
 
-use crate::fetcher::AbstractFetcher;
+use crate::{
+    fetcher::AbstractFetcher,
+    types::{Account, Header, MMRMeta, Storage},
+};
 
 use super::Datalake;
+
+//==============================================================================
+// format for input.json
+// 1 task = batched blocks
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DatalakeResult {
+    pub compiled_results: Vec<String>,
+    pub headers: Vec<Header>,
+    pub accounts: Vec<Account>,
+    pub storages: Vec<Storage>,
+    pub mmr_meta: MMRMeta,
+}
+
+//==============================================================================
 
 /// DatalakeBase is a type that can be used to store data
 pub struct DatalakeBase {
     pub identifier: String,
     pub datalakes_pipeline: Vec<Datalake>,
-    pub datapoints: Vec<String>,
+    pub datapoints: Vec<DatalakeResult>,
 }
 
 impl fmt::Debug for DatalakeBase {
@@ -18,7 +36,7 @@ impl fmt::Debug for DatalakeBase {
         f.debug_struct("DatalakeBase")
             .field("identifier", &self.identifier)
             .field("datalakes_pipeline", &"datalakes_pipeline")
-            .field("datapoints", &self.datapoints)
+            .field("datapoints", &"datapoints")
             .finish()
     }
 }
@@ -38,19 +56,21 @@ impl DatalakeBase {
     //     self.identifier = format!("{}{}", self.identifier, other.identifier);
     // }
 
-    pub async fn compile(&mut self, fetcher: Arc<RwLock<AbstractFetcher>>) -> Result<Vec<String>> {
-        self.datapoints.clear();
-        for datalake_type in &self.datalakes_pipeline {
-            let result_datapoints = match datalake_type {
-                Datalake::BlockSampled(datalake) => datalake.compile(fetcher.clone()).await?,
-                Datalake::DynamicLayout(datalake) => datalake.compile().await?,
-                Datalake::Unknown => {
-                    bail!("Unknown datalake type");
-                }
-            };
-            self.datapoints.extend(result_datapoints);
-        }
-        Ok(self.datapoints.clone())
+    // returns the result of the compilation of the datalake
+    pub async fn compile(
+        &mut self,
+        fetcher: Arc<RwLock<AbstractFetcher>>,
+    ) -> Result<DatalakeResult> {
+        let datalake_type = self.datalakes_pipeline.first().unwrap();
+        let result_datapoints = match datalake_type {
+            Datalake::BlockSampled(datalake) => datalake.compile(fetcher.clone()).await?,
+            Datalake::DynamicLayout(_) => bail!("dynamic datalake type doesn't support"),
+            Datalake::Unknown => {
+                bail!("Unknown datalake type");
+            }
+        };
+
+        Ok(result_datapoints)
     }
 }
 

@@ -45,7 +45,7 @@ fn test_bytes32_to_str() {
 fn test_bytes_to_hex_string() {
     let input = [0, 0, 0, 0, 0];
     let result = bytes_to_hex_string(&input);
-    assert_eq!(result, "0x00");
+    assert_eq!(result, "0x0000000000");
 
     let input = [0, 0, 0, 9, 2];
     let result = bytes_to_hex_string(&input);

@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{sync::Arc, vec};
 
 use clap::{Parser, Subcommand};
 use common::{config::Config, datalake::Datalake, fetcher::AbstractFetcher};
@@ -6,7 +6,7 @@ use decoder::args_codec::{
     datalake_decoder, datalakes_decoder, datalakes_encoder, task_decoder, tasks_decoder,
     tasks_encoder,
 };
-use evaluator::{evaluation_result_to_leaf, evaluator};
+use evaluator::evaluator;
 use tokio::sync::RwLock;
 
 /// Simple Herodotus Data Processor CLI to handle tasks and datalakes
@@ -49,6 +49,13 @@ enum Commands {
         tasks: Option<String>,
         datalakes: Option<String>,
         rpc_url: Option<String>,
+        /// Path to the file to save the output result
+        #[arg(short, long)]
+        output: Option<String>,
+
+        /// Formats evaluated result into Cairo program compatible format
+        #[arg(long, short, action = clap::ArgAction::SetTrue)]
+        cairo_format: bool,
     },
 }
 
@@ -129,6 +136,8 @@ async fn main() {
             tasks,
             datalakes,
             rpc_url,
+            output,
+            cairo_format,
         } => {
             let config = Config::init(rpc_url, datalakes, tasks).await;
             let abstract_fetcher = AbstractFetcher::new(config.rpc_url.clone());
@@ -150,26 +159,16 @@ async fn main() {
             .await
             .unwrap();
 
-            println!("rpc_url: \n{:?}\n", config.rpc_url);
             let duration = start.elapsed();
             println!("Time elapsed in main() is: {:?}", duration);
-            let (tasks_merkle_tree, results_merkle_tree) = res.merkle_commit();
-            let task_merkle_root = tasks_merkle_tree.root();
-            let result_merkle_root = results_merkle_tree.root();
-            println!("task_merkle_root: {:?}", task_merkle_root);
-            println!("result_merkle_root: {:?}", result_merkle_root);
-            // sort the result by the task index
-            let mut sorted_result: Vec<(&String, &String)> = res.result.iter().collect();
-            sorted_result.sort_by_key(|(task_id, _)| res.result_index.get(*task_id).unwrap());
-            println!("result_evaluation: {:?}", sorted_result);
+            let result_json = res.to_general_json().unwrap();
+            println!("result_json: \n{}\n", result_json);
 
-            for (index, (task_id, result)) in sorted_result.iter().enumerate() {
-                let task_proof = tasks_merkle_tree.get_proof(task_id);
-                let result_leaf = evaluation_result_to_leaf(task_id, result);
-                let result_proof = results_merkle_tree.get_proof(&result_leaf);
-                println!("index: {:?}", index);
-                println!("task_proof: {:?}", task_proof);
-                println!("result_proof: {:?}", result_proof);
+            match output {
+                None => (),
+                Some(output) => {
+                    res.save_to_file(&output, cairo_format).unwrap();
+                }
             }
         }
     }

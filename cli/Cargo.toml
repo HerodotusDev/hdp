@@ -9,7 +9,9 @@ edition = "2021"
 decoder = { workspace = true }
 common = { workspace = true }
 evaluator = { workspace = true }
+anyhow.workspace = true
 tokio.workspace = true
+serde_json.workspace = true
 
 clap = { version = "4.4.4", features = ["derive"] }
 dotenv = "0.15.0"
