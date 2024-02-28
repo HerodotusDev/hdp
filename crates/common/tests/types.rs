@@ -1,5 +1,8 @@
 use alloy_primitives::{hex::FromHex, keccak256};
-use common::types::{split_hex_into_key_parts, Account, Header, HeaderProof, MPTProof, Uint256};
+use common::types::{
+    hex_to_8_byte_chunks_little_endian, split_hex_into_key_parts, Account, Header, HeaderProof,
+    MPTProof, Task, Uint256,
+};
 
 #[test]
 fn cairo_format_header() {
@@ -605,4 +608,81 @@ fn test_split128() {
             high: "0x730f1037780b3b53cfaecdb95fc648ce".to_string()
         }
     );
+}
+
+#[test]
+fn cairo_format_tasks() {
+    let original_task = Task{
+        computational_task: "0x23c69fe8ceb11087e27f0b0a89d8dc0cda85ab933464d49bd21d623526acf8c073756d000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000".to_string(),
+        task_commitment: "0x46296bc9cb11408bfa46c5c31a542f12242db2412ee2217b4e8add2bc1927d0b".to_string(),
+        result: "6776".to_string(),
+        task_proof: vec![],
+        result_proof: vec![],
+        datalake: "0x000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004b902400000000000000000000000000000000000000000000000000000000004b9024000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000016027f2c6f930306d3aa736b3a6c6a98f512f74036d40000000000000000000000".to_string(),
+        datalake_type: 0,
+        property_type: 2
+    };
+
+    let computational_task_format =
+        hex_to_8_byte_chunks_little_endian(&original_task.computational_task);
+    assert_eq!(
+        computational_task_format.chunks,
+        vec![
+            "0x8710b1cee89fc623",
+            "0xcdcd8890a0b7fe2",
+            "0x9bd4643493ab85da",
+            "0xc0f8ac2635621dd2",
+            "0x6d7573",
+            "0x0",
+            "0x0",
+            "0x0",
+            "0x0",
+            "0x0",
+            "0x0",
+            "0x6000000000000000",
+            "0x0",
+            "0x0",
+            "0x0",
+            "0x0"
+        ]
+    );
+
+    assert_eq!(computational_task_format.chunks_len, 128);
+
+    let datalake_format = hex_to_8_byte_chunks_little_endian(&original_task.datalake);
+    assert_eq!(
+        datalake_format.chunks,
+        vec![
+            "0x0",
+            "0x0",
+            "0x0",
+            "0x0",
+            "0x0",
+            "0x0",
+            "0x0",
+            "0x24904b0000000000",
+            "0x0",
+            "0x0",
+            "0x0",
+            "0x24904b0000000000",
+            "0x0",
+            "0x0",
+            "0x0",
+            "0x100000000000000",
+            "0x0",
+            "0x0",
+            "0x0",
+            "0xa000000000000000",
+            "0x0",
+            "0x0",
+            "0x0",
+            "0x1600000000000000",
+            "0xd30603936f2c7f02",
+            "0xf5986a6c3a6b73aa",
+            "0xd43640f712",
+            "0x0"
+        ]
+    );
+
+    assert_eq!(datalake_format.chunks_len, 224);
 }
