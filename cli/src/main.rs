@@ -161,8 +161,6 @@ async fn main() {
 
             let duration = start.elapsed();
             println!("Time elapsed in main() is: {:?}", duration);
-            let result_json = res.to_general_json().unwrap();
-            println!("result_json: \n{}\n", result_json);
 
             match output {
                 None => (),

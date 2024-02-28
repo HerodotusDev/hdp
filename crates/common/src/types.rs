@@ -188,11 +188,14 @@ pub struct StorageFormatted {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub struct Task {
+    /// encoded computational task
     pub computational_task: String,
+    /// computational task commitment
     pub task_commitment: String,
     pub result: String,
     pub task_proof: Vec<FixedBytes<32>>,
     pub result_proof: Vec<FixedBytes<32>>,
+    /// encoded datalake
     pub datalake: String,
     // ex. dynamic datalake / block sampled datalake
     pub datalake_type: u8,
