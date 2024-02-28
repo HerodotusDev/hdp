@@ -161,17 +161,13 @@ async fn main() {
 
             let duration = start.elapsed();
             println!("Time elapsed in main() is: {:?}", duration);
-            let result_json = res.to_json().unwrap();
+            let result_json = res.to_general_json().unwrap();
             println!("result_json: \n{}\n", result_json);
 
             match output {
                 None => (),
                 Some(output) => {
-                    if cairo_format {
-                        println!("todo: implement cairo format output");
-                    } else {
-                        res.save_to_file(&output).unwrap();
-                    }
+                    res.save_to_file(&output, cairo_format).unwrap();
                 }
             }
         }

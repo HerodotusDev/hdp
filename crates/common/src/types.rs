@@ -1,3 +1,4 @@
+use alloy_primitives::hex;
 use alloy_primitives::FixedBytes;
 use serde::{Deserialize, Serialize};
 use starknet::core::types::FieldElement;
@@ -32,7 +33,7 @@ pub struct HeaderProof {
 pub struct HeaderProofFormatted {
     pub leaf_idx: u64,
     // mmr_path is encoded with poseidon
-    pub mmr_path: Vec<FieldElement>,
+    pub mmr_path: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
@@ -41,10 +42,25 @@ pub struct Header {
     pub proof: HeaderProof,
 }
 
+impl Header {
+    pub fn to_cairo_format(&self) -> HeaderFormatted {
+        let chunk_result = hex_to_8_byte_chunks_little_endian(&self.rlp);
+        let proof = self.proof.clone();
+        HeaderFormatted {
+            rlp: chunk_result.chunks,
+            rlp_bytes_len: chunk_result.chunks_len,
+            proof: HeaderProofFormatted {
+                leaf_idx: proof.leaf_idx,
+                mmr_path: proof.mmr_path,
+            },
+        }
+    }
+}
+
 /// HeaderFormatted is the formatted version of Header
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct HeaderFormatted {
-    pub rlp: Vec<FieldElement>,
+    pub rlp: Vec<String>,
     /// rlp_bytes_len is the byte( 8 bit ) length from rlp string
     pub rlp_bytes_len: u64,
     pub proof: HeaderProofFormatted,
@@ -58,9 +74,45 @@ pub struct Account {
     pub proofs: Vec<MPTProof>,
 }
 
+// impl Account {
+//     pub fn to_cairo_format(&self) -> AccountFormatted {
+//         let address_chunk_result = hex_to_8_byte_chunks_little_endian(&self.address);
+//         //TODO: todo account_key
+//         let account_key = Uint256::from_str(&self.account_key);
+//         let proofs = self
+//             .proofs
+//             .iter()
+//             .map(|proof| {
+//                 let proof_chunk_result: Vec<CairoFormattedChunkResult> = proof
+//                     .proof
+//                     .iter()
+//                     .map(|proof| hex_to_8_byte_chunks_little_endian(proof))
+//                     .collect();
+
+//                 let proof_bytes_len = proof_chunk_result.iter().map(|x| x.chunks_len).collect();
+//                 let proof = proof_chunk_result
+//                     .iter()
+//                     .map(|x| x.chunks.clone())
+//                     .collect();
+
+//                 MPTProofFormatted {
+//                     block_number: proof.block_number,
+//                     proof_bytes_len,
+//                     proof,
+//                 }
+//             })
+//             .collect();
+//         AccountFormatted {
+//             address: address_chunk_result.chunks,
+//             account_key,
+//             proofs,
+//         }
+//     }
+// }
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AccountFormatted {
-    pub address: Vec<FieldElement>,
+    pub address: Vec<String>,
     pub account_key: Uint256,
     pub proofs: Vec<MPTProofFormatted>,
 }
@@ -76,7 +128,7 @@ pub struct MPTProofFormatted {
     pub block_number: u64,
     /// proof_bytes_len is the byte( 8 bit ) length from each proof string
     pub proof_bytes_len: Vec<u64>,
-    pub proof: Vec<Vec<FieldElement>>,
+    pub proof: Vec<Vec<String>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -162,4 +214,41 @@ pub struct ResultFormatted {
     pub accounts: Vec<AccountFormatted>,
     pub storages: Vec<StorageFormatted>,
     pub tasks: Vec<TaskFormatted>,
+}
+
+pub fn bytes_to_8_bytes_chunks_little(input_bytes: &[u8]) -> Vec<u64> {
+    input_bytes
+        .chunks(8)
+        .map(|chunk| {
+            let mut arr = [0u8; 8];
+            for (i, &byte) in chunk.iter().enumerate() {
+                arr[i] = byte;
+            }
+            u64::from_le_bytes(arr)
+        })
+        .collect()
+}
+
+pub struct CairoFormattedChunkResult {
+    pub chunks: Vec<String>,
+    pub chunks_len: u64,
+}
+
+pub fn hex_to_8_byte_chunks_little_endian(input_hex: &str) -> CairoFormattedChunkResult {
+    // Convert hex string to bytes
+    let bytes = hex::decode(input_hex).expect("Invalid hex input");
+    let chunks_len = bytes.len() as u64;
+    // Process bytes into 8-byte chunks and convert to little-endian u64, then to hex strings
+    let chunks = bytes
+        .chunks(8)
+        .map(|chunk| {
+            let mut arr = [0u8; 8];
+            let len = chunk.len();
+            arr[..len].copy_from_slice(chunk);
+            let le_int = u64::from_le_bytes(arr);
+            format!("0x{:x}", le_int)
+        })
+        .collect();
+
+    CairoFormattedChunkResult { chunks, chunks_len }
 }
