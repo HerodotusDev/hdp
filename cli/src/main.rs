@@ -52,6 +52,10 @@ enum Commands {
         /// Path to the file to save the output result
         #[arg(short, long)]
         output: Option<String>,
+
+        /// Formats evaluated result into Cairo program compatible format
+        #[arg(long, short, action = clap::ArgAction::SetTrue)]
+        cairo_format: bool,
     },
 }
 
@@ -133,6 +137,7 @@ async fn main() {
             datalakes,
             rpc_url,
             output,
+            cairo_format,
         } => {
             let config = Config::init(rpc_url, datalakes, tasks).await;
             let abstract_fetcher = AbstractFetcher::new(config.rpc_url.clone());
@@ -162,7 +167,11 @@ async fn main() {
             match output {
                 None => (),
                 Some(output) => {
-                    res.save_to_file(&output).unwrap();
+                    if cairo_format {
+                        println!("todo: implement cairo format output");
+                    } else {
+                        res.save_to_file(&output).unwrap();
+                    }
                 }
             }
         }
