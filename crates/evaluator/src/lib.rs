@@ -1,6 +1,7 @@
 use aggregation_functions::AggregationFunction;
+use alloy_dyn_abi::DynSolValue;
 use alloy_merkle_tree::standard_binary_tree::StandardMerkleTree;
-use alloy_primitives::{hex::FromHex, Keccak256, B256, U256};
+use alloy_primitives::{hex::FromHex, FixedBytes, Keccak256, B256, U256};
 use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -63,15 +64,18 @@ impl EvaluationResult {
 
         for task_id in &self.ordered_tasks {
             let result = self.result.get(task_id).unwrap();
-            tasks_leaves.push(task_id.to_string());
+
+            let task_fixed_bytes = FixedBytes::from_hex(task_id).unwrap();
+            tasks_leaves.push(DynSolValue::FixedBytes(task_fixed_bytes, 32));
             let result = U256::from_str(result).unwrap();
+
             let mut result_keccak = Keccak256::new();
-            let task_id_hex = Vec::from_hex(task_id).unwrap();
-            result_keccak.update(task_id_hex);
+
+            result_keccak.update(task_fixed_bytes);
             result_keccak.update(B256::from(result));
 
             let result_hash = result_keccak.finalize();
-            results_leaves.push(result_hash.to_string());
+            results_leaves.push(DynSolValue::FixedBytes(result_hash, 32));
         }
         let tasks_merkle_tree = StandardMerkleTree::of(tasks_leaves);
         let results_merkle_tree = StandardMerkleTree::of(results_leaves);
@@ -115,9 +119,13 @@ impl EvaluationResult {
             assume_mmr_meta = Some(datalake_result.mmr_meta.clone());
 
             let result = self.result.get(task_id).unwrap();
-            let task_proof = tasks_merkle_tree.get_proof(task_id);
+            let task_id_fixed_bytes = FixedBytes::from_hex(task_id).unwrap();
+            let task_proof =
+                tasks_merkle_tree.get_proof(&DynSolValue::FixedBytes(task_id_fixed_bytes, 32));
             let result_leaf = evaluation_result_to_leaf(task_id, result);
-            let result_proof = results_merkle_tree.get_proof(&result_leaf);
+            let result_fixed_bytes = FixedBytes::from_hex(&result_leaf).unwrap();
+            let result_proof =
+                results_merkle_tree.get_proof(&DynSolValue::FixedBytes(result_fixed_bytes, 32));
             let computational_task = self.serialized_tasks.get(task_id).unwrap().to_string();
             let datalake = self.serialized_datalakes.get(task_id).unwrap();
 
@@ -187,9 +195,13 @@ impl EvaluationResult {
             assume_mmr_meta = Some(datalake_result.mmr_meta.clone());
 
             let result = self.result.get(task_id).unwrap();
-            let task_proof = tasks_merkle_tree.get_proof(task_id);
+            let task_id_fixed_bytes = FixedBytes::from_hex(task_id).unwrap();
+            let task_proof =
+                tasks_merkle_tree.get_proof(&DynSolValue::FixedBytes(task_id_fixed_bytes, 32));
             let result_leaf = evaluation_result_to_leaf(task_id, result);
-            let result_proof = results_merkle_tree.get_proof(&result_leaf);
+            let result_fixed_bytes = FixedBytes::from_hex(&result_leaf).unwrap();
+            let result_proof =
+                results_merkle_tree.get_proof(&DynSolValue::FixedBytes(result_fixed_bytes, 32));
             let computational_task = self.serialized_tasks.get(task_id).unwrap().to_string();
             let datalake = self.serialized_datalakes.get(task_id).unwrap();
             let task = Task {

@@ -109,9 +109,9 @@ dependencies = [
 
 [[package]]
 name = "alloy-merkle-tree"
-version = "0.4.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0330a27ead866c8ca40d85801f02500b878c1484d4ba9697674ed6b21c9d6374"
+checksum = "45e4c892319f32f2ef619965ba222552f6bc9898a996e23bfd5ea625a963e980"
 dependencies = [
  "alloy-dyn-abi",
  "alloy-primitives",
@@ -1233,6 +1233,7 @@ dependencies = [
 name = "evaluator"
 version = "0.1.0"
 dependencies = [
+ "alloy-dyn-abi",
  "alloy-merkle-tree",
  "alloy-primitives",
  "anyhow",
