@@ -139,15 +139,6 @@ pub struct MMRMeta {
     pub peaks: Vec<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct MMRMetaFormatted {
-    pub id: u64,
-    pub root: FieldElement,
-    pub size: u64,
-    // Peaks are encoded with poseidon
-    pub peaks: Vec<FieldElement>,
-}
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub struct Storage {
     pub address: String,
@@ -209,7 +200,7 @@ pub struct ResultFormatted {
     pub results_root: Uint256,
     pub tasks_root: Uint256,
     pub headers: Vec<HeaderFormatted>,
-    pub mmr: MMRMetaFormatted,
+    pub mmr: MMRMeta,
     pub accounts: Vec<AccountFormatted>,
     pub storages: Vec<StorageFormatted>,
     pub tasks: Vec<TaskFormatted>,
