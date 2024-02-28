@@ -1,4 +1,7 @@
-use common::types::{hex_to_8_byte_chunks_little_endian, Account, Header, HeaderProof, MPTProof};
+use common::types::{
+    hex_to_8_byte_chunks_little_endian, split_hex_into_key_parts, Account, Header, HeaderProof,
+    MPTProof, Uint256,
+};
 
 #[test]
 fn cairo_format_header() {
@@ -190,5 +193,14 @@ fn cairo_format_account() {
             "0x6e538a9ab5b00878",
             "0x80178695"
         ]
+    );
+
+    let account_key_result = split_hex_into_key_parts(&original_account.account_key);
+    assert_eq!(
+        account_key_result,
+        Uint256 {
+            low: "0x7edba2efc434cbfc8c16ff41ed16e54e".to_string(),
+            high: "0xa582fbb6f28628c10d48f93c369c364f".to_string()
+        }
     )
 }

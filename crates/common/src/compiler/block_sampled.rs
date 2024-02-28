@@ -1,3 +1,4 @@
+use hex::FromHex;
 use std::{str::FromStr, sync::Arc};
 
 use crate::{
@@ -100,7 +101,7 @@ pub async fn compile_block_sampled_datalake(
                 aggregation_set.push(value);
             }
 
-            let address_bytes = hex::decode(address).unwrap();
+            let address_bytes = Vec::from_hex(address).expect("Invalid hex string");
             let account_key = keccak256(address_bytes);
 
             accounts.push(Account {
@@ -144,7 +145,7 @@ pub async fn compile_block_sampled_datalake(
 
                 aggregation_set.push(value.0);
             }
-            let address_bytes = hex::decode(address).unwrap();
+            let address_bytes = Vec::from_hex(address).expect("Invalid hex string");
             let account_key = keccak256(address_bytes);
 
             storages.push(Storage {

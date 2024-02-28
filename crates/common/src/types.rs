@@ -18,8 +18,8 @@ use starknet::core::types::FieldElement;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Uint256 {
-    pub low: u128,
-    pub high: u128,
+    pub low: String,
+    pub high: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
@@ -74,41 +74,40 @@ pub struct Account {
     pub proofs: Vec<MPTProof>,
 }
 
-// impl Account {
-//     pub fn to_cairo_format(&self) -> AccountFormatted {
-//         let address_chunk_result = hex_to_8_byte_chunks_little_endian(&self.address);
-//         //TODO: todo account_key
-//         let account_key = Uint256::from_str(&self.account_key);
-//         let proofs = self
-//             .proofs
-//             .iter()
-//             .map(|proof| {
-//                 let proof_chunk_result: Vec<CairoFormattedChunkResult> = proof
-//                     .proof
-//                     .iter()
-//                     .map(|proof| hex_to_8_byte_chunks_little_endian(proof))
-//                     .collect();
+impl Account {
+    pub fn to_cairo_format(&self) -> AccountFormatted {
+        let address_chunk_result = hex_to_8_byte_chunks_little_endian(&self.address);
+        let account_key = split_hex_into_key_parts(&self.account_key);
+        let proofs = self
+            .proofs
+            .iter()
+            .map(|proof| {
+                let proof_chunk_result: Vec<CairoFormattedChunkResult> = proof
+                    .proof
+                    .iter()
+                    .map(|proof| hex_to_8_byte_chunks_little_endian(proof))
+                    .collect();
 
-//                 let proof_bytes_len = proof_chunk_result.iter().map(|x| x.chunks_len).collect();
-//                 let proof = proof_chunk_result
-//                     .iter()
-//                     .map(|x| x.chunks.clone())
-//                     .collect();
+                let proof_bytes_len = proof_chunk_result.iter().map(|x| x.chunks_len).collect();
+                let proof_result: Vec<Vec<String>> = proof_chunk_result
+                    .iter()
+                    .map(|x| x.chunks.clone())
+                    .collect();
 
-//                 MPTProofFormatted {
-//                     block_number: proof.block_number,
-//                     proof_bytes_len,
-//                     proof,
-//                 }
-//             })
-//             .collect();
-//         AccountFormatted {
-//             address: address_chunk_result.chunks,
-//             account_key,
-//             proofs,
-//         }
-//     }
-// }
+                MPTProofFormatted {
+                    block_number: proof.block_number,
+                    proof_bytes_len,
+                    proof: proof_result,
+                }
+            })
+            .collect();
+        AccountFormatted {
+            address: address_chunk_result.chunks,
+            account_key,
+            proofs,
+        }
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AccountFormatted {
@@ -251,4 +250,21 @@ pub fn hex_to_8_byte_chunks_little_endian(input_hex: &str) -> CairoFormattedChun
         .collect();
 
     CairoFormattedChunkResult { chunks, chunks_len }
+}
+
+pub fn split_hex_into_key_parts(hex_str: &str) -> Uint256 {
+    // Remove the '0x' prefix if it exists
+    let clean_hex = hex_str.trim_start_matches("0x");
+
+    // Calculate the midpoint of the string
+    let midpoint = clean_hex.len() / 2;
+
+    // Split the string into "high" and "low" parts
+    let high_part = &clean_hex[..midpoint];
+    let low_part = &clean_hex[midpoint..];
+
+    Uint256 {
+        high: format!("0x{}", high_part),
+        low: format!("0x{}", low_part),
+    }
 }
