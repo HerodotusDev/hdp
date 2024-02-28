@@ -51,11 +51,11 @@ enum Commands {
         rpc_url: Option<String>,
         /// Path to the file to save the output result
         #[arg(short, long)]
-        output: Option<String>,
+        output_file: Option<String>,
 
-        /// Formats evaluated result into Cairo program compatible format
-        #[arg(long, short, action = clap::ArgAction::SetTrue)]
-        cairo_format: bool,
+        /// Path to the file to save the input.json in cairo format
+        #[arg(short, long)]
+        cairo_input: Option<String>,
     },
 }
 
@@ -136,8 +136,8 @@ async fn main() {
             tasks,
             datalakes,
             rpc_url,
-            output,
-            cairo_format,
+            output_file,
+            cairo_input,
         } => {
             let config = Config::init(rpc_url, datalakes, tasks).await;
             let abstract_fetcher = AbstractFetcher::new(config.rpc_url.clone());
@@ -162,11 +162,11 @@ async fn main() {
             let duration = start.elapsed();
             println!("Time elapsed in main() is: {:?}", duration);
 
-            match output {
-                None => (),
-                Some(output) => {
-                    res.save_to_file(&output, cairo_format).unwrap();
-                }
+            if let Some(output_file) = output_file {
+                res.save_to_file(&output_file, false).unwrap();
+            }
+            if let Some(cairo_input) = cairo_input {
+                res.save_to_file(&cairo_input, true).unwrap();
             }
         }
     }
