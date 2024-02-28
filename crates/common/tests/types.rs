@@ -1,6 +1,5 @@
-use alloy_primitives::{hex::FromHex, keccak256};
 use common::types::{
-    split_hex_into_key_parts, Account, Header, HeaderProof, MPTProof, Task, Uint256,
+    split_little_endian_hex_into_key_parts, Account, Header, HeaderProof, MPTProof, Task, Uint256,
 };
 
 #[test]
@@ -555,56 +554,26 @@ fn cairo_format_account() {
             ]
         ]
     );
-    let clean_hex = original_account.address.trim_start_matches("0x");
-    let account_bytes = Vec::from_hex(clean_hex).unwrap();
-    let keccak = keccak256(account_bytes);
 
     assert_eq!(
-        keccak.to_string(),
-        "0x4ee516ed41ff168cfccb34c4efa2db7e4f369c363cf9480dc12886f2b6fb82a5".to_string()
-    );
-
-    let account_key_result = split_hex_into_key_parts(&keccak.to_string());
-    assert_eq!(
-        account_key_result,
+        formatted_account.account_key,
         Uint256 {
-            low: "0x4f369c363cf9480dc12886f2b6fb82a5".to_string(),
-            high: "0x4ee516ed41ff168cfccb34c4efa2db7e".to_string()
+            low: "0x7edba2efc434cbfc8c16ff41ed16e54e".to_string(),
+            high: "0xa582fbb6f28628c10d48f93c369c364f".to_string()
         }
     );
-    // TODO: result from Cairo Program
-    // assert_eq!(
-    //     account_key_result,
-    //     Uint256 {
-    //         low: "0x7edba2efc434cbfc8c16ff41ed16e54e".to_string(),
-    //         high: "0xa582fbb6f28628c10d48f93c369c364f".to_string()
-    //     }
-    // );
 }
 
 #[test]
 fn test_split128() {
-    // cross checking with solidity :
-    // uint256 taskMerkleRoot = uint256(
-    //     bytes32(
-    //         0x730f1037780b3b53cfaecdb95fc648ce719479a58afd4325a62b0c5e09e83090
-    //     )
-    // );
-    // (uint256 taskRootLow, uint256 taskRootHigh) = Uint256Splitter.split128(
-    //     taskMerkleRoot
-    // );
-    // uint128 scheduledTasksBatchMerkleRootLow = 0x719479a58afd4325a62b0c5e09e83090;
-    // uint128 scheduledTasksBatchMerkleRootHigh = 0x730f1037780b3b53cfaecdb95fc648ce;
-    // assertEq(scheduledTasksBatchMerkleRootLow, taskRootLow);
-    // assertEq(scheduledTasksBatchMerkleRootHigh, taskRootHigh);
-    let account_key_result = split_hex_into_key_parts(
-        "0x730f1037780b3b53cfaecdb95fc648ce719479a58afd4325a62b0c5e09e83090",
+    let account_key_result = split_little_endian_hex_into_key_parts(
+        "0x4ee516ed41ff168cfccb34c4efa2db7e4f369c363cf9480dc12886f2b6fb82a5",
     );
     assert_eq!(
         account_key_result,
         Uint256 {
-            low: "0x719479a58afd4325a62b0c5e09e83090".to_string(),
-            high: "0x730f1037780b3b53cfaecdb95fc648ce".to_string()
+            low: "0x7edba2efc434cbfc8c16ff41ed16e54e".to_string(),
+            high: "0xa582fbb6f28628c10d48f93c369c364f".to_string()
         }
     );
 }

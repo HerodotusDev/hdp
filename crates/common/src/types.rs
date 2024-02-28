@@ -1,5 +1,6 @@
 use alloy_primitives::hex;
 use alloy_primitives::FixedBytes;
+use reth_primitives::hex::FromHex;
 use serde::{Deserialize, Serialize};
 
 //==============================================================================
@@ -67,7 +68,7 @@ pub struct Account {
 impl Account {
     pub fn to_cairo_format(&self) -> AccountFormatted {
         let address_chunk_result = hex_to_8_byte_chunks_little_endian(&self.address);
-        let account_key = split_hex_into_key_parts(&self.account_key);
+        let account_key = split_little_endian_hex_into_key_parts(&self.account_key);
         let proofs = self
             .proofs
             .iter()
@@ -142,8 +143,8 @@ pub struct Storage {
 impl Storage {
     pub fn to_cairo_format(&self) -> StorageFormatted {
         let address_chunk_result = hex_to_8_byte_chunks_little_endian(&self.address);
-        let account_key = split_hex_into_key_parts(&self.account_key);
-        let storage_key = split_hex_into_key_parts(&self.storage_key);
+        let account_key = split_little_endian_hex_into_key_parts(&self.account_key);
+        let storage_key = split_little_endian_hex_into_key_parts(&self.storage_key);
         let proofs = self
             .proofs
             .iter()
@@ -249,19 +250,6 @@ pub struct ProcessedResultFormatted {
     pub tasks: Vec<TaskFormatted>,
 }
 
-pub fn bytes_to_8_bytes_chunks_little(input_bytes: &[u8]) -> Vec<u64> {
-    input_bytes
-        .chunks(8)
-        .map(|chunk| {
-            let mut arr = [0u8; 8];
-            for (i, &byte) in chunk.iter().enumerate() {
-                arr[i] = byte;
-            }
-            u64::from_le_bytes(arr)
-        })
-        .collect()
-}
-
 pub struct CairoFormattedChunkResult {
     pub chunks: Vec<String>,
     pub chunks_len: u64,
@@ -286,19 +274,18 @@ pub fn hex_to_8_byte_chunks_little_endian(input_hex: &str) -> CairoFormattedChun
     CairoFormattedChunkResult { chunks, chunks_len }
 }
 
-pub fn split_hex_into_key_parts(hex_str: &str) -> Uint256 {
-    // Ensure the input is a hexadecimal string without the '0x' prefix.
+pub fn split_little_endian_hex_into_key_parts(hex_str: &str) -> Uint256 {
     let clean_hex = hex_str.trim_start_matches("0x");
+    let mut fix_hex: FixedBytes<32> = FixedBytes::from_hex(clean_hex).unwrap();
+    fix_hex.reverse();
 
-    // Pad the hexadecimal string to ensure it has 64 characters (256 bits).
-    let padded_hex = format!("{:0>64}", clean_hex);
+    let high_part = fix_hex[..16].to_vec();
+    let low_part = fix_hex[16..].to_vec();
+    let high = hex::encode(high_part);
+    let low = hex::encode(low_part);
 
-    // Split the padded string into "high" and "low" parts.
-    let (high_part, low_part) = padded_hex.split_at(32); // Split at the 128-bit (32 hex char) mark.
-
-    // Convert these parts into strings with the '0x' prefix.
     Uint256 {
-        high: format!("0x{}", high_part),
-        low: format!("0x{}", low_part),
+        high: format!("0x{}", high),
+        low: format!("0x{}", low),
     }
 }

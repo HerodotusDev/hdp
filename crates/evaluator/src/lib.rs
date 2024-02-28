@@ -20,8 +20,9 @@ use common::{
     fetcher::AbstractFetcher,
     task::ComputationalTask,
     types::{
-        split_hex_into_key_parts, Account, AccountFormatted, Header, HeaderFormatted, MMRMeta,
-        ProcessedResult, ProcessedResultFormatted, Storage, StorageFormatted, Task, TaskFormatted,
+        split_little_endian_hex_into_key_parts, Account, AccountFormatted, Header, HeaderFormatted,
+        MMRMeta, ProcessedResult, ProcessedResultFormatted, Storage, StorageFormatted, Task,
+        TaskFormatted,
     },
 };
 
@@ -206,8 +207,8 @@ impl EvaluationResult {
         }
 
         let processed_result = ProcessedResultFormatted {
-            results_root: split_hex_into_key_parts(&result_merkle_root.to_string()),
-            tasks_root: split_hex_into_key_parts(&task_merkle_root.to_string()),
+            results_root: split_little_endian_hex_into_key_parts(&result_merkle_root.to_string()),
+            tasks_root: split_little_endian_hex_into_key_parts(&task_merkle_root.to_string()),
             headers: flattened_deaders.into_iter().collect(),
             accounts: flattened_accounts.into_iter().collect(),
             mmr: assume_mmr_meta.unwrap(),
