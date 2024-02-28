@@ -1,5 +1,6 @@
 use common::types::{
-    split_little_endian_hex_into_key_parts, Account, Header, HeaderProof, MPTProof, Task, Uint256,
+    split_big_endian_hex_into_parts, split_little_endian_hex_into_parts, Account, Header,
+    HeaderProof, MPTProof, Task, Uint256,
 };
 
 #[test]
@@ -565,8 +566,8 @@ fn cairo_format_account() {
 }
 
 #[test]
-fn test_split128() {
-    let account_key_result = split_little_endian_hex_into_key_parts(
+fn test_split128_mpt_proof_key() {
+    let account_key_result = split_little_endian_hex_into_parts(
         "0x4ee516ed41ff168cfccb34c4efa2db7e4f369c363cf9480dc12886f2b6fb82a5",
     );
     assert_eq!(
@@ -574,6 +575,33 @@ fn test_split128() {
         Uint256 {
             low: "0x7edba2efc434cbfc8c16ff41ed16e54e".to_string(),
             high: "0xa582fbb6f28628c10d48f93c369c364f".to_string()
+        }
+    );
+}
+
+#[test]
+fn test_split128_root() {
+    // cross checking with solidity :
+    // uint256 taskMerkleRoot = uint256(
+    //     bytes32(
+    //         0x730f1037780b3b53cfaecdb95fc648ce719479a58afd4325a62b0c5e09e83090
+    //     )
+    // );
+    // (uint256 taskRootLow, uint256 taskRootHigh) = Uint256Splitter.split128(
+    //     taskMerkleRoot
+    // );
+    // uint128 scheduledTasksBatchMerkleRootLow = 0x719479a58afd4325a62b0c5e09e83090;
+    // uint128 scheduledTasksBatchMerkleRootHigh = 0x730f1037780b3b53cfaecdb95fc648ce;
+    // assertEq(scheduledTasksBatchMerkleRootLow, taskRootLow);
+    // assertEq(scheduledTasksBatchMerkleRootHigh, taskRootHigh);
+    let task_root = split_big_endian_hex_into_parts(
+        "0x730f1037780b3b53cfaecdb95fc648ce719479a58afd4325a62b0c5e09e83090",
+    );
+    assert_eq!(
+        task_root,
+        Uint256 {
+            low: "0x719479a58afd4325a62b0c5e09e83090".to_string(),
+            high: "0x730f1037780b3b53cfaecdb95fc648ce".to_string()
         }
     );
 }

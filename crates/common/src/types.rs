@@ -68,7 +68,7 @@ pub struct Account {
 impl Account {
     pub fn to_cairo_format(&self) -> AccountFormatted {
         let address_chunk_result = hex_to_8_byte_chunks_little_endian(&self.address);
-        let account_key = split_little_endian_hex_into_key_parts(&self.account_key);
+        let account_key = split_little_endian_hex_into_parts(&self.account_key);
         let proofs = self
             .proofs
             .iter()
@@ -143,8 +143,8 @@ pub struct Storage {
 impl Storage {
     pub fn to_cairo_format(&self) -> StorageFormatted {
         let address_chunk_result = hex_to_8_byte_chunks_little_endian(&self.address);
-        let account_key = split_little_endian_hex_into_key_parts(&self.account_key);
-        let storage_key = split_little_endian_hex_into_key_parts(&self.storage_key);
+        let account_key = split_little_endian_hex_into_parts(&self.account_key);
+        let storage_key = split_little_endian_hex_into_parts(&self.storage_key);
         let proofs = self
             .proofs
             .iter()
@@ -274,7 +274,7 @@ pub fn hex_to_8_byte_chunks_little_endian(input_hex: &str) -> CairoFormattedChun
     CairoFormattedChunkResult { chunks, chunks_len }
 }
 
-pub fn split_little_endian_hex_into_key_parts(hex_str: &str) -> Uint256 {
+pub fn split_little_endian_hex_into_parts(hex_str: &str) -> Uint256 {
     let clean_hex = hex_str.trim_start_matches("0x");
     let mut fix_hex: FixedBytes<32> = FixedBytes::from_hex(clean_hex).unwrap();
     fix_hex.reverse();
@@ -287,5 +287,15 @@ pub fn split_little_endian_hex_into_key_parts(hex_str: &str) -> Uint256 {
     Uint256 {
         high: format!("0x{}", high),
         low: format!("0x{}", low),
+    }
+}
+
+pub fn split_big_endian_hex_into_parts(hex_str: &str) -> Uint256 {
+    let clean_hex = hex_str.trim_start_matches("0x");
+    let padded_hex = format!("{:0>64}", clean_hex);
+    let (high_part, low_part) = padded_hex.split_at(32);
+    Uint256 {
+        high: format!("0x{}", high_part),
+        low: format!("0x{}", low_part),
     }
 }
