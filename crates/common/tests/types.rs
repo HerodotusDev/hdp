@@ -94,7 +94,7 @@ fn cairo_format_header() {
 fn cairo_format_account() {
     let original_account = Account {
         address: "0x7f2c6f930306d3aa736b3a6c6a98f512f74036d4".to_string(),
-        account_key: "f84f821a78890242aa8ffb4eba0bc4a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470".to_string(),
+        account_key: "0x4ee516ed41ff168cfccb34c4efa2db7e4f369c363cf9480dc12886f2b6fb82a5".to_string(),
         proofs: vec![
             MPTProof {
                 block_number: 4952100,

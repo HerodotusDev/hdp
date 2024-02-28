@@ -9,6 +9,7 @@ use crate::{
     fetcher::AbstractFetcher,
     types::{Account, Header, HeaderProof, MPTProof, Storage},
 };
+use alloy_primitives::{hex, keccak256};
 use anyhow::{bail, Result};
 use tokio::sync::RwLock;
 
@@ -64,7 +65,7 @@ pub async fn compile_block_sampled_datalake(
             let property = property_parts[2];
 
             let mut account_proofs: Vec<MPTProof> = vec![];
-            let mut encoded_account = "".to_string();
+            // let mut encoded_account = "".to_string();
 
             for i in block_range_start..=block_range_end {
                 if i % increment != 0 {
@@ -74,7 +75,7 @@ pub async fn compile_block_sampled_datalake(
                 let acc = abstract_fetcher
                     .get_account_with_proof(i, address.to_string())
                     .await;
-                encoded_account = acc.0.clone();
+                // encoded_account = acc.0.clone();
 
                 let value = decode_account_field(
                     &acc.0,
@@ -99,9 +100,12 @@ pub async fn compile_block_sampled_datalake(
                 aggregation_set.push(value);
             }
 
+            let address_bytes = hex::decode(address).unwrap();
+            let account_key = keccak256(address_bytes);
+
             accounts.push(Account {
                 address: address.to_string(),
-                account_key: encoded_account,
+                account_key: account_key.to_string(),
                 proofs: account_proofs,
             });
         }
@@ -110,17 +114,17 @@ pub async fn compile_block_sampled_datalake(
             let slot = property_parts[2];
 
             let mut storage_proofs: Vec<MPTProof> = vec![];
-            let mut encoded_account = "".to_string();
+            // let mut encoded_account = "".to_string();
 
             for i in block_range_start..=block_range_end {
                 if i % increment != 0 {
                     continue;
                 }
                 let fetched_block = full_header_and_proof_result.0.get(&i).unwrap().clone();
-                let acc = abstract_fetcher
-                    .get_account_with_proof(i, address.to_string())
-                    .await;
-                encoded_account = acc.0.clone();
+                // let acc = abstract_fetcher
+                //     .get_account_with_proof(i, address.to_string())
+                //     .await;
+                // encoded_account = acc.0.clone();
                 let value = abstract_fetcher
                     .get_storage_value_with_proof(i, address.to_string(), slot.to_string())
                     .await;
@@ -140,10 +144,12 @@ pub async fn compile_block_sampled_datalake(
 
                 aggregation_set.push(value.0);
             }
+            let address_bytes = hex::decode(address).unwrap();
+            let account_key = keccak256(address_bytes);
 
             storages.push(Storage {
                 address: address.to_string(),
-                account_key: encoded_account,
+                account_key: account_key.to_string(),
                 storage_key: slot.to_string(),
                 proofs: storage_proofs,
             });
