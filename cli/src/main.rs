@@ -49,6 +49,9 @@ enum Commands {
         tasks: Option<String>,
         datalakes: Option<String>,
         rpc_url: Option<String>,
+        /// Path to the file to save the output result
+        #[arg(short, long)]
+        output: Option<String>,
     },
 }
 
@@ -129,6 +132,7 @@ async fn main() {
             tasks,
             datalakes,
             rpc_url,
+            output,
         } => {
             let config = Config::init(rpc_url, datalakes, tasks).await;
             let abstract_fetcher = AbstractFetcher::new(config.rpc_url.clone());
@@ -154,6 +158,13 @@ async fn main() {
             println!("Time elapsed in main() is: {:?}", duration);
             let result_json = res.to_json().unwrap();
             println!("result_json: \n{}\n", result_json);
+
+            match output {
+                None => (),
+                Some(output) => {
+                    res.save_to_file(&output).unwrap();
+                }
+            }
         }
     }
 }

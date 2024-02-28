@@ -76,8 +76,8 @@ impl EvaluationResult {
     }
 
     pub fn save_to_file(&self, file_path: &str) -> Result<()> {
-        let file = std::fs::File::create(file_path)?;
-        serde_json::to_writer(file, self)?;
+        let json = self.to_json()?;
+        std::fs::write(file_path, json)?;
         Ok(())
     }
 
@@ -120,7 +120,6 @@ impl EvaluationResult {
                 result: result.to_string(),
                 result_proof,
                 datalake: datalake.serialized_datalake.clone(),
-                // TODO: datalake type and property
                 datalake_type: datalake.datalake_type,
                 property_type: datalake.property_type,
             });
