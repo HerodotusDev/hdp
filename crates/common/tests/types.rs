@@ -1,8 +1,5 @@
 use alloy_primitives::{hex::FromHex, keccak256};
-use common::types::{
-    hex_to_8_byte_chunks_little_endian, split_hex_into_key_parts, Account, Header, HeaderProof,
-    MPTProof, Uint256,
-};
+use common::types::{split_hex_into_key_parts, Account, Header, HeaderProof, MPTProof, Uint256};
 
 #[test]
 fn cairo_format_header() {
@@ -14,9 +11,10 @@ fn cairo_format_header() {
         }
     };
 
-    let result = hex_to_8_byte_chunks_little_endian(&original_header.rlp);
+    let formatted_header = original_header.to_cairo_format();
+
     assert_eq!(
-        result.chunks,
+        formatted_header.rlp,
         vec![
             "0xe77a618a02602f9",
             "0x672c0809922f507e",
@@ -91,7 +89,7 @@ fn cairo_format_header() {
         ]
     );
 
-    assert_eq!(result.chunks_len, 553)
+    assert_eq!(formatted_header.rlp_bytes_len, 553)
 }
 
 #[test]
