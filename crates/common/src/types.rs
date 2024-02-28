@@ -253,16 +253,16 @@ pub fn hex_to_8_byte_chunks_little_endian(input_hex: &str) -> CairoFormattedChun
 }
 
 pub fn split_hex_into_key_parts(hex_str: &str) -> Uint256 {
-    // Remove the '0x' prefix if it exists
+    // Ensure the input is a hexadecimal string without the '0x' prefix.
     let clean_hex = hex_str.trim_start_matches("0x");
 
-    // Calculate the midpoint of the string
-    let midpoint = clean_hex.len() / 2;
+    // Pad the hexadecimal string to ensure it has 64 characters (256 bits).
+    let padded_hex = format!("{:0>64}", clean_hex);
 
-    // Split the string into "high" and "low" parts
-    let high_part = &clean_hex[..midpoint];
-    let low_part = &clean_hex[midpoint..];
+    // Split the padded string into "high" and "low" parts.
+    let (high_part, low_part) = padded_hex.split_at(32); // Split at the 128-bit (32 hex char) mark.
 
+    // Convert these parts into strings with the '0x' prefix.
     Uint256 {
         high: format!("0x{}", high_part),
         low: format!("0x{}", low_part),
