@@ -192,8 +192,8 @@ pub struct Task {
     pub encoded_task: String,
     /// computational task commitment
     pub task_commitment: String,
-    /// raw evaluation result of target computational task
-    pub result: String,
+    /// raw evaluation result of target compiled task
+    pub compiled_result: String,
     /// results merkle tree's entry value
     pub result_commitment: String,
     pub task_proof: Vec<FixedBytes<32>>,

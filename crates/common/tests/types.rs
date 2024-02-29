@@ -611,7 +611,7 @@ fn cairo_format_tasks() {
     let original_task = Task{
         encoded_task: "0x23c69fe8ceb11087e27f0b0a89d8dc0cda85ab933464d49bd21d623526acf8c073756d000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000".to_string(),
         task_commitment: "0x46296bc9cb11408bfa46c5c31a542f12242db2412ee2217b4e8add2bc1927d0b".to_string(),
-        result: "6776".to_string(),
+        compiled_result: "6776".to_string(),
         result_commitment: "0x40b44b4fe85644ce1d6f8f5035a5f7e91861d064ed0b4189ebb2eb6ce8985f4d".to_string(),
         task_proof: vec![],
         result_proof: vec![],
