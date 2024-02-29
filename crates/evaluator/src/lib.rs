@@ -30,9 +30,9 @@ use common::{
 #[derive(Serialize, Deserialize, Debug)]
 pub struct EvaluationResult {
     /// task_commitment -> fetched datalake relevant data
-    pub fetched_data: HashMap<String, DatalakeResult>,
-    /// task_commitment -> computed result
-    pub result: HashMap<String, String>,
+    pub fetched_datalake_results: HashMap<String, DatalakeResult>,
+    /// task_commitment -> compiled_result
+    pub compiled_results: HashMap<String, String>,
     /// ordered task_commitment
     pub ordered_tasks: Vec<String>,
     /// encoded tasks task_commitment -> encoded task
@@ -54,9 +54,9 @@ pub struct EvaluatedDatalake {
 impl EvaluationResult {
     pub fn new() -> Self {
         EvaluationResult {
-            result: HashMap::new(),
             ordered_tasks: Vec::new(),
-            fetched_data: HashMap::new(),
+            compiled_results: HashMap::new(),
+            fetched_datalake_results: HashMap::new(),
             encoded_tasks: HashMap::new(),
             encoded_datalakes: HashMap::new(),
         }
@@ -66,12 +66,13 @@ impl EvaluationResult {
         let mut results_leaves = Vec::new();
 
         for task_commitment in &self.ordered_tasks {
-            let result = self.result.get(task_commitment).unwrap();
+            let compiled_result = self.compiled_results.get(task_commitment).unwrap();
 
             let typed_task_commitment = FixedBytes::from_hex(task_commitment).unwrap();
             tasks_leaves.push(DynSolValue::FixedBytes(typed_task_commitment, 32));
 
-            let result_commitment = evaluation_result_to_result_commitment(task_commitment, result);
+            let result_commitment =
+                evaluation_result_to_result_commitment(task_commitment, compiled_result);
             results_leaves.push(DynSolValue::FixedBytes(result_commitment, 32));
         }
         let tasks_merkle_tree = StandardMerkleTree::of(tasks_leaves);
@@ -107,7 +108,7 @@ impl EvaluationResult {
         let mut procesed_tasks: Vec<Task> = vec![];
 
         for task_commitment in &self.ordered_tasks {
-            let datalake_result = self.fetched_data.get(task_commitment).unwrap();
+            let datalake_result = self.fetched_datalake_results.get(task_commitment).unwrap();
             let header_set: HashSet<Header> = datalake_result.headers.iter().cloned().collect();
             let account_set: HashSet<Account> = datalake_result.accounts.iter().cloned().collect();
             let storage_set: HashSet<Storage> = datalake_result.storages.iter().cloned().collect();
@@ -116,7 +117,7 @@ impl EvaluationResult {
             flattened_storages.extend(storage_set);
             assume_mmr_meta = Some(datalake_result.mmr_meta.clone());
 
-            let result = self.result.get(task_commitment).unwrap();
+            let result = self.compiled_results.get(task_commitment).unwrap();
             let typed_task_commitment = FixedBytes::from_hex(task_commitment).unwrap();
             let task_proof =
                 tasks_merkle_tree.get_proof(&DynSolValue::FixedBytes(typed_task_commitment, 32));
@@ -168,7 +169,7 @@ impl EvaluationResult {
         let mut procesed_tasks: Vec<TaskFormatted> = vec![];
 
         for task_commitment in &self.ordered_tasks {
-            let datalake_result = self.fetched_data.get(task_commitment).unwrap();
+            let datalake_result = self.fetched_datalake_results.get(task_commitment).unwrap();
             let header_set: HashSet<HeaderFormatted> = datalake_result
                 .headers
                 .iter()
@@ -192,7 +193,7 @@ impl EvaluationResult {
             flattened_storages.extend(storage_set);
             assume_mmr_meta = Some(datalake_result.mmr_meta.clone());
 
-            let result = self.result.get(task_commitment).unwrap();
+            let result = self.compiled_results.get(task_commitment).unwrap();
             let typed_task_commitment = FixedBytes::from_hex(task_commitment).unwrap();
             let task_proof =
                 tasks_merkle_tree.get_proof(&DynSolValue::FixedBytes(typed_task_commitment, 32));
@@ -232,13 +233,11 @@ impl EvaluationResult {
 
 pub fn evaluation_result_to_result_commitment(
     task_commitment: &str,
-    result: &str,
+    compiled_result: &str,
 ) -> FixedBytes<32> {
-    let result = U256::from_str(result).unwrap();
     let mut hasher = Keccak256::new();
-    let task_commitment_bytes = Vec::from_hex(task_commitment).unwrap();
-    hasher.update(task_commitment_bytes);
-    hasher.update(B256::from(result));
+    hasher.update(Vec::from_hex(task_commitment).unwrap());
+    hasher.update(B256::from(U256::from_str(compiled_result).unwrap()));
     hasher.finalize()
 }
 
@@ -284,10 +283,12 @@ pub async fn evaluator(
             &datalake_result.compiled_results,
             aggregation_fn_ctx.clone(),
         )?;
-        results.result.insert(computation_task_id.clone(), result);
+        results
+            .compiled_results
+            .insert(computation_task_id.clone(), result);
         results.ordered_tasks.push(computation_task_id.clone());
         results
-            .fetched_data
+            .fetched_datalake_results
             .insert(computation_task_id.clone(), datalake_result);
         results
             .encoded_tasks

@@ -29,15 +29,6 @@ pub struct BlockSampledDatalake {
     pub increment: u64,
 }
 
-impl ToString for BlockSampledDatalake {
-    fn to_string(&self) -> String {
-        let encoded_datalake = self.serialize().unwrap();
-        let bytes = Vec::from_hex(encoded_datalake).expect("Invalid hex string");
-        let hash = keccak256(bytes);
-        format!("0x{:x}", hash)
-    }
-}
-
 impl BlockSampledDatalake {
     pub fn new(
         block_range_start: u64,
@@ -53,11 +44,13 @@ impl BlockSampledDatalake {
         }
     }
 
+    /// Get `header`, `account` or `storage` type of the block sampled datalake
     pub fn get_property_type(&self) -> u8 {
         serialize_sampled_property(&self.sampled_property)[0]
     }
 
-    pub fn serialize(&self) -> Result<String> {
+    /// Encode the block sampled datalake
+    pub fn encode(&self) -> Result<String> {
         let block_range_start = DynSolValue::Uint(U256::from(self.block_range_start), 256);
         let block_range_end = DynSolValue::Uint(U256::from(self.block_range_end), 256);
         let sampled_property =
@@ -77,16 +70,25 @@ impl BlockSampledDatalake {
         Ok(format!("0x{}", hex::encode(encoded_datalake)))
     }
 
-    pub fn deserialize(serialized: String) -> Result<Self> {
+    /// Get the commitment hash of the block sampled datalake
+    pub fn commit(&self) -> String {
+        let encoded_datalake = self.encode().expect("Encoding failed");
+        let bytes = Vec::from_hex(encoded_datalake).expect("Invalid hex string");
+        let hash = keccak256(bytes);
+        format!("0x{:x}", hash)
+    }
+
+    /// Decode the encoded block sampled datalake
+    pub fn decode(encoded: String) -> Result<Self> {
         let datalake_type: DynSolType = "(uint256,uint256,uint256,uint256,bytes)".parse()?;
-        let bytes = Vec::from_hex(serialized).expect("Invalid hex string");
+        let bytes = Vec::from_hex(encoded).expect("Invalid hex string");
         let decoded = datalake_type.abi_decode_sequence(&bytes)?;
 
         let value = decoded.as_tuple().unwrap();
         let datalake_code = value[0].as_uint().unwrap().0.to_string().parse::<u64>()?;
 
         if datalake_code != 0 {
-            bail!("Serialized datalake is not a block datalake");
+            bail!("Encoded datalake is not a block sample datalake");
         }
 
         let block_range_start = value[1].as_uint().unwrap().0.to_string().parse::<u64>()?;
@@ -122,7 +124,7 @@ impl Default for BlockSampledDatalake {
 
 impl Derivable for BlockSampledDatalake {
     fn derive(&self) -> DatalakeBase {
-        DatalakeBase::new(&self.to_string(), Datalake::BlockSampled(self.clone()))
+        DatalakeBase::new(&self.commit(), Datalake::BlockSampled(self.clone()))
     }
 }
 
@@ -179,31 +181,31 @@ pub fn serialize_sampled_property(sampled_property: &str) -> Vec<u8> {
 }
 
 fn deserialize_sampled_property(serialized: &[u8]) -> Result<String> {
-    let collection_id = serialized[0];
-    let collection = ["header", "account", "storage"][collection_id as usize - 1];
+    let property_type = serialized[0];
+    let property = ["header", "account", "storage"][property_type as usize - 1];
 
-    match collection {
+    match property {
         "header" => {
             let header_prop_index = serialized[1];
-            let prop = HeaderField::from_index(header_prop_index)
+            let sub_property_type = HeaderField::from_index(header_prop_index)
                 .ok_or("Invalid header property index")
                 .unwrap()
                 .as_str();
-            Ok(format!("{}.{}", collection, prop.to_lowercase()))
+            Ok(format!("{}.{}", property, sub_property_type.to_lowercase()))
         }
         "account" => {
             let account = Address::from_slice(&serialized[1..21]);
             let account_checksum = format!("{:?}", account);
             let account_prop_index = serialized[21];
-            let prop = AccountField::from_index(account_prop_index)
+            let sub_property_type = AccountField::from_index(account_prop_index)
                 .ok_or("Invalid account property index")
                 .unwrap()
                 .as_str();
             Ok(format!(
                 "{}.{}.{}",
-                collection,
+                property,
                 account_checksum,
-                prop.to_lowercase()
+                sub_property_type.to_lowercase()
             ))
         }
         "storage" => {
@@ -212,10 +214,7 @@ fn deserialize_sampled_property(serialized: &[u8]) -> Result<String> {
             let slot = &serialized[21..53];
             let slot_string = bytes_to_hex_string(slot);
 
-            Ok(format!(
-                "{}.{}.{}",
-                collection, account_checksum, slot_string
-            ))
+            Ok(format!("{}.{}.{}", property, account_checksum, slot_string))
         }
         _ => bail!("Invalid collection id"),
     }

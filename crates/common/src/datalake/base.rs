@@ -26,7 +26,8 @@ pub struct DatalakeResult {
 
 /// DatalakeBase is a type that can be used to store data
 pub struct DatalakeBase {
-    pub identifier: String,
+    /// Datalake commitment. It is used to identify the datalake
+    pub commitment: String,
     pub datalakes_pipeline: Vec<Datalake>,
     pub datapoints: Vec<DatalakeResult>,
 }
@@ -34,7 +35,7 @@ pub struct DatalakeBase {
 impl fmt::Debug for DatalakeBase {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("DatalakeBase")
-            .field("identifier", &self.identifier)
+            .field("commitment", &self.commitment)
             .field("datalakes_pipeline", &"datalakes_pipeline")
             .field("datapoints", &"datapoints")
             .finish()
@@ -42,9 +43,9 @@ impl fmt::Debug for DatalakeBase {
 }
 
 impl DatalakeBase {
-    pub fn new(identifier: &str, datalake_type: Datalake) -> Self {
+    pub fn new(commitment: &str, datalake_type: Datalake) -> Self {
         Self {
-            identifier: identifier.to_string(),
+            commitment: commitment.to_string(),
             datalakes_pipeline: vec![datalake_type],
             datapoints: Vec::new(),
         }

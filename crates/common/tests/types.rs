@@ -644,7 +644,7 @@ fn cairo_format_tasks() {
         ]
     );
 
-    assert_eq!(formatted_task.computational_bytes_len, 128);
+    assert_eq!(formatted_task.task_bytes_len, 128);
 
     assert_eq!(
         formatted_task.encoded_datalake,

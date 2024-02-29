@@ -20,7 +20,7 @@ pub fn tasks_decoder(serialized_tasks_batch: String) -> Result<Vec<Computational
     if let Some(tasks) = serialized_tasks.as_array() {
         for task in tasks {
             let computational_task =
-                ComputationalTask::deserialize_aggregate_fn(task.as_bytes().unwrap())?;
+                ComputationalTask::decode_not_filled_task(task.as_bytes().unwrap())?;
             decoded_tasks.push(computational_task);
         }
     }
@@ -30,8 +30,7 @@ pub fn tasks_decoder(serialized_tasks_batch: String) -> Result<Vec<Computational
 
 /// Decode a single task
 pub fn task_decoder(serialized_task: String) -> Result<ComputationalTask> {
-    let computational_task =
-        ComputationalTask::deserialize_aggregate_fn(serialized_task.as_bytes())?;
+    let computational_task = ComputationalTask::decode_not_filled_task(serialized_task.as_bytes())?;
     Ok(computational_task)
 }
 
@@ -49,7 +48,7 @@ pub fn datalakes_decoder(serialized_datalakes_batch: String) -> Result<Vec<Datal
             let datalake_string = bytes_to_hex_string(datalake.as_bytes().unwrap());
 
             let decoded_datalake = match last_byte_to_u8(datalake_code) {
-                0 => Datalake::BlockSampled(BlockSampledDatalake::deserialize(datalake_string)?),
+                0 => Datalake::BlockSampled(BlockSampledDatalake::decode(datalake_string)?),
                 1 => Datalake::DynamicLayout(DynamicLayoutDatalake::deserialize(datalake_string)?),
                 _ => Datalake::Unknown,
             };
@@ -71,7 +70,7 @@ pub fn datalake_decoder(serialized_datalake: String) -> Result<Datalake> {
     let datalake_string = bytes_to_hex_string(serialized_datalake.as_bytes());
 
     let decoded_datalake = match last_byte_to_u8(datalake_code) {
-        0 => Datalake::BlockSampled(BlockSampledDatalake::deserialize(datalake_string)?),
+        0 => Datalake::BlockSampled(BlockSampledDatalake::decode(datalake_string)?),
         1 => Datalake::DynamicLayout(DynamicLayoutDatalake::deserialize(datalake_string)?),
         _ => Datalake::Unknown,
     };
@@ -89,7 +88,7 @@ pub fn datalakes_encoder(datalakes: Vec<Datalake>) -> Result<String> {
 
     for datalake in datalakes {
         let encoded_datalake = match datalake {
-            Datalake::BlockSampled(block_sampled_datalake) => block_sampled_datalake.serialize()?,
+            Datalake::BlockSampled(block_sampled_datalake) => block_sampled_datalake.encode()?,
             Datalake::DynamicLayout(dynamic_layout_datalake) => {
                 dynamic_layout_datalake.serialize()?
             }

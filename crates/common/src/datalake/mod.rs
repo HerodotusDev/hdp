@@ -19,14 +19,10 @@ pub enum Datalake {
 impl Derivable for Datalake {
     fn derive(&self) -> DatalakeBase {
         match self {
-            Datalake::BlockSampled(datalake) => DatalakeBase::new(
-                &datalake.to_string(),
-                Datalake::BlockSampled(datalake.clone()),
-            ),
-            Datalake::DynamicLayout(datalake) => DatalakeBase::new(
-                &datalake.to_string(),
-                Datalake::DynamicLayout(datalake.clone()),
-            ),
+            Datalake::BlockSampled(datalake) => {
+                DatalakeBase::new(&datalake.commit(), Datalake::BlockSampled(datalake.clone()))
+            }
+            Datalake::DynamicLayout(_) => panic!("Unsupported datalake type"),
             Datalake::Unknown => panic!("Unknown datalake type"),
         }
     }
@@ -35,8 +31,8 @@ impl Derivable for Datalake {
 impl Datalake {
     pub fn serialize(&self) -> Result<String> {
         match self {
-            Datalake::BlockSampled(datalake) => datalake.serialize(),
-            Datalake::DynamicLayout(datalake) => datalake.serialize(),
+            Datalake::BlockSampled(datalake) => datalake.encode(),
+            Datalake::DynamicLayout(_) => bail!("Unsupported datalake type"),
             Datalake::Unknown => bail!("Unknown datalake type"),
         }
     }

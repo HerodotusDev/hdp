@@ -5,38 +5,36 @@ use common::datalake::{
 #[test]
 fn test_block_datalake_for_header() {
     let blocksample_datalake = "0x000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000009eb0f600000000000000000000000000000000000000000000000000000000009eb100000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000002010f000000000000000000000000000000000000000000000000000000000000";
-    let decoded_datalake =
-        BlockSampledDatalake::deserialize(blocksample_datalake.to_string()).unwrap();
+    let decoded_datalake = BlockSampledDatalake::decode(blocksample_datalake.to_string()).unwrap();
     let block_datalake =
         BlockSampledDatalake::new(10399990, 10400000, "header.base_fee_per_gas".to_string(), 1);
     assert_eq!(
-        decoded_datalake.serialize().unwrap(),
-        block_datalake.serialize().unwrap()
+        decoded_datalake.encode().unwrap(),
+        block_datalake.encode().unwrap()
     );
 
-    assert_eq!(decoded_datalake.serialize().unwrap(), blocksample_datalake);
+    assert_eq!(decoded_datalake.encode().unwrap(), blocksample_datalake);
 }
 
 #[test]
 fn test_block_datalake_for_header_massive() {
     let blocksample_datalake = "0x000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000009d2a6000000000000000000000000000000000000000000000000000000000009eb100000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000002010f000000000000000000000000000000000000000000000000000000000000";
     let decoded_datalake: BlockSampledDatalake =
-        BlockSampledDatalake::deserialize(blocksample_datalake.to_string()).unwrap();
+        BlockSampledDatalake::decode(blocksample_datalake.to_string()).unwrap();
     let block_datalake =
         BlockSampledDatalake::new(10300000, 10400000, "header.base_fee_per_gas".to_string(), 1);
     assert_eq!(
-        decoded_datalake.serialize().unwrap(),
-        block_datalake.serialize().unwrap()
+        decoded_datalake.encode().unwrap(),
+        block_datalake.encode().unwrap()
     );
 
-    assert_eq!(decoded_datalake.serialize().unwrap(), blocksample_datalake);
+    assert_eq!(decoded_datalake.encode().unwrap(), blocksample_datalake);
 }
 
 #[test]
 fn test_block_datalake_for_account() {
     let blocksample_datalake = "0x000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000009eb0f600000000000000000000000000000000000000000000000000000000009eb100000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000016027b2f05ce9ae365c3dbf30657e2dc6449989e83d60000000000000000000000";
-    let decoded_datalake =
-        BlockSampledDatalake::deserialize(blocksample_datalake.to_string()).unwrap();
+    let decoded_datalake = BlockSampledDatalake::decode(blocksample_datalake.to_string()).unwrap();
     let block_datalake = BlockSampledDatalake::new(
         10399990,
         10400000,
@@ -44,31 +42,29 @@ fn test_block_datalake_for_account() {
         1,
     );
     assert_eq!(decoded_datalake, block_datalake);
-    assert_eq!(decoded_datalake.serialize().unwrap(), blocksample_datalake);
+    assert_eq!(decoded_datalake.encode().unwrap(), blocksample_datalake);
 }
 
 #[test]
 fn test_block_datalake_for_account_2() {
     let blocksample_datalake = "0x000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004b902400000000000000000000000000000000000000000000000000000000004b9027000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000016020a4de450feb156a2a51ed159b2fb99da26e5f3a30000000000000000000000";
-    let decoded_datalake =
-        BlockSampledDatalake::deserialize(blocksample_datalake.to_string()).unwrap();
+    let decoded_datalake = BlockSampledDatalake::decode(blocksample_datalake.to_string()).unwrap();
     let block_datalake = BlockSampledDatalake::new(
         4952100,
         4952103,
         "account.0x0a4de450feb156a2a51ed159b2fb99da26e5f3a3.nonce".to_string(),
         1,
     );
-    let serialized = block_datalake.serialize().unwrap();
+    let serialized = block_datalake.encode().unwrap();
     assert_eq!(serialized, blocksample_datalake);
     assert_eq!(decoded_datalake, block_datalake);
-    assert_eq!(decoded_datalake.serialize().unwrap(), blocksample_datalake);
+    assert_eq!(decoded_datalake.encode().unwrap(), blocksample_datalake);
 }
 
 #[test]
 fn test_block_datalake_for_storage() {
     let blocksample_datalake = "0x000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000009eb0f600000000000000000000000000000000000000000000000000000000009eb100000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000035037b2f05ce9ae365c3dbf30657e2dc6449989e83d600000000000000000000000000000000000000000000000000000000000000ff0000000000000000000000";
-    let decoded_datalake =
-        BlockSampledDatalake::deserialize(blocksample_datalake.to_string()).unwrap();
+    let decoded_datalake = BlockSampledDatalake::decode(blocksample_datalake.to_string()).unwrap();
     let block_datalake = BlockSampledDatalake::new(
         10399990,
         10400000,
@@ -76,7 +72,7 @@ fn test_block_datalake_for_storage() {
         1,
     );
     assert_eq!(decoded_datalake, block_datalake);
-    assert_eq!(decoded_datalake.serialize().unwrap(), blocksample_datalake);
+    assert_eq!(decoded_datalake.encode().unwrap(), blocksample_datalake);
 }
 
 #[test]

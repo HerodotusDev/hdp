@@ -15,6 +15,11 @@ use crate::{
 /// ComputationalTask represents a task for certain datalake with a specified aggregate function
 #[derive(Debug)]
 pub struct ComputationalTask {
+    /// Target datalake as optional.
+    /// - If None, task is non filled with datalake.
+    /// - If Some, task is filled with datalake.
+    ///
+    /// Encoding and Commit will be different based on this field.
     pub datalake: Option<DatalakeBase>,
     pub aggregate_fn_id: String,
     pub aggregate_fn_ctx: Option<String>,
@@ -33,6 +38,9 @@ impl ComputationalTask {
         }
     }
 
+    /// Encode the task into a hex string
+    /// - If datalake is None, it will encode the task without datalake
+    /// - If datalake is Some, it will encode the task with datalake commitment
     pub fn encode(&self) -> Result<String> {
         match &self.datalake {
             None => {
@@ -54,7 +62,7 @@ impl ComputationalTask {
             }
             Some(datalake) => {
                 let identifier_value = DynSolValue::FixedBytes(
-                    FixedBytes::from_str(&datalake.identifier).unwrap(),
+                    FixedBytes::from_str(&datalake.commitment).unwrap(),
                     32,
                 );
 
@@ -79,6 +87,7 @@ impl ComputationalTask {
         }
     }
 
+    /// Decode a serialized task that filled with datalake
     pub fn decode(serialized: &[u8]) -> Result<Self> {
         let task_type: DynSolType = "(uint256,bytes32,bytes)".parse()?;
         let decoded = task_type.abi_decode(serialized)?;
@@ -87,7 +96,7 @@ impl ComputationalTask {
 
         let datalake_value = if let Some(datalake) = value[0].as_uint() {
             let datalake = DatalakeBase {
-                identifier: format!("0x{:x}", datalake.0),
+                commitment: format!("0x{:x}", datalake.0),
                 datalakes_pipeline: vec![],
                 datapoints: vec![],
             };
@@ -107,7 +116,8 @@ impl ComputationalTask {
         })
     }
 
-    pub fn deserialize_aggregate_fn(serialized: &[u8]) -> Result<Self> {
+    /// Decode task that is not filled with datalake
+    pub fn decode_not_filled_task(serialized: &[u8]) -> Result<Self> {
         let aggregate_fn_type: DynSolType = "(bytes32,bytes)".parse()?;
         let decoded = aggregate_fn_type.abi_decode(serialized)?;
 

@@ -13,7 +13,7 @@ fn test_task_from_serialized() {
     if let Some(tasks) = serialized_tasks.as_array() {
         for task in tasks {
             let computational_task =
-                ComputationalTask::deserialize_aggregate_fn(task.as_bytes().unwrap()).unwrap();
+                ComputationalTask::decode_not_filled_task(task.as_bytes().unwrap()).unwrap();
             computational_task_result.push(computational_task);
         }
     }

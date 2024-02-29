@@ -555,8 +555,8 @@
   "storages": [],
   "tasks": [
     {
-      "computational_bytes_len": 128,
-      "computational_task": [
+      "task_bytes_len": 128,
+      "encoded_task": [
         "0x8710b1cee89fc623",
         "0xcdcd8890a0b7fe2",
         "0x9bd4643493ab85da",
@@ -575,7 +575,7 @@
         "0x0"
       ],
       "datalake_bytes_len": 224,
-      "datalake": [
+      "encoded_datalake": [
         "0x0",
         "0x0",
         "0x0",

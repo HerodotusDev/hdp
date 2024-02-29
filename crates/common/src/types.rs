@@ -212,7 +212,7 @@ impl Task {
             hex_to_8_byte_chunks_little_endian(&self.encoded_task);
         let datalake_chunk_result = hex_to_8_byte_chunks_little_endian(&self.encoded_datalake);
         TaskFormatted {
-            computational_bytes_len: computational_task_chunk_result.chunks_len,
+            task_bytes_len: computational_task_chunk_result.chunks_len,
             encoded_task: computational_task_chunk_result.chunks,
             datalake_bytes_len: datalake_chunk_result.chunks_len,
             encoded_datalake: datalake_chunk_result.chunks,
@@ -224,7 +224,7 @@ impl Task {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TaskFormatted {
-    pub computational_bytes_len: u64,
+    pub task_bytes_len: u64,
     pub encoded_task: Vec<String>,
     pub datalake_bytes_len: u64,
     pub encoded_datalake: Vec<String>,
