@@ -192,7 +192,10 @@ pub struct Task {
     pub computational_task: String,
     /// computational task commitment
     pub task_commitment: String,
+    /// raw evaluation result of target computational task
     pub result: String,
+    /// results merkle tree's entry value
+    pub result_commitment: String,
     pub task_proof: Vec<FixedBytes<32>>,
     pub result_proof: Vec<FixedBytes<32>>,
     /// encoded datalake
