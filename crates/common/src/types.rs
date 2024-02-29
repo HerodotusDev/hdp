@@ -189,7 +189,7 @@ pub struct StorageFormatted {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub struct Task {
     /// encoded computational task
-    pub computational_task: String,
+    pub encoded_task: String,
     /// computational task commitment
     pub task_commitment: String,
     /// raw evaluation result of target computational task
@@ -199,7 +199,7 @@ pub struct Task {
     pub task_proof: Vec<FixedBytes<32>>,
     pub result_proof: Vec<FixedBytes<32>>,
     /// encoded datalake
-    pub datalake: String,
+    pub encoded_datalake: String,
     // ex. dynamic datalake / block sampled datalake
     pub datalake_type: u8,
     // ex. "header", "account", "storage"
@@ -209,13 +209,13 @@ pub struct Task {
 impl Task {
     pub fn to_cairo_format(&self) -> TaskFormatted {
         let computational_task_chunk_result =
-            hex_to_8_byte_chunks_little_endian(&self.computational_task);
-        let datalake_chunk_result = hex_to_8_byte_chunks_little_endian(&self.datalake);
+            hex_to_8_byte_chunks_little_endian(&self.encoded_task);
+        let datalake_chunk_result = hex_to_8_byte_chunks_little_endian(&self.encoded_datalake);
         TaskFormatted {
             computational_bytes_len: computational_task_chunk_result.chunks_len,
-            computational_task: computational_task_chunk_result.chunks,
+            encoded_task: computational_task_chunk_result.chunks,
             datalake_bytes_len: datalake_chunk_result.chunks_len,
-            datalake: datalake_chunk_result.chunks,
+            encoded_datalake: datalake_chunk_result.chunks,
             datalake_type: self.datalake_type,
             property_type: self.property_type,
         }
@@ -225,9 +225,9 @@ impl Task {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TaskFormatted {
     pub computational_bytes_len: u64,
-    pub computational_task: Vec<String>,
+    pub encoded_task: Vec<String>,
     pub datalake_bytes_len: u64,
-    pub datalake: Vec<String>,
+    pub encoded_datalake: Vec<String>,
     pub datalake_type: u8,
     pub property_type: u8,
 }

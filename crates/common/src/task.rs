@@ -33,7 +33,7 @@ impl ComputationalTask {
         }
     }
 
-    pub fn serialize(&self) -> Result<String> {
+    pub fn encode(&self) -> Result<String> {
         match &self.datalake {
             None => {
                 let aggregate_fn_id_value = DynSolValue::FixedBytes(
@@ -79,7 +79,7 @@ impl ComputationalTask {
         }
     }
 
-    pub fn deserialize(serialized: &[u8]) -> Result<Self> {
+    pub fn decode(serialized: &[u8]) -> Result<Self> {
         let task_type: DynSolType = "(uint256,bytes32,bytes)".parse()?;
         let decoded = task_type.abi_decode(serialized)?;
 
@@ -126,7 +126,7 @@ impl ComputationalTask {
 
 impl ToString for ComputationalTask {
     fn to_string(&self) -> String {
-        let encoded_datalake = self.serialize().unwrap();
+        let encoded_datalake = self.encode().unwrap();
         let bytes = Vec::from_hex(encoded_datalake).expect("Invalid hex string");
         let hash = keccak256(bytes);
         format!("0x{:x}", hash)

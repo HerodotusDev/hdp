@@ -110,7 +110,7 @@ pub fn tasks_encoder(tasks: Vec<ComputationalTask>) -> Result<String> {
     let mut encoded_tasks: Vec<DynSolValue> = Vec::new();
 
     for task in tasks {
-        let encoded_task = task.serialize()?;
+        let encoded_task = task.encode()?;
         let bytes = Vec::from_hex(encoded_task).expect("Invalid hex string");
         encoded_tasks.push(DynSolValue::Bytes(bytes));
     }
