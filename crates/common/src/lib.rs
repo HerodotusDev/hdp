@@ -1,4 +1,5 @@
 pub mod block;
+pub mod codec;
 pub mod compiler;
 pub mod config;
 pub mod datalake;

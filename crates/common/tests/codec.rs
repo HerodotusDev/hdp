@@ -1,5 +1,5 @@
+use common::codec::{datalakes_decoder, datalakes_encoder, tasks_decoder};
 use common::datalake::{block_sampled::BlockSampledDatalake, Datalake};
-use decoder::args_codec::{datalakes_decoder, datalakes_encoder, tasks_decoder};
 
 #[test]
 fn test_task_decoder() {

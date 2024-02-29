@@ -795,7 +795,6 @@ dependencies = [
  "anyhow",
  "clap",
  "common",
- "decoder",
  "dotenv",
  "evaluator",
  "serde_json",
@@ -1016,16 +1015,6 @@ dependencies = [
  "darling_core",
  "quote",
  "syn 2.0.48",
-]
-
-[[package]]
-name = "decoder"
-version = "0.1.0"
-dependencies = [
- "alloy-dyn-abi",
- "alloy-primitives",
- "anyhow",
- "common",
 ]
 
 [[package]]

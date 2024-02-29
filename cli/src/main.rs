@@ -1,11 +1,16 @@
 use std::{sync::Arc, vec};
 
 use clap::{Parser, Subcommand};
-use common::{config::Config, datalake::Datalake, fetcher::AbstractFetcher};
-use decoder::args_codec::{
-    datalake_decoder, datalakes_decoder, datalakes_encoder, task_decoder, tasks_decoder,
-    tasks_encoder,
+use common::{
+    codec::{
+        datalake_decoder, datalakes_decoder, datalakes_encoder, task_decoder, tasks_decoder,
+        tasks_encoder,
+    },
+    config::Config,
+    datalake::Datalake,
+    fetcher::AbstractFetcher,
 };
+
 use evaluator::evaluator;
 use tokio::sync::RwLock;
 
