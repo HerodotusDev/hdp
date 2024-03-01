@@ -6,14 +6,14 @@ pub fn average(values: &[String]) -> Result<String> {
         bail!("No values found");
     }
 
-    let mut sum = 0.0;
+    let mut sum = 0;
 
     for value in values {
-        let value = value.parse::<f64>()?;
+        let value = value.parse::<u128>()?;
         sum += value;
     }
 
-    Ok(roundup((sum / values.len() as f64).to_string()))
+    Ok(roundup((sum / values.len() as u128).to_string()))
 }
 
 // TODO: Implement bloom_filterize
@@ -93,7 +93,7 @@ pub fn sum(values: &[String]) -> Result<String> {
     let mut sum = 0;
 
     for value in values {
-        let value = value.parse::<u64>()?;
+        let value = value.parse::<u128>()?;
         sum += value;
     }
 
