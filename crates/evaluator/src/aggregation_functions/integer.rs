@@ -13,12 +13,14 @@ pub fn average(values: &[String]) -> Result<String> {
         sum += value;
     }
 
-    Ok(roundup((sum / values.len() as u128).to_string()))
+    let divided_value = divide(sum, values.len() as u128);
+
+    Ok(roundup(divided_value).to_string())
 }
 
 // TODO: Implement bloom_filterize
 pub fn bloom_filterize(_values: &[String]) -> Result<String> {
-    Ok(roundup((0.0).to_string()))
+    Ok("0".to_string())
 }
 
 /// Find the maximum value
@@ -37,7 +39,7 @@ pub fn find_max(values: &[String]) -> Result<String> {
         }
     }
 
-    Ok(roundup(max.to_string()))
+    Ok(max.to_string())
 }
 
 /// Find the minimum value
@@ -55,7 +57,7 @@ pub fn find_min(values: &[String]) -> Result<String> {
         }
     }
 
-    Ok(roundup(min.to_string()))
+    Ok(min.to_string())
 }
 
 /// Standard deviation
@@ -81,7 +83,7 @@ pub fn standard_deviation(values: &[String]) -> Result<String> {
     }
 
     let variance = variance_sum / count;
-    Ok(roundup(variance.sqrt().to_string()))
+    Ok(roundup(variance.sqrt()).to_string())
 }
 
 /// Sum of values
@@ -97,7 +99,7 @@ pub fn sum(values: &[String]) -> Result<String> {
         sum += value;
     }
 
-    Ok(roundup(sum.to_string()))
+    Ok(sum.to_string())
 }
 
 /// Count number of values that satisfy a condition
@@ -156,11 +158,20 @@ pub fn count_if(values: &[String], ctx: &str) -> Result<String> {
         }
     }
 
-    Ok(roundup(condition_satisfiability_count.to_string()))
+    Ok(condition_satisfiability_count.to_string())
 }
 
-// TODO: Think about better way to handle float values
-fn roundup(value: String) -> String {
-    let rounded_up_value = value.parse::<f64>().unwrap().ceil() as u64; // Use f64 for parsing and ceil to round up
-    rounded_up_value.to_string()
+fn divide(a: u128, b: u128) -> f64 {
+    // Convert both numbers to f64 to preserve the fractional part after division
+    let a_f64 = a as f64;
+    let b_f64 = b as f64;
+
+    // Perform division as floating-point operation
+    a_f64 / b_f64
+}
+
+fn roundup(value: f64) -> u128 {
+    // Use the round method to round to the nearest whole number and convert to u128
+    // This method rounds to the nearest whole number, away from zero if halfway
+    value.round() as u128
 }
