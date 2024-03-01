@@ -61,17 +61,23 @@ impl AggregationFunction {
     }
 
     pub fn operation(&self, values: &[String], ctx: Option<String>) -> Result<String> {
+        // Remove the "0x" prefix if exist, so that integer functions can parse integer values
+        let inputs: Vec<String> = values
+            .iter()
+            .map(|hex_str| hex_str.trim_start_matches("0x").to_string())
+            .collect();
+
         match self {
-            AggregationFunction::AVG => integer::average(values),
-            AggregationFunction::BLOOM => integer::bloom_filterize(values),
-            AggregationFunction::MAX => integer::find_max(values),
-            AggregationFunction::MIN => integer::find_min(values),
+            AggregationFunction::AVG => integer::average(&inputs),
+            AggregationFunction::BLOOM => integer::bloom_filterize(&inputs),
+            AggregationFunction::MAX => integer::find_max(&inputs),
+            AggregationFunction::MIN => integer::find_min(&inputs),
             AggregationFunction::MERKLE => string::merkleize(values),
-            AggregationFunction::STD => integer::standard_deviation(values),
-            AggregationFunction::SUM => integer::sum(values),
+            AggregationFunction::STD => integer::standard_deviation(&inputs),
+            AggregationFunction::SUM => integer::sum(&inputs),
             AggregationFunction::COUNTIF => {
                 if let Some(ctx) = ctx {
-                    integer::count_if(values, &ctx)
+                    integer::count_if(&inputs, &ctx)
                 } else {
                     bail!("Context not provided for COUNTIF")
                 }
