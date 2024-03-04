@@ -123,3 +123,36 @@ Options:
 # CI check
 cargo clippy --all --all-targets -- -D warnings && cargo fmt -- --check && cargo test --all --all-targets -- --nocapture
 ```
+
+## Status
+
+|                                 | SUM | AVG | MAX | MIN |
+| ------------------------------- | --- | --- | --- | --- |
+| header.parent_hash              |     |     |     |     |
+| header.ommers_hash              |     |     |     |     |
+| header.beneficiary              |     |     |     |     |
+| header.state_root               |     |     |     |     |
+| header.transactions_root        |     |     |     |     |
+| header.receipts_root            |     |     |     |     |
+| header.logs_bloom               |     |     |     |     |
+| header.difficulty               |     |     |     |     |
+| header.number                   |     |     |     |     |
+| header.gas_limit                |     |     |     |     |
+| header.gas_used                 |     |     |     |     |
+| header.timestamp                |     |     |     |     |
+| header.extra_data               |     |     |     |     |
+| header.mix_hash                 |     |     |     |     |
+| header.nonce                    |     |     |     |     |
+| header.base_fee_per_gas         |     |     |     |     |
+| header.withdrawals_root         |     |     |     |     |
+| header.blob_gas_used            |     |     |     |     |
+| header.withdrawals_root         |     |     |     |     |
+| header.blob_gas_used            |     |     |     |     |
+| header.excess_blob_gas          |     |     |     |     |
+| header.parent_beacon_block_root |     |     |     |     |
+| account.nonce                   |     |     |     |     |
+| account.balance                 |     |     |     |     |
+| account.storage_root            |     |     |     |     |
+| account.code_hash               |     |     |     |     |
+| storage.key ( value is num )    |     |     |     |     |
+| storage.key (value is hash )    |     |     |     |     |

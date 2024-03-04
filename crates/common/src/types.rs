@@ -62,7 +62,7 @@ pub struct Account {
     pub address: String,
     // U256 type
     pub account_key: String,
-    pub proofs: Vec<MPTProof>,
+    pub proofs: Vec<AccountMPTProof>,
 }
 
 impl Account {
@@ -85,7 +85,7 @@ impl Account {
                     .map(|x| x.chunks.clone())
                     .collect();
 
-                MPTProofFormatted {
+                AccountMPTProofFormatted {
                     block_number: proof.block_number,
                     proof_bytes_len,
                     proof: proof_result,
@@ -104,22 +104,41 @@ impl Account {
 pub struct AccountFormatted {
     pub address: Vec<String>,
     pub account_key: Uint256,
-    pub proofs: Vec<MPTProofFormatted>,
+    pub proofs: Vec<AccountMPTProofFormatted>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
-pub struct MPTProof {
+pub struct AccountMPTProof {
     pub block_number: u64,
     pub proof: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
-pub struct MPTProofFormatted {
+pub struct StorageMPTProof {
+    pub block_number: u64,
+    pub account_proof: Vec<String>,
+    pub storage_proof: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
+pub struct AccountMPTProofFormatted {
     pub block_number: u64,
     /// proof_bytes_len is the byte( 8 bit ) length from each proof string
     pub proof_bytes_len: Vec<u64>,
     pub proof: Vec<Vec<String>>,
 }
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
+pub struct StorageMPTProofFormatted {
+    pub block_number: u64,
+    /// proof_bytes_len is the byte( 8 bit ) length from each proof string
+    pub account_proof_bytes_len: Vec<u64>,
+    pub account_proof: Vec<Vec<String>>,
+    /// proof_bytes_len is the byte( 8 bit ) length from each proof string
+    pub storage_proof_bytes_len: Vec<u64>,
+    pub storage_proof: Vec<Vec<String>>,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub struct MMRMeta {
     pub id: u64,
@@ -132,45 +151,63 @@ pub struct MMRMeta {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub struct Storage {
     pub address: String,
-    // U256 type
-    pub account_key: String,
+    pub slot: String,
     // U256 type
     pub storage_key: String,
-    pub proofs: Vec<MPTProof>,
+    pub proofs: Vec<StorageMPTProof>,
 }
 
-//TODO: not tested yet
 impl Storage {
     pub fn to_cairo_format(&self) -> StorageFormatted {
         let address_chunk_result = hex_to_8_byte_chunks_little_endian(&self.address);
-        let account_key = split_little_endian_hex_into_parts(&self.account_key);
+        let slot_chunk_result = hex_to_8_byte_chunks_little_endian(&self.slot);
         let storage_key = split_little_endian_hex_into_parts(&self.storage_key);
         let proofs = self
             .proofs
             .iter()
             .map(|proof| {
-                let proof_chunk_result: Vec<CairoFormattedChunkResult> = proof
-                    .proof
+                // process storage proof
+                let storage_proof_chunk_result: Vec<CairoFormattedChunkResult> = proof
+                    .storage_proof
                     .iter()
                     .map(|proof| hex_to_8_byte_chunks_little_endian(proof))
                     .collect();
-
-                let proof_bytes_len = proof_chunk_result.iter().map(|x| x.chunks_len).collect();
-                let proof_result: Vec<Vec<String>> = proof_chunk_result
+                let storage_proof_bytes_len = storage_proof_chunk_result
+                    .iter()
+                    .map(|x| x.chunks_len)
+                    .collect();
+                let storage_proof_result: Vec<Vec<String>> = storage_proof_chunk_result
                     .iter()
                     .map(|x| x.chunks.clone())
                     .collect();
 
-                MPTProofFormatted {
+                // process account proof
+                let account_proof_chunk_result: Vec<CairoFormattedChunkResult> = proof
+                    .account_proof
+                    .iter()
+                    .map(|proof| hex_to_8_byte_chunks_little_endian(proof))
+                    .collect();
+                let account_proof_bytes_len = account_proof_chunk_result
+                    .iter()
+                    .map(|x| x.chunks_len)
+                    .collect();
+                let account_proof_result: Vec<Vec<String>> = account_proof_chunk_result
+                    .iter()
+                    .map(|x| x.chunks.clone())
+                    .collect();
+
+                StorageMPTProofFormatted {
                     block_number: proof.block_number,
-                    proof_bytes_len,
-                    proof: proof_result,
+                    account_proof_bytes_len,
+                    account_proof: account_proof_result,
+                    storage_proof_bytes_len,
+                    storage_proof: storage_proof_result,
                 }
             })
             .collect();
         StorageFormatted {
             address: address_chunk_result.chunks,
-            account_key,
+            slot: slot_chunk_result.chunks,
             storage_key,
             proofs,
         }
@@ -179,11 +216,13 @@ impl Storage {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub struct StorageFormatted {
+    // chunked address
     pub address: Vec<String>,
-    pub account_key: Uint256,
-    // storage key == storage slot
+    // chunked storage slot
+    pub slot: Vec<String>,
+    // keccak(slot) as uint256
     pub storage_key: Uint256,
-    pub proofs: Vec<MPTProofFormatted>,
+    pub proofs: Vec<StorageMPTProofFormatted>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]

@@ -8,7 +8,7 @@ use crate::{
     },
     datalake::base::DatalakeResult,
     fetcher::AbstractFetcher,
-    types::{Account, Header, HeaderProof, MPTProof, Storage},
+    types::{Account, AccountMPTProof, Header, HeaderProof, Storage, StorageMPTProof},
 };
 use alloy_primitives::{hex, keccak256};
 use anyhow::{bail, Result};
@@ -65,7 +65,7 @@ pub async fn compile_block_sampled_datalake(
             let address = property_parts[1];
             let property = property_parts[2];
 
-            let mut account_proofs: Vec<MPTProof> = vec![];
+            let mut account_proofs: Vec<AccountMPTProof> = vec![];
             // let mut encoded_account = "".to_string();
 
             for i in block_range_start..=block_range_end {
@@ -91,7 +91,7 @@ pub async fn compile_block_sampled_datalake(
                     },
                 });
 
-                let account_proof = MPTProof {
+                let account_proof = AccountMPTProof {
                     block_number: i,
                     proof: acc.1,
                 };
@@ -114,18 +114,17 @@ pub async fn compile_block_sampled_datalake(
             let address = property_parts[1];
             let slot = property_parts[2];
 
-            let mut storage_proofs: Vec<MPTProof> = vec![];
-            // let mut encoded_account = "".to_string();
+            let mut storage_proofs: Vec<StorageMPTProof> = vec![];
 
             for i in block_range_start..=block_range_end {
                 if i % increment != 0 {
                     continue;
                 }
                 let fetched_block = full_header_and_proof_result.0.get(&i).unwrap().clone();
-                // let acc = abstract_fetcher
-                //     .get_account_with_proof(i, address.to_string())
-                //     .await;
-                // encoded_account = acc.0.clone();
+                let acc = abstract_fetcher
+                    .get_account_with_proof(i, address.to_string())
+                    .await;
+
                 let value = abstract_fetcher
                     .get_storage_value_with_proof(i, address.to_string(), slot.to_string())
                     .await;
@@ -138,20 +137,21 @@ pub async fn compile_block_sampled_datalake(
                     },
                 });
 
-                storage_proofs.push(MPTProof {
+                storage_proofs.push(StorageMPTProof {
                     block_number: i,
-                    proof: value.1,
+                    account_proof: acc.1,
+                    storage_proof: value.1,
                 });
 
                 aggregation_set.push(value.0);
             }
-            let address_bytes = Vec::from_hex(address).expect("Invalid hex string");
-            let account_key = keccak256(address_bytes);
+            let slot_bytes = Vec::from_hex(slot).expect("Invalid hex string");
+            let storage_key = keccak256(slot_bytes).to_string();
 
             storages.push(Storage {
                 address: address.to_string(),
-                account_key: account_key.to_string(),
-                storage_key: slot.to_string(),
+                slot: slot.to_string(),
+                storage_key,
                 proofs: storage_proofs,
             });
         }
