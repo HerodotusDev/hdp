@@ -1,6 +1,5 @@
 use alloy_primitives::U256;
 use anyhow::{bail, Result};
-use std::ops::Div;
 
 /// Returns the average of the values
 pub fn average(values: &[String]) -> Result<String> {
@@ -167,22 +166,18 @@ fn divide(a: u128, b: u128) -> String {
     // Convert both numbers to u256 to preserve the fractional part after division
     let a_u256 = U256::from(a);
     let b_u256 = U256::from(b);
-    println!("{:?}", a_u256);
-    println!("{:?}", b_u256);
 
-    let result = a_u256.div(b_u256);
-    println!("{:?}", result);
-    // let rem: u64 = result.1.to_string().parse().unwrap();
-    // println!("{:?}", rem);
+    let result = a_u256.div_rem(b_u256);
 
-    // if rem >= 5 {
-    //     let result: u128 = result.0.to_string().parse().unwrap();
-    //     (result + 1).to_string()
-    // } else {
-    //     println!("{:?}", result.0.to_string());
-    //     result.0.to_string()
-    // }
-    result.to_string()
+    let quotient: u128 = result.0.to_string().parse().unwrap();
+    let rem: u128 = result.1.to_string().parse().unwrap();
+    let divisor_half = b / 2;
+
+    if rem >= divisor_half {
+        (quotient + 1).to_string()
+    } else {
+        quotient.to_string()
+    }
 }
 
 fn roundup(value: String) -> u128 {
