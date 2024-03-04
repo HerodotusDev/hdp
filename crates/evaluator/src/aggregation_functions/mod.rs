@@ -64,7 +64,10 @@ impl AggregationFunction {
         // Remove the "0x" prefix if exist, so that integer functions can parse integer values
         let inputs: Vec<String> = values
             .iter()
-            .map(|hex_str| hex_str.trim_start_matches("0x").to_string())
+            .map(|hex_str| {
+                let hex_value = hex_str.trim_start_matches("0x").to_string();
+                u64::from_str_radix(&hex_value, 16).unwrap().to_string()
+            })
             .collect();
 
         match self {

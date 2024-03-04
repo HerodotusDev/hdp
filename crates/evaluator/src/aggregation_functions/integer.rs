@@ -1,4 +1,6 @@
+use alloy_primitives::U256;
 use anyhow::{bail, Result};
+use std::ops::Div;
 
 /// Returns the average of the values
 pub fn average(values: &[String]) -> Result<String> {
@@ -15,7 +17,7 @@ pub fn average(values: &[String]) -> Result<String> {
 
     let divided_value = divide(sum, values.len() as u128);
 
-    Ok(roundup(divided_value).to_string())
+    Ok(divided_value)
 }
 
 // TODO: Implement bloom_filterize
@@ -82,8 +84,8 @@ pub fn standard_deviation(values: &[String]) -> Result<String> {
         variance_sum += (value - avg).powi(2);
     }
 
-    let variance = variance_sum / count;
-    Ok(roundup(variance.sqrt()).to_string())
+    let variance: f64 = divide(variance_sum as u128, count as u128).parse().unwrap();
+    Ok(roundup(variance.sqrt().to_string()).to_string())
 }
 
 /// Sum of values
@@ -161,17 +163,29 @@ pub fn count_if(values: &[String], ctx: &str) -> Result<String> {
     Ok(condition_satisfiability_count.to_string())
 }
 
-fn divide(a: u128, b: u128) -> f64 {
-    // Convert both numbers to f64 to preserve the fractional part after division
-    let a_f64 = a as f64;
-    let b_f64 = b as f64;
+fn divide(a: u128, b: u128) -> String {
+    // Convert both numbers to u256 to preserve the fractional part after division
+    let a_u256 = U256::from(a);
+    let b_u256 = U256::from(b);
+    println!("{:?}", a_u256);
+    println!("{:?}", b_u256);
 
-    // Perform division as floating-point operation
-    a_f64 / b_f64
+    let result = a_u256.div(b_u256);
+    println!("{:?}", result);
+    // let rem: u64 = result.1.to_string().parse().unwrap();
+    // println!("{:?}", rem);
+
+    // if rem >= 5 {
+    //     let result: u128 = result.0.to_string().parse().unwrap();
+    //     (result + 1).to_string()
+    // } else {
+    //     println!("{:?}", result.0.to_string());
+    //     result.0.to_string()
+    // }
+    result.to_string()
 }
 
-fn roundup(value: f64) -> u128 {
-    // Use the round method to round to the nearest whole number and convert to u128
-    // This method rounds to the nearest whole number, away from zero if halfway
-    value.round() as u128
+fn roundup(value: String) -> u128 {
+    let result: f64 = value.parse().unwrap();
+    result.round() as u128
 }

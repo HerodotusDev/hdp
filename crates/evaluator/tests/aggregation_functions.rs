@@ -12,6 +12,27 @@ fn test_avg() {
 }
 
 #[test]
+fn test_avg_multi() {
+    let values = vec![
+        "41697095938570171564".to_string(),
+        "41697095938570171564".to_string(),
+        "41697095938570171564".to_string(),
+        "41697095938570171564".to_string(),
+        "41697095938570171564".to_string(),
+        "41697095938570171564".to_string(),
+        "41697095938570171564".to_string(),
+        "41697095938570171564".to_string(),
+        "41697298409483537348".to_string(),
+        "41697298409483537348".to_string(),
+        "41697298409483537348".to_string(),
+    ];
+    assert_eq!(
+        average(&values).unwrap(),
+        "41697151157910180414".to_string()
+    );
+}
+
+#[test]
 fn test_avg_empty() {
     let values = vec![];
     assert!(average(&values).is_err());

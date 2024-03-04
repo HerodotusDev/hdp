@@ -8,7 +8,7 @@ use crate::{
     },
     datalake::base::DatalakeResult,
     fetcher::AbstractFetcher,
-    types::{Account, AccountMPTProof, Header, HeaderProof, Storage, StorageMPTProof},
+    types::{Account, Header, HeaderProof, MPTProof, Storage},
 };
 use alloy_primitives::{hex, keccak256};
 use anyhow::{bail, Result};
@@ -65,7 +65,7 @@ pub async fn compile_block_sampled_datalake(
             let address = property_parts[1];
             let property = property_parts[2];
 
-            let mut account_proofs: Vec<AccountMPTProof> = vec![];
+            let mut account_proofs: Vec<MPTProof> = vec![];
             // let mut encoded_account = "".to_string();
 
             for i in block_range_start..=block_range_end {
@@ -91,7 +91,7 @@ pub async fn compile_block_sampled_datalake(
                     },
                 });
 
-                let account_proof = AccountMPTProof {
+                let account_proof = MPTProof {
                     block_number: i,
                     proof: acc.1,
                 };
@@ -114,7 +114,8 @@ pub async fn compile_block_sampled_datalake(
             let address = property_parts[1];
             let slot = property_parts[2];
 
-            let mut storage_proofs: Vec<StorageMPTProof> = vec![];
+            let mut storage_proofs: Vec<MPTProof> = vec![];
+            let mut account_proofs: Vec<MPTProof> = vec![];
 
             for i in block_range_start..=block_range_end {
                 if i % increment != 0 {
@@ -137,10 +138,14 @@ pub async fn compile_block_sampled_datalake(
                     },
                 });
 
-                storage_proofs.push(StorageMPTProof {
+                account_proofs.push(MPTProof {
                     block_number: i,
-                    account_proof: acc.1,
-                    storage_proof: value.1,
+                    proof: acc.1,
+                });
+
+                storage_proofs.push(MPTProof {
+                    block_number: i,
+                    proof: value.1,
                 });
 
                 aggregation_set.push(value.0);
@@ -148,11 +153,19 @@ pub async fn compile_block_sampled_datalake(
             let slot_bytes = Vec::from_hex(slot).expect("Invalid hex string");
             let storage_key = keccak256(slot_bytes).to_string();
 
+            let address_bytes = Vec::from_hex(address).expect("Invalid hex string");
+            let account_key = keccak256(address_bytes);
+
             storages.push(Storage {
                 address: address.to_string(),
                 slot: slot.to_string(),
                 storage_key,
                 proofs: storage_proofs,
+            });
+            accounts.push(Account {
+                address: address.to_string(),
+                account_key: account_key.to_string(),
+                proofs: account_proofs,
             });
         }
         _ => bail!("Unknown collection type"),

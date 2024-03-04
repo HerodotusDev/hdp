@@ -107,20 +107,18 @@
       "0x5417f6fb234889a2c018bf05eef24cebd8ba29595df9ca880e0f856162c1bb7"
     ]
   },
-  "accounts": [],
-  "storages": [
+  "accounts": [
     {
       "address": ["0x3b7ce9ddbc1ce75", "0x8568f69565aa0e20", "0x20b962c9"],
-      "slot": ["0x0", "0x0", "0x0", "0x300000000000000"],
-      "storage_key": {
-        "low": "0x28db122fc9f859f9003c599e0e5a57c2",
-        "high": "0x5bf8716f4416255ed002053b5a39c369"
+      "account_key": {
+        "low": "0x7553f666b6770866326447c85f442f96",
+        "high": "0xd16a745505e708704a2f0db68991a69e"
       },
       "proofs": [
         {
           "block_number": 4952100,
-          "account_proof_bytes_len": [532, 532, 532, 532, 532, 436, 105],
-          "account_proof": [
+          "proof_bytes_len": [532, 532, 532, 532, 532, 436, 105],
+          "proof": [
             [
               "0x704860b2a01102f9",
               "0xf0fa4945ef6b4078",
@@ -539,10 +537,21 @@
               "0xc153c4dd01d32a69",
               "0x2"
             ]
-          ],
-          "storage_proof_bytes_len": [],
-          "storage_proof": []
+          ]
         }
+      ]
+    }
+  ],
+  "storages": [
+    {
+      "address": ["0x3b7ce9ddbc1ce75", "0x8568f69565aa0e20", "0x20b962c9"],
+      "slot": ["0x0", "0x0", "0x0", "0x300000000000000"],
+      "storage_key": {
+        "low": "0x28db122fc9f859f9003c599e0e5a57c2",
+        "high": "0x5bf8716f4416255ed002053b5a39c369"
+      },
+      "proofs": [
+        { "block_number": 4952100, "proof_bytes_len": [], "proof": [] }
       ]
     }
   ],
