@@ -25,12 +25,10 @@ HDP stands for Herodotus Data Processor, which able to process range of block da
 ### Install with cargo
 
 ```bash
-❯ cargo install hdp-cli --locked --force
-```
+# Install with cargo
+❯ cargo install --git https://github.com/HerodotusDev/hdp --locked --force
 
-Run the HDP
-
-```bash
+# Run the HDP
 ❯ hdp run --help
 ```
 
@@ -43,7 +41,8 @@ Run the HDP
 # install hdp
 ❯ cargo install --path cli
 
-
+# Run the HDP
+❯ hdp run --help
 ```
 
 ## HDP run
