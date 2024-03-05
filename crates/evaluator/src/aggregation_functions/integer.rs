@@ -163,18 +163,20 @@ pub fn count_if(values: &[String], ctx: &str) -> Result<String> {
 }
 
 fn divide(a: u128, b: u128) -> String {
-    // Convert both numbers to u256 to preserve the fractional part after division
     let a_u256 = U256::from(a);
     let b_u256 = U256::from(b);
+    if b_u256.is_zero() {
+        return "Division by zero error".to_string();
+    }
 
-    let result = a_u256.div_rem(b_u256);
+    let quotient = a_u256 / b_u256;
+    let remainder = a_u256 % b_u256;
+    let divisor_half = b_u256 / U256::from(2);
 
-    let quotient: u128 = result.0.to_string().parse().unwrap();
-    let rem: u128 = result.1.to_string().parse().unwrap();
-    let divisor_half = b / 2;
-
-    if rem >= divisor_half {
-        (quotient + 1).to_string()
+    if remainder > divisor_half
+        || (remainder == divisor_half && b_u256 % U256::from(2) == U256::from(0))
+    {
+        (quotient + U256::from(1)).to_string()
     } else {
         quotient.to_string()
     }

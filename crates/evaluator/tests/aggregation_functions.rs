@@ -9,6 +9,15 @@ fn test_avg() {
 
     let values = vec!["1".to_string(), "2".to_string()];
     assert_eq!(average(&values).unwrap(), "2".to_string());
+
+    let values = vec!["1000000000000".to_string()];
+    assert_eq!(average(&values).unwrap(), "1000000000000".to_string());
+
+    let values = vec!["41697298409483537348".to_string()];
+    assert_eq!(
+        average(&values).unwrap(),
+        "41697298409483537348".to_string()
+    );
 }
 
 #[test]
