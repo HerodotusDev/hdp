@@ -1,3 +1,5 @@
+![](.github/readme.png)
+
 # HDP
 
 [![CI](https://github.com/HerodotusDev/hdp/actions/workflows/ci.yml/badge.svg)](https://github.com/HerodotusDev/hdp/actions/workflows/ci.yml)
