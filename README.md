@@ -1,15 +1,57 @@
-# Herodotus Data Processor (HDP)
+# HDP
 
 [![CI](https://github.com/HerodotusDev/hdp/actions/workflows/ci.yml/badge.svg)](https://github.com/HerodotusDev/hdp/actions/workflows/ci.yml)
 
-## Quick Start
+HDP stands for Herodotus Data Processor, which able to process range of block data and retrieve valid value from proving ZK-STARK proof. CLI is mainly used for process human readable request to Cairo-Program acceptable format file. Additionally some useful features supported for develop.
+
+## Supported Features
+
+### Develop Purpose
+
+- [x] Encode provided datalake and task
+- [x] Decode multiple datalakes and tasks in batch (`bytes[]`) abi-encoded
+- [x] Decode one datalake and task
+
+### HDP Core (Evaluation)
+
+- [x] Decode provided tasks and datalakes
+- [x] Compile datalake 1: Fetch relevant header data and proofs from Herodotus Indexer
+- [x] Compile datalake 2: Fetch relevant account and storage data and proofs from RPC provider
+- [x] Compute aggregated function (ex. `SUM`, `AVG`) over compiled datalake result
+- [x] Return general ( human readable ) and cairo formatted ( all chunked with felt size ) file
+
+## Install HDP
+
+### Install with cargo
 
 ```bash
-# install hdp
-cargo install --path cli
+❯ cargo install hdp-cli --locked --force
+```
 
+Run the HDP
+
+```bash
+❯ hdp run --help
+```
+
+## Build from source
+
+```bash
+# clone repo
+❯ git clone https://github.com/HerodotusDev/hdp.git
+
+# install hdp
+❯ cargo install --path cli
+
+
+```
+
+## HDP run
+
+```console
 # help run help
 ❯ hdp run --help
+
 Run the evaluator
 
 Usage: hdp run [OPTIONS] [TASKS] [DATALAKES] [RPC_URL]
@@ -36,9 +78,9 @@ hdp run 0x0000000000000000000000000000000000000000000000000000000000000020000000
 
 ```
 
-## CLI help
+## More Usage
 
-```bash
+```console
 ❯ hdp --help
 Simple Herodotus Data Processor CLI to handle tasks and datalakes
 
@@ -124,35 +166,15 @@ Options:
 cargo clippy --all --all-targets -- -D warnings && cargo fmt -- --check && cargo test --all --all-targets -- --nocapture
 ```
 
-## Status
+## HDP Support
 
-|                                 | SUM | AVG | MAX | MIN |
-| ------------------------------- | --- | --- | --- | --- |
-| header.parent_hash              |     |     |     |     |
-| header.ommers_hash              |     |     |     |     |
-| header.beneficiary              |     |     |     |     |
-| header.state_root               |     |     |     |     |
-| header.transactions_root        |     |     |     |     |
-| header.receipts_root            |     |     |     |     |
-| header.logs_bloom               |     |     |     |     |
-| header.difficulty               |     |     |     |     |
-| header.number                   |     |     |     |     |
-| header.gas_limit                |     |     |     |     |
-| header.gas_used                 |     |     |     |     |
-| header.timestamp                |     |     |     |     |
-| header.extra_data               |     |     |     |     |
-| header.mix_hash                 |     |     |     |     |
-| header.nonce                    |     |     |     |     |
-| header.base_fee_per_gas         |     |     |     |     |
-| header.withdrawals_root         |     |     |     |     |
-| header.blob_gas_used            |     |     |     |     |
-| header.withdrawals_root         |     |     |     |     |
-| header.blob_gas_used            |     |     |     |     |
-| header.excess_blob_gas          |     |     |     |     |
-| header.parent_beacon_block_root |     |     |     |     |
-| account.nonce                   |     |     |     |     |
-| account.balance                 |     |     |     |     |
-| account.storage_root            |     |     |     |     |
-| account.code_hash               |     |     |     |     |
-| storage.key ( value is num )    |     |     |     |     |
-| storage.key (value is hash )    |     |     |     |     |
+Note : `SUM` and `AVG` expect to get number as input.
+
+|                              | SUM | AVG |
+| ---------------------------- | --- | --- |
+| account.nonce                | ✅  | ✅  |
+| account.balance              | ✅  | ✅  |
+| account.storage_root         | -   | -   |
+| account.code_hash            | -   | -   |
+| storage.key ( value is num ) | ✅  | ✅  |
+| storage.key (value is hash ) | -   | -   |
