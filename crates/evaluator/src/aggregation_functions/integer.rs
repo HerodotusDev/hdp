@@ -7,14 +7,14 @@ pub fn average(values: &[String]) -> Result<String> {
         bail!("No values found");
     }
 
-    let mut sum = 0;
+    let sum = values.iter().try_fold(U256::from(0), |acc, val| {
+        val.parse::<u128>()
+            .map(U256::from)
+            .map(|num| acc + num)
+            .map_err(anyhow::Error::new)
+    })?;
 
-    for value in values {
-        let value = value.parse::<u128>()?;
-        sum += value;
-    }
-
-    let divided_value = divide(sum, values.len() as u128);
+    let divided_value = divide(sum, U256::from(values.len()));
 
     Ok(divided_value)
 }
@@ -62,6 +62,7 @@ pub fn find_min(values: &[String]) -> Result<String> {
 }
 
 /// Standard deviation
+/// wip
 pub fn standard_deviation(values: &[String]) -> Result<String> {
     if values.is_empty() {
         bail!("No values found");
@@ -83,7 +84,9 @@ pub fn standard_deviation(values: &[String]) -> Result<String> {
         variance_sum += (value - avg).powi(2);
     }
 
-    let variance: f64 = divide(variance_sum as u128, count as u128).parse().unwrap();
+    let variance: f64 = divide(U256::from(variance_sum), U256::from(count))
+        .parse()
+        .unwrap();
     Ok(roundup(variance.sqrt().to_string()).to_string())
 }
 
@@ -162,19 +165,16 @@ pub fn count_if(values: &[String], ctx: &str) -> Result<String> {
     Ok(condition_satisfiability_count.to_string())
 }
 
-fn divide(a: u128, b: u128) -> String {
-    let a_u256 = U256::from(a);
-    let b_u256 = U256::from(b);
-    if b_u256.is_zero() {
+fn divide(a: U256, b: U256) -> String {
+    if b.is_zero() {
         return "Division by zero error".to_string();
     }
 
-    let quotient = a_u256 / b_u256;
-    let remainder = a_u256 % b_u256;
-    let divisor_half = b_u256 / U256::from(2);
+    let quotient = a / b;
+    let remainder = a % b;
+    let divisor_half = b / U256::from(2);
 
-    if remainder > divisor_half
-        || (remainder == divisor_half && b_u256 % U256::from(2) == U256::from(0))
+    if remainder > divisor_half || (remainder == divisor_half && b % U256::from(2) == U256::from(0))
     {
         (quotient + U256::from(1)).to_string()
     } else {
