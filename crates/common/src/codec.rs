@@ -5,7 +5,7 @@ use crate::{
     task::ComputationalTask,
 };
 use alloy_dyn_abi::{DynSolType, DynSolValue};
-use alloy_primitives::hex::{self, FromHex};
+use alloy_primitives::hex::FromHex;
 use anyhow::{bail, Ok, Result};
 
 /// Decode a batch of tasks
@@ -100,8 +100,7 @@ pub fn datalakes_encoder(datalakes: Vec<Datalake>) -> Result<String> {
 
     let array_encoded_datalakes = DynSolValue::Array(encoded_datalakes);
     let encoded_datalakes = array_encoded_datalakes.abi_encode();
-    let hex_string = hex::encode(encoded_datalakes);
-    Ok(format!("0x{}", hex_string))
+    Ok(bytes_to_hex_string(&encoded_datalakes))
 }
 
 /// Encode batch of tasks
@@ -116,6 +115,5 @@ pub fn tasks_encoder(tasks: Vec<ComputationalTask>) -> Result<String> {
 
     let array_encoded_tasks = DynSolValue::Array(encoded_tasks);
     let encoded_tasks = array_encoded_tasks.abi_encode();
-    let hex_string = hex::encode(encoded_tasks);
-    Ok(format!("0x{}", hex_string))
+    Ok(bytes_to_hex_string(&encoded_tasks))
 }

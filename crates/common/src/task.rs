@@ -1,15 +1,12 @@
 use std::str::FromStr;
 
 use alloy_dyn_abi::{DynSolType, DynSolValue};
-use alloy_primitives::{
-    hex::{self, FromHex},
-    keccak256, FixedBytes,
-};
+use alloy_primitives::{hex::FromHex, keccak256, FixedBytes};
 use anyhow::Result;
 
 use crate::{
     datalake::base::DatalakeBase,
-    utils::{bytes32_to_utf8_str, utf8_to_fixed_bytes32},
+    utils::{bytes32_to_utf8_str, bytes_to_hex_string, utf8_str_to_fixed_bytes32},
 };
 
 /// ComputationalTask represents a task for certain datalake with a specified aggregate function
@@ -45,7 +42,7 @@ impl ComputationalTask {
         match &self.datalake {
             None => {
                 let aggregate_fn_id_value = DynSolValue::FixedBytes(
-                    alloy_primitives::FixedBytes(utf8_to_fixed_bytes32(&self.aggregate_fn_id)),
+                    alloy_primitives::FixedBytes(utf8_str_to_fixed_bytes32(&self.aggregate_fn_id)),
                     32,
                 );
 
@@ -58,7 +55,7 @@ impl ComputationalTask {
                     DynSolValue::Tuple(vec![aggregate_fn_id_value, aggregate_fn_ctx_value]);
 
                 let encoded_datalake = header_tuple_value.abi_encode();
-                Ok(format!("0x{}", hex::encode(encoded_datalake)))
+                Ok(bytes_to_hex_string(&encoded_datalake))
             }
             Some(datalake) => {
                 let identifier_value = DynSolValue::FixedBytes(
@@ -67,7 +64,7 @@ impl ComputationalTask {
                 );
 
                 let aggregate_fn_id_value = DynSolValue::FixedBytes(
-                    FixedBytes(utf8_to_fixed_bytes32(&self.aggregate_fn_id)),
+                    FixedBytes(utf8_str_to_fixed_bytes32(&self.aggregate_fn_id)),
                     32,
                 );
                 let aggregate_fn_ctx_value = match &self.aggregate_fn_ctx {
@@ -82,7 +79,7 @@ impl ComputationalTask {
                 ]);
 
                 let encoded_datalake = header_tuple_value.abi_encode_sequence().unwrap();
-                Ok(format!("0x{}", hex::encode(encoded_datalake)))
+                Ok(bytes_to_hex_string(&encoded_datalake))
             }
         }
     }
@@ -97,8 +94,8 @@ impl ComputationalTask {
         let datalake_value = if let Some(datalake) = value[0].as_uint() {
             let datalake = DatalakeBase {
                 commitment: format!("0x{:x}", datalake.0),
-                datalakes_pipeline: vec![],
-                datapoints: vec![],
+                datalake_type: None,
+                result: None,
             };
 
             Some(datalake)

@@ -165,6 +165,7 @@ pub fn count_if(values: &[String], ctx: &str) -> Result<String> {
     Ok(condition_satisfiability_count.to_string())
 }
 
+// Handle division properly using U256 type
 fn divide(a: U256, b: U256) -> String {
     if b.is_zero() {
         return "Division by zero error".to_string();

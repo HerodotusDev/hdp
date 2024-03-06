@@ -62,7 +62,6 @@ impl AggregationFunction {
 
     pub fn operation(&self, values: &[String], ctx: Option<String>) -> Result<String> {
         // Remove the "0x" prefix if exist, so that integer functions can parse integer values
-
         let inputs: Vec<String> = values
             .iter()
             .map(|hex_str| {
@@ -76,11 +75,11 @@ impl AggregationFunction {
             .collect();
 
         match self {
+            // Aggregation functions for integer values
             AggregationFunction::AVG => integer::average(&inputs),
             AggregationFunction::BLOOM => integer::bloom_filterize(&inputs),
             AggregationFunction::MAX => integer::find_max(&inputs),
             AggregationFunction::MIN => integer::find_min(&inputs),
-            AggregationFunction::MERKLE => string::merkleize(values),
             AggregationFunction::STD => integer::standard_deviation(&inputs),
             AggregationFunction::SUM => integer::sum(&inputs),
             AggregationFunction::COUNTIF => {
@@ -90,6 +89,8 @@ impl AggregationFunction {
                     bail!("Context not provided for COUNTIF")
                 }
             }
+            // Aggregation functions for string values
+            AggregationFunction::MERKLE => string::merkleize(values),
         }
     }
 }
