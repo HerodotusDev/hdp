@@ -97,8 +97,8 @@ impl ComputationalTask {
         let datalake_value = if let Some(datalake) = value[0].as_uint() {
             let datalake = DatalakeBase {
                 commitment: format!("0x{:x}", datalake.0),
-                datalakes_pipeline: vec![],
-                datapoints: vec![],
+                datalakes_pipeline: None,
+                datapoints: None,
             };
 
             Some(datalake)

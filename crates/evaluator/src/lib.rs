@@ -273,34 +273,39 @@ pub async fn evaluator(
     for compute_expression in compute_expressions {
         let computation_task_id = compute_expression.to_string();
         let encoded_task = compute_expression.encode()?;
-        let mut datalake = compute_expression.datalake.unwrap();
-        // TODO: in v0 we consider datalake pipeline is single datalake
-        let encoded_datalake = datalake.datalakes_pipeline[0].serialize()?;
-        let datalake_result = datalake.compile(fetcher.clone()).await?;
-        let aggregation_fn = AggregationFunction::from_str(&compute_expression.aggregate_fn_id)?;
-        let aggregation_fn_ctx = &compute_expression.aggregate_fn_ctx;
-        let result = aggregation_fn.operation(
-            &datalake_result.compiled_results,
-            aggregation_fn_ctx.clone(),
-        )?;
-        results
-            .compiled_results
-            .insert(computation_task_id.clone(), result);
-        results.ordered_tasks.push(computation_task_id.clone());
-        results
-            .fetched_datalake_results
-            .insert(computation_task_id.clone(), datalake_result);
-        results
-            .encoded_tasks
-            .insert(computation_task_id.clone(), encoded_task);
-        results.encoded_datalakes.insert(
-            computation_task_id,
-            EvaluatedDatalake {
-                encoded_datalake,
-                datalake_type: datalake.datalakes_pipeline[0].get_datalake_type(),
-                property_type: datalake.datalakes_pipeline[0].get_property_type(),
-            },
-        );
+        let mut datalake_base = compute_expression.datalake.unwrap();
+        let datalake_result = datalake_base.compile(fetcher.clone()).await?;
+        match datalake_base.datalakes_pipeline {
+            Some(datalake) => {
+                let encoded_datalake = datalake.serialize()?;
+                let aggregation_fn =
+                    AggregationFunction::from_str(&compute_expression.aggregate_fn_id)?;
+                let aggregation_fn_ctx = &compute_expression.aggregate_fn_ctx;
+                let result = aggregation_fn.operation(
+                    &datalake_result.compiled_results,
+                    aggregation_fn_ctx.clone(),
+                )?;
+                results
+                    .compiled_results
+                    .insert(computation_task_id.clone(), result);
+                results.ordered_tasks.push(computation_task_id.clone());
+                results
+                    .fetched_datalake_results
+                    .insert(computation_task_id.clone(), datalake_result);
+                results
+                    .encoded_tasks
+                    .insert(computation_task_id.clone(), encoded_task);
+                results.encoded_datalakes.insert(
+                    computation_task_id,
+                    EvaluatedDatalake {
+                        encoded_datalake,
+                        datalake_type: datalake.get_datalake_type(),
+                        property_type: datalake.get_property_type(),
+                    },
+                );
+            }
+            None => bail!("Datalake is not filled"),
+        }
     }
 
     Ok(results)

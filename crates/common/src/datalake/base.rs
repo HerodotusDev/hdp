@@ -28,16 +28,16 @@ pub struct DatalakeResult {
 pub struct DatalakeBase {
     /// Datalake commitment. It is used to identify the datalake
     pub commitment: String,
-    pub datalakes_pipeline: Vec<Datalake>,
-    pub datapoints: Vec<DatalakeResult>,
+    pub datalakes_pipeline: Option<Datalake>,
+    pub datapoints: Option<DatalakeResult>,
 }
 
 impl fmt::Debug for DatalakeBase {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("DatalakeBase")
             .field("commitment", &self.commitment)
-            .field("datalakes_pipeline", &"datalakes_pipeline")
-            .field("datapoints", &"datapoints")
+            .field("datalakes_pipeline", &self.datalakes_pipeline)
+            .field("datapoints", &self.datapoints)
             .finish()
     }
 }
@@ -46,32 +46,31 @@ impl DatalakeBase {
     pub fn new(commitment: &str, datalake_type: Datalake) -> Self {
         Self {
             commitment: commitment.to_string(),
-            datalakes_pipeline: vec![datalake_type],
-            datapoints: Vec::new(),
+            datalakes_pipeline: Some(datalake_type),
+            datapoints: None,
         }
     }
 
-    // TODO: decide if we want to merge datalakes
-    // fn merge(&mut self, other: DatalakeBase) {
-    //     self.compilation_pipeline.extend(other.compilation_pipeline);
-    //     self.identifier = format!("{}{}", self.identifier, other.identifier);
-    // }
-
-    // returns the result of the compilation of the datalake
     pub async fn compile(
         &mut self,
         fetcher: Arc<RwLock<AbstractFetcher>>,
     ) -> Result<DatalakeResult> {
-        let datalake_type = self.datalakes_pipeline.first().unwrap();
-        let result_datapoints = match datalake_type {
-            Datalake::BlockSampled(datalake) => datalake.compile(fetcher.clone()).await?,
-            Datalake::DynamicLayout(_) => bail!("dynamic datalake type doesn't support"),
-            Datalake::Unknown => {
-                bail!("Unknown datalake type");
-            }
-        };
+        let datalake_type = &self.datalakes_pipeline;
+        match datalake_type {
+            Some(datalake) => {
+                let result_datapoints = match datalake {
+                    Datalake::BlockSampled(datalake) => datalake.compile(fetcher.clone()).await?,
+                    Datalake::DynamicLayout(_) => bail!("dynamic datalake type doesn't support"),
+                    Datalake::Unknown => {
+                        bail!("Unknown datalake type");
+                    }
+                };
 
-        Ok(result_datapoints)
+                self.datapoints = Some(result_datapoints.clone());
+                Ok(result_datapoints)
+            }
+            None => bail!("Datalake type is not defined"),
+        }
     }
 }
 

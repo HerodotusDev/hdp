@@ -25,7 +25,7 @@ struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum Commands {
-    ///  Encode the task and data lake in batched format test purposes
+    ///  Encode the task and datalake in batched format test purposes
     #[command(arg_required_else_help = true)]
     Encode {
         /// The aggregate function id e.g. "sum", "min", "avg"
@@ -35,9 +35,9 @@ enum Commands {
         #[command(subcommand)]
         command: DataLakeCommands,
     },
-    /// Decode batch tasks and data lakes
+    /// Decode batch tasks and datalakes
     ///
-    /// Note: Batch tasks and data lakes should be encoded in bytes[] format
+    /// Note: Batch tasks and datalakes should be encoded in bytes[] format
     #[command(arg_required_else_help = true)]
     Decode {
         /// Batched tasks bytes
@@ -46,7 +46,7 @@ enum Commands {
         datalakes: String,
     },
 
-    /// Decode one task and one data lake (not batched format)
+    /// Decode one task and one datalake (not batched format)
     #[command(arg_required_else_help = true)]
     DecodeOne { task: String, datalake: String },
     /// Run the evaluator

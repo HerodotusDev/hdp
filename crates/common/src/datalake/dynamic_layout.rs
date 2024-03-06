@@ -12,6 +12,7 @@ use super::{
     Datalake,
 };
 
+// TODO: DynamicLayoutDatalake is incomplete
 #[derive(Debug, Clone, PartialEq)]
 pub struct DynamicLayoutDatalake {
     pub block_number: u64,
