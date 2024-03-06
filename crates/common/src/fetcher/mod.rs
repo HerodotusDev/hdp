@@ -1,5 +1,8 @@
-use anyhow::Result;
-use std::{collections::HashMap, time::Instant};
+use anyhow::{bail, Result};
+use std::{
+    collections::{HashMap, HashSet},
+    time::Instant,
+};
 
 use crate::{
     block::{account::Account, header::BlockHeader},
@@ -18,16 +21,11 @@ pub mod rpc;
 /// `AbstractFetcher` abstracts the fetching of data from the RPC and memory.
 ///  It uses a `MemoryFetcher` and a `RpcFetcher` to fetch data.
 ///
-/// TODO: Lock only rpc fetcher and keep the memory fetcher unlocked
+/// TODO: Optimization idea, Lock only rpc fetcher and keep the memory fetcher unlocked
 /// but handle requests so that it would not make duplicate requests
 pub struct AbstractFetcher {
     memory: MemoryFetcher,
     rpc: RpcFetcher,
-}
-
-pub struct ChunkHeaderResult {
-    pub headers: Vec<BlockHeader>,
-    pub missing_blocks: Vec<u64>,
 }
 
 impl AbstractFetcher {
@@ -46,13 +44,8 @@ impl AbstractFetcher {
     ) -> Result<(StoredHeaders, MMRMeta)> {
         //? A map of block numbers to a boolean indicating whether the block was fetched.
         let mut blocks_map: HashMap<u64, (bool, StoredHeader)> = HashMap::new();
-        // TODO: in v0 we assume all the blocks in data lake are exist in 1 MMR
-        let mut mmr_assume_for_now = MMRMeta {
-            id: 0,
-            root: "".to_string(),
-            size: 0,
-            peaks: vec![],
-        };
+
+        let mut relevant_mmr: HashSet<MMRMeta> = HashSet::new();
 
         // 1. Fetch headers from memory
         for block_number in &block_numbers {
@@ -93,12 +86,14 @@ impl AbstractFetcher {
                             mmr_meta.mmr_size,
                             mmr_meta.mmr_peaks.clone(),
                         );
-                        mmr_assume_for_now = MMRMeta {
+
+                        relevant_mmr.insert(MMRMeta {
                             id: mmr_meta.mmr_id,
                             root: mmr_meta.mmr_root.clone(),
                             size: mmr_meta.mmr_size,
                             peaks: mmr_meta.mmr_peaks.clone(),
-                        };
+                        });
+
                         blocks_map.insert(
                             *block_number,
                             (
@@ -121,6 +116,7 @@ impl AbstractFetcher {
                     "❌ Something went wrong while fetching MMR data from indexer: {}",
                     e
                 );
+                return Err(e);
             }
         }
 
@@ -133,7 +129,18 @@ impl AbstractFetcher {
                     stored_headers.insert(*block_number, header.clone());
                 }
             });
-        Ok((stored_headers, mmr_assume_for_now))
+
+        // TODO: in v1 allowed to handle all the blocks in datalake are exist in 1 MMR
+        let mmr_meta_result = match relevant_mmr.len() {
+            0 => None,
+            1 => relevant_mmr.iter().next().cloned(),
+            _ => relevant_mmr.iter().next().cloned(),
+        };
+
+        match mmr_meta_result {
+            Some(mmr_meta) => Ok((stored_headers, mmr_meta)),
+            None => bail!("No MMR metadata found"),
+        }
     }
 
     // Unoptimized version of get_rlp_header, just for testing purposes
