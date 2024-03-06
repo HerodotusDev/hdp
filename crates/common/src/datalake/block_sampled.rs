@@ -67,7 +67,7 @@ impl BlockSampledDatalake {
         ]);
 
         let encoded_datalake = tuple_value.abi_encode_sequence().unwrap();
-        Ok(format!("0x{}", hex::encode(encoded_datalake)))
+        Ok(bytes_to_hex_string(&encoded_datalake))
     }
 
     /// Get the commitment hash of the block sampled datalake
@@ -104,7 +104,7 @@ impl BlockSampledDatalake {
         })
     }
 
-    pub async fn compile(&self, fetcher: Arc<RwLock<AbstractFetcher>>) -> Result<DatalakeResult> {
+    pub async fn compile(&self, fetcher: &Arc<RwLock<AbstractFetcher>>) -> Result<DatalakeResult> {
         compile_block_sampled_datalake(
             self.block_range_start,
             self.block_range_end,

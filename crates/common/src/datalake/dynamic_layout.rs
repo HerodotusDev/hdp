@@ -1,11 +1,8 @@
 use alloy_dyn_abi::{DynSolType, DynSolValue};
-use alloy_primitives::{
-    hex::{self, FromHex},
-    keccak256, U256,
-};
+use alloy_primitives::{hex::FromHex, keccak256, U256};
 use anyhow::{bail, Result};
 
-use crate::compiler::test::test_closer;
+use crate::{compiler::test::test_closer, utils::bytes_to_hex_string};
 
 use super::{
     base::{DatalakeBase, Derivable},
@@ -71,7 +68,7 @@ impl DynamicLayoutDatalake {
         ]);
 
         let encoded_datalake = tuple_value.abi_encode();
-        Ok(format!("0x{}", hex::encode(encoded_datalake)))
+        Ok(bytes_to_hex_string(&encoded_datalake))
     }
 
     pub fn deserialize(serialized: String) -> Result<Self> {

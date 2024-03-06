@@ -61,6 +61,7 @@ impl EvaluationResult {
             encoded_datalakes: HashMap::new(),
         }
     }
+
     pub fn build_merkle_tree(&self) -> (StandardMerkleTree, StandardMerkleTree) {
         let mut tasks_leaves = Vec::new();
         let mut results_leaves = Vec::new();
@@ -248,7 +249,7 @@ impl Default for EvaluationResult {
 }
 
 pub async fn evaluator(
-    mut compute_expressions: Vec<ComputationalTask>,
+    mut computational_tasks: Vec<ComputationalTask>,
     datalake_for_tasks: Option<Vec<Datalake>>,
     fetcher: Arc<RwLock<AbstractFetcher>>,
 ) -> Result<EvaluationResult> {
@@ -257,7 +258,7 @@ pub async fn evaluator(
     // If optional datalake_for_tasks is provided, need to assign the datalake to the corresponding task
     if let Some(datalake) = datalake_for_tasks {
         for (datalake_idx, datalake) in datalake.iter().enumerate() {
-            let task = &mut compute_expressions[datalake_idx];
+            let task = &mut computational_tasks[datalake_idx];
 
             task.datalake = match datalake {
                 Datalake::BlockSampled(block_datalake) => Some(block_datalake.derive()),
@@ -270,33 +271,42 @@ pub async fn evaluator(
     }
 
     // Evaulate the compute expressions
-    for compute_expression in compute_expressions {
-        let computation_task_id = compute_expression.to_string();
-        let encoded_task = compute_expression.encode()?;
-        let mut datalake_base = compute_expression.datalake.unwrap();
-        let datalake_result = datalake_base.compile(fetcher.clone()).await?;
-        match datalake_base.datalakes_pipeline {
+    for task in computational_tasks {
+        // task_commitment is the unique identifier for the task
+        let task_commitment = task.to_string();
+        // Encode the task
+        let encoded_task = task.encode()?;
+        let mut datalake_base = match task.datalake {
+            Some(datalake) => datalake,
+            None => bail!("Task is not filled with datalake"),
+        };
+
+        let datalake_result = datalake_base.compile(&fetcher).await?;
+        match datalake_base.datalake_type {
             Some(datalake) => {
-                let encoded_datalake = datalake.serialize()?;
-                let aggregation_fn =
-                    AggregationFunction::from_str(&compute_expression.aggregate_fn_id)?;
-                let aggregation_fn_ctx = &compute_expression.aggregate_fn_ctx;
-                let result = aggregation_fn.operation(
-                    &datalake_result.compiled_results,
-                    aggregation_fn_ctx.clone(),
-                )?;
+                let encoded_datalake = datalake.encode()?;
+                let aggregation_fn = AggregationFunction::from_str(&task.aggregate_fn_id)?;
+                let aggregation_fn_ctx = task.aggregate_fn_ctx;
+                // Compute datalake over specified aggregation function
+                let result = aggregation_fn
+                    .operation(&datalake_result.compiled_results, aggregation_fn_ctx)?;
+                // Save the datalake results
                 results
                     .compiled_results
-                    .insert(computation_task_id.clone(), result);
-                results.ordered_tasks.push(computation_task_id.clone());
+                    .insert(task_commitment.to_string(), result);
+                // Save order of tasks
+                results.ordered_tasks.push(task_commitment.to_string());
+                // Save the fetched datalake results
                 results
                     .fetched_datalake_results
-                    .insert(computation_task_id.clone(), datalake_result);
+                    .insert(task_commitment.to_string(), datalake_result);
+                // Save the task data
                 results
                     .encoded_tasks
-                    .insert(computation_task_id.clone(), encoded_task);
+                    .insert(task_commitment.to_string(), encoded_task);
+                // Save the datalake data
                 results.encoded_datalakes.insert(
-                    computation_task_id,
+                    task_commitment,
                     EvaluatedDatalake {
                         encoded_datalake,
                         datalake_type: datalake.get_datalake_type(),
@@ -304,7 +314,7 @@ pub async fn evaluator(
                     },
                 );
             }
-            None => bail!("Datalake is not filled"),
+            None => bail!("Datalake base is not filled with specific datalake"),
         }
     }
 

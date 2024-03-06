@@ -10,63 +10,78 @@ use crate::{
 
 use super::Datalake;
 
-//==============================================================================
-// format for input.json
-// 1 task = batched blocks
+/// Datalake result from compilation process
+///
+/// It contains compiled_results, headers, accounts, storages, and mmr_meta
+///
+/// All of these data are required to execute the datalake
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DatalakeResult {
+    /// Targeted datalake's compiled results
     pub compiled_results: Vec<String>,
+    /// Headers required for datalake
     pub headers: Vec<Header>,
+    /// Accounts required for datalake
     pub accounts: Vec<Account>,
+    /// Storages required for datalake
     pub storages: Vec<Storage>,
+    /// MMR meta data that stores headers data
     pub mmr_meta: MMRMeta,
 }
 
-//==============================================================================
-
-/// DatalakeBase is a type that can be used to store data
+/// DatalakeBase is unified datalake structure that contains commitment, datalake type, and result
+///
+/// It is used to identify the datalake and store the result from compilation process
 pub struct DatalakeBase {
     /// Datalake commitment. It is used to identify the datalake
     pub commitment: String,
-    pub datalakes_pipeline: Option<Datalake>,
-    pub datapoints: Option<DatalakeResult>,
+    /// Datalake type
+    pub datalake_type: Option<Datalake>,
+    /// Datalake result from compilation process
+    pub result: Option<DatalakeResult>,
 }
 
 impl fmt::Debug for DatalakeBase {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("DatalakeBase")
             .field("commitment", &self.commitment)
-            .field("datalakes_pipeline", &self.datalakes_pipeline)
-            .field("datapoints", &self.datapoints)
+            .field("datalakes_pipeline", &self.datalake_type)
+            .field("result", &self.result)
             .finish()
     }
 }
 
 impl DatalakeBase {
+    /// initialize DatalakeBase with commitment and datalake type
     pub fn new(commitment: &str, datalake_type: Datalake) -> Self {
         Self {
             commitment: commitment.to_string(),
-            datalakes_pipeline: Some(datalake_type),
-            datapoints: None,
+            datalake_type: Some(datalake_type),
+            result: None,
         }
     }
 
+    /// Compile the datalake meaning, fetching relevant headers, accounts, storages, and mmr_meta data.
+    ///
+    /// Plus, it will combine target datalake's datapoints in compiled_results.
     pub async fn compile(
         &mut self,
-        fetcher: Arc<RwLock<AbstractFetcher>>,
+        fetcher: &Arc<RwLock<AbstractFetcher>>,
     ) -> Result<DatalakeResult> {
-        let datalake_type = &self.datalakes_pipeline;
+        let datalake_type = &self.datalake_type;
         match datalake_type {
             Some(datalake) => {
                 let result_datapoints = match datalake {
-                    Datalake::BlockSampled(datalake) => datalake.compile(fetcher.clone()).await?,
-                    Datalake::DynamicLayout(_) => bail!("dynamic datalake type doesn't support"),
+                    Datalake::BlockSampled(datalake) => datalake.compile(fetcher).await?,
+                    Datalake::DynamicLayout(_) => {
+                        bail!("dynamic datalake type doesn't support yet")
+                    }
                     Datalake::Unknown => {
                         bail!("Unknown datalake type");
                     }
                 };
 
-                self.datapoints = Some(result_datapoints.clone());
+                self.result = Some(result_datapoints.clone());
                 Ok(result_datapoints)
             }
             None => bail!("Datalake type is not defined"),

@@ -19,7 +19,7 @@ pub async fn compile_block_sampled_datalake(
     block_range_end: u64,
     sampled_property: &str,
     increment: u64,
-    fetcher: Arc<RwLock<AbstractFetcher>>,
+    fetcher: &Arc<RwLock<AbstractFetcher>>,
 ) -> Result<DatalakeResult> {
     let mut abstract_fetcher = fetcher.write().await;
     let property_parts: Vec<&str> = sampled_property.split('.').collect();

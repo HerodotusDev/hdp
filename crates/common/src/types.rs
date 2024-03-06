@@ -3,6 +3,8 @@ use alloy_primitives::FixedBytes;
 use reth_primitives::hex::FromHex;
 use serde::{Deserialize, Serialize};
 
+use crate::utils::bytes_to_hex_string;
+
 //==============================================================================
 // for int type, use uint type
 // for string type, if formatted, use chunk[] to store field elements
@@ -291,12 +293,10 @@ pub fn split_little_endian_hex_into_parts(hex_str: &str) -> Uint256 {
 
     let high_part = fix_hex[..16].to_vec();
     let low_part = fix_hex[16..].to_vec();
-    let high = hex::encode(high_part);
-    let low = hex::encode(low_part);
 
     Uint256 {
-        high: format!("0x{}", high),
-        low: format!("0x{}", low),
+        high: bytes_to_hex_string(&high_part),
+        low: bytes_to_hex_string(&low_part),
     }
 }
 

@@ -9,6 +9,7 @@ pub mod base;
 pub mod block_sampled;
 pub mod dynamic_layout;
 
+/// Type of datalake
 #[derive(Debug, Clone, PartialEq)]
 pub enum Datalake {
     BlockSampled(BlockSampledDatalake),
@@ -16,6 +17,7 @@ pub enum Datalake {
     Unknown,
 }
 
+/// Transform different datalake types into DatalakeBase
 impl Derivable for Datalake {
     fn derive(&self) -> DatalakeBase {
         match self {
@@ -29,7 +31,7 @@ impl Derivable for Datalake {
 }
 
 impl Datalake {
-    pub fn serialize(&self) -> Result<String> {
+    pub fn encode(&self) -> Result<String> {
         match self {
             Datalake::BlockSampled(datalake) => datalake.encode(),
             Datalake::DynamicLayout(_) => bail!("Unsupported datalake type"),
