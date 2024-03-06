@@ -44,11 +44,11 @@ pub struct EvaluationResult {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct EvaluatedDatalake {
     /// encoded datalake
-    encoded_datalake: String,
+    pub encoded_datalake: String,
     /// ex. dynamic datalake / block sampled datalake
-    datalake_type: u8,
+    pub datalake_type: u8,
     /// ex. "header", "account", "storage"
-    property_type: u8,
+    pub property_type: u8,
 }
 
 impl EvaluationResult {
