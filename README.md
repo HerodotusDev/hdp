@@ -24,7 +24,7 @@ HDP stands for Herodotus Data Processor, which is able to process a range of blo
 - [x] Support multi tasks process, with [Standard Merkle Tree](https://github.com/rkdud007/alloy-merkle-tree/blob/main/src/standard_binary_tree.rs) aggregation
 - [ ] Support more datalake types: DynamicLayoutDatalake, TransactionsBySenderDatalake ... etc
 - [ ] Multichain support
-- [ ] Support More Provers as a backend option ([SHARP](https://starkware.co/resource/joining-forces-sharp/), [RISC0](https://github.com/risc0/risc0), [SP1](https://github.com/succinctlabs/sp1)... etc)
+- [ ] Support More ZKVM as a backend option ([CAIRO](https://eprint.iacr.org/2021/1063), [RISC0](https://github.com/risc0/risc0), [SP1](https://github.com/succinctlabs/sp1)... etc)
 
 ## Install HDP
 
@@ -45,7 +45,7 @@ HDP stands for Herodotus Data Processor, which is able to process a range of blo
 ❯ git clone https://github.com/HerodotusDev/hdp.git
 
 # install hdp
-❯ cargo install --path cli
+❯ cargo install --path cli -f
 
 # Run the HDP
 ❯ hdp run --help
