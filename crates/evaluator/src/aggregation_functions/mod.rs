@@ -1,5 +1,6 @@
 use std::str::FromStr;
 
+use alloy_primitives::U256;
 use anyhow::{bail, Result};
 
 pub mod integer;
@@ -67,7 +68,7 @@ impl AggregationFunction {
             .map(|hex_str| {
                 if hex_str.starts_with("0x") {
                     let hex_value = hex_str.trim_start_matches("0x").to_string();
-                    u64::from_str_radix(&hex_value, 16).unwrap().to_string()
+                    U256::from_str_radix(&hex_value, 16).unwrap().to_string()
                 } else {
                     hex_str.to_string()
                 }
