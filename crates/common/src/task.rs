@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use alloy_dyn_abi::{DynSolType, DynSolValue};
 use alloy_primitives::{hex::FromHex, keccak256, FixedBytes};
-use anyhow::Result;
+use anyhow::{bail, Result};
 
 use crate::{
     datalake::base::DatalakeBase,
@@ -78,8 +78,10 @@ impl ComputationalTask {
                     aggregate_fn_ctx_value,
                 ]);
 
-                let encoded_datalake = header_tuple_value.abi_encode_sequence().unwrap();
-                Ok(bytes_to_hex_string(&encoded_datalake))
+                match header_tuple_value.abi_encode_sequence() {
+                    Some(encoded) => Ok(bytes_to_hex_string(&encoded)),
+                    None => bail!("Failed to encode the task"),
+                }
             }
         }
     }

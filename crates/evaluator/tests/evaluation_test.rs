@@ -90,7 +90,7 @@ mod test {
     fn test_build_merkle_tree() {
         let evaluatio_result = setup();
 
-        let (task_merkle_tree, results_merkle_tree) = evaluatio_result.build_merkle_tree();
+        let (task_merkle_tree, results_merkle_tree) = evaluatio_result.build_merkle_tree().unwrap();
         assert_eq!(
             task_merkle_tree.root().to_string(),
             "0x663d096802271660f33286d812ee13f3cda273bdf1d183d06a0119b9421151e7".to_string()

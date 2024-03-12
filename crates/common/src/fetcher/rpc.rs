@@ -45,7 +45,7 @@ impl RpcFetcher {
         // Check if the response status is success
         if !response.status().is_success() {
             return Err(anyhow!(
-                "RPC request failed with status: {}",
+                "RPC request `eth_getBlockByNumber` failed with status: {}",
                 response.status()
             ));
         }
@@ -99,7 +99,10 @@ impl RpcFetcher {
 
         // Check if the response status is success
         if !response.status().is_success() {
-            bail!("RPC request failed with status: {}", response.status());
+            bail!(
+                "RPC request `eth_getProof` failed with status: {}",
+                response.status()
+            );
         }
 
         // Parse the response body as JSON
@@ -146,7 +149,10 @@ impl RpcFetcher {
 
         // Check if the response status is success
         if !response.status().is_success() {
-            bail!("RPC request failed with status: {}", response.status());
+            bail!(
+                "rs-indexer request failed with status: {}",
+                response.status()
+            );
         }
 
         // Parse the response body as JSON
