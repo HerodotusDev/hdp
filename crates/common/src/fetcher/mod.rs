@@ -3,6 +3,7 @@ use std::{
     collections::{HashMap, HashSet},
     time::Instant,
 };
+use tracing::{error, info};
 
 use crate::{
     block::{account::Account, header::BlockHeader},
@@ -72,9 +73,9 @@ impl AbstractFetcher {
             .await;
         match mmr_data {
             Ok(mmr) => {
-                println!("✅ Successfully fetched MMR data from indexer");
+                info!("Successfully fetched MMR data from indexer");
                 let duration = start_fetch.elapsed();
-                println!("Time taken (fetch from Indexer): {:?}", duration);
+                info!("Time taken (fetch from Indexer): {:?}", duration);
                 // update blocks_map with the fetched data from indexer
                 for block_number in &block_numbers {
                     if let Some(header) = mmr.1.get(block_number) {
@@ -111,9 +112,9 @@ impl AbstractFetcher {
             }
             Err(e) => {
                 let duration = start_fetch.elapsed();
-                println!("Time taken (during from Indexer): {:?}", duration);
-                println!(
-                    "❌ Something went wrong while fetching MMR data from indexer: {}",
+                info!("Time taken (during from Indexer): {:?}", duration);
+                error!(
+                    "Something went wrong while fetching MMR data from indexer: {}",
                     e
                 );
                 return Err(e);

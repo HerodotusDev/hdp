@@ -1,3 +1,4 @@
+use anyhow::{bail, Result};
 use std::str::FromStr;
 
 use alloy_primitives::{hex, Address, Bloom, Bytes, B256, U256};
@@ -178,9 +179,9 @@ impl HeaderField {
 }
 
 impl FromStr for HeaderField {
-    type Err = ();
+    type Err = anyhow::Error;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(s: &str) -> Result<Self> {
         match s {
             "PARENT_HASH" => Ok(HeaderField::ParentHash),
             "OMMERS_HASH" => Ok(HeaderField::OmmerHash),
@@ -202,7 +203,7 @@ impl FromStr for HeaderField {
             "BLOB_GAS_USED" => Ok(HeaderField::BlobGasUsed),
             "EXCESS_BLOB_GAS" => Ok(HeaderField::ExcessBlobGas),
             "PARENT_BEACON_BLOCK_ROOT" => Ok(HeaderField::ParentBeaconBlockRoot),
-            _ => Err(()),
+            _ => bail!("Unknown header field"),
         }
     }
 }

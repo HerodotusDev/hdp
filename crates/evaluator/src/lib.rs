@@ -62,14 +62,17 @@ impl EvaluationResult {
         }
     }
 
-    pub fn build_merkle_tree(&self) -> (StandardMerkleTree, StandardMerkleTree) {
+    pub fn build_merkle_tree(&self) -> Result<(StandardMerkleTree, StandardMerkleTree)> {
         let mut tasks_leaves = Vec::new();
         let mut results_leaves = Vec::new();
 
         for task_commitment in &self.ordered_tasks {
-            let compiled_result = self.compiled_results.get(task_commitment).unwrap();
+            let compiled_result = match self.compiled_results.get(task_commitment) {
+                Some(result) => result,
+                None => bail!("Task commitment not found in compiled results"),
+            };
 
-            let typed_task_commitment = FixedBytes::from_hex(task_commitment).unwrap();
+            let typed_task_commitment = FixedBytes::from_hex(task_commitment)?;
             tasks_leaves.push(DynSolValue::FixedBytes(typed_task_commitment, 32));
 
             let result_commitment =
@@ -79,7 +82,7 @@ impl EvaluationResult {
         let tasks_merkle_tree = StandardMerkleTree::of(tasks_leaves);
         let results_merkle_tree = StandardMerkleTree::of(results_leaves);
 
-        (tasks_merkle_tree, results_merkle_tree)
+        Ok((tasks_merkle_tree, results_merkle_tree))
     }
 
     pub fn save_to_file(&self, file_path: &str, is_cairo_format: bool) -> Result<()> {
@@ -94,7 +97,7 @@ impl EvaluationResult {
 
     pub fn to_general_json(&self) -> Result<String> {
         // 1. build merkle tree
-        let (tasks_merkle_tree, results_merkle_tree) = self.build_merkle_tree();
+        let (tasks_merkle_tree, results_merkle_tree) = self.build_merkle_tree()?;
 
         // 2. get roots of merkle tree
         let task_merkle_root = tasks_merkle_tree.root();
@@ -109,7 +112,10 @@ impl EvaluationResult {
         let mut procesed_tasks: Vec<Task> = vec![];
 
         for task_commitment in &self.ordered_tasks {
-            let datalake_result = self.fetched_datalake_results.get(task_commitment).unwrap();
+            let datalake_result = match self.fetched_datalake_results.get(task_commitment) {
+                Some(result) => result,
+                None => bail!("Task commitment not found in fetched datalake results"),
+            };
             let header_set: HashSet<Header> = datalake_result.headers.iter().cloned().collect();
             let account_set: HashSet<Account> = datalake_result.accounts.iter().cloned().collect();
             let storage_set: HashSet<Storage> = datalake_result.storages.iter().cloned().collect();
@@ -118,15 +124,24 @@ impl EvaluationResult {
             flattened_storages.extend(storage_set);
             assume_mmr_meta = Some(datalake_result.mmr_meta.clone());
 
-            let result = self.compiled_results.get(task_commitment).unwrap();
-            let typed_task_commitment = FixedBytes::from_hex(task_commitment).unwrap();
+            let result = match self.compiled_results.get(task_commitment) {
+                Some(result) => result,
+                None => bail!("Task commitment not found in compiled results"),
+            };
+            let typed_task_commitment = FixedBytes::from_hex(task_commitment)?;
             let task_proof =
                 tasks_merkle_tree.get_proof(&DynSolValue::FixedBytes(typed_task_commitment, 32));
             let result_commitment = evaluation_result_to_result_commitment(task_commitment, result);
             let result_proof =
                 results_merkle_tree.get_proof(&DynSolValue::FixedBytes(result_commitment, 32));
-            let encoded_task = self.encoded_tasks.get(task_commitment).unwrap().to_string();
-            let datalake = self.encoded_datalakes.get(task_commitment).unwrap();
+            let encoded_task = match self.encoded_tasks.get(task_commitment) {
+                Some(encoded_task) => encoded_task.to_string(),
+                None => bail!("Task commitment not found in encoded tasks"),
+            };
+            let datalake = match self.encoded_datalakes.get(task_commitment) {
+                Some(datalake) => datalake,
+                None => bail!("Task commitment not found in encoded datalakes"),
+            };
 
             procesed_tasks.push(Task {
                 encoded_task,
@@ -156,7 +171,7 @@ impl EvaluationResult {
 
     pub fn to_cairo_formatted_json(&self) -> Result<String> {
         // 1. build merkle tree
-        let (tasks_merkle_tree, results_merkle_tree) = self.build_merkle_tree();
+        let (tasks_merkle_tree, results_merkle_tree) = self.build_merkle_tree()?;
         // 2. get roots
         let task_merkle_root = tasks_merkle_tree.root();
         let result_merkle_root = results_merkle_tree.root();

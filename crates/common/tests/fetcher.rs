@@ -1,11 +1,14 @@
 use std::str::FromStr;
 
-use alloy_primitives::{FixedBytes, U256};
+use alloy_primitives::{hex, keccak256, FixedBytes, U256};
 use common::{
     block::{account::Account, header::BlockHeader},
     fetcher::{rpc::RpcFetcher, AbstractFetcher},
-    utils::rlp_string_to_block_hash,
 };
+
+fn rlp_string_to_block_hash(rlp_string: &str) -> String {
+    keccak256(hex::decode(rlp_string).unwrap()).to_string()
+}
 
 #[tokio::test]
 async fn test_rpc_get_block_by_number() {
@@ -52,19 +55,19 @@ async fn test_fetcher_get_rlp_header() {
         "https://eth-goerli.g.alchemy.com/v2/OcJWF4RZDjyeCWGSmWChIlMEV28LtA5c".to_string(),
     );
     let rlp_header = abstract_fetcher.get_rlp_header(0).await;
-    let block_hash = rlp_string_to_block_hash(&rlp_header).unwrap();
+    let block_hash = rlp_string_to_block_hash(&rlp_header);
     assert_eq!(
         block_hash,
         "0xbf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a"
     );
     let rlp_header = abstract_fetcher.get_rlp_header(10399990).await;
-    let block_hash = rlp_string_to_block_hash(&rlp_header).unwrap();
+    let block_hash = rlp_string_to_block_hash(&rlp_header);
     assert_eq!(
         block_hash,
         "0x2ef5bd5264f472d821fb950241aa2bbe83f885fea086b4f58fccb9c9b948adcf"
     );
     let rlp_header = abstract_fetcher.get_rlp_header(487680).await;
-    let block_hash = rlp_string_to_block_hash(&rlp_header).unwrap();
+    let block_hash = rlp_string_to_block_hash(&rlp_header);
     assert_eq!(
         block_hash,
         "0x9372b3057affe70c15a3a62dbdcb188677bdc8a403bc097acc22995544b27ba7"

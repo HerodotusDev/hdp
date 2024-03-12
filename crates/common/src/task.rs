@@ -2,11 +2,11 @@ use std::str::FromStr;
 
 use alloy_dyn_abi::{DynSolType, DynSolValue};
 use alloy_primitives::{hex::FromHex, keccak256, FixedBytes};
-use anyhow::Result;
+use anyhow::{bail, Result};
 
 use crate::{
     datalake::base::DatalakeBase,
-    utils::{bytes32_to_utf8_str, bytes_to_hex_string, utf8_str_to_fixed_bytes32},
+    utils::{bytes_to_hex_string, fixed_bytes_str_to_utf8_str, utf8_str_to_fixed_bytes32},
 };
 
 /// ComputationalTask represents a task for certain datalake with a specified aggregate function
@@ -41,10 +41,8 @@ impl ComputationalTask {
     pub fn encode(&self) -> Result<String> {
         match &self.datalake {
             None => {
-                let aggregate_fn_id_value = DynSolValue::FixedBytes(
-                    alloy_primitives::FixedBytes(utf8_str_to_fixed_bytes32(&self.aggregate_fn_id)),
-                    32,
-                );
+                let aggregate_fn_id_value =
+                    DynSolValue::FixedBytes(utf8_str_to_fixed_bytes32(&self.aggregate_fn_id), 32);
 
                 let aggregate_fn_ctx_value = match &self.aggregate_fn_ctx {
                     None => DynSolValue::Bytes("".to_string().into_bytes()),
@@ -63,10 +61,8 @@ impl ComputationalTask {
                     32,
                 );
 
-                let aggregate_fn_id_value = DynSolValue::FixedBytes(
-                    FixedBytes(utf8_str_to_fixed_bytes32(&self.aggregate_fn_id)),
-                    32,
-                );
+                let aggregate_fn_id_value =
+                    DynSolValue::FixedBytes(utf8_str_to_fixed_bytes32(&self.aggregate_fn_id), 32);
                 let aggregate_fn_ctx_value = match &self.aggregate_fn_ctx {
                     None => DynSolValue::Bytes("".to_string().into_bytes()),
                     Some(ctx) => DynSolValue::Bytes(ctx.clone().into_bytes()),
@@ -78,8 +74,10 @@ impl ComputationalTask {
                     aggregate_fn_ctx_value,
                 ]);
 
-                let encoded_datalake = header_tuple_value.abi_encode_sequence().unwrap();
-                Ok(bytes_to_hex_string(&encoded_datalake))
+                match header_tuple_value.abi_encode_sequence() {
+                    Some(encoded) => Ok(bytes_to_hex_string(&encoded)),
+                    None => bail!("Failed to encode the task"),
+                }
             }
         }
     }
@@ -103,7 +101,11 @@ impl ComputationalTask {
             None
         };
 
-        let aggregate_fn_id = bytes32_to_utf8_str(value[1].as_bytes().unwrap()).unwrap();
+        let aggregate_fn_id = match value[1] {
+            DynSolValue::FixedBytes(bytes, _) => fixed_bytes_str_to_utf8_str(bytes)?,
+            _ => bail!("Invalid aggregate_fn_id type"),
+        };
+
         let aggregate_fn_ctx = value[2].as_str().map(|s| s.to_string());
 
         Ok(ComputationalTask {
@@ -120,7 +122,11 @@ impl ComputationalTask {
 
         let value = decoded.as_tuple().unwrap();
 
-        let aggregate_fn_id = bytes32_to_utf8_str(value[0].as_fixed_bytes().unwrap().0).unwrap();
+        let aggregate_fn_id = match value[0] {
+            DynSolValue::FixedBytes(bytes, _) => fixed_bytes_str_to_utf8_str(bytes)?,
+            _ => bail!("Invalid aggregate_fn_id type"),
+        };
+
         let aggregate_fn_ctx = value[1].as_str().map(|s| s.to_string());
 
         Ok(ComputationalTask {

@@ -1,3 +1,4 @@
+use anyhow::{bail, Result};
 use std::str::FromStr;
 
 use alloy_primitives::{hex, FixedBytes, U256};
@@ -48,15 +49,15 @@ impl Account {
 }
 
 impl FromStr for AccountField {
-    type Err = ();
+    type Err = anyhow::Error;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(s: &str) -> Result<Self> {
         match s {
             "NONCE" => Ok(AccountField::Nonce),
             "BALANCE" => Ok(AccountField::Balance),
             "STORAGE_ROOT" => Ok(AccountField::StorageRoot),
             "CODE_HASH" => Ok(AccountField::CodeHash),
-            _ => Err(()),
+            _ => bail!("Unknown account field"),
         }
     }
 }
@@ -72,12 +73,12 @@ impl AccountField {
         }
     }
 
-    pub fn to_index(&self) -> Option<u8> {
+    pub fn to_index(&self) -> u8 {
         match self {
-            AccountField::Nonce => Some(0),
-            AccountField::Balance => Some(1),
-            AccountField::StorageRoot => Some(2),
-            AccountField::CodeHash => Some(3),
+            AccountField::Nonce => 0,
+            AccountField::Balance => 1,
+            AccountField::StorageRoot => 2,
+            AccountField::CodeHash => 3,
         }
     }
 

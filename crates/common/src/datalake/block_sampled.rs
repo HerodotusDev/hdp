@@ -46,7 +46,7 @@ impl BlockSampledDatalake {
 
     /// Get `header`, `account` or `storage` type of the block sampled datalake
     pub fn get_property_type(&self) -> u8 {
-        serialize_sampled_property(&self.sampled_property)[0]
+        serialize_sampled_property(&self.sampled_property).unwrap()[0]
     }
 
     /// Encode the block sampled datalake
@@ -54,7 +54,7 @@ impl BlockSampledDatalake {
         let block_range_start = DynSolValue::Uint(U256::from(self.block_range_start), 256);
         let block_range_end = DynSolValue::Uint(U256::from(self.block_range_end), 256);
         let sampled_property =
-            DynSolValue::Bytes(serialize_sampled_property(&self.sampled_property));
+            DynSolValue::Bytes(serialize_sampled_property(&self.sampled_property)?);
         let increment = DynSolValue::Uint(U256::from(self.increment), 256);
         let datalake_code = DynSolValue::Uint(U256::from(0), 256);
 
@@ -66,8 +66,10 @@ impl BlockSampledDatalake {
             sampled_property,
         ]);
 
-        let encoded_datalake = tuple_value.abi_encode_sequence().unwrap();
-        Ok(bytes_to_hex_string(&encoded_datalake))
+        match tuple_value.abi_encode_sequence() {
+            Some(encoded_datalake) => Ok(bytes_to_hex_string(&encoded_datalake)),
+            None => bail!("Encoding failed"),
+        }
     }
 
     /// Get the commitment hash of the block sampled datalake
@@ -128,13 +130,13 @@ impl Derivable for BlockSampledDatalake {
     }
 }
 
-pub fn serialize_sampled_property(sampled_property: &str) -> Vec<u8> {
+pub fn serialize_sampled_property(sampled_property: &str) -> Result<Vec<u8>> {
     let tokens: Vec<&str> = sampled_property.split('.').collect();
     let collection = match tokens[0] {
         "header" => Collection::Header,
         "account" => Collection::Account,
         "storage" => Collection::Storage,
-        _ => panic!("Unknown collection type"),
+        _ => bail!("Unknown collection type"),
     };
 
     let mut serialized = Vec::new();
@@ -146,38 +148,31 @@ pub fn serialize_sampled_property(sampled_property: &str) -> Vec<u8> {
 
     match collection {
         Collection::Header => {
-            let index = HeaderField::from_str(tokens[1].to_uppercase().as_str())
-                .unwrap()
-                .to_index();
+            let index = HeaderField::from_str(tokens[1].to_uppercase().as_str())?.to_index();
             serialized.push(index);
         }
         Collection::Account | Collection::Storage => {
             // if !is_address(tokens[1]) {
             //     panic!("Invalid account address");
             // }
-            let account_bytes = hex::decode(&tokens[1][2..]).expect("Decoding failed");
+            let account_bytes = hex::decode(&tokens[1][2..]).expect("Account decoding failed");
             serialized.extend_from_slice(&account_bytes);
 
             if collection == Collection::Account {
-                if let Some(index) = AccountField::from_str(tokens[2].to_uppercase().as_str())
-                    .unwrap()
-                    .to_index()
-                {
-                    serialized.push(index);
-                } else {
-                    panic!("Invalid account field");
-                }
+                serialized
+                    .push(AccountField::from_str(tokens[2].to_uppercase().as_str())?.to_index());
             } else {
                 if tokens[2].len() != 66 || !tokens[2][2..].chars().all(|c| c.is_ascii_hexdigit()) {
-                    panic!("Invalid storage slot");
+                    bail!("Invalid storage slot");
                 }
-                let slot_bytes = hex::decode(&tokens[2][2..]).expect("Decoding failed");
+                let slot_bytes =
+                    hex::decode(&tokens[2][2..]).expect("Storage slot decoding failed");
                 serialized.extend_from_slice(&slot_bytes);
             }
         }
     }
 
-    serialized
+    Ok(serialized)
 }
 
 fn deserialize_sampled_property(serialized: &[u8]) -> Result<String> {
@@ -187,20 +182,20 @@ fn deserialize_sampled_property(serialized: &[u8]) -> Result<String> {
     match property {
         "header" => {
             let header_prop_index = serialized[1];
-            let sub_property_type = HeaderField::from_index(header_prop_index)
-                .ok_or("Invalid header property index")
-                .unwrap()
-                .as_str();
+            let sub_property_type = match HeaderField::from_index(header_prop_index) {
+                Some(field) => field.as_str(),
+                None => bail!("Invalid header property index"),
+            };
             Ok(format!("{}.{}", property, sub_property_type.to_lowercase()))
         }
         "account" => {
             let account = Address::from_slice(&serialized[1..21]);
             let account_checksum = format!("{:?}", account);
             let account_prop_index = serialized[21];
-            let sub_property_type = AccountField::from_index(account_prop_index)
-                .ok_or("Invalid account property index")
-                .unwrap()
-                .as_str();
+            let sub_property_type = match AccountField::from_index(account_prop_index) {
+                Some(field) => field.as_str(),
+                None => bail!("Invalid account property index"),
+            };
             Ok(format!(
                 "{}.{}.{}",
                 property,
