@@ -1,5 +1,6 @@
 use hex::FromHex;
-use std::{str::FromStr, sync::Arc};
+use std::{str::FromStr, sync::Arc, time::Instant};
+use tracing::info;
 
 use crate::{
     block::{
@@ -62,6 +63,7 @@ pub async fn compile_block_sampled_datalake(
             }
         }
         "account" => {
+            let start_fetch = Instant::now();
             let address = property_parts[1];
             let property = property_parts[2];
 
@@ -109,8 +111,11 @@ pub async fn compile_block_sampled_datalake(
                 account_key: account_key.to_string(),
                 proofs: account_proofs,
             });
+            let duration = start_fetch.elapsed();
+            info!("Time taken (Account Fetch): {:?}", duration);
         }
         "storage" => {
+            let start_fetch = Instant::now();
             let address = property_parts[1];
             let slot = property_parts[2];
 
@@ -167,6 +172,8 @@ pub async fn compile_block_sampled_datalake(
                 account_key: account_key.to_string(),
                 proofs: account_proofs,
             });
+            let duration = start_fetch.elapsed();
+            info!("Time taken (Storage Fetch): {:?}", duration);
         }
         _ => bail!("Unknown collection type"),
     }
