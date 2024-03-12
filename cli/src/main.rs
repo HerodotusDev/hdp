@@ -1,5 +1,6 @@
 use anyhow::{bail, Result};
 use std::{sync::Arc, vec};
+use tracing_subscriber::FmtSubscriber;
 
 use clap::{Parser, Subcommand};
 use common::{
@@ -10,10 +11,12 @@ use common::{
     config::Config,
     datalake::Datalake,
     fetcher::AbstractFetcher,
+    task::ComputationalTask,
 };
 
 use evaluator::evaluator;
 use tokio::sync::RwLock;
+use tracing::{debug, error, info, Level};
 
 /// Simple Herodotus Data Processor CLI to handle tasks and datalakes
 #[derive(Debug, Parser)]
@@ -96,6 +99,47 @@ enum DataLakeCommands {
     },
 }
 
+struct DecodeMultipleResult {
+    tasks: Vec<ComputationalTask>,
+    datalakes: Vec<Datalake>,
+}
+
+struct EncodeMultipleResult {
+    tasks: String,
+    datalakes: String,
+}
+
+async fn handle_decode_multiple(datalakes: String, tasks: String) -> Result<DecodeMultipleResult> {
+    let datalakes = datalakes_decoder(datalakes.clone())?;
+    info!("datalakes: {:#?}", datalakes);
+
+    let tasks = tasks_decoder(tasks)?;
+    info!("tasks: {:#?}", tasks);
+
+    if tasks.len() != datalakes.len() {
+        error!("Tasks and datalakes must have the same length");
+        bail!("Tasks and datalakes must have the same length");
+    } else {
+        Ok(DecodeMultipleResult { tasks, datalakes })
+    }
+}
+
+async fn handle_encode_multiple(
+    tasks: Vec<ComputationalTask>,
+    datalakes: Vec<Datalake>,
+) -> Result<EncodeMultipleResult> {
+    let encoded_datalakes = datalakes_encoder(datalakes)?;
+    info!("Encoded datalakes: {}", encoded_datalakes);
+
+    let encoded_tasks = tasks_encoder(tasks)?;
+    info!("Encoded tasks: {}", encoded_tasks);
+
+    Ok(EncodeMultipleResult {
+        tasks: encoded_tasks,
+        datalakes: encoded_datalakes,
+    })
+}
+
 async fn handle_run(
     tasks: Option<String>,
     datalakes: Option<String>,
@@ -103,43 +147,35 @@ async fn handle_run(
     output_file: Option<String>,
     cairo_input: Option<String>,
 ) -> Result<()> {
-    let start_run = std::time::Instant::now();
     let config = Config::init(rpc_url, datalakes, tasks).await;
     let abstract_fetcher = AbstractFetcher::new(config.rpc_url.clone());
-    let tasks = tasks_decoder(config.tasks.clone())?;
-    let datalakes = datalakes_decoder(config.datalakes.clone())?;
 
-    println!("tasks: \n{:?}\n", tasks);
-    println!("datalakes: \n{:?}\n", datalakes);
-
-    if tasks.len() != datalakes.len() {
-        panic!("Tasks and datalakes must have the same length");
-    }
+    let decoded_result =
+        handle_decode_multiple(config.datalakes.clone(), config.tasks.clone()).await?;
 
     match evaluator(
-        tasks,
-        Some(datalakes),
+        decoded_result.tasks,
+        Some(decoded_result.datalakes),
         Arc::new(RwLock::new(abstract_fetcher)),
     )
     .await
     {
         Ok(res) => {
-            println!("Result: \n{:?}\n", res);
-            let duration_run = start_run.elapsed();
-            println!("Time elapsed in run evaluator is: {:?}", duration_run);
+            debug!("Result: {:#?}", res);
 
             if let Some(output_file) = output_file {
                 res.save_to_file(&output_file, false)?;
+                info!("Output file saved to: {}", output_file);
             }
             if let Some(cairo_input) = cairo_input {
                 res.save_to_file(&cairo_input, true)?;
+                info!("Cairo input file saved to: {}", cairo_input);
             }
 
             Ok(())
         }
         Err(e) => {
-            let duration_run = start_run.elapsed();
-            println!("Time elapsed in run evaluator is: {:?}", duration_run);
+            error!("Error: {:?}", e);
             bail!(e);
         }
     }
@@ -147,6 +183,12 @@ async fn handle_run(
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    let start_run = std::time::Instant::now();
+    let subscriber = FmtSubscriber::builder()
+        .with_max_level(Level::INFO)
+        .finish();
+
+    tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
     let cli = Cli::parse();
     dotenv::dotenv().ok();
     match cli.command {
@@ -176,49 +218,38 @@ async fn main() -> Result<()> {
                     Datalake::BlockSampled(block_sampled_datalake)
                 }
             };
-            println!("Original datalake: \n{:?}\n", datalake);
-            let encoded_datalake = datalakes_encoder(vec![datalake])?;
-            println!("Encoded datalake: \n{}\n", encoded_datalake);
-            let tasks =
-                common::task::ComputationalTask::new(None, aggregate_fn_id, aggregate_fn_ctx);
-            println!("Original task: \n{:?}\n", tasks);
-            let encoded_task = tasks_encoder(vec![tasks])?;
-            println!("Encoded task: \n{}\n", encoded_task);
+
+            let encoded_result = handle_encode_multiple(
+                vec![ComputationalTask::new(
+                    None,
+                    aggregate_fn_id,
+                    aggregate_fn_ctx,
+                )],
+                vec![datalake],
+            )
+            .await?;
 
             // if allow_run is true, then run the evaluator
             if allow_run {
                 handle_run(
-                    Some(encoded_task),
-                    Some(encoded_datalake),
+                    Some(encoded_result.tasks),
+                    Some(encoded_result.datalakes),
                     rpc_url,
                     output_file,
                     cairo_input,
                 )
-                .await
-            } else {
-                Ok(())
+                .await?
             }
         }
         Commands::Decode { tasks, datalakes } => {
-            let datalakes = datalakes_decoder(datalakes.clone())?;
-            println!("datalakes: \n{:?}\n", datalakes);
-
-            let tasks = tasks_decoder(tasks)?;
-            println!("tasks: \n{:?}\n", tasks);
-
-            if tasks.len() != datalakes.len() {
-                bail!("Tasks and datalakes must have the same length");
-            } else {
-                Ok(())
-            }
+            handle_decode_multiple(datalakes, tasks).await?;
         }
         Commands::DecodeOne { task, datalake } => {
             let task = task_decoder(task)?;
             let datalake = datalake_decoder(datalake)?;
 
-            println!("task: \n{:?}\n", task);
-            println!("datalake: \n{:?}\n", datalake);
-            Ok(())
+            info!("task: \n{:?}\n", task);
+            info!("datalake: \n{:?}\n", datalake);
         }
         Commands::Run {
             tasks,
@@ -226,6 +257,9 @@ async fn main() -> Result<()> {
             rpc_url,
             output_file,
             cairo_input,
-        } => handle_run(tasks, datalakes, rpc_url, output_file, cairo_input).await,
+        } => handle_run(tasks, datalakes, rpc_url, output_file, cairo_input).await?,
     }
+    let duration_run = start_run.elapsed();
+    info!("HDP Cli Finished in: {:?}", duration_run);
+    Ok(())
 }

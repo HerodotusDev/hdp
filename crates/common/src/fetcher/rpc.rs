@@ -133,9 +133,7 @@ impl RpcFetcher {
             ("contract_type".to_string(), "AGGREGATOR".to_string()),
         ];
 
-        let url = format!("{}/mmr-meta-and-proof", &self.url);
-
-        println!("URL: {:?}", url);
+        let url = format!("{}/mmr-meta-and-proofs", &self.url);
 
         let response = self
             .client
