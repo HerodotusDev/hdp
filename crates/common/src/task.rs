@@ -41,10 +41,8 @@ impl ComputationalTask {
     pub fn encode(&self) -> Result<String> {
         match &self.datalake {
             None => {
-                let aggregate_fn_id_value = DynSolValue::FixedBytes(
-                    alloy_primitives::FixedBytes(utf8_str_to_fixed_bytes32(&self.aggregate_fn_id)),
-                    32,
-                );
+                let aggregate_fn_id_value =
+                    DynSolValue::FixedBytes(utf8_str_to_fixed_bytes32(&self.aggregate_fn_id), 32);
 
                 let aggregate_fn_ctx_value = match &self.aggregate_fn_ctx {
                     None => DynSolValue::Bytes("".to_string().into_bytes()),
@@ -63,10 +61,8 @@ impl ComputationalTask {
                     32,
                 );
 
-                let aggregate_fn_id_value = DynSolValue::FixedBytes(
-                    FixedBytes(utf8_str_to_fixed_bytes32(&self.aggregate_fn_id)),
-                    32,
-                );
+                let aggregate_fn_id_value =
+                    DynSolValue::FixedBytes(utf8_str_to_fixed_bytes32(&self.aggregate_fn_id), 32);
                 let aggregate_fn_ctx_value = match &self.aggregate_fn_ctx {
                     None => DynSolValue::Bytes("".to_string().into_bytes()),
                     Some(ctx) => DynSolValue::Bytes(ctx.clone().into_bytes()),
@@ -104,14 +100,10 @@ impl ComputationalTask {
         } else {
             None
         };
-        let aggregate_fn_id = match value[1].as_fixed_bytes() {
-            Some((bytes, bytes_len)) => {
-                if bytes_len != 32 {
-                    bail!("Invalid aggregate_fn_id bytes length");
-                }
-                fixed_bytes_str_to_utf8_str(bytes)?
-            }
-            None => bail!("Invalid aggregate_fn_id type"),
+
+        let aggregate_fn_id = match value[1] {
+            DynSolValue::FixedBytes(bytes, _) => fixed_bytes_str_to_utf8_str(bytes)?,
+            _ => bail!("Invalid aggregate_fn_id type"),
         };
 
         let aggregate_fn_ctx = value[2].as_str().map(|s| s.to_string());
@@ -130,14 +122,9 @@ impl ComputationalTask {
 
         let value = decoded.as_tuple().unwrap();
 
-        let aggregate_fn_id = match value[0].as_fixed_bytes() {
-            Some((bytes, bytes_len)) => {
-                if bytes_len != 32 {
-                    bail!("Invalid aggregate_fn_id bytes length");
-                }
-                fixed_bytes_str_to_utf8_str(bytes)?
-            }
-            None => bail!("Invalid aggregate_fn_id type"),
+        let aggregate_fn_id = match value[0] {
+            DynSolValue::FixedBytes(bytes, _) => fixed_bytes_str_to_utf8_str(bytes)?,
+            _ => bail!("Invalid aggregate_fn_id type"),
         };
 
         let aggregate_fn_ctx = value[1].as_str().map(|s| s.to_string());
