@@ -1,5 +1,7 @@
 use alloy_primitives::hex::FromHex;
-use common::utils::{bytes32_to_utf8_str, bytes_to_hex_string, last_byte_to_u8, to_u256_bytes};
+use common::utils::{
+    bytes_to_hex_string, fixed_bytes_str_to_utf8_str, last_byte_to_u8, to_u256_bytes,
+};
 
 #[test]
 fn test_to_u256_bytes() {
@@ -22,22 +24,22 @@ fn test_to_u256_bytes() {
 fn test_bytes32_to_str() {
     let value = "0x6d61780000000000000000000000000000000000000000000000000000000000";
     let input = Vec::from_hex(value).expect("Invalid hex string");
-    let result = bytes32_to_utf8_str(&input).unwrap();
+    let result = fixed_bytes_str_to_utf8_str(&input).unwrap();
     assert_eq!(result, "max".to_string());
 
     let value = "0x6d696e0000000000000000000000000000000000000000000000000000000000";
     let input = Vec::from_hex(value).expect("Invalid hex string");
-    let result = bytes32_to_utf8_str(&input).unwrap();
+    let result = fixed_bytes_str_to_utf8_str(&input).unwrap();
     assert_eq!(result, "min".to_string());
 
     let value = "0x73756d0000000000000000000000000000000000000000000000000000000000";
     let input = Vec::from_hex(value).expect("Invalid hex string");
-    let result = bytes32_to_utf8_str(&input).unwrap();
+    let result = fixed_bytes_str_to_utf8_str(&input).unwrap();
     assert_eq!(result, "sum".to_string());
 
     let value = "0x6176670000000000000000000000000000000000000000000000000000000000";
     let input = Vec::from_hex(value).expect("Invalid hex string");
-    let result = bytes32_to_utf8_str(&input).unwrap();
+    let result = fixed_bytes_str_to_utf8_str(&input).unwrap();
     assert_eq!(result, "avg".to_string());
 }
 

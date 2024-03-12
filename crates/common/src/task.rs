@@ -6,7 +6,7 @@ use anyhow::{bail, Result};
 
 use crate::{
     datalake::base::DatalakeBase,
-    utils::{bytes32_to_utf8_str, bytes_to_hex_string, utf8_str_to_fixed_bytes32},
+    utils::{bytes_to_hex_string, fixed_bytes_str_to_utf8_str, utf8_str_to_fixed_bytes32},
 };
 
 /// ComputationalTask represents a task for certain datalake with a specified aggregate function
@@ -104,8 +104,16 @@ impl ComputationalTask {
         } else {
             None
         };
+        let aggregate_fn_id = match value[1].as_fixed_bytes() {
+            Some((bytes, bytes_len)) => {
+                if bytes_len != 32 {
+                    bail!("Invalid aggregate_fn_id bytes length");
+                }
+                fixed_bytes_str_to_utf8_str(bytes)?
+            }
+            None => bail!("Invalid aggregate_fn_id type"),
+        };
 
-        let aggregate_fn_id = bytes32_to_utf8_str(value[1].as_bytes().unwrap()).unwrap();
         let aggregate_fn_ctx = value[2].as_str().map(|s| s.to_string());
 
         Ok(ComputationalTask {
@@ -122,7 +130,16 @@ impl ComputationalTask {
 
         let value = decoded.as_tuple().unwrap();
 
-        let aggregate_fn_id = bytes32_to_utf8_str(value[0].as_fixed_bytes().unwrap().0).unwrap();
+        let aggregate_fn_id = match value[0].as_fixed_bytes() {
+            Some((bytes, bytes_len)) => {
+                if bytes_len != 32 {
+                    bail!("Invalid aggregate_fn_id bytes length");
+                }
+                fixed_bytes_str_to_utf8_str(bytes)?
+            }
+            None => bail!("Invalid aggregate_fn_id type"),
+        };
+
         let aggregate_fn_ctx = value[1].as_str().map(|s| s.to_string());
 
         Ok(ComputationalTask {
