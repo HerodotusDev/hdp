@@ -12,7 +12,9 @@ fn rlp_string_to_block_hash(rlp_string: &str) -> String {
 
 #[tokio::test]
 async fn test_rpc_get_block_by_number() {
-    let fetcher = RpcFetcher::new("https://ethereum-goerli.publicnode.com".to_string());
+    let fetcher = RpcFetcher::new(
+        "https://eth-goerli.g.alchemy.com/v2/OcJWF4RZDjyeCWGSmWChIlMEV28LtA5c".to_string(),
+    );
 
     let block = fetcher.get_block_by_number(0).await.unwrap();
     let block_header = BlockHeader::from(&block);
