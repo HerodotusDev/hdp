@@ -3,7 +3,8 @@ use futures::future::join_all;
 use std::{
     collections::{HashMap, HashSet},
     sync::Arc,
-    time::Instant,
+    thread,
+    time::{self, Instant},
 };
 use tokio::sync::RwLock;
 use tracing::{error, info};
@@ -215,46 +216,58 @@ impl AbstractFetcher {
             }
         }
 
-        // Prepare and execute futures for missing blocks
-        let fetch_futures: Vec<_> = target_block_range
-            .clone()
-            .into_iter()
-            .map(|block_number| {
-                let blocks_map_clone = blocks_map.clone();
-                let rpc_clone = self.rpc.clone(); // Assume self.rpc can be cloned or is wrapped in Arc
-                let address_clone = address.clone();
-                async move {
-                    let should_fetch = {
-                        let read_guard = blocks_map_clone.read().await;
-                        !read_guard.contains_key(&block_number)
-                    };
-                    if should_fetch {
-                        match rpc_clone.get_proof(block_number, address_clone, None).await {
-                            Ok(account_from_rpc) => {
-                                let mut write_guard = blocks_map_clone.write().await;
-                                let retrieved_account = Account::from(&account_from_rpc);
-                                let rlp_encoded_account = retrieved_account.rlp_encode();
-                                let account_proof = account_from_rpc.account_proof;
-                                write_guard.insert(
-                                    block_number,
-                                    (true, rlp_encoded_account, account_proof),
-                                );
-                                // Assuming conversion to RlpEncodedValue is done here
-                            }
-                            Err(e) => {
-                                error!("Failed to fetch account in block {}: {}", block_number, e);
-                                bail!(e);
-                                // Optionally handle errors by inserting a placeholder or error indicator
+        // chunk the target_block_range into 50
+        let target_block_range_chunks: Vec<Vec<u64>> =
+            target_block_range.chunks(50).map(|x| x.to_vec()).collect();
+
+        for one_chunked_block_range in target_block_range_chunks {
+            // Prepare and execute futures for missing blocks
+            let fetch_futures: Vec<_> = one_chunked_block_range
+                .clone()
+                .into_iter()
+                .map(|block_number| {
+                    let blocks_map_clone = blocks_map.clone();
+                    let rpc_clone = self.rpc.clone(); // Assume self.rpc can be cloned or is wrapped in Arc
+                    let address_clone = address.clone();
+                    async move {
+                        let should_fetch = {
+                            let read_guard = blocks_map_clone.read().await;
+                            !read_guard.contains_key(&block_number)
+                        };
+                        if should_fetch {
+                            match rpc_clone.get_proof(block_number, address_clone, None).await {
+                                Ok(account_from_rpc) => {
+                                    let mut write_guard = blocks_map_clone.write().await;
+                                    let retrieved_account = Account::from(&account_from_rpc);
+                                    let rlp_encoded_account = retrieved_account.rlp_encode();
+                                    let account_proof = account_from_rpc.account_proof;
+                                    write_guard.insert(
+                                        block_number,
+                                        (true, rlp_encoded_account, account_proof),
+                                    );
+                                    // Assuming conversion to RlpEncodedValue is done here
+                                }
+                                Err(e) => {
+                                    error!(
+                                        "Failed to fetch account in block {}: {}",
+                                        block_number, e
+                                    );
+                                    bail!(e);
+                                    // Optionally handle errors by inserting a placeholder or error indicator
+                                }
                             }
                         }
+                        Ok(())
                     }
-                    Ok(())
-                }
-            })
-            .collect();
+                })
+                .collect();
 
-        // Execute fetch operations in parallel
-        join_all(fetch_futures).await;
+            // Execute fetch operations in parallel
+            join_all(fetch_futures).await;
+
+            thread::sleep(time::Duration::from_secs(1));
+            println!("Sleeping for 1 second")
+        }
 
         // Construct the final result vector from blocks_map
         let blocks_map_read = blocks_map.read().await;
@@ -314,5 +327,135 @@ impl AbstractFetcher {
                 (storage_value, storage_proof)
             }
         }
+    }
+
+    // Get storage with proof in given range of blocks
+    // This need to be used for block sampled datalake
+    pub async fn get_range_storage_with_proof(
+        &mut self,
+        block_range_start: u64,
+        block_range_end: u64,
+        increment: u64,
+        address: String,
+        slot: String,
+    ) -> Result<HashMap<u64, (String, Vec<String>, String, Vec<String>)>> {
+        let start_fetch = Instant::now();
+        //? A map of block numbers to a boolean indicating whether the block was fetched.
+        // This contains rlp encoded account, account proof, storage value and storage proof
+        let blocks_map = Arc::new(RwLock::new(HashMap::new()));
+
+        let target_block_range: Vec<u64> = (block_range_start..=block_range_end)
+            .step_by(increment as usize)
+            .collect();
+
+        for block_number in &target_block_range {
+            let storage = self
+                .memory
+                .get_storage(*block_number, address.clone(), slot.clone());
+            let account = self.memory.get_account(*block_number, address.clone());
+            if let Some(storage) = storage {
+                let retrieved_account = account.unwrap();
+                let mut blocks_map_write = blocks_map.write().await;
+                blocks_map_write.insert(
+                    *block_number,
+                    (
+                        true,
+                        retrieved_account.0,
+                        retrieved_account.1,
+                        storage.0,
+                        storage.1,
+                    ),
+                );
+            }
+        }
+
+        // chunk the target_block_range into 50
+        let target_block_range_chunks: Vec<Vec<u64>> =
+            target_block_range.chunks(50).map(|x| x.to_vec()).collect();
+
+        for one_chunk_block_range in target_block_range_chunks {
+            // Prepare and execute futures for missing blocks
+            let fetch_futures: Vec<_> = one_chunk_block_range
+                .clone()
+                .into_iter()
+                .map(|block_number| {
+                    let blocks_map_clone = blocks_map.clone();
+                    let rpc_clone = self.rpc.clone(); // Assume self.rpc can be cloned or is wrapped in Arc
+                    let address_clone = address.clone();
+                    let slot_clone = slot.clone();
+                    async move {
+                        let should_fetch = {
+                            let read_guard = blocks_map_clone.read().await;
+                            !read_guard.contains_key(&block_number)
+                        };
+                        if should_fetch {
+                            match rpc_clone
+                                .get_proof(block_number, address_clone, Some(vec![slot_clone]))
+                                .await
+                            {
+                                Ok(account_from_rpc) => {
+                                    let mut write_guard = blocks_map_clone.write().await;
+                                    let retrieved_account = Account::from(&account_from_rpc);
+                                    let storage = &account_from_rpc.storage_proof[0];
+                                    let rlp_encoded = retrieved_account.rlp_encode();
+                                    let storage_value = storage.value.clone();
+                                    let storage_proof =
+                                        account_from_rpc.storage_proof[0].proof.clone();
+                                    let account_proof = account_from_rpc.account_proof;
+                                    write_guard.insert(
+                                        block_number,
+                                        (
+                                            true,
+                                            rlp_encoded,
+                                            account_proof,
+                                            storage_value,
+                                            storage_proof,
+                                        ),
+                                    );
+                                    // Assuming conversion to RlpEncodedValue is done here
+                                }
+                                Err(e) => {
+                                    error!(
+                                        "Failed to fetch storage in block {}: {}",
+                                        block_number, e
+                                    );
+                                    bail!(e);
+                                    // Optionally handle errors by inserting a placeholder or error indicator
+                                }
+                            }
+                        }
+                        Ok(())
+                    }
+                })
+                .collect();
+
+            // Execute fetch operations in parallel
+            join_all(fetch_futures).await;
+
+            thread::sleep(time::Duration::from_secs(1));
+            println!("Sleeping for 1 second")
+        }
+
+        // Construct the final result vector from blocks_map
+        let blocks_map_read = blocks_map.read().await;
+        let duration = start_fetch.elapsed();
+        info!("Time taken (Storage Fetch): {:?}", duration);
+
+        let mut result = HashMap::new();
+
+        for block in &target_block_range {
+            if !blocks_map_read.contains_key(block) {
+                bail!("Failed to fetch storage in block {}", block);
+            }
+            result.insert(
+                *block,
+                blocks_map_read
+                    .get(block)
+                    .map(|(_, a, b, c, d)| (a.clone(), b.clone(), c.clone(), d.clone()))
+                    .unwrap(),
+            );
+        }
+
+        Ok(result)
     }
 }

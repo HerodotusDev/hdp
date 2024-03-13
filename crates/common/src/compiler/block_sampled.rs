@@ -1,6 +1,5 @@
 use hex::FromHex;
-use std::{str::FromStr, sync::Arc, time::Instant};
-use tracing::info;
+use std::{str::FromStr, sync::Arc};
 
 use crate::{
     block::{
@@ -119,9 +118,18 @@ pub async fn compile_block_sampled_datalake(
             });
         }
         "storage" => {
-            let start_fetch = Instant::now();
             let address = property_parts[1];
             let slot = property_parts[2];
+
+            let storages_and_proofs_result = abstract_fetcher
+                .get_range_storage_with_proof(
+                    block_range_start,
+                    block_range_end,
+                    increment,
+                    address.to_string(),
+                    slot.to_string(),
+                )
+                .await?;
 
             let mut storage_proofs: Vec<MPTProof> = vec![];
             let mut account_proofs: Vec<MPTProof> = vec![];
@@ -131,13 +139,7 @@ pub async fn compile_block_sampled_datalake(
                     continue;
                 }
                 let fetched_block = full_header_and_proof_result.0.get(&i).unwrap().clone();
-                let acc = abstract_fetcher
-                    .get_account_with_proof(i, address.to_string())
-                    .await;
-
-                let value = abstract_fetcher
-                    .get_storage_value_with_proof(i, address.to_string(), slot.to_string())
-                    .await;
+                let acc_and_storage = storages_and_proofs_result.get(&i).unwrap().clone();
 
                 headers.push(Header {
                     rlp: fetched_block.0,
@@ -149,15 +151,15 @@ pub async fn compile_block_sampled_datalake(
 
                 account_proofs.push(MPTProof {
                     block_number: i,
-                    proof: acc.1,
+                    proof: acc_and_storage.1,
                 });
 
                 storage_proofs.push(MPTProof {
                     block_number: i,
-                    proof: value.1,
+                    proof: acc_and_storage.3,
                 });
 
-                aggregation_set.push(value.0);
+                aggregation_set.push(acc_and_storage.2);
             }
             let slot_bytes = Vec::from_hex(slot).expect("Invalid hex string");
             let storage_key = keccak256(slot_bytes).to_string();
@@ -176,8 +178,6 @@ pub async fn compile_block_sampled_datalake(
                 account_key: account_key.to_string(),
                 proofs: account_proofs,
             });
-            let duration = start_fetch.elapsed();
-            info!("Time taken (Storage Fetch): {:?}", duration);
         }
         _ => bail!("Unknown collection type"),
     }
