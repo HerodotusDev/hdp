@@ -63,9 +63,17 @@ pub async fn compile_block_sampled_datalake(
             }
         }
         "account" => {
-            let start_fetch = Instant::now();
             let address = property_parts[1];
             let property = property_parts[2];
+
+            let accounts_and_proofs_result = abstract_fetcher
+                .get_range_account_with_proof(
+                    block_range_start,
+                    block_range_end,
+                    increment,
+                    address.to_string(),
+                )
+                .await?;
 
             let mut account_proofs: Vec<MPTProof> = vec![];
             // let mut encoded_account = "".to_string();
@@ -75,9 +83,7 @@ pub async fn compile_block_sampled_datalake(
                     continue;
                 }
                 let fetched_block = full_header_and_proof_result.0.get(&i).unwrap().clone();
-                let acc = abstract_fetcher
-                    .get_account_with_proof(i, address.to_string())
-                    .await;
+                let acc = accounts_and_proofs_result.get(&i).unwrap().clone();
                 // encoded_account = acc.0.clone();
 
                 let value = decode_account_field(
@@ -111,8 +117,6 @@ pub async fn compile_block_sampled_datalake(
                 account_key: account_key.to_string(),
                 proofs: account_proofs,
             });
-            let duration = start_fetch.elapsed();
-            info!("Time taken (Account Fetch): {:?}", duration);
         }
         "storage" => {
             let start_fetch = Instant::now();

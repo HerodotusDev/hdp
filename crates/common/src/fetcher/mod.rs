@@ -1,8 +1,11 @@
 use anyhow::{bail, Result};
+use futures::future::join_all;
 use std::{
     collections::{HashMap, HashSet},
+    sync::Arc,
     time::Instant,
 };
+use tokio::sync::RwLock;
 use tracing::{error, info};
 
 use crate::{
@@ -184,6 +187,96 @@ impl AbstractFetcher {
                 (rlp_encoded, account_proof)
             }
         }
+    }
+
+    // Get account with proof in given range of blocks
+    // This need to be used for block sampled datalake
+    pub async fn get_range_account_with_proof(
+        &mut self,
+        block_range_start: u64,
+        block_range_end: u64,
+        increment: u64,
+        address: String,
+    ) -> Result<HashMap<u64, (String, Vec<String>)>> {
+        let start_fetch = Instant::now();
+        //? A map of block numbers to a boolean indicating whether the block was fetched.
+        // This contains rlp encoded account and account proof
+        let blocks_map = Arc::new(RwLock::new(HashMap::new()));
+
+        let target_block_range: Vec<u64> = (block_range_start..=block_range_end)
+            .step_by(increment as usize)
+            .collect();
+
+        for block_number in &target_block_range {
+            let account = self.memory.get_account(*block_number, address.clone());
+            if let Some(account) = account {
+                let mut blocks_map_write = blocks_map.write().await;
+                blocks_map_write.insert(*block_number, (true, account.0, account.1));
+            }
+        }
+
+        // Prepare and execute futures for missing blocks
+        let fetch_futures: Vec<_> = target_block_range
+            .clone()
+            .into_iter()
+            .map(|block_number| {
+                let blocks_map_clone = blocks_map.clone();
+                let rpc_clone = self.rpc.clone(); // Assume self.rpc can be cloned or is wrapped in Arc
+                let address_clone = address.clone();
+                async move {
+                    let should_fetch = {
+                        let read_guard = blocks_map_clone.read().await;
+                        !read_guard.contains_key(&block_number)
+                    };
+                    if should_fetch {
+                        match rpc_clone.get_proof(block_number, address_clone, None).await {
+                            Ok(account_from_rpc) => {
+                                let mut write_guard = blocks_map_clone.write().await;
+                                let retrieved_account = Account::from(&account_from_rpc);
+                                let rlp_encoded_account = retrieved_account.rlp_encode();
+                                let account_proof = account_from_rpc.account_proof;
+                                write_guard.insert(
+                                    block_number,
+                                    (true, rlp_encoded_account, account_proof),
+                                );
+                                // Assuming conversion to RlpEncodedValue is done here
+                            }
+                            Err(e) => {
+                                error!("Failed to fetch account in block {}: {}", block_number, e);
+                                bail!(e);
+                                // Optionally handle errors by inserting a placeholder or error indicator
+                            }
+                        }
+                    }
+                    Ok(())
+                }
+            })
+            .collect();
+
+        // Execute fetch operations in parallel
+        join_all(fetch_futures).await;
+
+        // Construct the final result vector from blocks_map
+        let blocks_map_read = blocks_map.read().await;
+        let duration = start_fetch.elapsed();
+        info!("Time taken (Account Fetch): {:?}", duration);
+
+        let mut result = HashMap::new();
+
+        for block in &target_block_range {
+            if !blocks_map_read.contains_key(block) {
+                bail!("Failed to fetch account in block {}", block);
+            }
+            result.insert(
+                *block,
+                blocks_map_read
+                    .get(block)
+                    .map(|(_, b, c)| (b.clone(), c.clone()))
+                    .unwrap(),
+            );
+        }
+
+        Ok(result)
     }
 
     pub async fn get_storage_value_with_proof(
