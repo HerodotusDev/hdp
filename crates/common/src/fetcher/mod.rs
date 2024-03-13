@@ -3,8 +3,7 @@ use futures::future::join_all;
 use std::{
     collections::{HashMap, HashSet},
     sync::Arc,
-    thread,
-    time::{self, Instant},
+    time::Instant,
 };
 use tokio::sync::RwLock;
 use tracing::{error, info};
@@ -264,9 +263,6 @@ impl AbstractFetcher {
 
             // Execute fetch operations in parallel
             join_all(fetch_futures).await;
-
-            thread::sleep(time::Duration::from_secs(1));
-            println!("Sleeping for 1 second")
         }
 
         // Construct the final result vector from blocks_map
@@ -431,9 +427,6 @@ impl AbstractFetcher {
 
             // Execute fetch operations in parallel
             join_all(fetch_futures).await;
-
-            thread::sleep(time::Duration::from_secs(1));
-            println!("Sleeping for 1 second")
         }
 
         // Construct the final result vector from blocks_map
