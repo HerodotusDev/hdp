@@ -1,0 +1,24 @@
+[package]
+name = "hdp-core"
+description = "HDP core implementation"
+edition.workspace = true
+license-file.workspace = true
+repository.workspace = true
+version.workspace = true
+
+[dependencies]
+hdp-provider = { workspace = true }
+hdp-primitives = { workspace = true }
+alloy-primitives = { workspace = true }
+alloy-merkle-tree = { workspace = true }
+alloy-rlp = { workspace = true }
+alloy-dyn-abi = { workspace = true }
+anyhow = { workspace = true }
+reth-primitives = { workspace = true }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+reqwest = { workspace = true }
+futures = "0.3.30"
+starknet = "0.9.0"

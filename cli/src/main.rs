@@ -3,18 +3,19 @@ use std::{sync::Arc, vec};
 use tracing_subscriber::FmtSubscriber;
 
 use clap::{Parser, Subcommand};
-use common::{
+use hdp_core::{
     codec::{
         datalake_decoder, datalakes_decoder, datalakes_encoder, task_decoder, tasks_decoder,
         tasks_encoder,
     },
     config::Config,
     datalake::Datalake,
-    fetcher::AbstractFetcher,
+    evaluator::evaluator,
     task::ComputationalTask,
 };
 
-use evaluator::evaluator;
+use hdp_provider::evm::AbstractFetcher;
+
 use tokio::sync::RwLock;
 use tracing::{debug, error, info, Level};
 
@@ -209,7 +210,7 @@ async fn main() -> Result<()> {
                     increment,
                 } => {
                     let block_sampled_datalake =
-                        common::datalake::block_sampled::BlockSampledDatalake::new(
+                        hdp_core::datalake::block_sampled::BlockSampledDatalake::new(
                             block_range_start,
                             block_range_end,
                             sampled_property,

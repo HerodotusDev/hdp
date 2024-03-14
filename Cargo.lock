@@ -808,24 +808,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "acbf1af155f9b9ef647e42cdc158db4b64a1b61f743629225fde6f3e0be2a7c7"
 
 [[package]]
-name = "common"
-version = "0.1.0"
-dependencies = [
- "alloy-dyn-abi",
- "alloy-primitives",
- "alloy-rlp",
- "anyhow",
- "futures",
- "reqwest",
- "reth-primitives",
- "serde",
- "serde_json",
- "starknet",
- "tokio",
- "tracing",
-]
-
-[[package]]
 name = "const-hex"
 version = "1.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1207,20 +1189,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "evaluator"
-version = "0.1.0"
-dependencies = [
- "alloy-dyn-abi",
- "alloy-merkle-tree",
- "alloy-primitives",
- "anyhow",
- "common",
- "serde",
- "serde_json",
- "tokio",
-]
-
-[[package]]
 name = "fastrand"
 version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1483,13 +1451,59 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
- "common",
  "dotenv",
- "evaluator",
+ "hdp-core",
+ "hdp-provider",
  "serde_json",
  "tokio",
  "tracing",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "hdp-core"
+version = "0.1.0"
+dependencies = [
+ "alloy-dyn-abi",
+ "alloy-merkle-tree",
+ "alloy-primitives",
+ "alloy-rlp",
+ "anyhow",
+ "futures",
+ "hdp-primitives",
+ "hdp-provider",
+ "reqwest",
+ "reth-primitives",
+ "serde",
+ "serde_json",
+ "starknet",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "hdp-primitives"
+version = "0.1.0"
+dependencies = [
+ "alloy-primitives",
+ "alloy-rlp",
+ "anyhow",
+ "reth-primitives",
+ "serde",
+]
+
+[[package]]
+name = "hdp-provider"
+version = "0.1.0"
+dependencies = [
+ "alloy-primitives",
+ "anyhow",
+ "futures",
+ "hdp-primitives",
+ "reqwest",
+ "serde_json",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]
