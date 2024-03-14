@@ -3,18 +3,19 @@ use std::{sync::Arc, vec};
 use tracing_subscriber::FmtSubscriber;
 
 use clap::{Parser, Subcommand};
-use common::{
+use hdp_core::{
     codec::{
         datalake_decoder, datalakes_decoder, datalakes_encoder, task_decoder, tasks_decoder,
         tasks_encoder,
     },
     config::Config,
     datalake::Datalake,
-    fetcher::AbstractFetcher,
+    evaluator::evaluator,
     task::ComputationalTask,
 };
 
-use evaluator::evaluator;
+use hdp_provider::evm::AbstractProvider;
+
 use tokio::sync::RwLock;
 use tracing::{debug, error, info, Level};
 
@@ -148,7 +149,7 @@ async fn handle_run(
     cairo_input: Option<String>,
 ) -> Result<()> {
     let config = Config::init(rpc_url, datalakes, tasks).await;
-    let abstract_fetcher = AbstractFetcher::new(config.rpc_url.clone());
+    let provider = AbstractProvider::new(config.rpc_url.clone());
 
     let decoded_result =
         handle_decode_multiple(config.datalakes.clone(), config.tasks.clone()).await?;
@@ -156,7 +157,7 @@ async fn handle_run(
     match evaluator(
         decoded_result.tasks,
         Some(decoded_result.datalakes),
-        Arc::new(RwLock::new(abstract_fetcher)),
+        Arc::new(RwLock::new(provider)),
     )
     .await
     {
@@ -209,7 +210,7 @@ async fn main() -> Result<()> {
                     increment,
                 } => {
                     let block_sampled_datalake =
-                        common::datalake::block_sampled::BlockSampledDatalake::new(
+                        hdp_core::datalake::block_sampled::BlockSampledDatalake::new(
                             block_range_start,
                             block_range_end,
                             sampled_property,

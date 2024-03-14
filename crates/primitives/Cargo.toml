@@ -1,0 +1,14 @@
+[package]
+name = "hdp-primitives"
+description = "HDP primitives"
+edition.workspace = true
+license-file.workspace = true
+repository.workspace = true
+version.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+alloy-rlp.workspace = true
+alloy-primitives.workspace = true
+serde.workspace = true
+reth-primitives.workspace = true
