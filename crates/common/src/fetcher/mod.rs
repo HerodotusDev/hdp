@@ -23,13 +23,15 @@ pub mod memory;
 pub mod prefilled_data;
 pub mod rpc;
 
-/// `AbstractFetcher` abstracts the fetching of data from the RPC and memory.
-///  It uses a `MemoryFetcher` and a `RpcFetcher` to fetch data.
+/// [`AbstractFetcher`] abstracts the fetching of data from the RPC and memory.
+///  It uses a [`MemoryFetcher`] and a [`RpcFetcher`] to fetch data.
 ///
 /// TODO: Optimization idea, Lock only rpc fetcher and keep the memory fetcher unlocked
 /// but handle requests so that it would not make duplicate requests
 pub struct AbstractFetcher {
+    /// [`MemoryFetcher`] is used to fetch data from memory.
     memory: MemoryFetcher,
+    /// [`RpcFetcher`] is used to fetch data from the RPC.
     rpc: RpcFetcher,
 }
 

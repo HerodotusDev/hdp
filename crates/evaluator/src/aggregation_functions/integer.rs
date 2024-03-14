@@ -1,7 +1,7 @@
 use alloy_primitives::U256;
 use anyhow::{bail, Result};
 
-/// Returns the average of the values
+/// Returns the average of the values: [`AVG`](https://en.wikipedia.org/wiki/Average)
 pub fn average(values: &[String]) -> Result<String> {
     if values.is_empty() {
         bail!("No values found");
@@ -24,7 +24,7 @@ pub fn bloom_filterize(_values: &[String]) -> Result<String> {
     Ok("0".to_string())
 }
 
-/// Find the maximum value
+/// Find the maximum value: [`MAX`](https://en.wikipedia.org/wiki/Maxima_and_minima)
 pub fn find_max(values: &[String]) -> Result<String> {
     if values.is_empty() {
         bail!("No values found");
@@ -43,7 +43,7 @@ pub fn find_max(values: &[String]) -> Result<String> {
     Ok(max.to_string())
 }
 
-/// Find the minimum value
+/// Find the minimum value: [`MIN`](https://en.wikipedia.org/wiki/Maxima_and_minima)
 pub fn find_min(values: &[String]) -> Result<String> {
     if values.is_empty() {
         bail!("No values found");
@@ -90,7 +90,7 @@ pub fn standard_deviation(values: &[String]) -> Result<String> {
     Ok(roundup(variance.sqrt().to_string()).to_string())
 }
 
-/// Sum of values
+/// Sum of values: [`SUM`](https://en.wikipedia.org/wiki/Summation)
 pub fn sum(values: &[String]) -> Result<String> {
     if values.is_empty() {
         bail!("No values found");
@@ -113,12 +113,12 @@ pub fn sum(values: &[String]) -> Result<String> {
 /// - The last two characters are the value to compare
 ///
 /// The logical operators are:
-/// - 00: Equal
-/// - 01: Not equal
-/// - 02: Greater than
-/// - 03: Greater than or equal
-/// - 04: Less than
-/// - 05: Less than or equal
+/// - 00: Equal (=)
+/// - 01: Not equal (!=)
+/// - 02: Greater than (>)
+/// - 03: Greater than or equal (>=)
+/// - 04: Less than (<)
+/// - 05: Less than or equal (<=)
 pub fn count_if(values: &[String], ctx: &str) -> Result<String> {
     let logical_operator = &ctx[0..2];
     let value_to_compare = u64::from_str_radix(&ctx[2..], 16).unwrap();
