@@ -15,30 +15,30 @@ use hdp_primitives::{
 };
 
 use self::{
-    memory::{MemoryFetcher, RlpEncodedValue, StoredHeader, StoredHeaders},
-    rpc::RpcFetcher,
+    memory::{InMemoryProvider, RlpEncodedValue, StoredHeader, StoredHeaders},
+    rpc::RpcProvider,
 };
 
 pub(crate) mod memory;
 pub(crate) mod rpc;
 
-/// [`AbstractFetcher`] abstracts the fetching of data from the RPC and memory.
-///  It uses a [`MemoryFetcher`] and a [`RpcFetcher`] to fetch data.
+/// [`AbstractProvider`] abstracts the fetching of data from the RPC and memory.
+///  It uses a [`InMemoryProvider`] and a [`RpcProvider`] to fetch data.
 ///
-/// TODO: Optimization idea, Lock only rpc fetcher and keep the memory fetcher unlocked
+/// TODO: Optimization idea, Lock only rpc provider and keep the memory provider unlocked
 /// but handle requests so that it would not make duplicate requests
-pub struct AbstractFetcher {
-    /// [`MemoryFetcher`] is used to fetch data from memory.
-    memory: MemoryFetcher,
-    /// [`RpcFetcher`] is used to fetch data from the RPC.
-    rpc: RpcFetcher,
+pub struct AbstractProvider {
+    /// [`InMemoryProvider`] is used to fetch data from memory.
+    memory: InMemoryProvider,
+    /// [`RpcProvider`] is used to fetch data from the RPC.
+    rpc: RpcProvider,
 }
 
-impl AbstractFetcher {
+impl AbstractProvider {
     pub fn new(rpc_url: String) -> Self {
         Self {
-            memory: MemoryFetcher::new(),
-            rpc: RpcFetcher::new(rpc_url),
+            memory: InMemoryProvider::new(),
+            rpc: RpcProvider::new(rpc_url),
         }
     }
 
@@ -71,9 +71,9 @@ impl AbstractFetcher {
 
         // 2. Fetch MMR data and header data from Herodotus indexer
         let start_fetch = Instant::now();
-        let indexer_fetcher =
-            RpcFetcher::new("https://rs-indexer.api.herodotus.cloud/accumulators".to_string());
-        let mmr_data = indexer_fetcher
+        let header_provider =
+            RpcProvider::new("https://rs-indexer.api.herodotus.cloud/accumulators".to_string());
+        let mmr_data = header_provider
             .get_mmr_from_indexer(&block_numbers_to_fetch_from_indexer)
             .await;
         match mmr_data {
@@ -476,26 +476,26 @@ mod tests {
 
     #[tokio::test]
     async fn test_rpc_get_block_by_number() {
-        let fetcher = RpcFetcher::new(GOERLI_RPC_URL.into());
+        let rpc_provider = RpcProvider::new(GOERLI_RPC_URL.into());
 
-        let block = fetcher.get_block_by_number(0).await.unwrap();
+        let block = rpc_provider.get_block_by_number(0).await.unwrap();
         let block_header = BlockHeader::from(&block);
         assert_eq!(block.get_block_hash(), block_header.get_block_hash());
 
-        let block = fetcher.get_block_by_number(10487680).await.unwrap();
+        let block = rpc_provider.get_block_by_number(10487680).await.unwrap();
         let block_header = BlockHeader::from(&block);
         assert_eq!(block.get_block_hash(), block_header.get_block_hash());
 
-        let block = fetcher.get_block_by_number(487680).await.unwrap();
+        let block = rpc_provider.get_block_by_number(487680).await.unwrap();
         let block_header = BlockHeader::from(&block);
         assert_eq!(block.get_block_hash(), block_header.get_block_hash());
     }
 
     #[tokio::test]
     async fn test_rpc_get_proof() {
-        let fetcher = RpcFetcher::new(GOERLI_RPC_URL.into());
+        let rpc_provider = RpcProvider::new(GOERLI_RPC_URL.into());
         let target_address = "0x7b2f05ce9ae365c3dbf30657e2dc6449989e83d6".to_string();
-        let account_from_rpc = fetcher
+        let account_from_rpc = rpc_provider
             .get_proof(10399990, target_address.clone(), None)
             .await
             .unwrap();
@@ -516,21 +516,21 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_fetcher_get_rlp_header() {
-        let mut abstract_fetcher = AbstractFetcher::new(GOERLI_RPC_URL.into());
-        let rlp_header = abstract_fetcher.get_rlp_header(0).await;
+    async fn test_provider_get_rlp_header() {
+        let mut provider = AbstractProvider::new(GOERLI_RPC_URL.into());
+        let rlp_header = provider.get_rlp_header(0).await;
         let block_hash = rlp_string_to_block_hash(&rlp_header);
         assert_eq!(
             block_hash,
             "0xbf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a"
         );
-        let rlp_header = abstract_fetcher.get_rlp_header(10399990).await;
+        let rlp_header = provider.get_rlp_header(10399990).await;
         let block_hash = rlp_string_to_block_hash(&rlp_header);
         assert_eq!(
             block_hash,
             "0x2ef5bd5264f472d821fb950241aa2bbe83f885fea086b4f58fccb9c9b948adcf"
         );
-        let rlp_header = abstract_fetcher.get_rlp_header(487680).await;
+        let rlp_header = provider.get_rlp_header(487680).await;
         let block_hash = rlp_string_to_block_hash(&rlp_header);
         assert_eq!(
             block_hash,
@@ -539,13 +539,13 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_fetcher_get_rlp_account() {
-        let mut abstract_fetcher = AbstractFetcher::new(GOERLI_RPC_URL.into());
-        let rlp_account = abstract_fetcher
+    async fn test_provider_get_rlp_account() {
+        let mut provider = AbstractProvider::new(GOERLI_RPC_URL.into());
+        let rlp_account = provider
             .get_account_with_proof(0, "0x7b2f05ce9ae365c3dbf30657e2dc6449989e83d6".to_string())
             .await;
         assert_eq!(rlp_account.0, "f8448080a00000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000000");
-        let rlp_account = abstract_fetcher
+        let rlp_account = provider
             .get_account_with_proof(
                 10399990,
                 "0x7b2f05ce9ae365c3dbf30657e2dc6449989e83d6".to_string(),
@@ -558,9 +558,9 @@ mod tests {
         "https://eth-sepolia.g.alchemy.com/v2/a-w72ZvoUS0dfMD_LBPAuRzHOlQEhi_m";
 
     #[tokio::test]
-    async fn test_fetcher_get_non_exist_storage_value() {
-        let mut abstract_fetcher = AbstractFetcher::new(SEPOLIA_RPC_URL.into());
-        let storage_value = abstract_fetcher
+    async fn test_provider_get_non_exist_storage_value() {
+        let mut provider = AbstractProvider::new(SEPOLIA_RPC_URL.into());
+        let storage_value = provider
             .get_storage_value_with_proof(
                 0,
                 "0x75CeC1db9dCeb703200EAa6595f66885C962B920".to_string(),
@@ -570,7 +570,7 @@ mod tests {
 
         assert!(storage_value.is_err());
 
-        let storage_value = abstract_fetcher
+        let storage_value = provider
             .get_storage_value_with_proof(
                 20,
                 "0x75CeC1db9dCeb703200EAa6595f66885C962B920".to_string(),
@@ -580,7 +580,7 @@ mod tests {
         assert!(storage_value.is_err());
 
         // Actually the storage value is not 0x0 for later block, in the case, proof is not empty
-        let storage_value = abstract_fetcher
+        let storage_value = provider
             .get_storage_value_with_proof(
                 5382810,
                 "0x75CeC1db9dCeb703200EAa6595f66885C962B920".to_string(),
@@ -593,7 +593,7 @@ mod tests {
         assert_eq!(storage_value.1, vec!["0xf8918080a0b7a7c859e6ddbad6c18adb60b9f48842e652021b4f8b875894b8b879568629f880a0e7f9c6d331c7d110c992550a7baa3e051adc1e26a53d928dbd517a313d221863808080808080a0e40cf9c20b1e8e4aaf3201dd3cb84ab06d2bac34e8dc3e918626e5c44c4f0707808080a0c01a2f302bfc71151daac60eeb4c1b73470845d4fe219e71644752abaafb02ab80", "0xe9a0305787fa12a823e0f2b7631cc41b3ba8828b3321ca811111fa75cd3aa3bb5ace878609184e72a000"]);
 
         // Even actually storage value is 0x0, but the proof is not empty
-        let storage_value = abstract_fetcher
+        let storage_value = provider
             .get_storage_value_with_proof(
                 5382769,
                 "0x75CeC1db9dCeb703200EAa6595f66885C962B920".to_string(),

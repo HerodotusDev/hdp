@@ -11,7 +11,7 @@ use hdp_primitives::{
     },
     format::{Account, Header, HeaderProof, MPTProof, Storage},
 };
-use hdp_provider::evm::AbstractFetcher;
+use hdp_provider::evm::AbstractProvider;
 use tokio::sync::RwLock;
 
 pub async fn compile_block_sampled_datalake(
@@ -19,9 +19,9 @@ pub async fn compile_block_sampled_datalake(
     block_range_end: u64,
     sampled_property: &str,
     increment: u64,
-    fetcher: &Arc<RwLock<AbstractFetcher>>,
+    provider: &Arc<RwLock<AbstractProvider>>,
 ) -> Result<DatalakeResult> {
-    let mut abstract_fetcher = fetcher.write().await;
+    let mut abstract_provider = provider.write().await;
     let property_parts: Vec<&str> = sampled_property.split('.').collect();
     let collection = property_parts[0];
 
@@ -30,7 +30,7 @@ pub async fn compile_block_sampled_datalake(
         .step_by(increment as usize)
         .collect();
 
-    let full_header_and_proof_result = abstract_fetcher
+    let full_header_and_proof_result = abstract_provider
         .get_full_header_with_proof(target_block_range.clone())
         .await?;
     let mmr_meta = full_header_and_proof_result.1;
@@ -65,7 +65,7 @@ pub async fn compile_block_sampled_datalake(
             let address = property_parts[1];
             let property = property_parts[2];
 
-            let accounts_and_proofs_result = abstract_fetcher
+            let accounts_and_proofs_result = abstract_provider
                 .get_range_account_with_proof(
                     block_range_start,
                     block_range_end,
@@ -121,7 +121,7 @@ pub async fn compile_block_sampled_datalake(
             let address = property_parts[1];
             let slot = property_parts[2];
 
-            let storages_and_proofs_result = abstract_fetcher
+            let storages_and_proofs_result = abstract_provider
                 .get_range_storage_with_proof(
                     block_range_start,
                     block_range_end,

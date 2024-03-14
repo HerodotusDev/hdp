@@ -25,7 +25,7 @@ use hdp_primitives::format::{
     ProcessedResult, ProcessedResultFormatted, Storage, StorageFormatted, Task, TaskFormatted,
 };
 
-use hdp_provider::evm::AbstractFetcher;
+use hdp_provider::evm::AbstractProvider;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct EvaluationResult {
@@ -266,7 +266,7 @@ impl Default for EvaluationResult {
 pub async fn evaluator(
     mut computational_tasks: Vec<ComputationalTask>,
     datalake_for_tasks: Option<Vec<Datalake>>,
-    fetcher: Arc<RwLock<AbstractFetcher>>,
+    provider: Arc<RwLock<AbstractProvider>>,
 ) -> Result<EvaluationResult> {
     let mut results = EvaluationResult::new();
 
@@ -296,7 +296,7 @@ pub async fn evaluator(
             None => bail!("Task is not filled with datalake"),
         };
 
-        let datalake_result = datalake_base.compile(&fetcher).await?;
+        let datalake_result = datalake_base.compile(&provider).await?;
         match datalake_base.datalake_type {
             Some(datalake) => {
                 let encoded_datalake = datalake.encode()?;

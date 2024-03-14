@@ -10,12 +10,12 @@ use hdp_primitives::block::{
 };
 
 #[derive(Debug, Clone)]
-pub struct RpcFetcher {
+pub struct RpcProvider {
     client: Client,
     url: String,
 }
 
-impl RpcFetcher {
+impl RpcProvider {
     pub fn new(rpc_url: String) -> Self {
         Self {
             client: Client::new(),
@@ -24,7 +24,7 @@ impl RpcFetcher {
     }
 }
 
-impl RpcFetcher {
+impl RpcProvider {
     pub async fn get_block_by_number(&self, block_number: u64) -> Result<BlockHeaderFromRpc> {
         let rpc_request: Value = json!({
             "jsonrpc": "2.0",

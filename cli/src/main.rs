@@ -14,7 +14,7 @@ use hdp_core::{
     task::ComputationalTask,
 };
 
-use hdp_provider::evm::AbstractFetcher;
+use hdp_provider::evm::AbstractProvider;
 
 use tokio::sync::RwLock;
 use tracing::{debug, error, info, Level};
@@ -149,7 +149,7 @@ async fn handle_run(
     cairo_input: Option<String>,
 ) -> Result<()> {
     let config = Config::init(rpc_url, datalakes, tasks).await;
-    let abstract_fetcher = AbstractFetcher::new(config.rpc_url.clone());
+    let provider = AbstractProvider::new(config.rpc_url.clone());
 
     let decoded_result =
         handle_decode_multiple(config.datalakes.clone(), config.tasks.clone()).await?;
@@ -157,7 +157,7 @@ async fn handle_run(
     match evaluator(
         decoded_result.tasks,
         Some(decoded_result.datalakes),
-        Arc::new(RwLock::new(abstract_fetcher)),
+        Arc::new(RwLock::new(provider)),
     )
     .await
     {

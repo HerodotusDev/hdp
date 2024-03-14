@@ -3,13 +3,6 @@ use std::collections::HashMap;
 pub type RlpEncodedValue = String;
 pub type MPTProof = Vec<String>;
 
-/// `MemoryFetcher` is a memoizer that stores the data in memory.
-pub struct MemoryFetcher {
-    pub cached_headers: StoredHeaders,
-    pub cached_accounts: HashMap<u64, StoredAccounts>,
-    pub cached_mmrs: StoredMMRs,
-}
-
 /// `StoredMMR` is a tuple of root, size, and peaks.
 pub type StoredMMR = (String, u64, Vec<String>);
 
@@ -28,9 +21,22 @@ type StoredAccounts = HashMap<String, (RlpEncodedValue, MPTProof, StoredStorages
 /// `StoredStorage` is a map of storage slot to a tuple of value and MPT proof.
 type StoredStorages = HashMap<String, (String, MPTProof)>;
 
-impl MemoryFetcher {
-    pub fn new() -> MemoryFetcher {
-        MemoryFetcher {
+/// [`InMemoryProvider`] is a memoizer that stores the data in memory.
+pub struct InMemoryProvider {
+    pub cached_headers: StoredHeaders,
+    pub cached_accounts: HashMap<u64, StoredAccounts>,
+    pub cached_mmrs: StoredMMRs,
+}
+
+impl Default for InMemoryProvider {
+    fn default() -> InMemoryProvider {
+        InMemoryProvider::new()
+    }
+}
+
+impl InMemoryProvider {
+    pub fn new() -> InMemoryProvider {
+        InMemoryProvider {
             cached_headers: HashMap::new(),
             cached_accounts: HashMap::new(),
             cached_mmrs: HashMap::new(),
@@ -44,8 +50,8 @@ impl MemoryFetcher {
         cached_headers: StoredHeaders,
         cached_accounts: HashMap<u64, StoredAccounts>,
         cached_mmrs: StoredMMRs,
-    ) -> MemoryFetcher {
-        MemoryFetcher {
+    ) -> InMemoryProvider {
+        InMemoryProvider {
             cached_headers,
             cached_accounts,
             cached_mmrs,
@@ -236,11 +242,5 @@ impl MemoryFetcher {
             .or_insert((encoded_account, account_proof, HashMap::new()))
             .2
             .insert(slot, (value, storage_proof));
-    }
-}
-
-impl Default for MemoryFetcher {
-    fn default() -> MemoryFetcher {
-        MemoryFetcher::new()
     }
 }

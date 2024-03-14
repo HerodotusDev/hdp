@@ -11,7 +11,7 @@ use hdp_primitives::{
     format::Collection,
     utils::bytes_to_hex_string,
 };
-use hdp_provider::evm::AbstractFetcher;
+use hdp_provider::evm::AbstractProvider;
 use tokio::sync::RwLock;
 
 use crate::compiler::block_sampled::compile_block_sampled_datalake;
@@ -107,13 +107,16 @@ impl BlockSampledDatalake {
         })
     }
 
-    pub async fn compile(&self, fetcher: &Arc<RwLock<AbstractFetcher>>) -> Result<DatalakeResult> {
+    pub async fn compile(
+        &self,
+        provider: &Arc<RwLock<AbstractProvider>>,
+    ) -> Result<DatalakeResult> {
         compile_block_sampled_datalake(
             self.block_range_start,
             self.block_range_end,
             &self.sampled_property,
             self.increment,
-            fetcher,
+            provider,
         )
         .await
     }

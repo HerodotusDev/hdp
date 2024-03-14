@@ -4,7 +4,7 @@ use std::{fmt, sync::Arc};
 use tokio::sync::RwLock;
 
 use hdp_primitives::format::{Account, Header, MMRMeta, Storage};
-use hdp_provider::evm::AbstractFetcher;
+use hdp_provider::evm::AbstractProvider;
 
 use super::Datalake;
 
@@ -64,13 +64,13 @@ impl DatalakeBase {
     /// Plus, it will combine target datalake's datapoints in compiled_results.
     pub async fn compile(
         &mut self,
-        fetcher: &Arc<RwLock<AbstractFetcher>>,
+        provider: &Arc<RwLock<AbstractProvider>>,
     ) -> Result<DatalakeResult> {
         let datalake_type = &self.datalake_type;
         match datalake_type {
             Some(datalake) => {
                 let result_datapoints = match datalake {
-                    Datalake::BlockSampled(datalake) => datalake.compile(fetcher).await?,
+                    Datalake::BlockSampled(datalake) => datalake.compile(provider).await?,
                     Datalake::DynamicLayout(_) => {
                         bail!("dynamic datalake type doesn't support yet")
                     }
