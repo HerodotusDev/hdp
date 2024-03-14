@@ -114,6 +114,24 @@ impl RpcFetcher {
 
         let account_from_rpc: AccountFromRpc = from_value(result.clone())?;
 
+        // Error handling for empty proof (no account found)
+        if account_from_rpc.account_proof.is_empty() {
+            bail!(
+                "No account found for address {} in blocknumber {}",
+                address,
+                block_number
+            );
+        }
+
+        // For now we only request for one storage key
+        if !storage_key_param.is_empty() && account_from_rpc.storage_proof[0].proof.is_empty() {
+            bail!(
+                "No storage proof found for address {} in blocknumber {}",
+                address,
+                block_number
+            );
+        }
+
         Ok(account_from_rpc)
     }
 

@@ -1,4 +1,5 @@
 use anyhow::{bail, Result};
+use core::panic;
 use futures::future::join_all;
 use std::{
     collections::{HashMap, HashSet},
@@ -293,18 +294,17 @@ impl AbstractFetcher {
         block_number: u64,
         account: String,
         slot: String,
-    ) -> (String, Vec<String>) {
+    ) -> Result<(String, Vec<String>)> {
         match self
             .memory
             .get_storage(block_number, account.clone(), slot.clone())
         {
-            Some(storage) => storage,
+            Some(storage) => Ok(storage),
             None => {
                 let account_rpc = self
                     .rpc
                     .get_proof(block_number, account.clone(), Some(vec![slot.clone()]))
-                    .await
-                    .unwrap();
+                    .await?;
                 let retrieved_account = Account::from(&account_rpc);
                 let rlp_encoded = retrieved_account.rlp_encode();
                 let storage = &account_rpc.storage_proof[0];
@@ -320,7 +320,7 @@ impl AbstractFetcher {
                     storage_value.clone(),
                     storage_proof.clone(),
                 );
-                (storage_value, storage_proof)
+                Ok((storage_value, storage_proof))
             }
         }
     }
@@ -411,12 +411,17 @@ impl AbstractFetcher {
                                     // Assuming conversion to RlpEncodedValue is done here
                                 }
                                 Err(e) => {
-                                    error!(
-                                        "Failed to fetch storage in block {}: {}",
-                                        block_number, e
-                                    );
-                                    bail!(e);
-                                    // Optionally handle errors by inserting a placeholder or error indicator
+                                    // TODO: handle error in proper way
+                                    if e.to_string().contains("No storage proof found") {
+                                        error!("Storage value not exist: {}", e);
+                                        panic!("{}", e);
+                                    } else {
+                                        error!(
+                                            "Failed to fetch storage in block {}: {}",
+                                            block_number, e
+                                        );
+                                        bail!(e);
+                                    }
                                 }
                             }
                         }
