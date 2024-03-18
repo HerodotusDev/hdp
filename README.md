@@ -4,7 +4,9 @@
 
 [![CI](https://github.com/HerodotusDev/hdp/actions/workflows/ci.yml/badge.svg)](https://github.com/HerodotusDev/hdp/actions/workflows/ci.yml)
 
-HDP stands for Herodotus Data Processor, which is able to process a range of block data and retrieve valid values from proving ZK-STARK proof. CLI is mainly used for processing human-readable requests to Cairo-Program acceptable format files. Additionally, some useful features are supported for development.
+HDP stands for Herodotus Data Processor, which is able to process a range of block data and retrieve valid values from proving ZK-STARK proof. For more explanation, check out the documentation.
+
+CLI is mainly used for processing human-readable requests to Cairo-Program acceptable format files. In the broader view, this is called the `pre-processing step`. Additionally provides some useful features that are supported for development.
 
 ## Supported Features
 
@@ -13,8 +15,9 @@ HDP stands for Herodotus Data Processor, which is able to process a range of blo
 - [x] Encode provided datalake and task
 - [x] Decode multiple datalakes and tasks in batch (`bytes[]`) abi-encoded
 - [x] Decode one datalake and task
+- [ ] FactHash computation of HDP Cairo Program
 
-### HDP Core (Evaluation)
+### HDP Core (Pre-Processing)
 
 - [x] Decode provided tasks and datalakes
 - [x] Compile datalake 1: Fetch relevant header data and proofs from Herodotus Indexer
@@ -24,6 +27,8 @@ HDP stands for Herodotus Data Processor, which is able to process a range of blo
 - [x] Support multi tasks process, with [Standard Merkle Tree](https://github.com/rkdud007/alloy-merkle-tree/blob/main/src/standard_binary_tree.rs) aggregation
 - [ ] Support more datalake types: DynamicLayoutDatalake, TransactionsBySenderDatalake ... etc
 - [ ] Multichain support
+- [ ] Launch server and implement API to generate serialize task bytes
+- [ ] Optimize HDP-Provider with cache and persistent DB
 - [ ] Support More ZKVM as a backend option ([CAIRO](https://eprint.iacr.org/2021/1063), [RISC0](https://github.com/risc0/risc0), [SP1](https://github.com/succinctlabs/sp1)... etc)
 
 ## Install HDP
@@ -96,7 +101,7 @@ _Make sure to create PR if you read this section_
 
 Most likely you would have to define a new module at this [aggregation_fn/mod.rs](https://github.com/HerodotusDev/hdp/blob/main/crates/core/src/evaluator/aggregation_fn/mod.rs) file. Define the new module as Enum and fill out match arms for the added module.
 
-Depends on the expected input type, if it's an integer use [`U256`](https://docs.rs/alloy-primitives/latest/alloy_primitives/index.html#reexport.U256) and if it's a string then just use String.
+Depends on the expected input type, if it's an integer use [`U256`](https://docs.rs/alloy-primitives/latest/alloy_primitives/index.html#reexport.U256) and if it's a string then just use string.
 
 Just like [`COUNT_IF`](https://github.com/HerodotusDev/hdp/blob/efaf6bbc27d512453d9e3e9bfc10174d71df5dc9/crates/core/src/evaluator/aggregation_fn/integer.rs#L122) function, if you need additional context to utilize in operation, you could pass it and utilize it.
 
@@ -155,7 +160,7 @@ Encode the task and data lake in batched format test purposes
 Usage: hdp encode <AGGREGATE_FN_ID> [AGGREGATE_FN_CTX] <COMMAND>
 
 Commands:
-  block-sampled, -b  Encode the block sampled data lake for test purposes
+  block-sampled, -b  Encode the blocksampled data lake for test purposes
   help               Print this message or the help of the given subcommand(s)
 
 Arguments:
