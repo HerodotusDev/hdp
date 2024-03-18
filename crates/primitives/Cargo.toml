@@ -10,4 +10,4 @@ version.workspace = true
 serde = { workspace = true, features = ["derive"] }
 anyhow = { workspace = true }
 alloy-rlp = { workspace = true, features = ["derive"] }
-alloy-primitives = { workspace = true, features = ["rlp"] }
+alloy-primitives = { workspace = true, features = ["rlp", "serde"] }
