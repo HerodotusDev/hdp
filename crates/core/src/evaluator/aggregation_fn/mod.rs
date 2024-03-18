@@ -63,29 +63,29 @@ impl AggregationFunction {
 
     pub fn operation(&self, values: &[String], ctx: Option<String>) -> Result<String> {
         // Remove the "0x" prefix if exist, so that integer functions can parse integer values
-        let inputs: Vec<String> = values
+        let int_values: Vec<U256> = values
             .iter()
             .map(|hex_str| {
                 if hex_str.starts_with("0x") {
                     let hex_value = hex_str.trim_start_matches("0x").to_string();
-                    U256::from_str_radix(&hex_value, 16).unwrap().to_string()
+                    U256::from_str_radix(&hex_value, 16).unwrap()
                 } else {
-                    hex_str.to_string()
+                    U256::from_str_radix(hex_str, 16).unwrap()
                 }
             })
             .collect();
 
         match self {
             // Aggregation functions for integer values
-            AggregationFunction::AVG => integer::average(&inputs),
-            AggregationFunction::BLOOM => integer::bloom_filterize(&inputs),
-            AggregationFunction::MAX => integer::find_max(&inputs),
-            AggregationFunction::MIN => integer::find_min(&inputs),
-            AggregationFunction::STD => integer::standard_deviation(&inputs),
-            AggregationFunction::SUM => integer::sum(&inputs),
+            AggregationFunction::AVG => integer::average(&int_values),
+            AggregationFunction::BLOOM => integer::bloom_filterize(&int_values),
+            AggregationFunction::MAX => integer::find_max(&int_values),
+            AggregationFunction::MIN => integer::find_min(&int_values),
+            AggregationFunction::STD => integer::standard_deviation(&int_values),
+            AggregationFunction::SUM => integer::sum(&int_values),
             AggregationFunction::COUNTIF => {
                 if let Some(ctx) = ctx {
-                    integer::count_if(&inputs, &ctx)
+                    integer::count_if(&int_values, &ctx)
                 } else {
                     bail!("Context not provided for COUNTIF")
                 }
