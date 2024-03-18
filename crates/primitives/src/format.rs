@@ -1,6 +1,6 @@
 use alloy_primitives::hex;
+use alloy_primitives::hex::FromHex;
 use alloy_primitives::FixedBytes;
-use reth_primitives::hex::FromHex;
 use serde::{Deserialize, Serialize};
 
 use crate::utils::bytes_to_hex_string;

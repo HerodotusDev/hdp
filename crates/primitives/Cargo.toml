@@ -9,6 +9,5 @@ version.workspace = true
 [dependencies]
 anyhow.workspace = true
 alloy-rlp.workspace = true
-alloy-primitives.workspace = true
+alloy-primitives = { workspace = true, features = ["rlp"] }
 serde.workspace = true
-reth-primitives.workspace = true
