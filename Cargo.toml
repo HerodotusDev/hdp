@@ -3,16 +3,16 @@ resolver = "2"
 members = ["cli", "crates/core", "crates/provider", "crates/primitives"]
 
 [workspace.package]
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 license = "GPL-3.0"
 license-file = "LICENSE"
 repository = "https://github.com/HerodotusDev/hdp"
 
 [workspace.dependencies]
-hdp-core = { version = "0.1.0", path = "crates/core" }
-hdp-primitives = { version = "0.1.0", path = "crates/primitives" }
-hdp-provider = { version = "0.1.0", path = "crates/provider" }
+hdp-core = { version = "0.2.0", path = "crates/core" }
+hdp-primitives = { version = "0.2.0", path = "crates/primitives" }
+hdp-provider = { version = "0.2.0", path = "crates/provider" }
 tokio = { version = "1", features = ["full"] }
 alloy-dyn-abi = "0.6.2"
 alloy-primitives = { version = "0.6.2", feature = ["rlp"] }
