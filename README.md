@@ -31,7 +31,7 @@ CLI is mainly used for processing human-readable requests to Cairo-Program accep
 - [ ] Optimize HDP-Provider with cache and persistent DB
 - [ ] Support More ZKVM as a backend option ([CAIRO](https://eprint.iacr.org/2021/1063), [RISC0](https://github.com/risc0/risc0), [SP1](https://github.com/succinctlabs/sp1)... etc)
 
-## Example
+## [Example](https://github.com/HerodotusDev/hdp/tree/main/example)
 
 _Note: Sum and Avg functions supports only for number as expected input type_
 
@@ -60,11 +60,9 @@ _Note: Sum and Avg functions supports only for number as expected input type_
 | header.nonce                    | ✅  | ✅  |
 | header.base_fee_per_gas         | ✅  | ✅  |
 | header.withdrawals_root         | -   | -   |
-| header.blob_gas_used            |     |     |
-| header.withdrawals_root         |     |     |
-| header.blob_gas_used            |     |     |
-| header.excess_blob_gas          |     |     |
-| header.parent_beacon_block_root |     |     |
+| header.blob_gas_used            | ✅  | ✅  |
+| header.excess_blob_gas          | ✅  | ✅  |
+| header.parent_beacon_block_root | -   | -   |
 
 ## Install HDP
 
