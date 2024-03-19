@@ -31,6 +31,41 @@ CLI is mainly used for processing human-readable requests to Cairo-Program accep
 - [ ] Optimize HDP-Provider with cache and persistent DB
 - [ ] Support More ZKVM as a backend option ([CAIRO](https://eprint.iacr.org/2021/1063), [RISC0](https://github.com/risc0/risc0), [SP1](https://github.com/succinctlabs/sp1)... etc)
 
+## Example
+
+_Note: Sum and Avg functions supports only for number as expected input type_
+
+|                                 | SUM | AVG |
+| ------------------------------- | --- | --- |
+| account.nonce                   | ✅  | ✅  |
+| account.balance                 | ✅  | ✅  |
+| account.storage_root            | -   | -   |
+| account.code_hash               | -   | -   |
+| storage.key ( value is num )    | ✅  | ✅  |
+| storage.key (value is hash )    | -   | -   |
+| header.parent_hash              | -   | -   |
+| header.ommers_hash              | -   | -   |
+| header.beneficiary              | -   | -   |
+| header.state_root               | -   | -   |
+| header.transactions_root        | -   | -   |
+| header.receipts_root            | -   | -   |
+| header.logs_bloom               | -   | -   |
+| header.difficulty               |     |     |
+| header.number                   |     |     |
+| header.gas_limit                |     |     |
+| header.gas_used                 |     |     |
+| header.timestamp                |     |     |
+| header.extra_data               |     |     |
+| header.mix_hash                 |     |     |
+| header.nonce                    |     |     |
+| header.base_fee_per_gas         |     |     |
+| header.withdrawals_root         |     |     |
+| header.blob_gas_used            |     |     |
+| header.withdrawals_root         |     |     |
+| header.blob_gas_used            |     |     |
+| header.excess_blob_gas          |     |     |
+| header.parent_beacon_block_root |     |     |
+
 ## Install HDP
 
 ### Install with cargo
