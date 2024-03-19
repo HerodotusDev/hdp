@@ -204,6 +204,21 @@ mod tests {
     }
 
     #[test]
+    fn test_sum() {
+        let values = vec![U256::from(1), U256::from(2), U256::from(3)];
+        assert_eq!(sum(&values).unwrap(), "6".to_string());
+
+        let values = vec![U256::from(1), U256::from(2)];
+        assert_eq!(sum(&values).unwrap(), "3".to_string());
+
+        let values = vec![U256::from_str("6776").unwrap()];
+        assert_eq!(sum(&values).unwrap(), "6776".to_string());
+
+        let values = vec![U256::from_str("41697298409483537348").unwrap()];
+        assert_eq!(sum(&values).unwrap(), "41697298409483537348".to_string());
+    }
+
+    #[test]
     fn test_avg_multi() {
         let values = vec![
             U256::from_str("41697095938570171564").unwrap(),
