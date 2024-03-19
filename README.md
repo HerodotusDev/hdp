@@ -35,6 +35,8 @@ CLI is mainly used for processing human-readable requests to Cairo-Program accep
 
 _Note: Sum and Avg functions supports only for number as expected input type_
 
+All examples are tested with `script/integration.sh`. Currently compiled HDP Cairo program is supporting all the features below.
+
 |                                 | SUM | AVG |
 | ------------------------------- | --- | --- |
 | account.nonce                   | ✅  | ✅  |
