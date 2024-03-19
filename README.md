@@ -50,16 +50,16 @@ _Note: Sum and Avg functions supports only for number as expected input type_
 | header.transactions_root        | -   | -   |
 | header.receipts_root            | -   | -   |
 | header.logs_bloom               | -   | -   |
-| header.difficulty               |     |     |
-| header.number                   |     |     |
-| header.gas_limit                |     |     |
-| header.gas_used                 |     |     |
-| header.timestamp                |     |     |
-| header.extra_data               |     |     |
-| header.mix_hash                 |     |     |
-| header.nonce                    |     |     |
-| header.base_fee_per_gas         |     |     |
-| header.withdrawals_root         |     |     |
+| header.difficulty               | ✅  | ✅  |
+| header.number                   | ✅  | ✅  |
+| header.gas_limit                | ✅  | ✅  |
+| header.gas_used                 | ✅  | ✅  |
+| header.timestamp                | ✅  | ✅  |
+| header.extra_data               | -   | -   |
+| header.mix_hash                 | -   | -   |
+| header.nonce                    | ✅  | ✅  |
+| header.base_fee_per_gas         | ✅  | ✅  |
+| header.withdrawals_root         | -   | -   |
 | header.blob_gas_used            |     |     |
 | header.withdrawals_root         |     |     |
 | header.blob_gas_used            |     |     |

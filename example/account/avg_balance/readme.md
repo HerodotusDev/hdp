@@ -1,6 +1,6 @@
 ## Request
 
-30 Blocks, Account Balance, Sum
+30 Blocks, Account Balance, AVG
 
 ### Server
 
@@ -13,12 +13,12 @@
     "blockRangeEnd": 4952229,
     "sampledProperty": "account.0x7f2c6f930306d3aa736b3a6c6a98f512f74036d4.balance"
   },
-  "aggregateFnId": "sum"
+  "aggregateFnId": "avg"
 }
 ```
 
 ### CLI
 
 ```bash
-hdp encode -a -o example/sum_balance/output.json -c example/sum_balance/input.json "sum" -b 4952200 4952229 "account.0x7f2c6f930306d3aa736b3a6c6a98f512f74036d4.balance" 1
+hdp encode -a -o example/account/avg_balance/output.json -c example/account/avg_balance/input.json "avg" -b 4952200 4952229 "account.0x7f2c6f930306d3aa736b3a6c6a98f512f74036d4.balance" 1
 ```
