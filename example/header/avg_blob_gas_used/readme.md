@@ -9,8 +9,8 @@
   "chainId": 11155111,
   "datalakeType": "block_sampled",
   "datalake": {
-    "blockRangeStart": 4952200,
-    "blockRangeEnd": 4952229,
+    "blockRangeStart": 5515000,
+    "blockRangeEnd": 5515029,
     "sampledProperty": "header.blob_gas_used"
   },
   "aggregateFnId": "avg"
