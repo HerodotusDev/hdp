@@ -1,0 +1,1 @@
+hdp encode -a -o example/header/avg_nonce/output.json -c example/header/avg_nonce/input.json "avg" -b 4952200 4952229 "header.nonce" 1

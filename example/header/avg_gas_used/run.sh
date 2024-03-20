@@ -1,0 +1,1 @@
+hdp encode -a -o example/header/avg_gas_used/output.json -c example/header/avg_gas_used/input.json "avg" -b 4952200 4952229 "header.gas_used" 1

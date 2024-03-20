@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Base directory where the folders 'storage' and 'account' are located
+# Base directory where the folders 'storage' and 'account' and 'header' are located
 BASE_DIR="example"
 
 # Function to process each input.json file
@@ -29,10 +29,26 @@ process_file() {
     fi
 }
 
-# Loop through 'storage' and 'account' directories
-for dir in storage account header; do
-    # Find all input.json files within the subdirectories of each main directory
-    find "${BASE_DIR}/${dir}" -type f -name "input.json" | while read -r file; do
-        process_file "$file"
+# Loop through 'storage', 'account', and 'header' directories
+for dir in header account storage; do
+    # Find all directories within the main directories
+    find "${BASE_DIR}/${dir}" -type d | while read -r subDir; do
+        # Check if run.sh exists in the directory
+        if [[ -f "${subDir}/run.sh" ]]; then
+            echo "Running script in ${subDir}"
+            # Make sure run.sh is executable
+            chmod +x "${subDir}/run.sh"
+            # Execute run.sh and wait for it to finish
+            "${subDir}/run.sh"
+            # Check for the existence of the input.json file after run.sh has completed
+            inputFilePath="${subDir}/input.json"
+            if [[ -f "${inputFilePath}" ]]; then
+                process_file "${inputFilePath}"
+            else
+                echo "No input.json found in ${subDir} after running run.sh"
+            fi
+        else
+            echo "No run.sh found in ${subDir}"
+        fi
     done
 done

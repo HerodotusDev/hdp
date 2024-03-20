@@ -1,0 +1,1 @@
+hdp encode -a -o example/header/sum_excess_blob_gas/output.json -c example/header/sum_excess_blob_gas/input.json "sum" -b 5515000 5515029 "header.excess_blob_gas" 1
