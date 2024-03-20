@@ -42,6 +42,40 @@ impl AbstractProvider {
         }
     }
 
+    pub async fn get_sequencial_full_header_with_proof(
+        &self,
+        start_block: u64,
+        end_block: u64,
+    ) -> Result<()> {
+        // 2. Fetch MMR data and header data from Herodotus indexer
+        let start_fetch = Instant::now();
+        let header_provider =
+            RpcProvider::new("https://rs-indexer.api.herodotus.cloud".to_string());
+
+        let mmr_data = header_provider
+            .get_sequencial_headers_and_mmr_from_indexer(start_block, end_block)
+            .await;
+
+        match mmr_data {
+            Ok(mmr) => {
+                info!("Successfully fetched MMR data from indexer");
+                let duration = start_fetch.elapsed();
+                info!("Time taken (fetch from Indexer): {:?}", duration);
+                println!("MMR Data: {:?}", mmr);
+            }
+            Err(e) => {
+                let duration = start_fetch.elapsed();
+                info!("Time taken (during from Indexer): {:?}", duration);
+                error!(
+                    "Something went wrong while fetching MMR data from indexer: {}",
+                    e
+                );
+                return Err(e);
+            }
+        }
+        Ok(())
+    }
+
     /// Fetches the headers of the blocks and relevant MMR metatdata in the given block range.
     /// return a tuple of the headers hashmap and the MMR metadata.
     pub async fn get_full_header_with_proof(
