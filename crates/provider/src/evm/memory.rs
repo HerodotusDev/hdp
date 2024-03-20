@@ -110,7 +110,7 @@ impl InMemoryProvider {
     ) -> Vec<Option<(RlpEncodedValue, MPTProof)>> {
         block_numbers
             .iter()
-            .map(|block_number| self.get_account(*block_number, account.clone()))
+            .map(|block_number| self.get_account(*block_number, &account))
             .collect()
     }
 
@@ -118,11 +118,11 @@ impl InMemoryProvider {
     pub fn get_account(
         &self,
         block_number: u64,
-        account: String,
+        account: &str,
     ) -> Option<(RlpEncodedValue, MPTProof)> {
         self.cached_accounts
             .get(&block_number)
-            .and_then(|accounts| accounts.get(&account))
+            .and_then(|accounts| accounts.get(account))
             .map(|(account, proof, _)| (account.clone(), proof.clone()))
     }
 

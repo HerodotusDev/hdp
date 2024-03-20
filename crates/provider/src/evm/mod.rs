@@ -22,6 +22,9 @@ use self::{
 pub(crate) mod memory;
 pub(crate) mod rpc;
 
+// For more information swagger doc: https://rs-indexer.api.herodotus.cloud/swagger
+const HERODOTUS_RS_INDEXER_URL: &str = "https://rs-indexer.api.herodotus.cloud/accumulators";
+
 /// [`AbstractProvider`] abstracts the fetching of data from the RPC and memory.
 ///  It uses a [`InMemoryProvider`] and a [`RpcProvider`] to fetch data.
 ///
@@ -29,17 +32,55 @@ pub(crate) mod rpc;
 /// but handle requests so that it would not make duplicate requests
 pub struct AbstractProvider {
     /// [`InMemoryProvider`] is used to fetch data from memory.
+    // TODO: It's not using for now
     memory: InMemoryProvider,
-    /// [`RpcProvider`] is used to fetch data from the RPC.
-    rpc: RpcProvider,
+    /// Fetch data from the RPC for account and storage.
+    account_provider: RpcProvider,
+    /// Fetch block headers and MMR data from the Herodotus indexer.
+    header_provider: RpcProvider,
 }
 
 impl AbstractProvider {
-    pub fn new(rpc_url: String) -> Self {
+    pub fn new(rpc_url: &'static str) -> Self {
         Self {
             memory: InMemoryProvider::new(),
-            rpc: RpcProvider::new(rpc_url),
+            account_provider: RpcProvider::new(rpc_url),
+            header_provider: RpcProvider::new(HERODOTUS_RS_INDEXER_URL),
         }
+    }
+
+    // TODO: wip
+    pub async fn get_sequencial_full_header_with_proof(
+        &self,
+        start_block: u64,
+        end_block: u64,
+    ) -> Result<()> {
+        // 2. Fetch MMR data and header data from Herodotus indexer
+        let start_fetch = Instant::now();
+
+        let mmr_data = self
+            .header_provider
+            .get_sequencial_headers_and_mmr_from_indexer(start_block, end_block)
+            .await;
+
+        match mmr_data {
+            Ok(mmr) => {
+                info!("Successfully fetched MMR data from indexer");
+                let duration = start_fetch.elapsed();
+                info!("Time taken (fetch from Indexer): {:?}", duration);
+                println!("MMR Data: {:?}", mmr);
+            }
+            Err(e) => {
+                let duration = start_fetch.elapsed();
+                info!("Time taken (during from Indexer): {:?}", duration);
+                error!(
+                    "Something went wrong while fetching MMR data from indexer: {}",
+                    e
+                );
+                return Err(e);
+            }
+        }
+        Ok(())
     }
 
     /// Fetches the headers of the blocks and relevant MMR metatdata in the given block range.
@@ -71,9 +112,9 @@ impl AbstractProvider {
 
         // 2. Fetch MMR data and header data from Herodotus indexer
         let start_fetch = Instant::now();
-        let header_provider =
-            RpcProvider::new("https://rs-indexer.api.herodotus.cloud/accumulators".to_string());
-        let mmr_data = header_provider
+
+        let mmr_data = self
+            .header_provider
             .get_mmr_from_indexer(&block_numbers_to_fetch_from_indexer)
             .await;
         match mmr_data {
@@ -154,7 +195,11 @@ impl AbstractProvider {
         match self.memory.get_rlp_header(block_number) {
             Some(header) => header,
             None => {
-                let header_rpc = self.rpc.get_block_by_number(block_number).await.unwrap();
+                let header_rpc = self
+                    .account_provider
+                    .get_block_by_number(block_number)
+                    .await
+                    .unwrap();
                 let block_header = BlockHeader::from(&header_rpc);
                 let rlp_encoded = block_header.rlp_encode();
                 self.memory.set_header(block_number, rlp_encoded.clone());
@@ -167,14 +212,14 @@ impl AbstractProvider {
     pub async fn get_account_with_proof(
         &mut self,
         block_number: u64,
-        account: String,
+        account: &str,
     ) -> (String, Vec<String>) {
-        match self.memory.get_account(block_number, account.clone()) {
+        match self.memory.get_account(block_number, account) {
             Some(account_with_proof) => account_with_proof,
             None => {
                 let account_rpc = self
-                    .rpc
-                    .get_proof(block_number, account.clone(), None)
+                    .account_provider
+                    .get_proof(block_number, account, None)
                     .await
                     .unwrap();
                 let retrieved_account = Account::from(&account_rpc);
@@ -210,7 +255,7 @@ impl AbstractProvider {
             .collect();
 
         for block_number in &target_block_range {
-            let account = self.memory.get_account(*block_number, address.clone());
+            let account = self.memory.get_account(*block_number, &address);
             if let Some(account) = account {
                 let mut blocks_map_write = blocks_map.write().await;
                 blocks_map_write.insert(*block_number, (true, account.0, account.1));
@@ -228,7 +273,7 @@ impl AbstractProvider {
                 .into_iter()
                 .map(|block_number| {
                     let blocks_map_clone = blocks_map.clone();
-                    let rpc_clone = self.rpc.clone(); // Assume self.rpc can be cloned or is wrapped in Arc
+                    let rpc_clone = self.account_provider.clone(); // Assume self.rpc can be cloned or is wrapped in Arc
                     let address_clone = address.clone();
                     async move {
                         let should_fetch = {
@@ -236,7 +281,10 @@ impl AbstractProvider {
                             !read_guard.contains_key(&block_number)
                         };
                         if should_fetch {
-                            match rpc_clone.get_proof(block_number, address_clone, None).await {
+                            match rpc_clone
+                                .get_proof(block_number, &address_clone, None)
+                                .await
+                            {
                                 Ok(account_from_rpc) => {
                                     let mut write_guard = blocks_map_clone.write().await;
                                     let retrieved_account = Account::from(&account_from_rpc);
@@ -303,8 +351,8 @@ impl AbstractProvider {
             Some(storage) => Ok(storage),
             None => {
                 let account_rpc = self
-                    .rpc
-                    .get_proof(block_number, account.clone(), Some(vec![slot.clone()]))
+                    .account_provider
+                    .get_proof(block_number, &account, Some(vec![slot.clone()]))
                     .await?;
                 let retrieved_account = Account::from(&account_rpc);
                 let rlp_encoded = retrieved_account.rlp_encode();
@@ -349,7 +397,7 @@ impl AbstractProvider {
             let storage = self
                 .memory
                 .get_storage(*block_number, address.clone(), slot.clone());
-            let account = self.memory.get_account(*block_number, address.clone());
+            let account = self.memory.get_account(*block_number, &address);
             if let Some(storage) = storage {
                 let retrieved_account = account.unwrap();
                 let mut blocks_map_write = blocks_map.write().await;
@@ -377,7 +425,7 @@ impl AbstractProvider {
                 .into_iter()
                 .map(|block_number| {
                     let blocks_map_clone = blocks_map.clone();
-                    let rpc_clone = self.rpc.clone(); // Assume self.rpc can be cloned or is wrapped in Arc
+                    let rpc_clone = self.account_provider.clone(); // Assume self.rpc can be cloned or is wrapped in Arc
                     let address_clone = address.clone();
                     let slot_clone = slot.clone();
                     async move {
@@ -387,7 +435,7 @@ impl AbstractProvider {
                         };
                         if should_fetch {
                             match rpc_clone
-                                .get_proof(block_number, address_clone, Some(vec![slot_clone]))
+                                .get_proof(block_number, &address_clone, Some(vec![slot_clone]))
                                 .await
                             {
                                 Ok(account_from_rpc) => {
@@ -471,44 +519,47 @@ mod tests {
         keccak256(hex::decode(rlp_string).unwrap()).to_string()
     }
 
-    const GOERLI_RPC_URL: &str =
-        "https://eth-goerli.g.alchemy.com/v2/OcJWF4RZDjyeCWGSmWChIlMEV28LtA5c";
+    // Non-paid personal alchemy endpoint
+    const SEPOLIA_RPC_URL: &str =
+        "https://eth-sepolia.g.alchemy.com/v2/a-w72ZvoUS0dfMD_LBPAuRzHOlQEhi_m";
+
+    const SEPOLIA_TARGET_ADDRESS: &str = "0x7f2c6f930306d3aa736b3a6c6a98f512f74036d4";
 
     #[tokio::test]
     async fn test_rpc_get_block_by_number() {
-        let rpc_provider = RpcProvider::new(GOERLI_RPC_URL.into());
+        let rpc_provider = RpcProvider::new(SEPOLIA_RPC_URL);
 
         let block = rpc_provider.get_block_by_number(0).await.unwrap();
         let block_header = BlockHeader::from(&block);
         assert_eq!(block.get_block_hash(), block_header.get_block_hash());
 
-        let block = rpc_provider.get_block_by_number(10487680).await.unwrap();
+        let block = rpc_provider.get_block_by_number(5521772).await.unwrap();
         let block_header = BlockHeader::from(&block);
         assert_eq!(block.get_block_hash(), block_header.get_block_hash());
 
-        let block = rpc_provider.get_block_by_number(487680).await.unwrap();
+        let block = rpc_provider.get_block_by_number(421772).await.unwrap();
         let block_header = BlockHeader::from(&block);
         assert_eq!(block.get_block_hash(), block_header.get_block_hash());
     }
 
     #[tokio::test]
     async fn test_rpc_get_proof() {
-        let rpc_provider = RpcProvider::new(GOERLI_RPC_URL.into());
-        let target_address = "0x7b2f05ce9ae365c3dbf30657e2dc6449989e83d6".to_string();
+        let rpc_provider = RpcProvider::new(SEPOLIA_RPC_URL);
+
         let account_from_rpc = rpc_provider
-            .get_proof(10399990, target_address.clone(), None)
+            .get_proof(4952229, SEPOLIA_TARGET_ADDRESS, None)
             .await
             .unwrap();
         let account: Account = Account::from(&account_from_rpc);
         let expected_account = Account::new(
-            1,
-            U256::from(0),
+            6789,
+            U256::from_str_radix("41694965332469803456", 10).unwrap(),
             FixedBytes::from_str(
-                "0x480489b48e337887827fd9584f40dc1f51016e49df77ec789d4ee9bcc87bb0ff",
+                "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
             )
             .unwrap(),
             FixedBytes::from_str(
-                "0xcd4f25236fff0ccac15e82bf4581beb08e95e1b5ba89de6031c75893cd91245c",
+                "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
             )
             .unwrap(),
         );
@@ -517,49 +568,53 @@ mod tests {
 
     #[tokio::test]
     async fn test_provider_get_rlp_header() {
-        let mut provider = AbstractProvider::new(GOERLI_RPC_URL.into());
+        let mut provider = AbstractProvider::new(SEPOLIA_RPC_URL);
         let rlp_header = provider.get_rlp_header(0).await;
         let block_hash = rlp_string_to_block_hash(&rlp_header);
         assert_eq!(
             block_hash,
-            "0xbf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a"
+            "0x25a5cc106eea7138acab33231d7160d69cb777ee0c2c553fcddf5138993e6dd9"
         );
-        let rlp_header = provider.get_rlp_header(10399990).await;
+        let rlp_header = provider.get_rlp_header(5521772).await;
         let block_hash = rlp_string_to_block_hash(&rlp_header);
         assert_eq!(
             block_hash,
-            "0x2ef5bd5264f472d821fb950241aa2bbe83f885fea086b4f58fccb9c9b948adcf"
+            "0xe72515bc74912f67912a64a458e6f2cd2742f8dfe0666e985749483dab0b7b9a"
         );
         let rlp_header = provider.get_rlp_header(487680).await;
         let block_hash = rlp_string_to_block_hash(&rlp_header);
         assert_eq!(
             block_hash,
-            "0x9372b3057affe70c15a3a62dbdcb188677bdc8a403bc097acc22995544b27ba7"
+            "0xf494127d30817d04b634eae9f6139d8155ee4c78ba60a35bd7be187378e93d6e"
         );
     }
 
     #[tokio::test]
     async fn test_provider_get_rlp_account() {
-        let mut provider = AbstractProvider::new(GOERLI_RPC_URL.into());
+        // case 1. SEPOLIA_TARGET_ADDRESS is exist and have balance
+        let mut provider = AbstractProvider::new(SEPOLIA_RPC_URL);
         let rlp_account = provider
-            .get_account_with_proof(0, "0x7b2f05ce9ae365c3dbf30657e2dc6449989e83d6".to_string())
+            .get_account_with_proof(5521772, SEPOLIA_TARGET_ADDRESS)
+            .await;
+        assert_eq!(rlp_account.0, "f84e82d90488a0ad76b127aa9e08a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470");
+
+        // case 2. SEPOLIA_TARGET_ADDRESS is exist, but have no balance
+        let rlp_account = provider
+            .get_account_with_proof(4887931, SEPOLIA_TARGET_ADDRESS)
             .await;
         assert_eq!(rlp_account.0, "f8448080a00000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000000");
-        let rlp_account = provider
-            .get_account_with_proof(
-                10399990,
-                "0x7b2f05ce9ae365c3dbf30657e2dc6449989e83d6".to_string(),
-            )
-            .await;
-        assert_eq!(rlp_account.0, "f8440180a0480489b48e337887827fd9584f40dc1f51016e49df77ec789d4ee9bcc87bb0ffa0cd4f25236fff0ccac15e82bf4581beb08e95e1b5ba89de6031c75893cd91245c");
-    }
 
-    const SEPOLIA_RPC_URL: &str =
-        "https://eth-sepolia.g.alchemy.com/v2/a-w72ZvoUS0dfMD_LBPAuRzHOlQEhi_m";
+        // case 3. SEPOLIA_TARGET_ADDRESS is not exist
+        // q. why it have proof
+        let rlp_account = provider
+            .get_account_with_proof(0, SEPOLIA_TARGET_ADDRESS)
+            .await;
+        assert_eq!(rlp_account.0, "f8448080a00000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000000");
+    }
 
     #[tokio::test]
     async fn test_provider_get_non_exist_storage_value() {
-        let mut provider = AbstractProvider::new(SEPOLIA_RPC_URL.into());
+        let mut provider = AbstractProvider::new(SEPOLIA_RPC_URL);
         let storage_value = provider
             .get_storage_value_with_proof(
                 0,

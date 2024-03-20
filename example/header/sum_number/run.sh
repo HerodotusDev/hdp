@@ -1,0 +1,1 @@
+hdp encode -a -o example/header/sum_number/output.json -c example/header/sum_number/input.json "sum" -b 4952200 4952229 "header.number" 1
