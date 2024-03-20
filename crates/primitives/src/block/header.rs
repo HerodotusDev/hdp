@@ -587,6 +587,7 @@ impl From<&BlockHeaderFromRpc> for BlockHeader {
     }
 }
 
+// THIS ENDPOINT IS DEPRECATED
 /// MMR metadata and proof returned from indexer
 // example https://rs-indexer.api.herodotus.cloud/accumulators/mmr-meta-and-proof?deployed_on_chain=11155111&accumulates_chain=11155111&block_numbers=4952100&block_numbers=4952101&block_numbers=4952102&block_numbers=4952103&hashing_function=poseidon&contract_type=AGGREGATOR
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -615,6 +616,44 @@ pub struct MMRProofFromIndexer {
     pub element_hash: String,
     pub element_index: u64,
     pub rlp_block_header: String,
+    pub siblings_hashes: Vec<String>,
+}
+
+/// MMR metadata and proof returned from indexer
+// example https://rs-indexer.api.herodotus.cloud/accumulators/proofs
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct MMRFromNewIndexer {
+    pub data: Vec<MMRDataFromNewIndexer>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct MMRDataFromNewIndexer {
+    pub meta: MMRMetaFromNewIndexer,
+    pub proofs: Vec<MMRProofFromNewIndexer>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct MMRMetaFromNewIndexer {
+    pub mmr_id: u64,
+    pub mmr_peaks: Vec<String>,
+    pub mmr_root: String,
+    pub mmr_size: u64,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct RlpBlockHeader {
+    #[serde(rename = "String")]
+    pub value: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct MMRProofFromNewIndexer {
+    pub block_number: u64,
+    pub element_hash: String,
+    pub element_index: u64,
+    #[serde(rename = "rlp_block_header")]
+    pub rlp_block_header: RlpBlockHeader,
     pub siblings_hashes: Vec<String>,
 }
 
