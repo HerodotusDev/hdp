@@ -26,12 +26,13 @@ pub async fn compile_block_sampled_datalake(
     let collection = property_parts[0];
 
     let mut aggregation_set: Vec<String> = Vec::new();
+    // we don't need range
     let target_block_range: Vec<u64> = (block_range_start..=block_range_end)
         .step_by(increment as usize)
         .collect();
 
     let full_header_and_proof_result = abstract_provider
-        .get_full_header_with_proof(target_block_range.clone())
+        .get_sequencial_full_header_with_proof(block_range_start, block_range_end)
         .await?;
     let mmr_meta = full_header_and_proof_result.1;
     let mut headers: Vec<Header> = vec![];

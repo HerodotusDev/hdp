@@ -54,8 +54,11 @@ impl AbstractProvider {
         &self,
         start_block: u64,
         end_block: u64,
-    ) -> Result<()> {
-        // 2. Fetch MMR data and header data from Herodotus indexer
+    ) -> Result<(StoredHeaders, MMRMeta)> {
+        //? A map of block numbers to a boolean indicating whether the block was fetched.
+        let mut blocks_map: HashMap<u64, StoredHeader> = HashMap::new();
+
+        // Fetch MMR data and header data from Herodotus indexer
         let start_fetch = Instant::now();
 
         let mmr_data = self
@@ -68,7 +71,27 @@ impl AbstractProvider {
                 info!("Successfully fetched MMR data from indexer");
                 let duration = start_fetch.elapsed();
                 info!("Time taken (fetch from Indexer): {:?}", duration);
-                println!("MMR Data: {:?}", mmr);
+                for block_proof in &mmr.1 {
+                    blocks_map.insert(
+                        *block_proof.0,
+                        (
+                            block_proof.1.rlp_block_header.value.clone(),
+                            block_proof.1.siblings_hashes.clone(),
+                            block_proof.1.element_index,
+                            mmr.0.mmr_id,
+                        ),
+                    );
+                }
+
+                Ok((
+                    blocks_map,
+                    MMRMeta {
+                        id: mmr.0.mmr_id,
+                        root: mmr.0.mmr_root,
+                        size: mmr.0.mmr_size,
+                        peaks: mmr.0.mmr_peaks,
+                    },
+                ))
             }
             Err(e) => {
                 let duration = start_fetch.elapsed();
@@ -77,10 +100,9 @@ impl AbstractProvider {
                     "Something went wrong while fetching MMR data from indexer: {}",
                     e
                 );
-                return Err(e);
+                Err(e)
             }
         }
-        Ok(())
     }
 
     /// Fetches the headers of the blocks and relevant MMR metatdata in the given block range.
