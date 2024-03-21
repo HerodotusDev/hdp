@@ -46,6 +46,10 @@ enum Commands {
 
         /// The RPC URL to fetch the data
         rpc_url: Option<String>,
+
+        /// The chain id to fetch the data
+        chain_id: u64,
+
         /// Path to the file to save the output result
         #[arg(short, long)]
         output_file: Option<String>,
@@ -69,9 +73,14 @@ enum Commands {
     DecodeOne { task: String, datalake: String },
     /// Run the evaluator
     Run {
+        /// Batched tasks bytes
         tasks: Option<String>,
+        /// Batched datalakes bytes
         datalakes: Option<String>,
+        /// The RPC URL to fetch the data
         rpc_url: Option<String>,
+        /// The chain id to fetch the data
+        chain_id: u64,
         /// Path to the file to save the output result
         #[arg(short, long)]
         output_file: Option<String>,
@@ -145,11 +154,12 @@ async fn handle_run(
     tasks: Option<String>,
     datalakes: Option<String>,
     rpc_url: Option<String>,
+    chain_id: u64,
     output_file: Option<String>,
     cairo_input: Option<String>,
 ) -> Result<()> {
     let config = Config::init(rpc_url, datalakes, tasks).await;
-    let provider = AbstractProvider::new(&config.rpc_url);
+    let provider = AbstractProvider::new(&config.rpc_url, chain_id);
 
     let decoded_result =
         handle_decode_multiple(config.datalakes.clone(), config.tasks.clone()).await?;
@@ -196,6 +206,7 @@ async fn main() -> Result<()> {
         Commands::Encode {
             allow_run,
             rpc_url,
+            chain_id,
             output_file,
             cairo_input,
             aggregate_fn_id,
@@ -236,6 +247,7 @@ async fn main() -> Result<()> {
                     Some(encoded_result.tasks),
                     Some(encoded_result.datalakes),
                     rpc_url,
+                    chain_id,
                     output_file,
                     cairo_input,
                 )
@@ -256,9 +268,20 @@ async fn main() -> Result<()> {
             tasks,
             datalakes,
             rpc_url,
+            chain_id,
             output_file,
             cairo_input,
-        } => handle_run(tasks, datalakes, rpc_url, output_file, cairo_input).await?,
+        } => {
+            handle_run(
+                tasks,
+                datalakes,
+                rpc_url,
+                chain_id,
+                output_file,
+                cairo_input,
+            )
+            .await?
+        }
     }
     let duration_run = start_run.elapsed();
     info!("HDP Cli Finished in: {:?}", duration_run);

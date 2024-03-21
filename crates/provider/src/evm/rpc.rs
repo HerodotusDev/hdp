@@ -16,13 +16,15 @@ use hdp_primitives::block::{
 pub struct RpcProvider {
     client: Client,
     url: &'static str,
+    chain_id: u64,
 }
 
 impl RpcProvider {
-    pub fn new(rpc_url: &'static str) -> Self {
+    pub fn new(rpc_url: &'static str, chain_id: u64) -> Self {
         Self {
             client: Client::new(),
             url: rpc_url,
+            chain_id,
         }
     }
 }
@@ -145,8 +147,8 @@ impl RpcProvider {
         to_block: u64,
     ) -> Result<(MMRMetaFromNewIndexer, HashMap<u64, MMRProofFromNewIndexer>)> {
         let query_params = vec![
-            ("deployed_on_chain".to_string(), "11155111".to_string()),
-            ("accumulates_chain".to_string(), "11155111".to_string()),
+            ("deployed_on_chain".to_string(), self.chain_id.to_string()),
+            ("accumulates_chain".to_string(), self.chain_id.to_string()),
             ("hashing_function".to_string(), "poseidon".to_string()),
             ("contract_type".to_string(), "AGGREGATOR".to_string()),
             (
@@ -225,8 +227,8 @@ impl RpcProvider {
             .collect::<Vec<(String, String)>>();
 
         let query_params = vec![
-            ("deployed_on_chain".to_string(), "11155111".to_string()),
-            ("accumulates_chain".to_string(), "11155111".to_string()),
+            ("deployed_on_chain".to_string(), self.chain_id.to_string()),
+            ("accumulates_chain".to_string(), self.chain_id.to_string()),
             ("hashing_function".to_string(), "poseidon".to_string()),
             ("contract_type".to_string(), "AGGREGATOR".to_string()),
         ];
@@ -276,8 +278,8 @@ mod tests {
     const HERODOTUS_RS_INDEXER_URL: &str = "https://rs-indexer.api.herodotus.cloud/accumulators";
 
     #[tokio::test]
-    async fn test_get_old_mmr_from_indexer() {
-        let rpc_provider = RpcProvider::new(HERODOTUS_RS_INDEXER_URL);
+    async fn test_get_sepolia_old_mmr_from_indexer() {
+        let rpc_provider = RpcProvider::new(HERODOTUS_RS_INDEXER_URL, 11155111);
 
         let block_numbers = (4952200..=4952229).collect::<Vec<u64>>();
         let block_header = rpc_provider
@@ -297,9 +299,30 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_get_mainnet_old_mmr_from_indexer() {
+        let rpc_provider = RpcProvider::new(HERODOTUS_RS_INDEXER_URL, 1);
+
+        let block_numbers = (4952200..=4952229).collect::<Vec<u64>>();
+        let block_header = rpc_provider
+            .get_mmr_from_indexer(&block_numbers)
+            .await
+            .unwrap();
+
+        let block_4952200: &MMRProofFromIndexer = block_header.1.get(&4952200).unwrap();
+        assert_eq!(block_4952200.block_number, 4952200);
+
+        let block_4952229: &MMRProofFromIndexer = block_header.1.get(&4952229).unwrap();
+        assert_eq!(block_4952229.block_number, 4952229);
+
+        let block_4952229_meta: &MMRMetaFromIndexer = &block_header.0;
+
+        assert_eq!(block_4952229_meta.mmr_id, 3);
+    }
+
+    #[tokio::test]
     async fn test_get_new_mmr_from_indexer() {
         // This test is target for after eip 4844 blocks
-        let rpc_provider = RpcProvider::new(HERODOTUS_RS_INDEXER_URL);
+        let rpc_provider = RpcProvider::new(HERODOTUS_RS_INDEXER_URL, 11155111);
 
         let block_numbers = (5515000..=5515029).collect::<Vec<u64>>();
 
@@ -319,8 +342,8 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_get_sequencial_headers_and_mmr_from_indexer() {
-        let rpc_provider = RpcProvider::new(HERODOTUS_RS_INDEXER_URL);
+    async fn test_get_sepolia_sequencial_headers_and_mmr_from_indexer() {
+        let rpc_provider = RpcProvider::new(HERODOTUS_RS_INDEXER_URL, 11155111);
 
         let block_header = rpc_provider
             .get_sequencial_headers_and_mmr_from_indexer(4952200, 4952229)
@@ -329,6 +352,26 @@ mod tests {
 
         let mmr_meta = &block_header.0;
         assert_eq!(mmr_meta.mmr_id, 2);
+        let length = block_header.1.len();
+        assert_eq!(length, 30);
+        let block_4952200 = block_header.1.get(&4952200).unwrap();
+        assert_eq!(block_4952200.block_number, 4952200);
+
+        let block_4952229 = block_header.1.get(&4952229).unwrap();
+        assert_eq!(block_4952229.block_number, 4952229);
+    }
+
+    #[tokio::test]
+    async fn test_get_mainnet_sequencial_headers_and_mmr_from_indexer() {
+        let rpc_provider = RpcProvider::new(HERODOTUS_RS_INDEXER_URL, 1);
+
+        let block_header = rpc_provider
+            .get_sequencial_headers_and_mmr_from_indexer(4952200, 4952229)
+            .await
+            .unwrap();
+
+        let mmr_meta = &block_header.0;
+        assert_eq!(mmr_meta.mmr_id, 3);
         let length = block_header.1.len();
         assert_eq!(length, 30);
         let block_4952200 = block_header.1.get(&4952200).unwrap();

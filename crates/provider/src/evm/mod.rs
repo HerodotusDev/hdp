@@ -41,11 +41,11 @@ pub struct AbstractProvider {
 }
 
 impl AbstractProvider {
-    pub fn new(rpc_url: &'static str) -> Self {
+    pub fn new(rpc_url: &'static str, chain_id: u64) -> Self {
         Self {
             memory: InMemoryProvider::new(),
-            account_provider: RpcProvider::new(rpc_url),
-            header_provider: RpcProvider::new(HERODOTUS_RS_INDEXER_URL),
+            account_provider: RpcProvider::new(rpc_url, chain_id),
+            header_provider: RpcProvider::new(HERODOTUS_RS_INDEXER_URL, chain_id),
         }
     }
 
@@ -550,7 +550,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_rpc_get_block_by_number() {
-        let rpc_provider = RpcProvider::new(SEPOLIA_RPC_URL);
+        let rpc_provider = RpcProvider::new(SEPOLIA_RPC_URL, 11155111);
 
         let block = rpc_provider.get_block_by_number(0).await.unwrap();
         let block_header = BlockHeader::from(&block);
@@ -567,7 +567,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_rpc_get_proof() {
-        let rpc_provider = RpcProvider::new(SEPOLIA_RPC_URL);
+        let rpc_provider = RpcProvider::new(SEPOLIA_RPC_URL, 11155111);
 
         let account_from_rpc = rpc_provider
             .get_proof(4952229, SEPOLIA_TARGET_ADDRESS, None)
@@ -591,7 +591,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_provider_get_rlp_header() {
-        let mut provider = AbstractProvider::new(SEPOLIA_RPC_URL);
+        let mut provider = AbstractProvider::new(SEPOLIA_RPC_URL, 11155111);
         let rlp_header = provider.get_rlp_header(0).await;
         let block_hash = rlp_string_to_block_hash(&rlp_header);
         assert_eq!(
@@ -615,7 +615,7 @@ mod tests {
     #[tokio::test]
     async fn test_provider_get_rlp_account() {
         // case 1. SEPOLIA_TARGET_ADDRESS is exist and have balance
-        let mut provider = AbstractProvider::new(SEPOLIA_RPC_URL);
+        let mut provider = AbstractProvider::new(SEPOLIA_RPC_URL, 11155111);
         let rlp_account = provider
             .get_account_with_proof(5521772, SEPOLIA_TARGET_ADDRESS)
             .await;
@@ -637,7 +637,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_provider_get_non_exist_storage_value() {
-        let mut provider = AbstractProvider::new(SEPOLIA_RPC_URL);
+        let mut provider = AbstractProvider::new(SEPOLIA_RPC_URL, 11155111);
         let storage_value = provider
             .get_storage_value_with_proof(
                 0,
