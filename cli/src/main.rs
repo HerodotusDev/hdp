@@ -45,10 +45,8 @@ enum Commands {
         command: DataLakeCommands,
 
         /// The RPC URL to fetch the data
-        #[arg(long, requires = "chain-id", group = "fetch_data")]
         rpc_url: Option<String>,
 
-        #[arg(long, requires = "rpc-url", group = "fetch_data")]
         /// The chain id to fetch the data
         chain_id: Option<u64>,
 
@@ -80,10 +78,7 @@ enum Commands {
         /// Batched datalakes bytes
         datalakes: Option<String>,
         /// The RPC URL to fetch the data
-        #[arg(long, requires = "chain-id", group = "fetch_data")]
         rpc_url: Option<String>,
-
-        #[arg(long, requires = "rpc-url", group = "fetch_data")]
         /// The chain id to fetch the data
         chain_id: Option<u64>,
         /// Path to the file to save the output result

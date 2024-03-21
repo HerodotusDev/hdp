@@ -99,15 +99,15 @@ All examples are tested with `script/integration.sh`. Currently compiled HDP Cai
 
 ```console
 ❯ hdp run --help
-
 Run the evaluator
 
-Usage: hdp run [OPTIONS] [TASKS] [DATALAKES] [RPC_URL]
+Usage: hdp run [OPTIONS] [TASKS] [DATALAKES] [RPC_URL] [CHAIN_ID]
 
 Arguments:
-  [TASKS]
-  [DATALAKES]
-  [RPC_URL]
+  [TASKS]      Batched tasks bytes
+  [DATALAKES]  Batched datalakes bytes
+  [RPC_URL]    The RPC URL to fetch the data
+  [CHAIN_ID]   The chain id to fetch the data
 
 Options:
   -o, --output-file <OUTPUT_FILE>  Path to the file to save the output result
@@ -123,7 +123,7 @@ Support passing argument as env variable or as arguments.
 hdp run
 
 # run herodotus data processing
-hdp run 0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000006073756d000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000  0x00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004b902400000000000000000000000000000000000000000000000000000000004b9027000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000016027f2c6f930306d3aa736b3a6c6a98f512f74036d40000000000000000000000 ${Input your RPC Provider -- this example is Etherum Sepolia}
+hdp run 0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000006073756d000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000  0x00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004b902400000000000000000000000000000000000000000000000000000000004b9027000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000016027f2c6f930306d3aa736b3a6c6a98f512f74036d40000000000000000000000 ${Input your RPC Provider -- this example is Etherum Sepolia} ${Input Chain ID that you are target on}
 
 ```
 
@@ -150,14 +150,14 @@ Finally, add proper tests to see if it works as expected. Especially for integer
 
 ```console
 ❯ hdp --help
-Simple Herodotus Data Processor CLI to handle tasks and datalakes
+Herodotus Data Processor in Rust
 
 Usage: hdp <COMMAND>
 
 Commands:
-  encode      Encode the task and data lake in batched format test purposes
-  decode      Decode batch tasks and data lakes
-  decode-one  Decode one task and one data lake (not batched format)
+  encode      Encode the task and datalake in batched format test purposes
+  decode      Decode batch tasks and datalakes
+  decode-one  Decode one task and one datalake (not batched format)
   run         Run the evaluator
   help        Print this message or the help of the given subcommand(s)
 
@@ -194,29 +194,34 @@ Check out the encode command for how to generate the encoded value of the target
 
 ```console
 ❯ hdp help encode
-Encode the task and data lake in batched format test purposes
+Encode the task and datalake in batched format test purposes
 
-Usage: hdp encode <AGGREGATE_FN_ID> [AGGREGATE_FN_CTX] <COMMAND>
+Usage: hdp encode [OPTIONS] <AGGREGATE_FN_ID> [AGGREGATE_FN_CTX] [RPC_URL] [CHAIN_ID] <COMMAND>
 
 Commands:
-  block-sampled, -b  Encode the blocksampled data lake for test purposes
+  block-sampled, -b  Encode the block sampled data lake for test purposes
   help               Print this message or the help of the given subcommand(s)
 
 Arguments:
   <AGGREGATE_FN_ID>   The aggregate function id e.g. "sum", "min", "avg"
   [AGGREGATE_FN_CTX]  The aggregate function context. It depends on the aggregate function
+  [RPC_URL]           The RPC URL to fetch the data
+  [CHAIN_ID]          The chain id to fetch the data
 
 Options:
-  -h, --help  Print help
+  -a, --allow-run                  Decide if want to run evaluator as follow step or not (default: false)
+  -o, --output-file <OUTPUT_FILE>  Path to the file to save the output result
+  -c, --cairo-input <CAIRO_INPUT>  Path to the file to save the input.json in cairo format
+  -h, --help                       Print help
 ```
 
 ### Decode
 
 ```console
 ❯ hdp help decode
-Decode batch tasks and data lakes
+Decode batch tasks and datalakes
 
-Note: Batch tasks and data lakes should be encoded in bytes[] format
+Note: Batch tasks and datalakes should be encoded in bytes[] format
 
 Usage: hdp decode <TASKS> <DATALAKES>
 
