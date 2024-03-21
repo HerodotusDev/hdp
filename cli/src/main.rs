@@ -45,10 +45,12 @@ enum Commands {
         command: DataLakeCommands,
 
         /// The RPC URL to fetch the data
+        #[arg(long, requires = "chain-id", group = "fetch_data")]
         rpc_url: Option<String>,
 
+        #[arg(long, requires = "rpc-url", group = "fetch_data")]
         /// The chain id to fetch the data
-        chain_id: u64,
+        chain_id: Option<u64>,
 
         /// Path to the file to save the output result
         #[arg(short, long)]
@@ -78,9 +80,12 @@ enum Commands {
         /// Batched datalakes bytes
         datalakes: Option<String>,
         /// The RPC URL to fetch the data
+        #[arg(long, requires = "chain-id", group = "fetch_data")]
         rpc_url: Option<String>,
+
+        #[arg(long, requires = "rpc-url", group = "fetch_data")]
         /// The chain id to fetch the data
-        chain_id: u64,
+        chain_id: Option<u64>,
         /// Path to the file to save the output result
         #[arg(short, long)]
         output_file: Option<String>,
@@ -154,12 +159,12 @@ async fn handle_run(
     tasks: Option<String>,
     datalakes: Option<String>,
     rpc_url: Option<String>,
-    chain_id: u64,
+    chain_id: Option<u64>,
     output_file: Option<String>,
     cairo_input: Option<String>,
 ) -> Result<()> {
-    let config = Config::init(rpc_url, datalakes, tasks).await;
-    let provider = AbstractProvider::new(&config.rpc_url, chain_id);
+    let config = Config::init(rpc_url, datalakes, tasks, chain_id).await;
+    let provider = AbstractProvider::new(&config.rpc_url, config.chain_id);
 
     let decoded_result =
         handle_decode_multiple(config.datalakes.clone(), config.tasks.clone()).await?;
