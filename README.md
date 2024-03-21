@@ -8,7 +8,7 @@
 
 _Enhance zk-offchain compute for verifiable onchain data using zkVMs_
 
-HDP stands for Herodotus Data Processor, which is able to process a range of block data and retrieve valid values from proving ZK-STARK proof. For more explanation, check out the [documentation](https://docs.herodotus.dev/herodotus-docs/developers/herodotus-data-processor-hdp).
+HDP stands for Herodotus Data Processor, which can process a range of block data and retrieve valid values from proving ZK-STARK proof. For more explanation, check out the [documentation](https://docs.herodotus.dev/herodotus-docs/developers/herodotus-data-processor-hdp).
 
 CLI is mainly used for processing human-readable requests to Cairo-Program acceptable format files. In the broader view, this is called the `pre-processing step`. Additionally provides some useful features that are supported for development.
 
@@ -37,9 +37,9 @@ CLI is mainly used for processing human-readable requests to Cairo-Program accep
 
 ## [Example](https://github.com/HerodotusDev/hdp/tree/main/example)
 
-_Note: Sum and Avg functions supports only for number as expected input type_
+_Note: Sum and Avg functions support only for numbers as expected input type_
 
-All examples are tested with `script/integration.sh`. Currently compiled HDP Cairo program is supporting all the features below. If you want to run the script on local, check out the [readme](https://github.com/HerodotusDev/hdp/tree/main/example).
+All examples are tested with `script/integration.sh`. The currently compiled HDP Cairo program supports all the features below. If you want to run the script locally, check out the [readme](https://github.com/HerodotusDev/hdp/tree/main/example).
 
 |                                 | SUM | AVG |
 | ------------------------------- | --- | --- |
