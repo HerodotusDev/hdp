@@ -107,6 +107,7 @@ impl AbstractProvider {
 
     /// Fetches the headers of the blocks and relevant MMR metatdata in the given block range.
     /// return a tuple of the headers hashmap and the MMR metadata.
+    // THIS ENDPOINT IS NOT USED, but we need this approach if introduce in memory cache
     pub async fn get_full_header_with_proof(
         &mut self,
         block_numbers: Vec<u64>,

@@ -1,3 +1,5 @@
+//! This provider is currently not used.
+
 use std::collections::HashMap;
 
 pub type RlpEncodedValue = String;
