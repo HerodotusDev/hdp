@@ -8,7 +8,7 @@
 
 _Enhance zk-offchain compute for verifiable onchain data using zkVMs_
 
-HDP stands for Herodotus Data Processor, which is able to process a range of block data and retrieve valid values from proving ZK-STARK proof. For more explanation, check out the documentation.
+HDP stands for Herodotus Data Processor, which is able to process a range of block data and retrieve valid values from proving ZK-STARK proof. For more explanation, check out the [documentation](https://docs.herodotus.dev/herodotus-docs/developers/herodotus-data-processor-hdp).
 
 CLI is mainly used for processing human-readable requests to Cairo-Program acceptable format files. In the broader view, this is called the `pre-processing step`. Additionally provides some useful features that are supported for development.
 
