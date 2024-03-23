@@ -252,3 +252,11 @@ Arguments:
 Options:
   -h, --help  Print help
 ```
+
+## License
+
+`hdp` is licensed under the [GNU General Public License v3.0](./LICENSE).
+
+---
+
+Herodotus Dev Ltd - 2024
