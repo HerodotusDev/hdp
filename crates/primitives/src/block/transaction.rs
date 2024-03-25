@@ -2,6 +2,7 @@ use std::str::FromStr;
 
 use anyhow::bail;
 
+#[derive(Debug, Clone, PartialEq)]
 pub enum TransactionField {
     Hash,
     Nonce,

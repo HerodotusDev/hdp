@@ -1,7 +1,4 @@
-use std::{
-    str::FromStr,
-    sync::{Arc, RwLock},
-};
+use std::sync::{Arc, RwLock};
 
 use alloy_dyn_abi::{DynSolType, DynSolValue};
 use alloy_primitives::{hex::FromHex, keccak256, Address, U256};
@@ -23,7 +20,8 @@ pub struct TransactionsDatalake {
     pub address: Address,
     pub from_nonce: u64,
     pub to_nonce: u64,
-    pub sampled_property: String,
+    // TODO: In the end should be contain transaction receipt also
+    pub sampled_property: TransactionField,
     pub increment: u64,
 }
 
@@ -49,7 +47,7 @@ impl TransactionsDatalake {
         address: Address,
         from_nonce: u64,
         to_nonce: u64,
-        sampled_property: String,
+        sampled_property: TransactionField,
         increment: u64,
     ) -> Self {
         Self {
@@ -71,10 +69,7 @@ impl TransactionsDatalake {
         let from_nonce = DynSolValue::Uint(U256::from(self.from_nonce), 256);
         let to_nonce = DynSolValue::Uint(U256::from(self.to_nonce), 256);
         let increment = DynSolValue::Uint(U256::from(self.increment), 256);
-        let sampled_property = DynSolValue::Uint(
-            U256::from(serialize_sampled_property(&self.sampled_property)?),
-            256,
-        );
+        let sampled_property = DynSolValue::Uint(U256::from(self.sampled_property.to_index()), 256);
 
         let tuple_value = DynSolValue::Tuple(vec![
             datalake_code,
@@ -125,7 +120,8 @@ impl TransactionsDatalake {
         let increment = value[5].as_uint().unwrap().0.to_string().parse::<u64>()?;
 
         let sampled_property =
-            deserialize_sampled_property(value[6].as_uint().unwrap().0.to_string().parse::<u8>()?)?;
+            TransactionField::from_index(value[6].as_uint().unwrap().0.to_string().parse::<u8>()?)
+                .unwrap();
 
         Ok(Self {
             account_type,
@@ -147,14 +143,4 @@ impl Derivable for TransactionsDatalake {
     fn derive(&self) -> DatalakeBase {
         DatalakeBase::new(&self.commit(), Datalake::Transactions(self.clone()))
     }
-}
-
-pub fn serialize_sampled_property(sampled_property: &str) -> Result<u8> {
-    let transaction_sampled_property = TransactionField::from_str(sampled_property)?;
-    Ok(transaction_sampled_property.to_index())
-}
-
-fn deserialize_sampled_property(serialized: u8) -> Result<String> {
-    let transaction_sampled_property = TransactionField::from_index(serialized).unwrap();
-    Ok(transaction_sampled_property.to_string())
 }
