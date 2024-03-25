@@ -92,6 +92,7 @@ pub fn datalakes_encoder(datalakes: Vec<Datalake>) -> Result<String> {
             Datalake::DynamicLayout(dynamic_layout_datalake) => {
                 dynamic_layout_datalake.serialize()?
             }
+            Datalake::Transactions(transactions_datalake) => transactions_datalake.encode()?,
             Datalake::Unknown => bail!("Unknown datalake type"),
         };
         let bytes = Vec::from_hex(encoded_datalake).expect("Invalid hex string");
