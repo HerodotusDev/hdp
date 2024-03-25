@@ -8,7 +8,7 @@ use hdp_provider::evm::AbstractProvider;
 
 use super::{
     base::{DatalakeBase, Derivable},
-    Datalake,
+    Datalake, DatalakeCode,
 };
 
 /// [`TransactionsDatalake`] is a struct that represents a transactions datalake.
@@ -60,10 +60,14 @@ impl TransactionsDatalake {
         }
     }
 
+    pub fn get_datalake_code(&self) -> DatalakeCode {
+        DatalakeCode::Transactions
+    }
+
     /// Encode the [`TransactionsDatalake`] into a hex string
     pub fn encode(&self) -> Result<String> {
         // Datalake code for transactions datalake is 2
-        let datalake_code = DynSolValue::Uint(U256::from(2), 256);
+        let datalake_code = DynSolValue::Uint(U256::from(self.get_datalake_code().index()), 256);
         let account_type = DynSolValue::Uint(U256::from(self.account_type.index()), 256);
         let address = DynSolValue::Address(self.address);
         let from_nonce = DynSolValue::Uint(U256::from(self.from_nonce), 256);
@@ -103,9 +107,9 @@ impl TransactionsDatalake {
         let decoded = datalake_type.abi_decode_sequence(&bytes)?;
 
         let value = decoded.as_tuple().unwrap();
-        let datalake_code = value[0].as_uint().unwrap().0.to_string().parse::<u64>()?;
+        let datalake_code = value[0].as_uint().unwrap().0.to_string().parse::<u8>()?;
 
-        if datalake_code != 2 {
+        if DatalakeCode::from_index(datalake_code)? != DatalakeCode::Transactions {
             bail!("Encoded datalake is not a transactions datalake");
         }
 

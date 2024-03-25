@@ -5,6 +5,7 @@ use self::{
     transactions::TransactionsDatalake,
 };
 use anyhow::{bail, Result};
+use serde::{Deserialize, Serialize};
 
 pub mod base;
 pub mod block_sampled;
@@ -18,6 +19,32 @@ pub enum Datalake {
     DynamicLayout(DynamicLayoutDatalake),
     Transactions(TransactionsDatalake),
     Unknown,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub enum DatalakeCode {
+    BlockSampled = 0,
+    DynamicLayout = 1,
+    Transactions = 2,
+}
+
+impl DatalakeCode {
+    pub fn index(&self) -> u8 {
+        match self {
+            DatalakeCode::BlockSampled => 0,
+            DatalakeCode::DynamicLayout => 1,
+            DatalakeCode::Transactions => 2,
+        }
+    }
+
+    pub fn from_index(value: u8) -> Result<DatalakeCode> {
+        match value {
+            0 => Ok(DatalakeCode::BlockSampled),
+            1 => Ok(DatalakeCode::DynamicLayout),
+            2 => Ok(DatalakeCode::Transactions),
+            _ => bail!("Invalid datalake code"),
+        }
+    }
 }
 
 /// Transform different datalake types into DatalakeBase
@@ -46,11 +73,11 @@ impl Datalake {
         }
     }
 
-    pub fn get_datalake_type(&self) -> u8 {
+    pub fn get_datalake_type(&self) -> DatalakeCode {
         match self {
-            Datalake::BlockSampled(_) => 0,
-            Datalake::DynamicLayout(_) => 1,
-            Datalake::Transactions(_) => 2,
+            Datalake::BlockSampled(_) => DatalakeCode::BlockSampled,
+            Datalake::DynamicLayout(_) => DatalakeCode::DynamicLayout,
+            Datalake::Transactions(_) => DatalakeCode::Transactions,
             Datalake::Unknown => panic!("Unknown datalake type"),
         }
     }
