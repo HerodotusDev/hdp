@@ -327,7 +327,7 @@ pub async fn evaluator(
                     EvaluatedDatalake {
                         encoded_datalake,
                         datalake_type: datalake.get_datalake_type(),
-                        property_type: datalake.get_property_type(),
+                        property_type: datalake.get_collection_type().to_index(),
                     },
                 );
             }

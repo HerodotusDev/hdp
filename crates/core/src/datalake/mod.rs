@@ -21,6 +21,13 @@ pub enum Datalake {
     Unknown,
 }
 
+pub(crate) trait DatalakeCollection {
+    fn to_index(&self) -> u8;
+    fn from_index(index: u8) -> Result<Self>
+    where
+        Self: Sized;
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum DatalakeCode {
     BlockSampled = 0,
@@ -82,11 +89,11 @@ impl Datalake {
         }
     }
 
-    pub fn get_property_type(&self) -> u8 {
+    pub(crate) fn get_collection_type(&self) -> Box<dyn DatalakeCollection> {
         match self {
-            Datalake::BlockSampled(datalake) => datalake.get_property_type(),
+            Datalake::BlockSampled(datalake) => Box::new(datalake.get_collection_type()),
             Datalake::DynamicLayout(_) => panic!("Unsupported datalake type"),
-            Datalake::Transactions(datalake) => datalake.account_type.index() as u8,
+            Datalake::Transactions(datalake) => Box::new(datalake.get_collection_type()),
             Datalake::Unknown => panic!("Unknown datalake type"),
         }
     }

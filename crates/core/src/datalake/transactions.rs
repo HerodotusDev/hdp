@@ -8,8 +8,31 @@ use hdp_provider::evm::AbstractProvider;
 
 use super::{
     base::{DatalakeBase, Derivable},
-    Datalake, DatalakeCode,
+    Datalake, DatalakeCode, DatalakeCollection,
 };
+
+#[derive(Debug, PartialEq)]
+pub enum TransactionsCollection {
+    Sender,
+    Receiver,
+}
+
+impl DatalakeCollection for TransactionsCollection {
+    fn to_index(&self) -> u8 {
+        match self {
+            TransactionsCollection::Sender => 0,
+            TransactionsCollection::Receiver => 1,
+        }
+    }
+
+    fn from_index(index: u8) -> Result<Self> {
+        match index {
+            0 => Ok(TransactionsCollection::Sender),
+            1 => Ok(TransactionsCollection::Receiver),
+            _ => bail!("Invalid transactions collection index"),
+        }
+    }
+}
 
 /// [`TransactionsDatalake`] is a struct that represents a transactions datalake.
 ///
@@ -33,7 +56,7 @@ pub enum AccountType {
 }
 
 impl AccountType {
-    pub fn index(&self) -> usize {
+    pub fn index(&self) -> u8 {
         match self {
             AccountType::Sender => 0,
             AccountType::Receiver => 1,
@@ -62,6 +85,13 @@ impl TransactionsDatalake {
 
     pub fn get_datalake_code(&self) -> DatalakeCode {
         DatalakeCode::Transactions
+    }
+
+    pub fn get_collection_type(&self) -> TransactionsCollection {
+        match self.account_type {
+            AccountType::Sender => TransactionsCollection::Sender,
+            AccountType::Receiver => TransactionsCollection::Receiver,
+        }
     }
 
     /// Encode the [`TransactionsDatalake`] into a hex string

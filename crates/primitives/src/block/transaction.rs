@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use anyhow::bail;
+use anyhow::{bail, Result};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TransactionField {
@@ -84,28 +84,29 @@ impl ToString for TransactionField {
 }
 
 impl TransactionField {
-    pub fn from_index(index: u8) -> Option<TransactionField> {
+    pub fn from_index(index: u8) -> Result<Self> {
         match index {
-            0 => Some(TransactionField::Hash),
-            1 => Some(TransactionField::Nonce),
-            2 => Some(TransactionField::BlockHash),
-            3 => Some(TransactionField::BlockNumber),
-            4 => Some(TransactionField::TransactionIndex),
-            5 => Some(TransactionField::From),
-            6 => Some(TransactionField::To),
-            7 => Some(TransactionField::Value),
-            8 => Some(TransactionField::GasPrice),
-            9 => Some(TransactionField::Gas),
-            10 => Some(TransactionField::Input),
-            11 => Some(TransactionField::Signature),
-            12 => Some(TransactionField::ChainId),
-            13 => Some(TransactionField::BlobVersionedHashes),
-            14 => Some(TransactionField::AccessList),
-            15 => Some(TransactionField::TransactionType),
-            16 => Some(TransactionField::MaxFeePerGas),
-            17 => Some(TransactionField::MaxPriorityFeePerGas),
-            18 => Some(TransactionField::MaxFeePerBlobGas),
-            _ => Some(TransactionField::Other),
+            0 => Ok(TransactionField::Hash),
+            1 => Ok(TransactionField::Nonce),
+            2 => Ok(TransactionField::BlockHash),
+            3 => Ok(TransactionField::BlockNumber),
+            4 => Ok(TransactionField::TransactionIndex),
+            5 => Ok(TransactionField::From),
+            6 => Ok(TransactionField::To),
+            7 => Ok(TransactionField::Value),
+            8 => Ok(TransactionField::GasPrice),
+            9 => Ok(TransactionField::Gas),
+            10 => Ok(TransactionField::Input),
+            11 => Ok(TransactionField::Signature),
+            12 => Ok(TransactionField::ChainId),
+            13 => Ok(TransactionField::BlobVersionedHashes),
+            14 => Ok(TransactionField::AccessList),
+            15 => Ok(TransactionField::TransactionType),
+            16 => Ok(TransactionField::MaxFeePerGas),
+            17 => Ok(TransactionField::MaxPriorityFeePerGas),
+            18 => Ok(TransactionField::MaxFeePerBlobGas),
+            19 => Ok(TransactionField::Other),
+            _ => bail!("Invalid transaction field"),
         }
     }
 
