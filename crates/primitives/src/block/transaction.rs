@@ -10,15 +10,15 @@ pub enum TransactionsCollection {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TransactionDatalakeField {
-    // Transaction fields
+    // ===== Transaction fields =====
     ChainId,
     Nonce,
     // Only for legacy transactions
     GasPrice,
     GasLimit,
-    // Only for EIP-1559 transactions
+    // EIP-1559 transactions and EIP-4844 transactions
     MaxFeePerGas,
-    // Only for EIP-1559 transactions
+    // EIP-1559 transactions and EIP-4844 transactions
     MaxPriorityFeePerGas,
     To,
     Value,
@@ -30,7 +30,7 @@ pub enum TransactionDatalakeField {
     MaxFeePerBlobGas,
     Input,
 
-    // TransactionReceipt fields
+    // ===== TransactionReceipt fields =====
     Bloom,
     Success,
     CumulativeGasUsed,

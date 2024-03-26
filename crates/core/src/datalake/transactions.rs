@@ -34,6 +34,29 @@ impl DatalakeCollection for TransactionsCollection {
 /// [`TransactionsDatalake`] is a struct that represents a transactions datalake.
 ///
 /// It can represent a transactions datalake for a specific address as sender.
+///
+/// example 1: from_nonce is 0, to_nonce is 3 increment is 1
+/// target nonce [0, 1, 2, 3]
+/// - transaction 1 (nonce 0 -> 1)
+/// - transaction 2 (nonce 1 -> 2)
+/// - transaction 3 (nonce 2 -> 3)
+/// - transaction 4 (nonce 3 -> 4)
+///
+/// example 2: from_nonce is 0, to_nonce is 3 increment is 2
+/// target nonce [0, 2]
+/// - transaction 1 (nonce 0 -> 1)
+/// - transaction 2 (nonce 2 -> 3)
+///
+/// example 3: from_nonce is 0, to_nonce is 3 increment is 3
+/// target nonce [0, 3]
+/// - transaction 1 (nonce 0 -> 1)
+/// - transaction 2 (nonce 3 -> 4)
+///
+/// example 4: from_nonce is 0, to_nonce is 5 increment is 2
+/// target nonce [0, 2, 4]
+/// - transaction 1 (nonce 0 -> 1)
+/// - transaction 2 (nonce 2 -> 3)
+/// - transaction 3 (nonce 4 -> 5)
 #[derive(Debug, Clone, PartialEq)]
 pub struct TransactionsDatalake {
     pub address: Address,
@@ -142,5 +165,38 @@ impl TransactionsDatalake {
 impl Derivable for TransactionsDatalake {
     fn derive(&self) -> DatalakeBase {
         DatalakeBase::new(&self.commit(), Datalake::Transactions(self.clone()))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use hdp_primitives::block::transaction::TransactionDatalakeField;
+
+    #[test]
+    fn test_transactions_datalake() {
+        let encoded_datalake= "0x0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000cb96aca8719987d15aecd066b7a1ad5d4d92fdd30000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001";
+
+        let transaction_datalake = TransactionsDatalake::new(
+            Address::from_hex("0xcb96AcA8719987D15aecd066B7a1Ad5D4d92fdD3").unwrap(),
+            0,
+            3,
+            TransactionDatalakeField::Nonce,
+            1,
+        );
+
+        let encoded = transaction_datalake.encode().unwrap();
+
+        assert_eq!(encoded, encoded_datalake);
+
+        assert_eq!(
+            transaction_datalake.commit(),
+            "0x7146e0abe3c81792b754792f40cb3668b4ba057904938dd8bf781e18ed182c05"
+        );
+
+        assert_eq!(
+            transaction_datalake.get_collection_type(),
+            TransactionsCollection::TransactionsBySender
+        );
     }
 }
