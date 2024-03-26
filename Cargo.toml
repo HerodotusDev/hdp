@@ -23,5 +23,3 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tracing = "0.1"
 reqwest = { version = "0.11", features = ["json"] }
-# NOTE: This is a temporary dependency until the eth-trie-proofs crate is published
-eth-trie-proofs = { path = "../eth-trie-proofs" }

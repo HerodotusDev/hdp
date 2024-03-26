@@ -77,9 +77,6 @@ impl DatalakeBase {
                     Datalake::Transactions(_) => {
                         bail!("Transactions datalake type doesn't support yet")
                     }
-                    Datalake::Unknown => {
-                        bail!("Unknown datalake type");
-                    }
                 };
 
                 self.result = Some(result_datapoints.clone());

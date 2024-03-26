@@ -18,7 +18,6 @@ pub enum Datalake {
     BlockSampled(BlockSampledDatalake),
     DynamicLayout(DynamicLayoutDatalake),
     Transactions(TransactionsDatalake),
-    Unknown,
 }
 
 pub(crate) trait DatalakeCollection {
@@ -65,7 +64,6 @@ impl Derivable for Datalake {
             Datalake::Transactions(datalake) => {
                 DatalakeBase::new(&datalake.commit(), Datalake::Transactions(datalake.clone()))
             }
-            Datalake::Unknown => panic!("Unknown datalake type"),
         }
     }
 }
@@ -76,7 +74,6 @@ impl Datalake {
             Datalake::BlockSampled(datalake) => datalake.encode(),
             Datalake::DynamicLayout(_) => bail!("Unsupported datalake type"),
             Datalake::Transactions(datalake) => datalake.encode(),
-            Datalake::Unknown => bail!("Unknown datalake type"),
         }
     }
 
@@ -85,7 +82,6 @@ impl Datalake {
             Datalake::BlockSampled(_) => DatalakeCode::BlockSampled,
             Datalake::DynamicLayout(_) => DatalakeCode::DynamicLayout,
             Datalake::Transactions(_) => DatalakeCode::Transactions,
-            Datalake::Unknown => panic!("Unknown datalake type"),
         }
     }
 
@@ -94,7 +90,6 @@ impl Datalake {
             Datalake::BlockSampled(datalake) => Box::new(datalake.get_collection_type()),
             Datalake::DynamicLayout(_) => panic!("Unsupported datalake type"),
             Datalake::Transactions(datalake) => Box::new(datalake.get_collection_type()),
-            Datalake::Unknown => panic!("Unknown datalake type"),
         }
     }
 }

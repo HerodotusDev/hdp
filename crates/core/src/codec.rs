@@ -1,11 +1,12 @@
-use crate::datalake::Datalake;
+use crate::datalake::transactions::TransactionsDatalake;
+use crate::datalake::{Datalake, DatalakeCode};
 use crate::{
     datalake::{block_sampled::BlockSampledDatalake, dynamic_layout::DynamicLayoutDatalake},
     task::ComputationalTask,
 };
 use alloy_dyn_abi::{DynSolType, DynSolValue};
 use alloy_primitives::hex::FromHex;
-use anyhow::{bail, Ok, Result};
+use anyhow::{Ok, Result};
 use hdp_primitives::utils::{bytes_to_hex_string, last_byte_to_u8};
 
 /// Decode a batch of tasks
@@ -47,15 +48,17 @@ pub fn datalakes_decoder(serialized_datalakes_batch: String) -> Result<Vec<Datal
             let datalake_code = datalake.as_bytes().unwrap().chunks(32).next().unwrap();
             let datalake_string = bytes_to_hex_string(datalake.as_bytes().unwrap());
 
-            let decoded_datalake = match last_byte_to_u8(datalake_code) {
-                0 => Datalake::BlockSampled(BlockSampledDatalake::decode(datalake_string)?),
-                1 => Datalake::DynamicLayout(DynamicLayoutDatalake::deserialize(datalake_string)?),
-                _ => Datalake::Unknown,
+            let decoded_datalake = match DatalakeCode::from_index(last_byte_to_u8(datalake_code))? {
+                DatalakeCode::BlockSampled => {
+                    Datalake::BlockSampled(BlockSampledDatalake::decode(datalake_string)?)
+                }
+                DatalakeCode::DynamicLayout => {
+                    Datalake::DynamicLayout(DynamicLayoutDatalake::deserialize(datalake_string)?)
+                }
+                DatalakeCode::Transactions => {
+                    Datalake::Transactions(TransactionsDatalake::decode(datalake_string)?)
+                }
             };
-
-            if decoded_datalake == Datalake::Unknown {
-                bail!("Unknown datalake type");
-            }
 
             decoded_datalakes.push(decoded_datalake);
         }
@@ -69,15 +72,17 @@ pub fn datalake_decoder(serialized_datalake: String) -> Result<Datalake> {
     let datalake_code = serialized_datalake.as_bytes().chunks(32).next().unwrap();
     let datalake_string = bytes_to_hex_string(serialized_datalake.as_bytes());
 
-    let decoded_datalake = match last_byte_to_u8(datalake_code) {
-        0 => Datalake::BlockSampled(BlockSampledDatalake::decode(datalake_string)?),
-        1 => Datalake::DynamicLayout(DynamicLayoutDatalake::deserialize(datalake_string)?),
-        _ => Datalake::Unknown,
+    let decoded_datalake = match DatalakeCode::from_index(last_byte_to_u8(datalake_code))? {
+        DatalakeCode::BlockSampled => {
+            Datalake::BlockSampled(BlockSampledDatalake::decode(datalake_string)?)
+        }
+        DatalakeCode::DynamicLayout => {
+            Datalake::DynamicLayout(DynamicLayoutDatalake::deserialize(datalake_string)?)
+        }
+        DatalakeCode::Transactions => {
+            Datalake::Transactions(TransactionsDatalake::decode(datalake_string)?)
+        }
     };
-
-    if decoded_datalake == Datalake::Unknown {
-        bail!("Unknown datalake type");
-    }
 
     Ok(decoded_datalake)
 }
@@ -93,7 +98,6 @@ pub fn datalakes_encoder(datalakes: Vec<Datalake>) -> Result<String> {
                 dynamic_layout_datalake.serialize()?
             }
             Datalake::Transactions(transactions_datalake) => transactions_datalake.encode()?,
-            Datalake::Unknown => bail!("Unknown datalake type"),
         };
         let bytes = Vec::from_hex(encoded_datalake).expect("Invalid hex string");
         encoded_datalakes.push(DynSolValue::Bytes(bytes));
