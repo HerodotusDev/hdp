@@ -1,4 +1,7 @@
-use std::sync::{Arc, RwLock};
+use std::{
+    str::FromStr,
+    sync::{Arc, RwLock},
+};
 
 use alloy_dyn_abi::{DynSolType, DynSolValue};
 use alloy_primitives::{hex::FromHex, keccak256, Address, U256};
@@ -68,17 +71,18 @@ pub struct TransactionsDatalake {
 
 impl TransactionsDatalake {
     pub fn new(
-        address: Address,
+        address: String,
         from_nonce: u64,
         to_nonce: u64,
-        sampled_property: TransactionDatalakeField,
+        sampled_property: String,
         increment: u64,
     ) -> Self {
         Self {
-            address,
+            address: Address::from_hex(address).unwrap(),
             from_nonce,
             to_nonce,
-            sampled_property,
+            sampled_property: TransactionDatalakeField::from_str(&sampled_property.to_uppercase())
+                .unwrap(),
             increment,
         }
     }
@@ -171,17 +175,16 @@ impl Derivable for TransactionsDatalake {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use hdp_primitives::block::transaction::TransactionDatalakeField;
 
     #[test]
     fn test_transactions_datalake() {
         let encoded_datalake= "0x0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000cb96aca8719987d15aecd066b7a1ad5d4d92fdd30000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001";
 
         let transaction_datalake = TransactionsDatalake::new(
-            Address::from_hex("0xcb96AcA8719987D15aecd066B7a1Ad5D4d92fdD3").unwrap(),
+            "0xcb96AcA8719987D15aecd066B7a1Ad5D4d92fdD3".to_string(),
             0,
             3,
-            TransactionDatalakeField::Nonce,
+            "nonce".to_string(),
             1,
         );
 

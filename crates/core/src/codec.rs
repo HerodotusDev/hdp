@@ -125,8 +125,6 @@ pub fn tasks_encoder(tasks: Vec<ComputationalTask>) -> Result<String> {
 
 #[cfg(test)]
 mod tests {
-    use alloy_primitives::Address;
-    use hdp_primitives::block::transaction::TransactionDatalakeField;
 
     use super::*;
     use crate::datalake::{block_sampled::BlockSampledDatalake, Datalake};
@@ -257,18 +255,18 @@ mod tests {
     #[test]
     fn test_transaction_datalakes_encoder() {
         let transaction_datalake1 = TransactionsDatalake::new(
-            Address::from_hex("0xcb96AcA8719987D15aecd066B7a1Ad5D4d92fdD3").unwrap(),
+            "0xcb96AcA8719987D15aecd066B7a1Ad5D4d92fdD3".to_string(),
             0,
             3,
-            TransactionDatalakeField::Nonce,
+            "nonce".to_string(),
             1,
         );
 
         let transaction_datalake2 = TransactionsDatalake::new(
-            Address::from_hex("0xcb96AcA8719987D15aecd066B7a1Ad5D4d92fdD3").unwrap(),
+            "0xcb96AcA8719987D15aecd066B7a1Ad5D4d92fdD3".to_string(),
             0,
             3,
-            TransactionDatalakeField::AccessList,
+            "access_list".to_string(),
             1,
         );
 
@@ -288,18 +286,18 @@ mod tests {
         assert_eq!(decoded_datalake.len(), 2);
 
         let transaction_datalake1 = TransactionsDatalake::new(
-            Address::from_hex("0xcb96AcA8719987D15aecd066B7a1Ad5D4d92fdD3").unwrap(),
+            "0xcb96AcA8719987D15aecd066B7a1Ad5D4d92fdD3".to_string(),
             0,
             3,
-            TransactionDatalakeField::Nonce,
+            "nonce".to_string(),
             1,
         );
 
         let transaction_datalake2 = TransactionsDatalake::new(
-            Address::from_hex("0xcb96AcA8719987D15aecd066B7a1Ad5D4d92fdD3").unwrap(),
+            "0xcb96AcA8719987D15aecd066B7a1Ad5D4d92fdD3".to_string(),
             0,
             3,
-            TransactionDatalakeField::AccessList,
+            "access_list".to_string(),
             1,
         );
 
