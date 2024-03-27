@@ -260,7 +260,8 @@ mod tests {
             3,
             "tx.nonce".to_string(),
             1,
-        );
+        )
+        .unwrap();
 
         let transaction_datalake2 = TransactionsDatalake::new(
             "0xcb96AcA8719987D15aecd066B7a1Ad5D4d92fdD3".to_string(),
@@ -268,7 +269,8 @@ mod tests {
             3,
             "tx.access_list".to_string(),
             1,
-        );
+        )
+        .unwrap();
 
         let datalakes = vec![
             Datalake::Transactions(transaction_datalake1),
@@ -291,7 +293,8 @@ mod tests {
             3,
             "tx.nonce".to_string(),
             1,
-        );
+        )
+        .unwrap();
 
         let transaction_datalake2 = TransactionsDatalake::new(
             "0xcb96AcA8719987D15aecd066B7a1Ad5D4d92fdD3".to_string(),
@@ -299,7 +302,8 @@ mod tests {
             3,
             "tx.access_list".to_string(),
             1,
-        );
+        )
+        .unwrap();
 
         assert_eq!(
             decoded_datalake[0],

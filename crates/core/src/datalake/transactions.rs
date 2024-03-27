@@ -69,14 +69,14 @@ impl TransactionsDatalake {
         to_base_nonce: u64,
         sampled_property: String,
         increment: u64,
-    ) -> Self {
-        Self {
-            address: Address::from_hex(address).unwrap(),
+    ) -> Result<Self> {
+        Ok(Self {
+            address: Address::from_hex(address)?,
             from_base_nonce,
             to_base_nonce,
-            sampled_property: TransactionsCollection::from_str(&sampled_property).unwrap(),
+            sampled_property: TransactionsCollection::from_str(&sampled_property)?,
             increment,
-        }
+        })
     }
 
     pub fn get_datalake_code(&self) -> DatalakeCode {
@@ -176,7 +176,8 @@ mod tests {
             3,
             "tx.nonce".to_string(),
             1,
-        );
+        )
+        .unwrap();
 
         let encoded = transaction_datalake.encode().unwrap();
 

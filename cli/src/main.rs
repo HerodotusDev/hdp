@@ -262,7 +262,7 @@ async fn main() -> Result<()> {
                             to_nonce,
                             sampled_property,
                             increment,
-                        );
+                        )?;
                     Datalake::Transactions(transactions_datalake)
                 }
             };
