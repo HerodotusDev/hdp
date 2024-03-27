@@ -5,13 +5,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::utils::bytes_to_hex_string;
 
-#[derive(Debug, PartialEq)]
-pub enum Collection {
-    Header,
-    Account,
-    Storage,
-}
-
 //==============================================================================
 // for int type, use uint type
 // for string type, if formatted, use chunk[] to store field elements

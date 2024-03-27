@@ -107,6 +107,25 @@ enum DataLakeCommands {
         #[arg(default_value_t = 1)]
         increment: u64,
     },
+
+    ///  Encode the transactions data lake for test purposes
+    #[command(arg_required_else_help = true)]
+    #[command(short_flag = 't')]
+    Transactions {
+        /// Sender address of the transactions
+        address: String,
+        /// From nonce
+        from_nonce: u64,
+        /// To nonce
+        to_nonce: u64,
+        /// Sampled property
+        /// Fields from transaction: "chain_id", "gas_price"... etc
+        /// Fields from transaction receipt: "cumulative_gas_used".. etc
+        sampled_property: String,
+        /// Increment number of given range nonce
+        #[arg(default_value_t = 1)]
+        increment: u64,
+    },
 }
 
 struct DecodeMultipleResult {
@@ -228,6 +247,23 @@ async fn main() -> Result<()> {
                             increment,
                         );
                     Datalake::BlockSampled(block_sampled_datalake)
+                }
+                DataLakeCommands::Transactions {
+                    address,
+                    from_nonce,
+                    to_nonce,
+                    sampled_property,
+                    increment,
+                } => {
+                    let transactions_datalake =
+                        hdp_core::datalake::transactions::TransactionsDatalake::new(
+                            address,
+                            from_nonce,
+                            to_nonce,
+                            sampled_property,
+                            increment,
+                        )?;
+                    Datalake::Transactions(transactions_datalake)
                 }
             };
 

@@ -12,6 +12,8 @@ use std::{
 };
 use tokio::sync::RwLock;
 
+use crate::datalake::DatalakeCode;
+
 use super::{
     datalake::{
         base::{DatalakeResult, Derivable},
@@ -46,7 +48,7 @@ pub struct EvaluatedDatalake {
     /// encoded datalake
     pub encoded_datalake: String,
     /// ex. dynamic datalake / block sampled datalake
-    pub datalake_type: u8,
+    pub datalake_type: DatalakeCode,
     /// ex. "header", "account", "storage"
     pub property_type: u8,
 }
@@ -151,7 +153,7 @@ impl EvaluationResult {
                 result_commitment: result_commitment.to_string(),
                 result_proof,
                 encoded_datalake: datalake.encoded_datalake.clone(),
-                datalake_type: datalake.datalake_type,
+                datalake_type: datalake.datalake_type.index(),
                 property_type: datalake.property_type,
             });
         }
@@ -226,7 +228,7 @@ impl EvaluationResult {
                 result_commitment: result_commitment.to_string(),
                 result_proof,
                 encoded_datalake: evaluated_datalake.encoded_datalake.clone(),
-                datalake_type: evaluated_datalake.datalake_type,
+                datalake_type: evaluated_datalake.datalake_type.index(),
                 property_type: evaluated_datalake.property_type,
             };
 
@@ -325,7 +327,7 @@ pub async fn evaluator(
                     EvaluatedDatalake {
                         encoded_datalake,
                         datalake_type: datalake.get_datalake_type(),
-                        property_type: datalake.get_property_type(),
+                        property_type: datalake.get_collection_type().to_index(),
                     },
                 );
             }
@@ -414,7 +416,7 @@ mod tests {
             "0x242fe0d1fa98c743f84a168ff10abbcca83cb9e0424f4541fab5041cd63d3387".to_string(),
             EvaluatedDatalake {
                 encoded_datalake: "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000052229a000000000000000000000000000000000000000000000000000000000052229a000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000350375cec1db9dceb703200eaa6595f66885c962b92000000000000000000000000000000000000000000000000000000000000000020000000000000000000000".to_string(),
-                datalake_type:0,
+                datalake_type:DatalakeCode::BlockSampled,
                 property_type:3,
             }
         );

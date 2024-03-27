@@ -8,7 +8,6 @@ use alloy_primitives::{
 use anyhow::{bail, Result};
 use hdp_primitives::{
     block::{account::AccountField, header::HeaderField},
-    format::Collection,
     utils::bytes_to_hex_string,
 };
 use hdp_provider::evm::AbstractProvider;
@@ -18,8 +17,25 @@ use crate::compiler::block_sampled::compile_block_sampled_datalake;
 
 use super::{
     base::{DatalakeBase, DatalakeResult, Derivable},
-    Datalake,
+    Datalake, DatalakeCollection,
 };
+
+#[derive(Debug, PartialEq)]
+pub enum BlockSampledCollection {
+    Header,
+    Account,
+    Storage,
+}
+
+impl DatalakeCollection for BlockSampledCollection {
+    fn to_index(&self) -> u8 {
+        match self {
+            BlockSampledCollection::Header => 1,
+            BlockSampledCollection::Account => 2,
+            BlockSampledCollection::Storage => 3,
+        }
+    }
+}
 
 /// BlockSampledDatalake represents a datalake for a block range
 #[derive(Debug, Clone, PartialEq)]
@@ -46,8 +62,13 @@ impl BlockSampledDatalake {
     }
 
     /// Get `header`, `account` or `storage` type of the block sampled datalake
-    pub fn get_property_type(&self) -> u8 {
-        serialize_sampled_property(&self.sampled_property).unwrap()[0]
+    pub fn get_collection_type(&self) -> BlockSampledCollection {
+        match serialize_sampled_property(&self.sampled_property).unwrap()[0] {
+            1 => BlockSampledCollection::Header,
+            2 => BlockSampledCollection::Account,
+            3 => BlockSampledCollection::Storage,
+            _ => panic!("Invalid collection type"),
+        }
     }
 
     /// Encode the block sampled datalake
@@ -137,32 +158,32 @@ impl Derivable for BlockSampledDatalake {
 pub fn serialize_sampled_property(sampled_property: &str) -> Result<Vec<u8>> {
     let tokens: Vec<&str> = sampled_property.split('.').collect();
     let collection = match tokens[0] {
-        "header" => Collection::Header,
-        "account" => Collection::Account,
-        "storage" => Collection::Storage,
+        "header" => BlockSampledCollection::Header,
+        "account" => BlockSampledCollection::Account,
+        "storage" => BlockSampledCollection::Storage,
         _ => bail!("Unknown collection type"),
     };
 
     let mut serialized = Vec::new();
     serialized.push(match collection {
-        Collection::Header => 1,
-        Collection::Account => 2,
-        Collection::Storage => 3,
+        BlockSampledCollection::Header => 1,
+        BlockSampledCollection::Account => 2,
+        BlockSampledCollection::Storage => 3,
     });
 
     match collection {
-        Collection::Header => {
+        BlockSampledCollection::Header => {
             let index = HeaderField::from_str(tokens[1].to_uppercase().as_str())?.to_index();
             serialized.push(index);
         }
-        Collection::Account | Collection::Storage => {
+        BlockSampledCollection::Account | BlockSampledCollection::Storage => {
             // if !is_address(tokens[1]) {
             //     panic!("Invalid account address");
             // }
             let account_bytes = hex::decode(&tokens[1][2..]).expect("Account decoding failed");
             serialized.extend_from_slice(&account_bytes);
 
-            if collection == Collection::Account {
+            if collection == BlockSampledCollection::Account {
                 serialized
                     .push(AccountField::from_str(tokens[2].to_uppercase().as_str())?.to_index());
             } else {
@@ -245,7 +266,10 @@ mod tests {
             "0x26365cf5692cc38bca06023b8b62ceb0f6bd959a57e3c453be213d1b71d73732".to_string()
         );
 
-        assert_eq!(block_datalake.get_property_type(), 1);
+        assert_eq!(
+            block_datalake.get_collection_type(),
+            BlockSampledCollection::Header
+        );
     }
 
     #[test]
@@ -271,7 +295,10 @@ mod tests {
             "0xc21f3b3a49c5bed8b7624d0efc050a2a481f06f627d04212bf1d745d0aa5c6f1".to_string()
         );
 
-        assert_eq!(block_datalake.get_property_type(), 1);
+        assert_eq!(
+            block_datalake.get_collection_type(),
+            BlockSampledCollection::Header
+        );
     }
 
     #[test]
@@ -296,7 +323,10 @@ mod tests {
             "0x79b0d86f9b08c78f527666d4d39d01349530ced0a3d37f4c63e7108814a670b7".to_string()
         );
 
-        assert_eq!(block_datalake.get_property_type(), 2);
+        assert_eq!(
+            block_datalake.get_collection_type(),
+            BlockSampledCollection::Account
+        );
     }
 
     #[test]
@@ -323,7 +353,10 @@ mod tests {
             "0x6db54c04174bd625449785ca58efd313e016b807d0a17add522d74e0e27c3b08".to_string()
         );
 
-        assert_eq!(block_datalake.get_property_type(), 2);
+        assert_eq!(
+            block_datalake.get_collection_type(),
+            BlockSampledCollection::Account
+        );
     }
 
     #[test]
@@ -348,7 +381,10 @@ mod tests {
             "0x147dc75fd577a75dca31c0c5181539a1078c48759e379685b827f8c0e3f0b6ef".to_string()
         );
 
-        assert_eq!(block_datalake.get_property_type(), 3);
+        assert_eq!(
+            block_datalake.get_collection_type(),
+            BlockSampledCollection::Storage
+        );
     }
 
     #[test]

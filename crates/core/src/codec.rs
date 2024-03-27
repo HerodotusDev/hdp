@@ -1,11 +1,12 @@
-use crate::datalake::Datalake;
+use crate::datalake::transactions::TransactionsDatalake;
+use crate::datalake::{Datalake, DatalakeCode};
 use crate::{
     datalake::{block_sampled::BlockSampledDatalake, dynamic_layout::DynamicLayoutDatalake},
     task::ComputationalTask,
 };
 use alloy_dyn_abi::{DynSolType, DynSolValue};
 use alloy_primitives::hex::FromHex;
-use anyhow::{bail, Ok, Result};
+use anyhow::{Ok, Result};
 use hdp_primitives::utils::{bytes_to_hex_string, last_byte_to_u8};
 
 /// Decode a batch of tasks
@@ -47,15 +48,17 @@ pub fn datalakes_decoder(serialized_datalakes_batch: String) -> Result<Vec<Datal
             let datalake_code = datalake.as_bytes().unwrap().chunks(32).next().unwrap();
             let datalake_string = bytes_to_hex_string(datalake.as_bytes().unwrap());
 
-            let decoded_datalake = match last_byte_to_u8(datalake_code) {
-                0 => Datalake::BlockSampled(BlockSampledDatalake::decode(datalake_string)?),
-                1 => Datalake::DynamicLayout(DynamicLayoutDatalake::deserialize(datalake_string)?),
-                _ => Datalake::Unknown,
+            let decoded_datalake = match DatalakeCode::from_index(last_byte_to_u8(datalake_code))? {
+                DatalakeCode::BlockSampled => {
+                    Datalake::BlockSampled(BlockSampledDatalake::decode(datalake_string)?)
+                }
+                DatalakeCode::DynamicLayout => {
+                    Datalake::DynamicLayout(DynamicLayoutDatalake::deserialize(datalake_string)?)
+                }
+                DatalakeCode::Transactions => {
+                    Datalake::Transactions(TransactionsDatalake::decode(datalake_string)?)
+                }
             };
-
-            if decoded_datalake == Datalake::Unknown {
-                bail!("Unknown datalake type");
-            }
 
             decoded_datalakes.push(decoded_datalake);
         }
@@ -69,15 +72,17 @@ pub fn datalake_decoder(serialized_datalake: String) -> Result<Datalake> {
     let datalake_code = serialized_datalake.as_bytes().chunks(32).next().unwrap();
     let datalake_string = bytes_to_hex_string(serialized_datalake.as_bytes());
 
-    let decoded_datalake = match last_byte_to_u8(datalake_code) {
-        0 => Datalake::BlockSampled(BlockSampledDatalake::decode(datalake_string)?),
-        1 => Datalake::DynamicLayout(DynamicLayoutDatalake::deserialize(datalake_string)?),
-        _ => Datalake::Unknown,
+    let decoded_datalake = match DatalakeCode::from_index(last_byte_to_u8(datalake_code))? {
+        DatalakeCode::BlockSampled => {
+            Datalake::BlockSampled(BlockSampledDatalake::decode(datalake_string)?)
+        }
+        DatalakeCode::DynamicLayout => {
+            Datalake::DynamicLayout(DynamicLayoutDatalake::deserialize(datalake_string)?)
+        }
+        DatalakeCode::Transactions => {
+            Datalake::Transactions(TransactionsDatalake::decode(datalake_string)?)
+        }
     };
-
-    if decoded_datalake == Datalake::Unknown {
-        bail!("Unknown datalake type");
-    }
 
     Ok(decoded_datalake)
 }
@@ -92,7 +97,7 @@ pub fn datalakes_encoder(datalakes: Vec<Datalake>) -> Result<String> {
             Datalake::DynamicLayout(dynamic_layout_datalake) => {
                 dynamic_layout_datalake.serialize()?
             }
-            Datalake::Unknown => bail!("Unknown datalake type"),
+            Datalake::Transactions(transactions_datalake) => transactions_datalake.encode()?,
         };
         let bytes = Vec::from_hex(encoded_datalake).expect("Invalid hex string");
         encoded_datalakes.push(DynSolValue::Bytes(bytes));
@@ -120,6 +125,7 @@ pub fn tasks_encoder(tasks: Vec<ComputationalTask>) -> Result<String> {
 
 #[cfg(test)]
 mod tests {
+
     use super::*;
     use crate::datalake::{block_sampled::BlockSampledDatalake, Datalake};
 
@@ -244,5 +250,131 @@ mod tests {
                 panic!("Expected dynamic layout datalake");
             }
         }
+    }
+
+    #[test]
+    fn test_transaction_datalakes_encoder() {
+        let transaction_datalake1 = TransactionsDatalake::new(
+            "0xcb96AcA8719987D15aecd066B7a1Ad5D4d92fdD3".to_string(),
+            0,
+            3,
+            "tx.nonce".to_string(),
+            1,
+        )
+        .unwrap();
+
+        let transaction_datalake2 = TransactionsDatalake::new(
+            "0xcb96AcA8719987D15aecd066B7a1Ad5D4d92fdD3".to_string(),
+            0,
+            3,
+            "tx.access_list".to_string(),
+            1,
+        )
+        .unwrap();
+
+        let datalakes = vec![
+            Datalake::Transactions(transaction_datalake1),
+            Datalake::Transactions(transaction_datalake2),
+        ];
+        let encoded_datalakes = datalakes_encoder(datalakes).unwrap();
+
+        assert_eq!(encoded_datalakes, "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000002000000000000000000000000cb96aca8719987d15aecd066b7a1ad5d4d92fdd300000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000002000000000000000000000000cb96aca8719987d15aecd066b7a1ad5d4d92fdd300000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000002000a000000000000000000000000000000000000000000000000000000000000")
+    }
+
+    #[test]
+    fn test_transaction_datalake_decoder() {
+        let encoded_datalake = "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000002000000000000000000000000cb96aca8719987d15aecd066b7a1ad5d4d92fdd300000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000002000000000000000000000000cb96aca8719987d15aecd066b7a1ad5d4d92fdd300000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000002000a000000000000000000000000000000000000000000000000000000000000";
+        let decoded_datalake = datalakes_decoder(encoded_datalake.to_string()).unwrap();
+        assert_eq!(decoded_datalake.len(), 2);
+
+        let transaction_datalake1 = TransactionsDatalake::new(
+            "0xcb96AcA8719987D15aecd066B7a1Ad5D4d92fdD3".to_string(),
+            0,
+            3,
+            "tx.nonce".to_string(),
+            1,
+        )
+        .unwrap();
+
+        let transaction_datalake2 = TransactionsDatalake::new(
+            "0xcb96AcA8719987D15aecd066B7a1Ad5D4d92fdD3".to_string(),
+            0,
+            3,
+            "tx.access_list".to_string(),
+            1,
+        )
+        .unwrap();
+
+        assert_eq!(
+            decoded_datalake[0],
+            Datalake::Transactions(transaction_datalake1)
+        );
+        assert_eq!(
+            decoded_datalake[1],
+            Datalake::Transactions(transaction_datalake2)
+        );
+    }
+
+    #[test]
+    fn test_transaction_datalakes_encoder_receipt() {
+        let transaction_datalake1 = TransactionsDatalake::new(
+            "0xcb96AcA8719987D15aecd066B7a1Ad5D4d92fdD3".to_string(),
+            0,
+            3,
+            "tx_receipt.success".to_string(),
+            1,
+        )
+        .unwrap();
+
+        let transaction_datalake2 = TransactionsDatalake::new(
+            "0xcb96AcA8719987D15aecd066B7a1Ad5D4d92fdD3".to_string(),
+            0,
+            3,
+            "tx_receipt.bloom".to_string(),
+            1,
+        )
+        .unwrap();
+
+        let datalakes = vec![
+            Datalake::Transactions(transaction_datalake1),
+            Datalake::Transactions(transaction_datalake2),
+        ];
+        let encoded_datalakes = datalakes_encoder(datalakes).unwrap();
+
+        assert_eq!(encoded_datalakes, "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000002000000000000000000000000cb96aca8719987d15aecd066b7a1ad5d4d92fdd300000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000002010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000002000000000000000000000000cb96aca8719987d15aecd066b7a1ad5d4d92fdd300000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000c000000000000000000000000000000000000000000000000000000000000000020103000000000000000000000000000000000000000000000000000000000000")
+    }
+
+    #[test]
+    fn test_transaction_datalake_decoder_receipt() {
+        let encoded_datalake = "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000002000000000000000000000000cb96aca8719987d15aecd066b7a1ad5d4d92fdd300000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000002010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000002000000000000000000000000cb96aca8719987d15aecd066b7a1ad5d4d92fdd300000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000c000000000000000000000000000000000000000000000000000000000000000020103000000000000000000000000000000000000000000000000000000000000";
+        let decoded_datalake = datalakes_decoder(encoded_datalake.to_string()).unwrap();
+        assert_eq!(decoded_datalake.len(), 2);
+
+        let transaction_datalake1 = TransactionsDatalake::new(
+            "0xcb96AcA8719987D15aecd066B7a1Ad5D4d92fdD3".to_string(),
+            0,
+            3,
+            "tx_receipt.success".to_string(),
+            1,
+        )
+        .unwrap();
+
+        let transaction_datalake2 = TransactionsDatalake::new(
+            "0xcb96AcA8719987D15aecd066B7a1Ad5D4d92fdD3".to_string(),
+            0,
+            3,
+            "tx_receipt.bloom".to_string(),
+            1,
+        )
+        .unwrap();
+
+        assert_eq!(
+            decoded_datalake[0],
+            Datalake::Transactions(transaction_datalake1)
+        );
+        assert_eq!(
+            decoded_datalake[1],
+            Datalake::Transactions(transaction_datalake2)
+        );
     }
 }
