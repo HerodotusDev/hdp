@@ -47,8 +47,8 @@ impl FromStr for TransactionsCollection {
             "TX" => Ok(TransactionsCollection::Transactions(
                 parts[1].to_uppercase().as_str().parse()?,
             )),
-            "TX_RECEIPTS" => Ok(TransactionsCollection::TranasactionReceipts(
-                parts[1].parse()?,
+            "TX_RECEIPT" => Ok(TransactionsCollection::TranasactionReceipts(
+                parts[1].to_uppercase().as_str().parse()?,
             )),
             _ => bail!("Unknown transactions collection"),
         }
