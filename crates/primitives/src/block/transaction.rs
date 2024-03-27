@@ -2,186 +2,240 @@ use std::str::FromStr;
 
 use anyhow::{bail, Result};
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum TransactionsCollection {
-    TransactionsBySender,
-    TranasactionReceiptsBySender,
+    Transactions(TransactionField),
+    TranasactionReceipts(TransactionReceiptField),
+}
+
+impl TransactionsCollection {
+    pub fn serialize(&self) -> Result<[u8; 2]> {
+        match self {
+            TransactionsCollection::Transactions(ref field) => Ok([0, field.to_index()]),
+            TransactionsCollection::TranasactionReceipts(ref field) => Ok([1, field.to_index()]),
+        }
+    }
+
+    pub fn deserialize(bytes: &[u8; 2]) -> Result<Self> {
+        if bytes.len() != 2 {
+            return Err(anyhow::Error::msg("Invalid transactions collection"));
+        }
+
+        match bytes[0] {
+            0 => Ok(TransactionsCollection::Transactions(
+                TransactionField::from_index(bytes[1])?,
+            )),
+            1 => Ok(TransactionsCollection::TranasactionReceipts(
+                TransactionReceiptField::from_index(bytes[1])?,
+            )),
+            _ => Err(anyhow::Error::msg("Unknown transactions collection")),
+        }
+    }
+}
+
+impl FromStr for TransactionsCollection {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        // Split into two parts by '.'
+        let parts: Vec<&str> = s.split('.').collect();
+        if parts.len() != 2 {
+            bail!("Invalid transactions collection format");
+        }
+
+        match parts[0].to_uppercase().as_str() {
+            "TX" => Ok(TransactionsCollection::Transactions(
+                parts[1].to_uppercase().as_str().parse()?,
+            )),
+            "TX_RECEIPTS" => Ok(TransactionsCollection::TranasactionReceipts(
+                parts[1].parse()?,
+            )),
+            _ => bail!("Unknown transactions collection"),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum TransactionDatalakeField {
+pub enum TransactionField {
     // ===== Transaction fields =====
-    ChainId,
     Nonce,
-    // Only for legacy transactions
     GasPrice,
     GasLimit,
+    To,
+    Value,
+    Input,
+    V,
+    R,
+    S,
+    ChainId,
+    // Not for legacy transactions
+    AccessList,
+
     // EIP-1559 transactions and EIP-4844 transactions
     MaxFeePerGas,
     // EIP-1559 transactions and EIP-4844 transactions
     MaxPriorityFeePerGas,
-    To,
-    Value,
-    // Not for legacy transactions
-    AccessList,
+
     // Only for EIP-4844 transactions
     BlobVersionedHashes,
     // Only for EIP-4844 transactions
     MaxFeePerBlobGas,
-    Input,
-
-    // ===== TransactionReceipt fields =====
-    Bloom,
-    Success,
-    CumulativeGasUsed,
-    Logs,
 }
 
 // Note: This index is use to parse the transaction datalake field from the datalake's sampled property.
 // It is not used to index the transaction datalake field itself.
-impl TransactionDatalakeField {
+impl TransactionField {
     pub fn from_index(index: u8) -> Result<Self> {
         match index {
-            0 => Ok(TransactionDatalakeField::ChainId),
-            1 => Ok(TransactionDatalakeField::Nonce),
-            2 => Ok(TransactionDatalakeField::GasPrice),
-            3 => Ok(TransactionDatalakeField::GasLimit),
-            4 => Ok(TransactionDatalakeField::To),
-            5 => Ok(TransactionDatalakeField::Value),
-            6 => Ok(TransactionDatalakeField::Input),
-            7 => Ok(TransactionDatalakeField::MaxFeePerGas),
-            8 => Ok(TransactionDatalakeField::MaxPriorityFeePerGas),
-            9 => Ok(TransactionDatalakeField::AccessList),
-            10 => Ok(TransactionDatalakeField::BlobVersionedHashes),
-            11 => Ok(TransactionDatalakeField::MaxFeePerBlobGas),
-            12 => Ok(TransactionDatalakeField::Bloom),
-            13 => Ok(TransactionDatalakeField::Success),
-            14 => Ok(TransactionDatalakeField::CumulativeGasUsed),
-            15 => Ok(TransactionDatalakeField::Logs),
-            _ => bail!("Invalid transaction datalake field index"),
+            0 => Ok(TransactionField::Nonce),
+            1 => Ok(TransactionField::GasPrice),
+            2 => Ok(TransactionField::GasLimit),
+            3 => Ok(TransactionField::To),
+            4 => Ok(TransactionField::Value),
+            5 => Ok(TransactionField::Input),
+            6 => Ok(TransactionField::V),
+            7 => Ok(TransactionField::R),
+            8 => Ok(TransactionField::S),
+            9 => Ok(TransactionField::ChainId),
+            10 => Ok(TransactionField::AccessList),
+            11 => Ok(TransactionField::MaxFeePerGas),
+            12 => Ok(TransactionField::MaxPriorityFeePerGas),
+            13 => Ok(TransactionField::BlobVersionedHashes),
+            14 => Ok(TransactionField::MaxFeePerBlobGas),
+            _ => bail!("Invalid transaction field index"),
         }
     }
 
     pub fn to_index(&self) -> u8 {
         match self {
-            TransactionDatalakeField::ChainId => 0,
-            TransactionDatalakeField::Nonce => 1,
-            TransactionDatalakeField::GasPrice => 2,
-            TransactionDatalakeField::GasLimit => 3,
-            TransactionDatalakeField::To => 4,
-            TransactionDatalakeField::Value => 5,
-            TransactionDatalakeField::Input => 6,
-            TransactionDatalakeField::MaxFeePerGas => 7,
-            TransactionDatalakeField::MaxPriorityFeePerGas => 8,
-            TransactionDatalakeField::AccessList => 9,
-            TransactionDatalakeField::BlobVersionedHashes => 10,
-            TransactionDatalakeField::MaxFeePerBlobGas => 11,
-            TransactionDatalakeField::Bloom => 12,
-            TransactionDatalakeField::Success => 13,
-            TransactionDatalakeField::CumulativeGasUsed => 14,
-            TransactionDatalakeField::Logs => 15,
-        }
-    }
-
-    pub fn parse_collection(&self) -> TransactionsCollection {
-        match self {
-            TransactionDatalakeField::ChainId
-            | TransactionDatalakeField::Nonce
-            | TransactionDatalakeField::GasPrice
-            | TransactionDatalakeField::GasLimit
-            | TransactionDatalakeField::To
-            | TransactionDatalakeField::Value
-            | TransactionDatalakeField::Input
-            | TransactionDatalakeField::MaxFeePerGas
-            | TransactionDatalakeField::MaxPriorityFeePerGas
-            | TransactionDatalakeField::AccessList
-            | TransactionDatalakeField::BlobVersionedHashes
-            | TransactionDatalakeField::MaxFeePerBlobGas => {
-                TransactionsCollection::TransactionsBySender
-            }
-            TransactionDatalakeField::Bloom
-            | TransactionDatalakeField::Success
-            | TransactionDatalakeField::CumulativeGasUsed
-            | TransactionDatalakeField::Logs => {
-                TransactionsCollection::TranasactionReceiptsBySender
-            }
+            TransactionField::Nonce => 0,
+            TransactionField::GasPrice => 1,
+            TransactionField::GasLimit => 2,
+            TransactionField::To => 3,
+            TransactionField::Value => 4,
+            TransactionField::Input => 5,
+            TransactionField::V => 6,
+            TransactionField::R => 7,
+            TransactionField::S => 8,
+            TransactionField::ChainId => 9,
+            TransactionField::AccessList => 10,
+            TransactionField::MaxFeePerGas => 11,
+            TransactionField::MaxPriorityFeePerGas => 12,
+            TransactionField::BlobVersionedHashes => 13,
+            TransactionField::MaxFeePerBlobGas => 14,
         }
     }
 }
 
-impl FromStr for TransactionDatalakeField {
+impl FromStr for TransactionField {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self> {
         match s {
-            "CHAIN_ID" => Ok(TransactionDatalakeField::ChainId),
-            "NONCE" => Ok(TransactionDatalakeField::Nonce),
-            "GAS_PRICE" => Ok(TransactionDatalakeField::GasPrice),
-            "GAS_LIMIT" => Ok(TransactionDatalakeField::GasLimit),
-            "TO" => Ok(TransactionDatalakeField::To),
-            "VALUE" => Ok(TransactionDatalakeField::Value),
-            "INPUT" => Ok(TransactionDatalakeField::Input),
-            "MAX_FEE_PER_GAS" => Ok(TransactionDatalakeField::MaxFeePerGas),
-            "MAX_PRIORITY_FEE_PER_GAS" => Ok(TransactionDatalakeField::MaxPriorityFeePerGas),
-            "ACCESS_LIST" => Ok(TransactionDatalakeField::AccessList),
-            "BLOB_VERSIONED_HASHES" => Ok(TransactionDatalakeField::BlobVersionedHashes),
-            "MAX_FEE_PER_BLOB_GAS" => Ok(TransactionDatalakeField::MaxFeePerBlobGas),
-            "BLOOM" => Ok(TransactionDatalakeField::Bloom),
-            "SUCCESS" => Ok(TransactionDatalakeField::Success),
-            "CUMULATIVE_GAS_USED" => Ok(TransactionDatalakeField::CumulativeGasUsed),
-            "LOGS" => Ok(TransactionDatalakeField::Logs),
+            "NONCE" => Ok(TransactionField::Nonce),
+            "GAS_PRICE" => Ok(TransactionField::GasPrice),
+            "GAS_LIMIT" => Ok(TransactionField::GasLimit),
+            "TO" => Ok(TransactionField::To),
+            "VALUE" => Ok(TransactionField::Value),
+            "INPUT" => Ok(TransactionField::Input),
+            "V" => Ok(TransactionField::V),
+            "R" => Ok(TransactionField::R),
+            "S" => Ok(TransactionField::S),
+            "CHAIN_ID" => Ok(TransactionField::ChainId),
+            "ACCESS_LIST" => Ok(TransactionField::AccessList),
+            "MAX_FEE_PER_GAS" => Ok(TransactionField::MaxFeePerGas),
+            "MAX_PRIORITY_FEE_PER_GAS" => Ok(TransactionField::MaxPriorityFeePerGas),
+            "BLOB_VERSIONED_HASHES" => Ok(TransactionField::BlobVersionedHashes),
+            "MAX_FEE_PER_BLOB_GAS" => Ok(TransactionField::MaxFeePerBlobGas),
             _ => bail!("Unknown transaction datalake field"),
         }
     }
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum LegacyTransactionField {
-    ChainId = 0,
-    Nonce = 1,
-    GasPrice = 2,
-    GasLimit = 3,
-    To = 4,
-    Value = 5,
-    Input = 6,
+pub enum TransactionReceiptField {
+    Success,
+    CumulativeGasUsed,
+    Logs,
+    Bloom,
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum Eip2930TransactionField {
-    ChainId = 0,
-    Nonce = 1,
-    GasPrice = 2,
-    GasLimit = 3,
-    To,
-    Value,
-    AccessList,
-    Input,
+impl FromStr for TransactionReceiptField {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        match s {
+            "SUCCESS" => Ok(TransactionReceiptField::Success),
+            "CUMULATIVE_GAS_USED" => Ok(TransactionReceiptField::CumulativeGasUsed),
+            "LOGS" => Ok(TransactionReceiptField::Logs),
+            "BLOOM" => Ok(TransactionReceiptField::Bloom),
+            _ => bail!("Unknown transaction receipt field"),
+        }
+    }
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum Eip1559TransactionField {
-    ChainId,
-    Nonce,
-    GasLimit,
-    MaxFeePerGas,
-    MaxPriorityFeePerGas,
-    To,
-    Value,
-    AccessList,
-    Input,
+impl TransactionReceiptField {
+    pub fn to_index(&self) -> u8 {
+        match self {
+            TransactionReceiptField::Success => 0,
+            TransactionReceiptField::CumulativeGasUsed => 1,
+            TransactionReceiptField::Logs => 2,
+            TransactionReceiptField::Bloom => 3,
+        }
+    }
+
+    pub fn from_index(index: u8) -> Result<Self> {
+        match index {
+            0 => Ok(TransactionReceiptField::Success),
+            1 => Ok(TransactionReceiptField::CumulativeGasUsed),
+            2 => Ok(TransactionReceiptField::Logs),
+            3 => Ok(TransactionReceiptField::Bloom),
+            _ => bail!("Invalid transaction receipt field index"),
+        }
+    }
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum Eip4844TransactionField {
-    ChainId,
-    Nonce,
-    GasLimit,
-    MaxFeePerGas,
-    MaxPriorityFeePerGas,
-    To,
-    Value,
-    AccessList,
-    BlobVersionedHashes,
-    MaxFeePerBlobGas,
-    Input,
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_tx_collection_serialize() {
+        let tx_collection = TransactionsCollection::Transactions(TransactionField::Nonce);
+        let serialized = tx_collection.serialize().unwrap();
+        assert_eq!(serialized, [0, 0]);
+
+        let tx_collection =
+            TransactionsCollection::TranasactionReceipts(TransactionReceiptField::Logs);
+        let serialized = tx_collection.serialize().unwrap();
+        assert_eq!(serialized, [1, 2]);
+
+        let tx_collection = TransactionsCollection::Transactions(TransactionField::AccessList);
+        let serialized = tx_collection.serialize().unwrap();
+        assert_eq!(serialized, [0, 10]);
+    }
+
+    #[test]
+    fn test_tx_collection_deserialize() {
+        let serialized = [0, 1];
+        let tx_collection = TransactionsCollection::deserialize(&serialized).unwrap();
+        assert_eq!(
+            tx_collection,
+            TransactionsCollection::Transactions(TransactionField::GasPrice)
+        );
+
+        let serialized = [1, 3];
+        let tx_collection = TransactionsCollection::deserialize(&serialized).unwrap();
+        assert_eq!(
+            tx_collection,
+            TransactionsCollection::TranasactionReceipts(TransactionReceiptField::Bloom)
+        );
+
+        let serialized = [0, 10];
+        let tx_collection = TransactionsCollection::deserialize(&serialized).unwrap();
+        assert_eq!(
+            tx_collection,
+            TransactionsCollection::Transactions(TransactionField::AccessList)
+        );
+    }
 }

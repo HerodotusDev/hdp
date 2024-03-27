@@ -22,9 +22,6 @@ pub enum Datalake {
 
 pub(crate) trait DatalakeCollection {
     fn to_index(&self) -> u8;
-    fn from_index(index: u8) -> Result<Self>
-    where
-        Self: Sized;
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -89,7 +86,7 @@ impl Datalake {
         match self {
             Datalake::BlockSampled(datalake) => Box::new(datalake.get_collection_type()),
             Datalake::DynamicLayout(_) => panic!("Unsupported datalake type"),
-            Datalake::Transactions(datalake) => Box::new(datalake.get_collection_type()),
+            Datalake::Transactions(datalake) => Box::new(datalake.sampled_property.clone()),
         }
     }
 }

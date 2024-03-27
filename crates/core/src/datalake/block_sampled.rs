@@ -35,15 +35,6 @@ impl DatalakeCollection for BlockSampledCollection {
             BlockSampledCollection::Storage => 3,
         }
     }
-
-    fn from_index(index: u8) -> Result<Self> {
-        match index {
-            1 => Ok(BlockSampledCollection::Header),
-            2 => Ok(BlockSampledCollection::Account),
-            3 => Ok(BlockSampledCollection::Storage),
-            _ => bail!("Invalid block sampled collection index"),
-        }
-    }
 }
 
 /// BlockSampledDatalake represents a datalake for a block range
