@@ -14,35 +14,30 @@ use self::block_sampled::compile_block_sampled_datalake;
 pub mod block_sampled;
 pub mod test;
 
-/// Datalake result from compilation process
+/// [`CompiledDatalake`] is a unified structure that contains all the required data to verify the datalake
 ///
-/// It contains compiled_results, headers, accounts, storages, and mmr_meta
-///
-/// All of these data are required to execute the datalake
+/// Contains compiled results, headers, accounts, storages, and mmr_meta data.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct DatalakeResult {
+pub struct CompiledDatalake {
     /// Targeted datalake's compiled results
-    pub compiled_results: Vec<String>,
-    /// Headers required for datalake
+    pub values: Vec<String>,
+    /// Headers related to the datalake
     pub headers: Vec<Header>,
-    /// Accounts required for datalake
+    /// Accounts related to the datalake
     pub accounts: Vec<Account>,
-    /// Storages required for datalake
+    /// Storages related to the datalake
     pub storages: Vec<Storage>,
-    /// MMR meta data that stores headers data
+    /// MMR meta data related to the headers
     pub mmr_meta: MMRMeta,
 }
 
-/// [`DatalakeCompiler`] is unified datalake structure that contains commitment, datalake type, and result
-///
-/// It is u sed to identify the datalake and store the result from compilation process
 pub struct DatalakeCompiler {
     /// Datalake commitment. It is used to identify the datalake
     pub commitment: String,
     /// Datalake
     pub datalake: Option<DatalakeEnvelope>,
     /// Datalake result from compilation process
-    pub result: Option<DatalakeResult>,
+    pub result: Option<CompiledDatalake>,
 }
 
 impl fmt::Debug for DatalakeCompiler {
@@ -71,7 +66,7 @@ impl DatalakeCompiler {
     pub async fn compile(
         &mut self,
         provider: &Arc<RwLock<AbstractProvider>>,
-    ) -> Result<DatalakeResult> {
+    ) -> Result<CompiledDatalake> {
         match &self.datalake {
             Some(datalake) => {
                 let result_datapoints = match datalake {

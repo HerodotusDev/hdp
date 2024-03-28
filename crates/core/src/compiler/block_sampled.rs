@@ -9,12 +9,12 @@ use hdp_primitives::format::{Account, Header, HeaderProof, MPTProof, Storage};
 use hdp_provider::evm::AbstractProvider;
 use tokio::sync::RwLock;
 
-use super::DatalakeResult;
+use super::CompiledDatalake;
 
 pub async fn compile_block_sampled_datalake(
     datalake: BlockSampledDatalake,
     provider: &Arc<RwLock<AbstractProvider>>,
-) -> Result<DatalakeResult> {
+) -> Result<CompiledDatalake> {
     let mut abstract_provider = provider.write().await;
 
     let mut aggregation_set: Vec<String> = Vec::new();
@@ -157,8 +157,8 @@ pub async fn compile_block_sampled_datalake(
         }
     }
 
-    Ok(DatalakeResult {
-        compiled_results: aggregation_set,
+    Ok(CompiledDatalake {
+        values: aggregation_set,
         headers,
         accounts,
         storages,
