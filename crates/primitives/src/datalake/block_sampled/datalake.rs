@@ -1,18 +1,28 @@
 use std::str::FromStr;
 
-use crate::utils::bytes_to_hex_string;
+use crate::{
+    datalake::{datalake_type::DatalakeType, Datalake},
+    utils::bytes_to_hex_string,
+};
 
 use super::collection::BlockSampledCollection;
 use alloy_dyn_abi::{DynSolType, DynSolValue};
-use alloy_primitives::{hex::FromHex, keccak256, U256};
+use alloy_primitives::{hex::FromHex, keccak256};
 use anyhow::{bail, Result};
 
-/// BlockSampledDatalake represents a datalake for a block range
+/// [`BlockSampledDatalake`] is a struct that represents a block sampled datalake.
+/// It contains the block range, the sampled property, and the increment.
+///
+/// The block range is inclusive, so the block range is from `block_range_start` to `block_range_end`
 #[derive(Debug, Clone, PartialEq)]
 pub struct BlockSampledDatalake {
+    /// The start of the block range
     pub block_range_start: u64,
+    /// The end of the block range
     pub block_range_end: u64,
+    /// The sampled property
     pub sampled_property: BlockSampledCollection,
+    /// The increment
     pub increment: u64,
 }
 
@@ -30,15 +40,21 @@ impl BlockSampledDatalake {
             increment,
         })
     }
+}
+
+impl Datalake for BlockSampledDatalake {
+    /// Get the datalake code for block sampled datalake
+    fn get_datalake_type(&self) -> DatalakeType {
+        DatalakeType::BlockSampled
+    }
 
     /// Encode the block sampled datalake
-    pub fn encode(&self) -> Result<String> {
-        let block_range_start = DynSolValue::Uint(U256::from(self.block_range_start), 256);
-        let block_range_end = DynSolValue::Uint(U256::from(self.block_range_end), 256);
-        let sampled_property =
-            DynSolValue::Bytes(self.sampled_property.serialize().unwrap().to_vec());
-        let increment = DynSolValue::Uint(U256::from(self.increment), 256);
-        let datalake_code = DynSolValue::Uint(U256::from(0), 256);
+    fn encode(&self) -> Result<String> {
+        let datalake_code: DynSolValue = self.get_datalake_type().to_u8().into();
+        let block_range_start: DynSolValue = self.block_range_start.into();
+        let block_range_end: DynSolValue = self.block_range_end.into();
+        let sampled_property: DynSolValue = self.sampled_property.serialize()?.into();
+        let increment: DynSolValue = self.increment.into();
 
         let tuple_value = DynSolValue::Tuple(vec![
             datalake_code,
@@ -55,7 +71,7 @@ impl BlockSampledDatalake {
     }
 
     /// Get the commitment hash of the block sampled datalake
-    pub fn commit(&self) -> String {
+    fn commit(&self) -> String {
         let encoded_datalake = self.encode().expect("Encoding failed");
         let bytes = Vec::from_hex(encoded_datalake).expect("Invalid hex string");
         let hash = keccak256(bytes);
@@ -63,15 +79,15 @@ impl BlockSampledDatalake {
     }
 
     /// Decode the encoded block sampled datalake
-    pub fn decode(encoded: &str) -> Result<Self> {
-        let datalake_type: DynSolType = "(uint256,uint256,uint256,uint256,bytes)".parse()?;
+    fn decode(encoded: &str) -> Result<Self> {
+        let abi_type: DynSolType = "(uint256,uint256,uint256,uint256,bytes)".parse()?;
         let bytes = Vec::from_hex(encoded).expect("Invalid hex string");
-        let decoded = datalake_type.abi_decode_sequence(&bytes)?;
+        let decoded = abi_type.abi_decode_sequence(&bytes)?;
 
         let value = decoded.as_tuple().unwrap();
-        let datalake_code = value[0].as_uint().unwrap().0.to_string().parse::<u64>()?;
+        let datalake_code = value[0].as_uint().unwrap().0.to_string().parse::<u8>()?;
 
-        if datalake_code != 0 {
+        if DatalakeType::from_index(datalake_code)? != DatalakeType::BlockSampled {
             bail!("Encoded datalake is not a block sample datalake");
         }
 

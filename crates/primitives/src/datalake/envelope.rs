@@ -4,7 +4,7 @@ use super::{
     block_sampled::BlockSampledDatalake,
     datalake_type::{DatalakeType, BLOCK_SAMPLED_DATALAKE_TYPE_ID, TRANSACTIONS_DATALAKE_TYPE_ID},
     transactions::TransactionsDatalake,
-    DatalakeCollection,
+    Datalake, DatalakeCollection,
 };
 
 /// Type of datalake

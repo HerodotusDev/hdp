@@ -1,39 +1,43 @@
+//![`TransactionsDatalake`] is a struct that represents a transactions datalake.
+//!
+//! It can represent a transactions datalake for a specific address as sender.
+//!
+//! example 1: from_base_nonce is 0, to_base_nonce is 3 increment is 1
+//! target nonce [0, 1, 2, 3]
+//! - transaction 1 (nonce 0 -> 1)
+//! - transaction 2 (nonce 1 -> 2)
+//! - transaction 3 (nonce 2 -> 3)
+//! - transaction 4 (nonce 3 -> 4)
+//!
+//! example 2: from_base_nonce is 0, to_base_nonce is 3 increment is 2
+//! target nonce [0, 2]
+//! - transaction 1 (nonce 0 -> 1)
+//! - transaction 2 (nonce 2 -> 3)
+//!
+//! example 3: from_base_nonce is 0, to_base_nonce is 3 increment is 3
+//! target nonce [0, 3]
+//! - transaction 1 (nonce 0 -> 1)
+//! - transaction 2 (nonce 3 -> 4)
+//!
+//! example 4: from_base_nonce is 0, to_base_nonce is 5 increment is 2
+//! target nonce [0, 2, 4]
+//! - transaction 1 (nonce 0 -> 1)
+//! - transaction 2 (nonce 2 -> 3)
+//! - transaction 3 (nonce 4 -> 5)
+
 use std::str::FromStr;
 
 use alloy_dyn_abi::{DynSolType, DynSolValue};
-use alloy_primitives::{hex::FromHex, keccak256, Address, U256};
+use alloy_primitives::{hex::FromHex, keccak256, Address};
 use anyhow::{bail, Result};
 
-use crate::{datalake::datalake_type::DatalakeType, utils::bytes_to_hex_string};
+use crate::{
+    datalake::{datalake_type::DatalakeType, Datalake},
+    utils::bytes_to_hex_string,
+};
 
 use super::TransactionsCollection;
 
-/// [`TransactionsDatalake`] is a struct that represents a transactions datalake.
-///
-/// It can represent a transactions datalake for a specific address as sender.
-///
-/// example 1: from_base_nonce is 0, to_base_nonce is 3 increment is 1
-/// target nonce [0, 1, 2, 3]
-/// - transaction 1 (nonce 0 -> 1)
-/// - transaction 2 (nonce 1 -> 2)
-/// - transaction 3 (nonce 2 -> 3)
-/// - transaction 4 (nonce 3 -> 4)
-///
-/// example 2: from_base_nonce is 0, to_base_nonce is 3 increment is 2
-/// target nonce [0, 2]
-/// - transaction 1 (nonce 0 -> 1)
-/// - transaction 2 (nonce 2 -> 3)
-///
-/// example 3: from_base_nonce is 0, to_base_nonce is 3 increment is 3
-/// target nonce [0, 3]
-/// - transaction 1 (nonce 0 -> 1)
-/// - transaction 2 (nonce 3 -> 4)
-///
-/// example 4: from_base_nonce is 0, to_base_nonce is 5 increment is 2
-/// target nonce [0, 2, 4]
-/// - transaction 1 (nonce 0 -> 1)
-/// - transaction 2 (nonce 2 -> 3)
-/// - transaction 3 (nonce 4 -> 5)
 #[derive(Debug, Clone, PartialEq)]
 pub struct TransactionsDatalake {
     pub address: Address,
@@ -63,29 +67,28 @@ impl TransactionsDatalake {
             increment,
         })
     }
+}
 
+impl Datalake for TransactionsDatalake {
     /// Get the datalake code for transactions datalake
-    pub fn get_datalake_type(&self) -> DatalakeType {
+    fn get_datalake_type(&self) -> DatalakeType {
         DatalakeType::Transactions
     }
 
     /// Encode the [`TransactionsDatalake`] into a hex string
-    pub fn encode(&self) -> Result<String> {
-        // Datalake code for transactions datalake is 2
-        let datalake_code = DynSolValue::Uint(U256::from(u8::from(self.get_datalake_type())), 256);
-        let address = DynSolValue::Address(self.address);
-        let from_nonce = DynSolValue::Uint(U256::from(self.from_base_nonce), 256);
-        let to_nonce = DynSolValue::Uint(U256::from(self.to_base_nonce), 256);
-        let increment = DynSolValue::Uint(U256::from(self.increment), 256);
-
-        let sampled_property =
-            DynSolValue::Bytes(self.sampled_property.serialize().unwrap().to_vec());
+    fn encode(&self) -> Result<String> {
+        let datalake_code: DynSolValue = self.get_datalake_type().to_u8().into();
+        let address: DynSolValue = DynSolValue::Address(self.address);
+        let from_base_nonce: DynSolValue = self.from_base_nonce.into();
+        let to_base_nonce: DynSolValue = self.to_base_nonce.into();
+        let sampled_property: DynSolValue = self.sampled_property.serialize()?.to_vec().into();
+        let increment: DynSolValue = self.increment.into();
 
         let tuple_value = DynSolValue::Tuple(vec![
             datalake_code,
             address,
-            from_nonce,
-            to_nonce,
+            from_base_nonce,
+            to_base_nonce,
             increment,
             sampled_property,
         ]);
@@ -97,7 +100,7 @@ impl TransactionsDatalake {
     }
 
     /// Get the commitment hash of the [`TransactionsDatalake`]
-    pub fn commit(&self) -> String {
+    fn commit(&self) -> String {
         let encoded_datalake = self.encode().expect("Encoding failed");
         let bytes = Vec::from_hex(encoded_datalake).expect("Invalid hex string");
         let hash = keccak256(bytes);
@@ -105,11 +108,10 @@ impl TransactionsDatalake {
     }
 
     /// Decode the encoded transactions datalake hex string into a [`TransactionsDatalake`]
-    pub fn decode(encoded: &str) -> Result<Self> {
-        let datalake_type: DynSolType =
-            "(uint256,address,uint256,uint256,uint256,bytes)".parse()?;
+    fn decode(encoded: &str) -> Result<Self> {
+        let abi_type: DynSolType = "(uint256,address,uint256,uint256,uint256,bytes)".parse()?;
         let bytes = Vec::from_hex(encoded).expect("Invalid hex string");
-        let decoded = datalake_type.abi_decode_sequence(&bytes)?;
+        let decoded = abi_type.abi_decode_sequence(&bytes)?;
 
         let value = decoded.as_tuple().unwrap();
         let datalake_code = value[0].as_uint().unwrap().0.to_string().parse::<u8>()?;
@@ -120,10 +122,9 @@ impl TransactionsDatalake {
         let address = value[1].as_address().unwrap();
         let from_base_nonce = value[2].as_uint().unwrap().0.to_string().parse::<u64>()?;
         let to_base_nonce = value[3].as_uint().unwrap().0.to_string().parse::<u64>()?;
+        let sampled_property =
+            TransactionsCollection::deserialize(value[5].as_bytes().unwrap().try_into().unwrap())?;
         let increment = value[4].as_uint().unwrap().0.to_string().parse::<u64>()?;
-        let sampled_property = TransactionsCollection::deserialize(
-            &value[5].as_bytes().unwrap().to_vec().try_into().unwrap(),
-        )?;
 
         Ok(Self {
             address,

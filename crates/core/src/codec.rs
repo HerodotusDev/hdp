@@ -5,7 +5,7 @@ use anyhow::{bail, Ok, Result};
 use hdp_primitives::{
     datalake::{
         block_sampled::BlockSampledDatalake, datalake_type::DatalakeType,
-        envelope::DatalakeEnvelope, transactions::TransactionsDatalake,
+        envelope::DatalakeEnvelope, transactions::TransactionsDatalake, Datalake,
     },
     utils::{bytes_to_hex_string, last_byte_to_u8},
 };

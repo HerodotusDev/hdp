@@ -28,6 +28,10 @@ impl From<DatalakeType> for u8 {
 }
 
 impl DatalakeType {
+    pub fn to_u8(self) -> u8 {
+        self.into()
+    }
+
     pub fn from_index(value: u8) -> Result<Self> {
         match value {
             BLOCK_SAMPLED_DATALAKE_TYPE_ID => Ok(DatalakeType::BlockSampled),

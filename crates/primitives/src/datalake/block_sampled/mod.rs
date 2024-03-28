@@ -10,6 +10,8 @@ pub use fields::*;
 
 #[cfg(test)]
 mod tests {
+    use crate::datalake::Datalake;
+
     use super::*;
     use alloy_primitives::{Address, U256};
     use std::str::FromStr;

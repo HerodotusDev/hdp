@@ -1,3 +1,7 @@
+//! This module defines the fields that can be queried from a block or account.
+//! The fields are defined as enums, and can be converted to and from their string representation.
+//! It is meant to be used in the `BlockSampled` struct, which is used to query fields from a block or account.
+
 use std::str::FromStr;
 
 use anyhow::{bail, Result};

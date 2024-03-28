@@ -1,3 +1,5 @@
+//! This module defines the types used in the block sampled datalake.
+
 use alloy_primitives::hex;
 use alloy_primitives::hex::FromHex;
 use alloy_primitives::FixedBytes;
