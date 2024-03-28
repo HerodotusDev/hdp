@@ -22,39 +22,8 @@ impl DatalakeCollection for BlockSampledCollection {
             BlockSampledCollection::Storage(..) => 3,
         }
     }
-}
 
-impl FromStr for BlockSampledCollection {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self> {
-        // Split into two parts by '.'
-        let parts: Vec<&str> = s.split('.').collect();
-        if !(parts.len() == 2 || parts.len() == 3) {
-            bail!("Invalid block sampled collection format");
-        }
-
-        match parts[0].to_uppercase().as_str() {
-            "HEADER" => Ok(BlockSampledCollection::Header(HeaderField::from_str(
-                parts[1].to_uppercase().as_str(),
-            )?)),
-            "ACCOUNT" => {
-                let address = Address::from_str(parts[1])?;
-                let field = AccountField::from_str(parts[2].to_uppercase().as_str())?;
-                Ok(BlockSampledCollection::Account(address, field))
-            }
-            "STORAGE" => {
-                let address = Address::from_str(parts[1])?;
-                let slot = U256::from_str(parts[2])?;
-                Ok(BlockSampledCollection::Storage(address, slot))
-            }
-            _ => bail!("Unknown block sampled collection"),
-        }
-    }
-}
-
-impl BlockSampledCollection {
-    pub fn serialize(&self) -> Result<Vec<u8>> {
+    fn serialize(&self) -> Result<Vec<u8>> {
         let mut serialized = Vec::new();
         match self {
             BlockSampledCollection::Header(field) => {
@@ -76,7 +45,7 @@ impl BlockSampledCollection {
         Ok(serialized)
     }
 
-    pub fn deserialize(serialized: &[u8]) -> Result<Self> {
+    fn deserialize(serialized: &[u8]) -> Result<Self> {
         if serialized.is_empty() {
             bail!("Invalid block sampled collection");
         }
@@ -106,6 +75,35 @@ impl BlockSampledCollection {
                 }
                 let address = Address::from_slice(&serialized[1..21]);
                 let slot = U256::from_be_slice(&serialized[21..53]);
+                Ok(BlockSampledCollection::Storage(address, slot))
+            }
+            _ => bail!("Unknown block sampled collection"),
+        }
+    }
+}
+
+impl FromStr for BlockSampledCollection {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        // Split into two parts by '.'
+        let parts: Vec<&str> = s.split('.').collect();
+        if !(parts.len() == 2 || parts.len() == 3) {
+            bail!("Invalid block sampled collection format");
+        }
+
+        match parts[0].to_uppercase().as_str() {
+            "HEADER" => Ok(BlockSampledCollection::Header(HeaderField::from_str(
+                parts[1].to_uppercase().as_str(),
+            )?)),
+            "ACCOUNT" => {
+                let address = Address::from_str(parts[1])?;
+                let field = AccountField::from_str(parts[2].to_uppercase().as_str())?;
+                Ok(BlockSampledCollection::Account(address, field))
+            }
+            "STORAGE" => {
+                let address = Address::from_str(parts[1])?;
+                let slot = U256::from_str(parts[2])?;
                 Ok(BlockSampledCollection::Storage(address, slot))
             }
             _ => bail!("Unknown block sampled collection"),

@@ -32,7 +32,7 @@ use alloy_primitives::{hex::FromHex, keccak256, Address};
 use anyhow::{bail, Result};
 
 use crate::{
-    datalake::{datalake_type::DatalakeType, Datalake},
+    datalake::{datalake_type::DatalakeType, Datalake, DatalakeCollection},
     utils::bytes_to_hex_string,
 };
 
@@ -81,7 +81,7 @@ impl Datalake for TransactionsDatalake {
         let address: DynSolValue = DynSolValue::Address(self.address);
         let from_base_nonce: DynSolValue = self.from_base_nonce.into();
         let to_base_nonce: DynSolValue = self.to_base_nonce.into();
-        let sampled_property: DynSolValue = self.sampled_property.serialize()?.to_vec().into();
+        let sampled_property: DynSolValue = self.sampled_property.serialize()?.into();
         let increment: DynSolValue = self.increment.into();
 
         let tuple_value = DynSolValue::Tuple(vec![
@@ -122,8 +122,7 @@ impl Datalake for TransactionsDatalake {
         let address = value[1].as_address().unwrap();
         let from_base_nonce = value[2].as_uint().unwrap().0.to_string().parse::<u64>()?;
         let to_base_nonce = value[3].as_uint().unwrap().0.to_string().parse::<u64>()?;
-        let sampled_property =
-            TransactionsCollection::deserialize(value[5].as_bytes().unwrap().try_into().unwrap())?;
+        let sampled_property = TransactionsCollection::deserialize(value[5].as_bytes().unwrap())?;
         let increment = value[4].as_uint().unwrap().0.to_string().parse::<u64>()?;
 
         Ok(Self {

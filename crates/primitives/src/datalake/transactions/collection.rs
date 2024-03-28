@@ -19,17 +19,17 @@ impl DatalakeCollection for TransactionsCollection {
             TransactionsCollection::TranasactionReceipts(ref field) => field.to_index(),
         }
     }
-}
 
-impl TransactionsCollection {
-    pub fn serialize(&self) -> Result<[u8; 2]> {
+    fn serialize(&self) -> Result<Vec<u8>> {
         match self {
-            TransactionsCollection::Transactions(ref field) => Ok([0, field.to_index()]),
-            TransactionsCollection::TranasactionReceipts(ref field) => Ok([1, field.to_index()]),
+            TransactionsCollection::Transactions(ref field) => Ok([0, field.to_index()].to_vec()),
+            TransactionsCollection::TranasactionReceipts(ref field) => {
+                Ok([1, field.to_index()].to_vec())
+            }
         }
     }
 
-    pub fn deserialize(bytes: &[u8; 2]) -> Result<Self> {
+    fn deserialize(bytes: &[u8]) -> Result<Self> {
         if bytes.len() != 2 {
             return Err(anyhow::Error::msg("Invalid transactions collection"));
         }

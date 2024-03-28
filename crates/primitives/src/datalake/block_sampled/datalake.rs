@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use crate::{
-    datalake::{datalake_type::DatalakeType, Datalake},
+    datalake::{datalake_type::DatalakeType, Datalake, DatalakeCollection},
     utils::bytes_to_hex_string,
 };
 

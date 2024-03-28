@@ -8,6 +8,10 @@ pub mod transactions;
 
 pub trait DatalakeCollection {
     fn to_index(&self) -> u8;
+    fn serialize(&self) -> Result<Vec<u8>>;
+    fn deserialize(encoded: &[u8]) -> Result<Self>
+    where
+        Self: Sized;
 }
 
 /// Define the common trait for all datalakes

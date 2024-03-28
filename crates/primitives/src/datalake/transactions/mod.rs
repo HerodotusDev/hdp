@@ -9,7 +9,7 @@ pub use fields::*;
 
 #[cfg(test)]
 mod tests {
-    use crate::datalake::Datalake;
+    use crate::datalake::{Datalake, DatalakeCollection};
 
     use super::*;
 
