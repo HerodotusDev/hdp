@@ -83,39 +83,6 @@ impl ComputationalTask {
         }
     }
 
-    /// Decode a serialized task that filled with datalake
-    pub fn decode(serialized: &[u8]) -> Result<Self> {
-        let task_type: DynSolType = "(uint256,bytes32,bytes)".parse()?;
-        let decoded = task_type.abi_decode(serialized)?;
-
-        let value = decoded.as_tuple().unwrap();
-
-        let datalake_value = if let Some(datalake) = value[0].as_uint() {
-            let datalake = DatalakeCompiler {
-                commitment: format!("0x{:x}", datalake.0),
-                datalake: None,
-                result: None,
-            };
-
-            Some(datalake)
-        } else {
-            None
-        };
-
-        let aggregate_fn_id = match value[1] {
-            DynSolValue::FixedBytes(bytes, _) => fixed_bytes_str_to_utf8_str(bytes)?,
-            _ => bail!("Invalid aggregate_fn_id type"),
-        };
-
-        let aggregate_fn_ctx = value[2].as_str().map(|s| s.to_string());
-
-        Ok(ComputationalTask {
-            datalake: datalake_value,
-            aggregate_fn_id,
-            aggregate_fn_ctx,
-        })
-    }
-
     /// Decode task that is not filled with datalake
     pub fn decode_not_filled_task(serialized: &[u8]) -> Result<Self> {
         let aggregate_fn_type: DynSolType = "(bytes32,bytes)".parse()?;

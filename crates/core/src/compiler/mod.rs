@@ -61,6 +61,14 @@ impl DatalakeCompiler {
         }
     }
 
+    pub fn new_without_datalake(commitment: &str) -> Self {
+        Self {
+            commitment: commitment.to_string(),
+            datalake: None,
+            result: None,
+        }
+    }
+
     /// Compile the datalake meaning, fetching relevant headers, accounts, storages, and mmr_meta data.
     ///
     /// Plus, it will combine target datalake's datapoints in compiled_results.

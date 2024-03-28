@@ -1,5 +1,3 @@
-pub mod aggregation_fn;
-use aggregation_fn::AggregationFunction;
 use alloy_dyn_abi::DynSolValue;
 use alloy_merkle_tree::standard_binary_tree::StandardMerkleTree;
 use alloy_primitives::{hex::FromHex, FixedBytes, Keccak256, B256, U256};
@@ -12,7 +10,10 @@ use std::{
 };
 use tokio::sync::RwLock;
 
-use crate::compiler::{CompiledDatalake, Derivable};
+use crate::{
+    aggregate_fn::AggregationFunction,
+    compiler::{CompiledDatalake, Derivable},
+};
 
 use super::task::ComputationalTask;
 
