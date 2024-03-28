@@ -1,16 +1,12 @@
 use anyhow::{bail, Result};
 use core::panic;
 use futures::future::join_all;
-use std::{
-    collections::{HashMap, HashSet},
-    sync::Arc,
-    time::Instant,
-};
+use std::{collections::HashMap, sync::Arc, time::Instant};
 use tokio::sync::RwLock;
 use tracing::{error, info};
 
 use hdp_primitives::{
-    block::{account::Account, header::BlockHeader},
+    block::{account::Account, header::Header},
     format::MMRMeta,
 };
 
@@ -105,113 +101,113 @@ impl AbstractProvider {
         }
     }
 
-    /// Fetches the headers of the blocks and relevant MMR metatdata in the given block range.
-    /// return a tuple of the headers hashmap and the MMR metadata.
-    // THIS ENDPOINT IS NOT USED, but we need this approach if introduce in memory cache
-    pub async fn get_full_header_with_proof(
-        &mut self,
-        block_numbers: Vec<u64>,
-    ) -> Result<(StoredHeaders, MMRMeta)> {
-        //? A map of block numbers to a boolean indicating whether the block was fetched.
-        let mut blocks_map: HashMap<u64, (bool, StoredHeader)> = HashMap::new();
+    // /// Fetches the headers of the blocks and relevant MMR metatdata in the given block range.
+    // /// return a tuple of the headers hashmap and the MMR metadata.
+    // // THIS ENDPOINT IS NOT USED, but we need this approach if introduce in memory cache
+    // pub async fn get_full_header_with_proof(
+    //     &mut self,
+    //     block_numbers: Vec<u64>,
+    // ) -> Result<(StoredHeaders, MMRMeta)> {
+    //     //? A map of block numbers to a boolean indicating whether the block was fetched.
+    //     let mut blocks_map: HashMap<u64, (bool, StoredHeader)> = HashMap::new();
 
-        let mut relevant_mmr: HashSet<MMRMeta> = HashSet::new();
+    //     let mut relevant_mmr: HashSet<MMRMeta> = HashSet::new();
 
-        // 1. Fetch headers from memory
-        for block_number in &block_numbers {
-            let header = self.memory.get_full_header_with_proof(*block_number);
-            if let Some(fetched_header) = header {
-                blocks_map.insert(*block_number, (true, fetched_header));
-            }
-        }
+    //     // 1. Fetch headers from memory
+    //     for block_number in &block_numbers {
+    //         let header = self.memory.get_full_header_with_proof(*block_number);
+    //         if let Some(fetched_header) = header {
+    //             blocks_map.insert(*block_number, (true, fetched_header));
+    //         }
+    //     }
 
-        // construct blocknumbers list doesn't exist in memeory
-        let mut block_numbers_to_fetch_from_indexer: Vec<u64> = vec![];
-        for block_number in &block_numbers {
-            if !blocks_map.contains_key(block_number) {
-                block_numbers_to_fetch_from_indexer.push(*block_number);
-            }
-        }
+    //     // construct blocknumbers list doesn't exist in memeory
+    //     let mut block_numbers_to_fetch_from_indexer: Vec<u64> = vec![];
+    //     for block_number in &block_numbers {
+    //         if !blocks_map.contains_key(block_number) {
+    //             block_numbers_to_fetch_from_indexer.push(*block_number);
+    //         }
+    //     }
 
-        // 2. Fetch MMR data and header data from Herodotus indexer
-        let start_fetch = Instant::now();
+    //     // 2. Fetch MMR data and header data from Herodotus indexer
+    //     let start_fetch = Instant::now();
 
-        let mmr_data = self
-            .header_provider
-            .get_mmr_from_indexer(&block_numbers_to_fetch_from_indexer)
-            .await;
-        match mmr_data {
-            Ok(mmr) => {
-                info!("Successfully fetched MMR data from indexer");
-                let duration = start_fetch.elapsed();
-                info!("Time taken (fetch from Indexer): {:?}", duration);
-                // update blocks_map with the fetched data from indexer
-                for block_number in &block_numbers {
-                    if let Some(header) = mmr.1.get(block_number) {
-                        let mmr_meta = &mmr.0;
-                        // set retrieved MMR to memory
-                        self.memory.set_mmr_data(
-                            mmr_meta.mmr_id,
-                            mmr_meta.mmr_root.clone(),
-                            mmr_meta.mmr_size,
-                            mmr_meta.mmr_peaks.clone(),
-                        );
+    //     let mmr_data = self
+    //         .header_provider
+    //         .get_mmr_from_indexer(&block_numbers_to_fetch_from_indexer)
+    //         .await;
+    //     match mmr_data {
+    //         Ok(mmr) => {
+    //             info!("Successfully fetched MMR data from indexer");
+    //             let duration = start_fetch.elapsed();
+    //             info!("Time taken (fetch from Indexer): {:?}", duration);
+    //             // update blocks_map with the fetched data from indexer
+    //             for block_number in &block_numbers {
+    //                 if let Some(header) = mmr.1.get(block_number) {
+    //                     let mmr_meta = &mmr.0;
+    //                     // set retrieved MMR to memory
+    //                     self.memory.set_mmr_data(
+    //                         mmr_meta.mmr_id,
+    //                         mmr_meta.mmr_root.clone(),
+    //                         mmr_meta.mmr_size,
+    //                         mmr_meta.mmr_peaks.clone(),
+    //                     );
 
-                        relevant_mmr.insert(MMRMeta {
-                            id: mmr_meta.mmr_id,
-                            root: mmr_meta.mmr_root.clone(),
-                            size: mmr_meta.mmr_size,
-                            peaks: mmr_meta.mmr_peaks.clone(),
-                        });
+    //                     relevant_mmr.insert(MMRMeta {
+    //                         id: mmr_meta.mmr_id,
+    //                         root: mmr_meta.mmr_root.clone(),
+    //                         size: mmr_meta.mmr_size,
+    //                         peaks: mmr_meta.mmr_peaks.clone(),
+    //                     });
 
-                        blocks_map.insert(
-                            *block_number,
-                            (
-                                true,
-                                (
-                                    header.rlp_block_header.clone(),
-                                    header.siblings_hashes.clone(),
-                                    header.element_index,
-                                    mmr_meta.mmr_id,
-                                ),
-                            ),
-                        );
-                    }
-                }
-            }
-            Err(e) => {
-                let duration = start_fetch.elapsed();
-                info!("Time taken (during from Indexer): {:?}", duration);
-                error!(
-                    "Something went wrong while fetching MMR data from indexer: {}",
-                    e
-                );
-                return Err(e);
-            }
-        }
+    //                     blocks_map.insert(
+    //                         *block_number,
+    //                         (
+    //                             true,
+    //                             (
+    //                                 header.rlp_block_header.clone(),
+    //                                 header.siblings_hashes.clone(),
+    //                                 header.element_index,
+    //                                 mmr_meta.mmr_id,
+    //                             ),
+    //                         ),
+    //                     );
+    //                 }
+    //             }
+    //         }
+    //         Err(e) => {
+    //             let duration = start_fetch.elapsed();
+    //             info!("Time taken (during from Indexer): {:?}", duration);
+    //             error!(
+    //                 "Something went wrong while fetching MMR data from indexer: {}",
+    //                 e
+    //             );
+    //             return Err(e);
+    //         }
+    //     }
 
-        // format into Vec<StoredHeaders>
-        let mut stored_headers: StoredHeaders = HashMap::new();
-        blocks_map
-            .iter()
-            .for_each(|(block_number, (fetched, header))| {
-                if *fetched {
-                    stored_headers.insert(*block_number, header.clone());
-                }
-            });
+    //     // format into Vec<StoredHeaders>
+    //     let mut stored_headers: StoredHeaders = HashMap::new();
+    //     blocks_map
+    //         .iter()
+    //         .for_each(|(block_number, (fetched, header))| {
+    //             if *fetched {
+    //                 stored_headers.insert(*block_number, header.clone());
+    //             }
+    //         });
 
-        // TODO: in v1 allowed to handle all the blocks in datalake are exist in 1 MMR
-        let mmr_meta_result = match relevant_mmr.len() {
-            0 => None,
-            1 => relevant_mmr.iter().next().cloned(),
-            _ => relevant_mmr.iter().next().cloned(),
-        };
+    //     // TODO: in v1 allowed to handle all the blocks in datalake are exist in 1 MMR
+    //     let mmr_meta_result = match relevant_mmr.len() {
+    //         0 => None,
+    //         1 => relevant_mmr.iter().next().cloned(),
+    //         _ => relevant_mmr.iter().next().cloned(),
+    //     };
 
-        match mmr_meta_result {
-            Some(mmr_meta) => Ok((stored_headers, mmr_meta)),
-            None => bail!("No MMR metadata found"),
-        }
-    }
+    //     match mmr_meta_result {
+    //         Some(mmr_meta) => Ok((stored_headers, mmr_meta)),
+    //         None => bail!("No MMR metadata found"),
+    //     }
+    // }
 
     // Unoptimized version of get_rlp_header, just for testing purposes
     pub async fn get_rlp_header(&mut self, block_number: u64) -> RlpEncodedValue {
@@ -223,7 +219,7 @@ impl AbstractProvider {
                     .get_block_by_number(block_number)
                     .await
                     .unwrap();
-                let block_header = BlockHeader::from(&header_rpc);
+                let block_header = Header::from(&header_rpc);
                 let rlp_encoded = block_header.rlp_encode();
                 self.memory.set_header(block_number, rlp_encoded.clone());
 
@@ -536,7 +532,7 @@ mod tests {
     use alloy_primitives::{hex, keccak256, FixedBytes, U256};
     use std::str::FromStr;
 
-    use hdp_primitives::block::{account::Account, header::BlockHeader};
+    use hdp_primitives::block::{account::Account, header::Header};
 
     fn rlp_string_to_block_hash(rlp_string: &str) -> String {
         keccak256(hex::decode(rlp_string).unwrap()).to_string()
@@ -553,15 +549,15 @@ mod tests {
         let rpc_provider = RpcProvider::new(SEPOLIA_RPC_URL, 11155111);
 
         let block = rpc_provider.get_block_by_number(0).await.unwrap();
-        let block_header = BlockHeader::from(&block);
+        let block_header = Header::from(&block);
         assert_eq!(block.get_block_hash(), block_header.get_block_hash());
 
         let block = rpc_provider.get_block_by_number(5521772).await.unwrap();
-        let block_header = BlockHeader::from(&block);
+        let block_header = Header::from(&block);
         assert_eq!(block.get_block_hash(), block_header.get_block_hash());
 
         let block = rpc_provider.get_block_by_number(421772).await.unwrap();
-        let block_header = BlockHeader::from(&block);
+        let block_header = Header::from(&block);
         assert_eq!(block.get_block_hash(), block_header.get_block_hash());
     }
 

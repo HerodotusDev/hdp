@@ -209,9 +209,9 @@ impl InMemoryProvider {
         );
     }
 
-    pub fn set_mmr_data(&mut self, mmr_id: u64, root: String, size: u64, peaks: Vec<String>) {
-        self.cached_mmrs.insert(mmr_id, (root, size, peaks));
-    }
+    // pub fn set_mmr_data(&mut self, mmr_id: u64, root: String, size: u64, peaks: Vec<String>) {
+    //     self.cached_mmrs.insert(mmr_id, (root, size, peaks));
+    // }
 
     pub fn set_account(
         &mut self,

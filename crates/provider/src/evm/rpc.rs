@@ -7,8 +7,7 @@ use serde_json::{from_value, json, Value};
 use hdp_primitives::block::{
     account::AccountFromRpc,
     header::{
-        BlockHeaderFromRpc, MMRFromIndexer, MMRFromNewIndexer, MMRMetaFromIndexer,
-        MMRMetaFromNewIndexer, MMRProofFromIndexer, MMRProofFromNewIndexer,
+        BlockHeaderFromRpc, MMRFromNewIndexer, MMRMetaFromNewIndexer, MMRProofFromNewIndexer,
     },
 };
 
@@ -216,59 +215,6 @@ impl RpcProvider {
             Ok((mmr_from_indexer.data[0].meta.clone(), mmr_from_indexer_map))
         }
     }
-
-    pub async fn get_mmr_from_indexer(
-        &self,
-        block_numbers: &[u64],
-    ) -> Result<(MMRMetaFromIndexer, HashMap<u64, MMRProofFromIndexer>)> {
-        let blocks_query_params = block_numbers
-            .iter()
-            .map(|block_number| ("block_numbers".to_string(), block_number.to_string()))
-            .collect::<Vec<(String, String)>>();
-
-        let query_params = vec![
-            ("deployed_on_chain".to_string(), self.chain_id.to_string()),
-            ("accumulates_chain".to_string(), self.chain_id.to_string()),
-            ("hashing_function".to_string(), "poseidon".to_string()),
-            ("contract_type".to_string(), "AGGREGATOR".to_string()),
-        ];
-
-        let url = format!("{}/mmr-meta-and-proofs", &self.url);
-
-        let response = self
-            .client
-            .get(url)
-            .header(header::CONTENT_TYPE, "application/json")
-            .query(&query_params)
-            .query(&blocks_query_params)
-            .send()
-            .await
-            .map_err(|e| anyhow!("Failed to send request: {}", e))?;
-
-        // Check if the response status is success
-        if !response.status().is_success() {
-            bail!(
-                "rs-indexer request failed with status: {}",
-                response.status()
-            );
-        }
-
-        // Parse the response body as JSON
-        let rpc_response: Value = response
-            .json()
-            .await
-            .map_err(|e| anyhow!("Failed to parse response: {}", e))?;
-
-        let mmr_from_indexer: MMRFromIndexer = from_value(rpc_response)?;
-
-        // format into blocknumber -> mmr proof
-        let mut mmr_from_indexer_map: HashMap<u64, MMRProofFromIndexer> = HashMap::new();
-        for proof in &mmr_from_indexer.data[0].proofs {
-            mmr_from_indexer_map.insert(proof.block_number, proof.clone());
-        }
-
-        Ok((mmr_from_indexer.data[0].meta.clone(), mmr_from_indexer_map))
-    }
 }
 
 #[cfg(test)]
@@ -276,70 +222,6 @@ mod tests {
     use super::*;
 
     const HERODOTUS_RS_INDEXER_URL: &str = "https://rs-indexer.api.herodotus.cloud/accumulators";
-
-    #[tokio::test]
-    async fn test_get_sepolia_old_mmr_from_indexer() {
-        let rpc_provider = RpcProvider::new(HERODOTUS_RS_INDEXER_URL, 11155111);
-
-        let block_numbers = (4952200..=4952229).collect::<Vec<u64>>();
-        let block_header = rpc_provider
-            .get_mmr_from_indexer(&block_numbers)
-            .await
-            .unwrap();
-
-        let block_4952200: &MMRProofFromIndexer = block_header.1.get(&4952200).unwrap();
-        assert_eq!(block_4952200.block_number, 4952200);
-
-        let block_4952229: &MMRProofFromIndexer = block_header.1.get(&4952229).unwrap();
-        assert_eq!(block_4952229.block_number, 4952229);
-
-        let block_4952229_meta: &MMRMetaFromIndexer = &block_header.0;
-
-        assert_eq!(block_4952229_meta.mmr_id, 2);
-    }
-
-    #[tokio::test]
-    async fn test_get_mainnet_old_mmr_from_indexer() {
-        let rpc_provider = RpcProvider::new(HERODOTUS_RS_INDEXER_URL, 1);
-
-        let block_numbers = (4952200..=4952229).collect::<Vec<u64>>();
-        let block_header = rpc_provider
-            .get_mmr_from_indexer(&block_numbers)
-            .await
-            .unwrap();
-
-        let block_4952200: &MMRProofFromIndexer = block_header.1.get(&4952200).unwrap();
-        assert_eq!(block_4952200.block_number, 4952200);
-
-        let block_4952229: &MMRProofFromIndexer = block_header.1.get(&4952229).unwrap();
-        assert_eq!(block_4952229.block_number, 4952229);
-
-        let block_4952229_meta: &MMRMetaFromIndexer = &block_header.0;
-
-        assert_eq!(block_4952229_meta.mmr_id, 3);
-    }
-
-    #[tokio::test]
-    async fn test_get_new_mmr_from_indexer() {
-        // This test is target for after eip 4844 blocks
-        let rpc_provider = RpcProvider::new(HERODOTUS_RS_INDEXER_URL, 11155111);
-
-        let block_numbers = (5515000..=5515029).collect::<Vec<u64>>();
-
-        let block_header = rpc_provider
-            .get_mmr_from_indexer(&block_numbers)
-            .await
-            .unwrap();
-
-        let block_5515000: &MMRProofFromIndexer = block_header.1.get(&5515000).unwrap();
-        assert_eq!(block_5515000.block_number, 5515000);
-
-        let block_5515029: &MMRProofFromIndexer = block_header.1.get(&5515029).unwrap();
-        assert_eq!(block_5515029.block_number, 5515029);
-
-        let block_5515029_meta: &MMRMetaFromIndexer = &block_header.0;
-        assert_eq!(block_5515029_meta.mmr_id, 19);
-    }
 
     #[tokio::test]
     async fn test_get_sepolia_sequencial_headers_and_mmr_from_indexer() {
