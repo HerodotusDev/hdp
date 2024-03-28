@@ -4,10 +4,11 @@ use alloy_dyn_abi::{DynSolType, DynSolValue};
 use alloy_primitives::{hex::FromHex, keccak256, FixedBytes};
 use anyhow::{bail, Result};
 
-use crate::datalake::base::DatalakeBase;
 use hdp_primitives::utils::{
     bytes_to_hex_string, fixed_bytes_str_to_utf8_str, utf8_str_to_fixed_bytes32,
 };
+
+use crate::compiler::DatalakeCompiler;
 
 /// ComputationalTask represents a task for certain datalake with a specified aggregate function
 #[derive(Debug)]
@@ -17,14 +18,14 @@ pub struct ComputationalTask {
     /// - If Some, task is filled with datalake.
     ///
     /// Encoding and Commit will be different based on this field.
-    pub datalake: Option<DatalakeBase>,
+    pub datalake: Option<DatalakeCompiler>,
     pub aggregate_fn_id: String,
     pub aggregate_fn_ctx: Option<String>,
 }
 
 impl ComputationalTask {
     pub fn new(
-        datalake: Option<DatalakeBase>,
+        datalake: Option<DatalakeCompiler>,
         aggregate_fn_id: String,
         aggregate_fn_ctx: Option<String>,
     ) -> Self {
@@ -90,9 +91,9 @@ impl ComputationalTask {
         let value = decoded.as_tuple().unwrap();
 
         let datalake_value = if let Some(datalake) = value[0].as_uint() {
-            let datalake = DatalakeBase {
+            let datalake = DatalakeCompiler {
                 commitment: format!("0x{:x}", datalake.0),
-                datalake_type: None,
+                datalake: None,
                 result: None,
             };
 

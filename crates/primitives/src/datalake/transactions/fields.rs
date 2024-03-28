@@ -2,58 +2,7 @@ use std::str::FromStr;
 
 use anyhow::{bail, Result};
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum TransactionsCollection {
-    Transactions(TransactionField),
-    TranasactionReceipts(TransactionReceiptField),
-}
-
-impl TransactionsCollection {
-    pub fn serialize(&self) -> Result<[u8; 2]> {
-        match self {
-            TransactionsCollection::Transactions(ref field) => Ok([0, field.to_index()]),
-            TransactionsCollection::TranasactionReceipts(ref field) => Ok([1, field.to_index()]),
-        }
-    }
-
-    pub fn deserialize(bytes: &[u8; 2]) -> Result<Self> {
-        if bytes.len() != 2 {
-            return Err(anyhow::Error::msg("Invalid transactions collection"));
-        }
-
-        match bytes[0] {
-            0 => Ok(TransactionsCollection::Transactions(
-                TransactionField::from_index(bytes[1])?,
-            )),
-            1 => Ok(TransactionsCollection::TranasactionReceipts(
-                TransactionReceiptField::from_index(bytes[1])?,
-            )),
-            _ => Err(anyhow::Error::msg("Unknown transactions collection")),
-        }
-    }
-}
-
-impl FromStr for TransactionsCollection {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self> {
-        // Split into two parts by '.'
-        let parts: Vec<&str> = s.split('.').collect();
-        if parts.len() != 2 {
-            bail!("Invalid transactions collection format");
-        }
-
-        match parts[0].to_uppercase().as_str() {
-            "TX" => Ok(TransactionsCollection::Transactions(
-                parts[1].to_uppercase().as_str().parse()?,
-            )),
-            "TX_RECEIPT" => Ok(TransactionsCollection::TranasactionReceipts(
-                parts[1].to_uppercase().as_str().parse()?,
-            )),
-            _ => bail!("Unknown transactions collection"),
-        }
-    }
-}
+use crate::datalake::DatalakeField;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TransactionField {
@@ -84,8 +33,8 @@ pub enum TransactionField {
 
 // Note: This index is use to parse the transaction datalake field from the datalake's sampled property.
 // It is not used to index the transaction datalake field itself.
-impl TransactionField {
-    pub fn from_index(index: u8) -> Result<Self> {
+impl DatalakeField for TransactionField {
+    fn from_index(index: u8) -> Result<Self> {
         match index {
             0 => Ok(TransactionField::Nonce),
             1 => Ok(TransactionField::GasPrice),
@@ -106,7 +55,7 @@ impl TransactionField {
         }
     }
 
-    pub fn to_index(&self) -> u8 {
+    fn to_index(&self) -> u8 {
         match self {
             TransactionField::Nonce => 0,
             TransactionField::GasPrice => 1,
@@ -124,6 +73,32 @@ impl TransactionField {
             TransactionField::BlobVersionedHashes => 13,
             TransactionField::MaxFeePerBlobGas => 14,
         }
+    }
+
+    /// return uppercase string
+    fn as_str(&self) -> &'static str {
+        match self {
+            TransactionField::Nonce => "NONCE",
+            TransactionField::GasPrice => "GAS_PRICE",
+            TransactionField::GasLimit => "GAS_LIMIT",
+            TransactionField::To => "TO",
+            TransactionField::Value => "VALUE",
+            TransactionField::Input => "INPUT",
+            TransactionField::V => "V",
+            TransactionField::R => "R",
+            TransactionField::S => "S",
+            TransactionField::ChainId => "CHAIN_ID",
+            TransactionField::AccessList => "ACCESS_LIST",
+            TransactionField::MaxFeePerGas => "MAX_FEE_PER_GAS",
+            TransactionField::MaxPriorityFeePerGas => "MAX_PRIORITY_FEE_PER_GAS",
+            TransactionField::BlobVersionedHashes => "BLOB_VERSIONED_HASHES",
+            TransactionField::MaxFeePerBlobGas => "MAX_FEE_PER_BLOB_GAS",
+        }
+    }
+
+    // TODO: Not implemented yet
+    fn decode_field_from_rlp(&self, _rlp: &str) -> String {
+        unimplemented!()
     }
 }
 
@@ -174,8 +149,8 @@ impl FromStr for TransactionReceiptField {
     }
 }
 
-impl TransactionReceiptField {
-    pub fn to_index(&self) -> u8 {
+impl DatalakeField for TransactionReceiptField {
+    fn to_index(&self) -> u8 {
         match self {
             TransactionReceiptField::Success => 0,
             TransactionReceiptField::CumulativeGasUsed => 1,
@@ -184,7 +159,7 @@ impl TransactionReceiptField {
         }
     }
 
-    pub fn from_index(index: u8) -> Result<Self> {
+    fn from_index(index: u8) -> Result<Self> {
         match index {
             0 => Ok(TransactionReceiptField::Success),
             1 => Ok(TransactionReceiptField::CumulativeGasUsed),
@@ -193,49 +168,18 @@ impl TransactionReceiptField {
             _ => bail!("Invalid transaction receipt field index"),
         }
     }
-}
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_tx_collection_serialize() {
-        let tx_collection = TransactionsCollection::Transactions(TransactionField::Nonce);
-        let serialized = tx_collection.serialize().unwrap();
-        assert_eq!(serialized, [0, 0]);
-
-        let tx_collection =
-            TransactionsCollection::TranasactionReceipts(TransactionReceiptField::Logs);
-        let serialized = tx_collection.serialize().unwrap();
-        assert_eq!(serialized, [1, 2]);
-
-        let tx_collection = TransactionsCollection::Transactions(TransactionField::AccessList);
-        let serialized = tx_collection.serialize().unwrap();
-        assert_eq!(serialized, [0, 10]);
+    fn as_str(&self) -> &'static str {
+        match self {
+            TransactionReceiptField::Success => "SUCCESS",
+            TransactionReceiptField::CumulativeGasUsed => "CUMULATIVE_GAS_USED",
+            TransactionReceiptField::Logs => "LOGS",
+            TransactionReceiptField::Bloom => "BLOOM",
+        }
     }
 
-    #[test]
-    fn test_tx_collection_deserialize() {
-        let serialized = [0, 1];
-        let tx_collection = TransactionsCollection::deserialize(&serialized).unwrap();
-        assert_eq!(
-            tx_collection,
-            TransactionsCollection::Transactions(TransactionField::GasPrice)
-        );
-
-        let serialized = [1, 3];
-        let tx_collection = TransactionsCollection::deserialize(&serialized).unwrap();
-        assert_eq!(
-            tx_collection,
-            TransactionsCollection::TranasactionReceipts(TransactionReceiptField::Bloom)
-        );
-
-        let serialized = [0, 10];
-        let tx_collection = TransactionsCollection::deserialize(&serialized).unwrap();
-        assert_eq!(
-            tx_collection,
-            TransactionsCollection::Transactions(TransactionField::AccessList)
-        );
+    // TODO: Not implemented yet
+    fn decode_field_from_rlp(&self, _rlp: &str) -> String {
+        unimplemented!()
     }
 }
