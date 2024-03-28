@@ -4,7 +4,6 @@ use anyhow::{bail, Result};
 use hdp_primitives::datalake::{
     block_sampled::types::{Account, Header, MMRMeta, Storage},
     envelope::DatalakeEnvelope,
-    Datalake,
 };
 use hdp_provider::evm::AbstractProvider;
 use serde::{Deserialize, Serialize};
@@ -36,9 +35,7 @@ pub struct DatalakeCompiler {
     /// Datalake commitment. It is used to identify the datalake
     pub commitment: String,
     /// Datalake
-    pub datalake: Option<DatalakeEnvelope>,
-    /// Datalake result from compilation process
-    pub result: Option<CompiledDatalake>,
+    pub datalake: DatalakeEnvelope,
 }
 
 impl fmt::Debug for DatalakeCompiler {
@@ -46,26 +43,16 @@ impl fmt::Debug for DatalakeCompiler {
         f.debug_struct("DatalakeCompiler")
             .field("commitment", &self.commitment)
             .field("datalakes_pipeline", &self.datalake)
-            .field("result", &self.result)
             .finish()
     }
 }
 
 impl DatalakeCompiler {
     /// initialize DatalakeCompiler with commitment and datalake
-    pub fn new(commitment: &str, datalake: DatalakeEnvelope) -> Self {
+    pub fn new(datalake: DatalakeEnvelope) -> Self {
         Self {
-            commitment: commitment.to_string(),
-            datalake: Some(datalake),
-            result: None,
-        }
-    }
-
-    pub fn new_without_datalake(commitment: &str) -> Self {
-        Self {
-            commitment: commitment.to_string(),
-            datalake: None,
-            result: None,
+            commitment: datalake.get_commitment(),
+            datalake,
         }
     }
 
@@ -73,44 +60,18 @@ impl DatalakeCompiler {
     ///
     /// Plus, it will combine target datalake's datapoints in compiled_results.
     pub async fn compile(
-        &mut self,
+        &self,
         provider: &Arc<RwLock<AbstractProvider>>,
     ) -> Result<CompiledDatalake> {
-        match &self.datalake {
-            Some(datalake) => {
-                let result_datapoints = match datalake {
-                    DatalakeEnvelope::BlockSampled(datalake) => {
-                        compile_block_sampled_datalake(datalake.clone(), provider).await?
-                    }
-                    DatalakeEnvelope::Transactions(_) => {
-                        bail!("Transactions datalake type doesn't support yet")
-                    }
-                };
-
-                self.result = Some(result_datapoints.clone());
-                Ok(result_datapoints)
+        let result_datapoints = match &self.datalake {
+            DatalakeEnvelope::BlockSampled(datalake) => {
+                compile_block_sampled_datalake(datalake.clone(), provider).await?
             }
-            None => bail!("Datalake type is not defined"),
-        }
-    }
-}
+            DatalakeEnvelope::Transactions(_) => {
+                bail!("Transactions datalake type doesn't support yet")
+            }
+        };
 
-/// Transform different datalake types into DatalakeCompiler
-impl Derivable for DatalakeEnvelope {
-    fn derive(&self) -> DatalakeCompiler {
-        match self {
-            DatalakeEnvelope::BlockSampled(datalake) => DatalakeCompiler::new(
-                &datalake.commit(),
-                DatalakeEnvelope::BlockSampled(datalake.clone()),
-            ),
-            DatalakeEnvelope::Transactions(datalake) => DatalakeCompiler::new(
-                &datalake.commit(),
-                DatalakeEnvelope::Transactions(datalake.clone()),
-            ),
-        }
+        Ok(result_datapoints)
     }
-}
-
-pub trait Derivable {
-    fn derive(&self) -> DatalakeCompiler;
 }

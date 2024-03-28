@@ -188,7 +188,7 @@ async fn handle_run(
 
     match evaluator(
         decoded_result.tasks,
-        Some(decoded_result.datalakes),
+        decoded_result.datalakes,
         Arc::new(RwLock::new(provider)),
     )
     .await
@@ -269,11 +269,7 @@ async fn main() -> Result<()> {
             };
 
             let encoded_result = handle_encode_multiple(
-                vec![ComputationalTask::new(
-                    None,
-                    aggregate_fn_id,
-                    aggregate_fn_ctx,
-                )],
+                vec![ComputationalTask::new(aggregate_fn_id, aggregate_fn_ctx)],
                 vec![datalake],
             )
             .await?;

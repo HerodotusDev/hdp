@@ -4,83 +4,85 @@ use alloy_dyn_abi::{DynSolType, DynSolValue};
 use alloy_primitives::{hex::FromHex, keccak256, FixedBytes};
 use anyhow::{bail, Result};
 
-use hdp_primitives::utils::{
-    bytes_to_hex_string, fixed_bytes_str_to_utf8_str, utf8_str_to_fixed_bytes32,
+use hdp_primitives::{
+    datalake::envelope::DatalakeEnvelope,
+    utils::{bytes_to_hex_string, fixed_bytes_str_to_utf8_str, utf8_str_to_fixed_bytes32},
 };
 
-use crate::compiler::DatalakeCompiler;
+#[derive(Debug)]
+pub struct ComputationalTaskWithDatalake {
+    pub inner: DatalakeEnvelope,
+    pub task: ComputationalTask,
+}
 
-/// ComputationalTask represents a task for certain datalake with a specified aggregate function
+impl ComputationalTaskWithDatalake {
+    pub fn new(inner: DatalakeEnvelope, task: ComputationalTask) -> Self {
+        Self { inner, task }
+    }
+
+    pub fn commit(&self) -> String {
+        let encoded_datalake = self.encode().unwrap();
+        let bytes = Vec::from_hex(encoded_datalake).expect("Invalid hex string");
+        let hash = keccak256(bytes);
+        format!("0x{:x}", hash)
+    }
+
+    pub fn encode(&self) -> Result<String> {
+        let identifier_value = DynSolValue::FixedBytes(
+            FixedBytes::from_str(&self.inner.get_commitment()).unwrap(),
+            32,
+        );
+
+        let aggregate_fn_id_value =
+            DynSolValue::FixedBytes(utf8_str_to_fixed_bytes32(&self.task.aggregate_fn_id), 32);
+        let aggregate_fn_ctx_value = match &self.task.aggregate_fn_ctx {
+            None => DynSolValue::Bytes("".to_string().into_bytes()),
+            Some(ctx) => DynSolValue::Bytes(ctx.clone().into_bytes()),
+        };
+
+        let header_tuple_value = DynSolValue::Tuple(vec![
+            identifier_value,
+            aggregate_fn_id_value,
+            aggregate_fn_ctx_value,
+        ]);
+
+        match header_tuple_value.abi_encode_sequence() {
+            Some(encoded) => Ok(bytes_to_hex_string(&encoded)),
+            None => bail!("Failed to encode the task"),
+        }
+    }
+}
+
+/// [`ComputationalTask`] is a structure that contains the aggregate function id and context
 #[derive(Debug)]
 pub struct ComputationalTask {
-    /// Target datalake as optional.
-    /// - If None, task is non filled with datalake.
-    /// - If Some, task is filled with datalake.
-    ///
-    /// Encoding and Commit will be different based on this field.
-    pub datalake: Option<DatalakeCompiler>,
     pub aggregate_fn_id: String,
     pub aggregate_fn_ctx: Option<String>,
 }
 
 impl ComputationalTask {
-    pub fn new(
-        datalake: Option<DatalakeCompiler>,
-        aggregate_fn_id: String,
-        aggregate_fn_ctx: Option<String>,
-    ) -> Self {
+    pub fn new(aggregate_fn_id: String, aggregate_fn_ctx: Option<String>) -> Self {
         Self {
-            datalake,
             aggregate_fn_id,
             aggregate_fn_ctx,
         }
     }
 
-    /// Encode the task into a hex string
-    /// - If datalake is None, it will encode the task without datalake
-    /// - If datalake is Some, it will encode the task with datalake commitment
+    /// Encode the task without datalake
     pub fn encode(&self) -> Result<String> {
-        match &self.datalake {
-            None => {
-                let aggregate_fn_id_value =
-                    DynSolValue::FixedBytes(utf8_str_to_fixed_bytes32(&self.aggregate_fn_id), 32);
+        let aggregate_fn_id_value =
+            DynSolValue::FixedBytes(utf8_str_to_fixed_bytes32(&self.aggregate_fn_id), 32);
 
-                let aggregate_fn_ctx_value = match &self.aggregate_fn_ctx {
-                    None => DynSolValue::Bytes("".to_string().into_bytes()),
-                    Some(ctx) => DynSolValue::Bytes(ctx.clone().into_bytes()),
-                };
+        let aggregate_fn_ctx_value = match &self.aggregate_fn_ctx {
+            None => DynSolValue::Bytes("".to_string().into_bytes()),
+            Some(ctx) => DynSolValue::Bytes(ctx.clone().into_bytes()),
+        };
 
-                let header_tuple_value =
-                    DynSolValue::Tuple(vec![aggregate_fn_id_value, aggregate_fn_ctx_value]);
+        let header_tuple_value =
+            DynSolValue::Tuple(vec![aggregate_fn_id_value, aggregate_fn_ctx_value]);
 
-                let encoded_datalake = header_tuple_value.abi_encode();
-                Ok(bytes_to_hex_string(&encoded_datalake))
-            }
-            Some(datalake) => {
-                let identifier_value = DynSolValue::FixedBytes(
-                    FixedBytes::from_str(&datalake.commitment).unwrap(),
-                    32,
-                );
-
-                let aggregate_fn_id_value =
-                    DynSolValue::FixedBytes(utf8_str_to_fixed_bytes32(&self.aggregate_fn_id), 32);
-                let aggregate_fn_ctx_value = match &self.aggregate_fn_ctx {
-                    None => DynSolValue::Bytes("".to_string().into_bytes()),
-                    Some(ctx) => DynSolValue::Bytes(ctx.clone().into_bytes()),
-                };
-
-                let header_tuple_value = DynSolValue::Tuple(vec![
-                    identifier_value,
-                    aggregate_fn_id_value,
-                    aggregate_fn_ctx_value,
-                ]);
-
-                match header_tuple_value.abi_encode_sequence() {
-                    Some(encoded) => Ok(bytes_to_hex_string(&encoded)),
-                    None => bail!("Failed to encode the task"),
-                }
-            }
-        }
+        let encoded_datalake = header_tuple_value.abi_encode();
+        Ok(bytes_to_hex_string(&encoded_datalake))
     }
 
     /// Decode task that is not filled with datalake
@@ -98,19 +100,9 @@ impl ComputationalTask {
         let aggregate_fn_ctx = value[1].as_str().map(|s| s.to_string());
 
         Ok(ComputationalTask {
-            datalake: None,
             aggregate_fn_id,
             aggregate_fn_ctx,
         })
-    }
-}
-
-impl ToString for ComputationalTask {
-    fn to_string(&self) -> String {
-        let encoded_datalake = self.encode().unwrap();
-        let bytes = Vec::from_hex(encoded_datalake).expect("Invalid hex string");
-        let hash = keccak256(bytes);
-        format!("0x{:x}", hash)
     }
 }
 

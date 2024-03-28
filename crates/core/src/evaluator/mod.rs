@@ -12,7 +12,8 @@ use tokio::sync::RwLock;
 
 use crate::{
     aggregate_fn::AggregationFunction,
-    compiler::{CompiledDatalake, Derivable},
+    compiler::{CompiledDatalake, DatalakeCompiler},
+    task::ComputationalTaskWithDatalake,
 };
 
 use super::task::ComputationalTask;
@@ -266,67 +267,59 @@ impl Default for EvaluationResult {
 }
 
 pub async fn evaluator(
-    mut computational_tasks: Vec<ComputationalTask>,
-    datalake_for_tasks: Option<Vec<DatalakeEnvelope>>,
+    computational_tasks: Vec<ComputationalTask>,
+    datalake_for_tasks: Vec<DatalakeEnvelope>,
     provider: Arc<RwLock<AbstractProvider>>,
 ) -> Result<EvaluationResult> {
     let mut results = EvaluationResult::new();
 
-    // If optional datalake_for_tasks is provided, need to assign the datalake to the corresponding task
-    if let Some(datalake) = datalake_for_tasks {
-        for (datalake_idx, datalake) in datalake.iter().enumerate() {
-            let task = &mut computational_tasks[datalake_idx];
-
-            task.datalake = Some(datalake.derive());
-        }
-    }
+    let tasks_with_datalake: Vec<ComputationalTaskWithDatalake> = datalake_for_tasks
+        .into_iter()
+        .zip(computational_tasks)
+        .map(|(datalake, task)| ComputationalTaskWithDatalake::new(datalake, task))
+        .collect();
 
     // Evaulate the compute expressions
-    for task in computational_tasks {
+    for task_with_datalake in tasks_with_datalake {
         // task_commitment is the unique identifier for the task
-        let task_commitment = task.to_string();
+        let task_commitment = task_with_datalake.commit();
         // Encode the task
-        let encoded_task = task.encode()?;
-        let mut datalake_base = match task.datalake {
-            Some(datalake) => datalake,
-            None => bail!("Task is not filled with datalake"),
-        };
+        let encoded_task = task_with_datalake.encode()?;
+        let inner_datalake = task_with_datalake.inner;
+        let encoded_datalake = inner_datalake.encode()?;
+        let datalake_type = inner_datalake.get_datalake_type();
+        let property_type = inner_datalake.get_collection_type().to_index();
+        let compiler = DatalakeCompiler::new(inner_datalake);
+        let datalake_result = compiler.compile(&provider).await?;
 
-        let datalake_result = datalake_base.compile(&provider).await?;
-        match datalake_base.datalake {
-            Some(datalake) => {
-                let encoded_datalake = datalake.encode()?;
-                let aggregation_fn = AggregationFunction::from_str(&task.aggregate_fn_id)?;
-                let aggregation_fn_ctx = task.aggregate_fn_ctx;
-                // Compute datalake over specified aggregation function
-                let result =
-                    aggregation_fn.operation(&datalake_result.values, aggregation_fn_ctx)?;
-                // Save the datalake results
-                results
-                    .compiled_results
-                    .insert(task_commitment.to_string(), result);
-                // Save order of tasks
-                results.ordered_tasks.push(task_commitment.to_string());
-                // Save the fetched datalake results
-                results
-                    .fetched_datalake_results
-                    .insert(task_commitment.to_string(), datalake_result);
-                // Save the task data
-                results
-                    .encoded_tasks
-                    .insert(task_commitment.to_string(), encoded_task);
-                // Save the datalake data
-                results.encoded_datalakes.insert(
-                    task_commitment,
-                    EvaluatedDatalake {
-                        encoded_datalake,
-                        datalake_type: datalake.get_datalake_type(),
-                        property_type: datalake.get_collection_type().to_index(),
-                    },
-                );
-            }
-            None => bail!("Datalake base is not filled with specific datalake"),
-        }
+        let aggregation_fn =
+            AggregationFunction::from_str(&task_with_datalake.task.aggregate_fn_id)?;
+        let aggregation_fn_ctx = task_with_datalake.task.aggregate_fn_ctx;
+        // Compute datalake over specified aggregation function
+        let result = aggregation_fn.operation(&datalake_result.values, aggregation_fn_ctx)?;
+        // Save the datalake results
+        results
+            .compiled_results
+            .insert(task_commitment.to_string(), result);
+        // Save order of tasks
+        results.ordered_tasks.push(task_commitment.to_string());
+        // Save the fetched datalake results
+        results
+            .fetched_datalake_results
+            .insert(task_commitment.to_string(), datalake_result);
+        // Save the task data
+        results
+            .encoded_tasks
+            .insert(task_commitment.to_string(), encoded_task);
+        // Save the datalake data
+        results.encoded_datalakes.insert(
+            task_commitment,
+            EvaluatedDatalake {
+                encoded_datalake,
+                datalake_type,
+                property_type,
+            },
+        );
     }
 
     Ok(results)
