@@ -1,27 +1,12 @@
-use std::{
-    str::FromStr,
-    sync::{Arc, RwLock},
-};
+use std::str::FromStr;
 
 use alloy_dyn_abi::{DynSolType, DynSolValue};
 use alloy_primitives::{hex::FromHex, keccak256, Address, U256};
 use anyhow::{bail, Result};
-use hdp_primitives::{block::transaction::TransactionsCollection, utils::bytes_to_hex_string};
-use hdp_provider::evm::AbstractProvider;
 
-use super::{
-    base::{DatalakeBase, Derivable},
-    Datalake, DatalakeCode, DatalakeCollection,
-};
+use crate::{datalake::datalake_type::DatalakeType, utils::bytes_to_hex_string};
 
-impl DatalakeCollection for TransactionsCollection {
-    fn to_index(&self) -> u8 {
-        match self {
-            TransactionsCollection::Transactions(_) => 0,
-            TransactionsCollection::TranasactionReceipts(_) => 1,
-        }
-    }
-}
+use super::TransactionsCollection;
 
 /// [`TransactionsDatalake`] is a struct that represents a transactions datalake.
 ///
@@ -79,14 +64,15 @@ impl TransactionsDatalake {
         })
     }
 
-    pub fn get_datalake_code(&self) -> DatalakeCode {
-        DatalakeCode::Transactions
+    /// Get the datalake code for transactions datalake
+    pub fn get_datalake_type(&self) -> DatalakeType {
+        DatalakeType::Transactions
     }
 
     /// Encode the [`TransactionsDatalake`] into a hex string
     pub fn encode(&self) -> Result<String> {
         // Datalake code for transactions datalake is 2
-        let datalake_code = DynSolValue::Uint(U256::from(self.get_datalake_code().index()), 256);
+        let datalake_code = DynSolValue::Uint(U256::from(u8::from(self.get_datalake_type())), 256);
         let address = DynSolValue::Address(self.address);
         let from_nonce = DynSolValue::Uint(U256::from(self.from_base_nonce), 256);
         let to_nonce = DynSolValue::Uint(U256::from(self.to_base_nonce), 256);
@@ -119,7 +105,7 @@ impl TransactionsDatalake {
     }
 
     /// Decode the encoded transactions datalake hex string into a [`TransactionsDatalake`]
-    pub fn decode(encoded: String) -> Result<Self> {
+    pub fn decode(encoded: &str) -> Result<Self> {
         let datalake_type: DynSolType =
             "(uint256,address,uint256,uint256,uint256,bytes)".parse()?;
         let bytes = Vec::from_hex(encoded).expect("Invalid hex string");
@@ -128,7 +114,7 @@ impl TransactionsDatalake {
         let value = decoded.as_tuple().unwrap();
         let datalake_code = value[0].as_uint().unwrap().0.to_string().parse::<u8>()?;
 
-        if DatalakeCode::from_index(datalake_code)? != DatalakeCode::Transactions {
+        if DatalakeType::from_index(datalake_code)? != DatalakeType::Transactions {
             bail!("Encoded datalake is not a transactions datalake");
         }
         let address = value[1].as_address().unwrap();
@@ -146,84 +132,5 @@ impl TransactionsDatalake {
             sampled_property,
             increment,
         })
-    }
-
-    pub async fn compile(&self, _: &Arc<RwLock<AbstractProvider>>) -> Result<()> {
-        // TODO: Implement compilation
-        Ok(())
-    }
-}
-
-impl Derivable for TransactionsDatalake {
-    fn derive(&self) -> DatalakeBase {
-        DatalakeBase::new(&self.commit(), Datalake::Transactions(self.clone()))
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use hdp_primitives::block::transaction::{TransactionField, TransactionReceiptField};
-
-    use super::*;
-
-    #[test]
-    fn test_transactions_datalake() {
-        let encoded_datalake= "0x0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000cb96aca8719987d15aecd066b7a1ad5d4d92fdd300000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000c000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000";
-
-        let transaction_datalake = TransactionsDatalake::new(
-            "0xcb96AcA8719987D15aecd066B7a1Ad5D4d92fdD3".to_string(),
-            0,
-            3,
-            "tx.nonce".to_string(),
-            1,
-        )
-        .unwrap();
-
-        let encoded = transaction_datalake.encode().unwrap();
-
-        assert_eq!(encoded, encoded_datalake);
-
-        assert_eq!(
-            transaction_datalake.commit(),
-            "0xc8faa3f58f9b18e0716c7c3358f47c3cc5701d71cdf7f4cc93a08afcb4397c5d"
-        );
-
-        assert_eq!(
-            transaction_datalake.sampled_property,
-            TransactionsCollection::Transactions(TransactionField::Nonce)
-        );
-
-        let decoded = TransactionsDatalake::decode(encoded).unwrap();
-        assert_eq!(decoded, transaction_datalake);
-    }
-
-    #[test]
-    fn test_transactions_datalake_receipt() {
-        let encoded_datalake = "0x0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000cb96aca8719987d15aecd066b7a1ad5d4d92fdd300000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000c000000000000000000000000000000000000000000000000000000000000000020100000000000000000000000000000000000000000000000000000000000000";
-        let transaction_datalake = TransactionsDatalake::new(
-            "0xcb96AcA8719987D15aecd066B7a1Ad5D4d92fdD3".to_string(),
-            0,
-            3,
-            "tx_receipt.success".to_string(),
-            1,
-        )
-        .unwrap();
-
-        let encoded = transaction_datalake.encode().unwrap();
-
-        assert_eq!(encoded, encoded_datalake);
-
-        assert_eq!(
-            transaction_datalake.commit(),
-            "0xddb3e1df092aaf6ff5aa20e96df61d1f9110dca58dca5973349577ddcb86ec5e"
-        );
-
-        assert_eq!(
-            transaction_datalake.sampled_property,
-            TransactionsCollection::TranasactionReceipts(TransactionReceiptField::Success)
-        );
-
-        let decoded = TransactionsDatalake::decode(encoded).unwrap();
-        assert_eq!(decoded, transaction_datalake);
     }
 }

@@ -1,55 +1,40 @@
+use hdp_primitives::datalake::block_sampled::{BlockSampledCollection, BlockSampledDatalake};
 use hex::FromHex;
-use std::{str::FromStr, sync::Arc};
+use std::sync::Arc;
 
-use crate::datalake::base::DatalakeResult;
 use alloy_primitives::{hex, keccak256};
-use anyhow::{bail, Result};
-use hdp_primitives::{
-    block::{
-        account::{decode_account_field, AccountField},
-        header::{decode_header_field, HeaderField},
-    },
-    format::{Account, Header, HeaderProof, MPTProof, Storage},
-};
+use anyhow::Result;
+
+use hdp_primitives::format::{Account, Header, HeaderProof, MPTProof, Storage};
 use hdp_provider::evm::AbstractProvider;
 use tokio::sync::RwLock;
 
+use super::DatalakeResult;
+
 pub async fn compile_block_sampled_datalake(
-    block_range_start: u64,
-    block_range_end: u64,
-    sampled_property: &str,
-    increment: u64,
+    datalake: BlockSampledDatalake,
     provider: &Arc<RwLock<AbstractProvider>>,
 ) -> Result<DatalakeResult> {
     let mut abstract_provider = provider.write().await;
-    let property_parts: Vec<&str> = sampled_property.split('.').collect();
-    let collection = property_parts[0];
 
     let mut aggregation_set: Vec<String> = Vec::new();
-    // we don't need range
-    let target_block_range: Vec<u64> = (block_range_start..=block_range_end)
-        .step_by(increment as usize)
-        .collect();
 
     let full_header_and_proof_result = abstract_provider
-        .get_sequencial_full_header_with_proof(block_range_start, block_range_end)
+        .get_sequencial_full_header_with_proof(datalake.block_range_start, datalake.block_range_end)
         .await?;
     let mmr_meta = full_header_and_proof_result.1;
     let mut headers: Vec<Header> = vec![];
     let mut accounts: Vec<Account> = vec![];
     let mut storages: Vec<Storage> = vec![];
 
-    match collection {
-        "header" => {
-            let property = property_parts[1];
-
-            for block in target_block_range {
+    match datalake.sampled_property {
+        BlockSampledCollection::Header(property) => {
+            for block in datalake.block_range_start..=datalake.block_range_end {
+                if block % datalake.increment != 0 {
+                    continue;
+                }
                 let fetched_block = full_header_and_proof_result.0.get(&block).unwrap().clone();
-
-                let value = decode_header_field(
-                    &fetched_block.0,
-                    HeaderField::from_str(&property.to_uppercase()).unwrap(),
-                );
+                let value = property.decode_rlp(&fetched_block.0);
 
                 headers.push(Header {
                     rlp: fetched_block.0,
@@ -62,15 +47,12 @@ pub async fn compile_block_sampled_datalake(
                 aggregation_set.push(value);
             }
         }
-        "account" => {
-            let address = property_parts[1];
-            let property = property_parts[2];
-
+        BlockSampledCollection::Account(address, property) => {
             let accounts_and_proofs_result = abstract_provider
                 .get_range_account_with_proof(
-                    block_range_start,
-                    block_range_end,
-                    increment,
+                    datalake.block_range_start,
+                    datalake.block_range_end,
+                    datalake.increment,
                     address.to_string(),
                 )
                 .await?;
@@ -78,18 +60,14 @@ pub async fn compile_block_sampled_datalake(
             let mut account_proofs: Vec<MPTProof> = vec![];
             // let mut encoded_account = "".to_string();
 
-            for i in block_range_start..=block_range_end {
-                if i % increment != 0 {
+            for block in datalake.block_range_start..=datalake.block_range_end {
+                if block % datalake.increment != 0 {
                     continue;
                 }
-                let fetched_block = full_header_and_proof_result.0.get(&i).unwrap().clone();
-                let acc = accounts_and_proofs_result.get(&i).unwrap().clone();
+                let fetched_block = full_header_and_proof_result.0.get(&block).unwrap().clone();
+                let acc = accounts_and_proofs_result.get(&block).unwrap().clone();
                 // encoded_account = acc.0.clone();
-
-                let value = decode_account_field(
-                    &acc.0,
-                    AccountField::from_str(&property.to_uppercase()).unwrap(),
-                );
+                let value = property.decode_rlp(&acc.0);
 
                 headers.push(Header {
                     rlp: fetched_block.0,
@@ -100,7 +78,7 @@ pub async fn compile_block_sampled_datalake(
                 });
 
                 let account_proof = MPTProof {
-                    block_number: i,
+                    block_number: block,
                     proof: acc.1,
                 };
 
@@ -118,15 +96,12 @@ pub async fn compile_block_sampled_datalake(
                 proofs: account_proofs,
             });
         }
-        "storage" => {
-            let address = property_parts[1];
-            let slot = property_parts[2];
-
+        BlockSampledCollection::Storage(address, slot) => {
             let storages_and_proofs_result = abstract_provider
                 .get_range_storage_with_proof(
-                    block_range_start,
-                    block_range_end,
-                    increment,
+                    datalake.block_range_start,
+                    datalake.block_range_end,
+                    datalake.increment,
                     address.to_string(),
                     slot.to_string(),
                 )
@@ -135,8 +110,8 @@ pub async fn compile_block_sampled_datalake(
             let mut storage_proofs: Vec<MPTProof> = vec![];
             let mut account_proofs: Vec<MPTProof> = vec![];
 
-            for i in block_range_start..=block_range_end {
-                if i % increment != 0 {
+            for i in datalake.block_range_start..=datalake.block_range_end {
+                if i % datalake.increment != 0 {
                     continue;
                 }
                 let fetched_block = full_header_and_proof_result.0.get(&i).unwrap().clone();
@@ -162,8 +137,8 @@ pub async fn compile_block_sampled_datalake(
 
                 aggregation_set.push(acc_and_storage.2);
             }
-            let slot_bytes = Vec::from_hex(slot).expect("Invalid hex string");
-            let storage_key = keccak256(slot_bytes).to_string();
+            // is le?
+            let storage_key = keccak256(slot.to_be_bytes_vec()).to_string();
 
             let address_bytes = Vec::from_hex(address).expect("Invalid hex string");
             let account_key = keccak256(address_bytes);
@@ -180,7 +155,6 @@ pub async fn compile_block_sampled_datalake(
                 proofs: account_proofs,
             });
         }
-        _ => bail!("Unknown collection type"),
     }
 
     Ok(DatalakeResult {

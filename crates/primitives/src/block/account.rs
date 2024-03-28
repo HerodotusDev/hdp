@@ -1,17 +1,8 @@
-use anyhow::{bail, Result};
 use std::str::FromStr;
 
 use alloy_primitives::{hex, FixedBytes, U256};
 use alloy_rlp::{Decodable, Encodable as _, RlpDecodable, RlpEncodable};
 use serde::{Deserialize, Serialize};
-
-#[derive(Debug)]
-pub enum AccountField {
-    Nonce,
-    Balance,
-    StorageRoot,
-    CodeHash,
-}
 
 #[derive(Debug, RlpDecodable, RlpEncodable, PartialEq)]
 pub struct Account {
@@ -43,62 +34,7 @@ impl Account {
     }
 
     pub fn rlp_decode(rlp: &str) -> Self {
-        let decoded = <Account>::decode(&mut hex::decode(rlp).unwrap().as_slice()).unwrap();
-        decoded
-    }
-}
-
-impl FromStr for AccountField {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self> {
-        match s {
-            "NONCE" => Ok(AccountField::Nonce),
-            "BALANCE" => Ok(AccountField::Balance),
-            "STORAGE_ROOT" => Ok(AccountField::StorageRoot),
-            "CODE_HASH" => Ok(AccountField::CodeHash),
-            _ => bail!("Unknown account field"),
-        }
-    }
-}
-
-impl AccountField {
-    pub fn from_index(index: u8) -> Option<Self> {
-        match index {
-            0 => Some(AccountField::Nonce),
-            1 => Some(AccountField::Balance),
-            2 => Some(AccountField::StorageRoot),
-            3 => Some(AccountField::CodeHash),
-            _ => None,
-        }
-    }
-
-    pub fn to_index(&self) -> u8 {
-        match self {
-            AccountField::Nonce => 0,
-            AccountField::Balance => 1,
-            AccountField::StorageRoot => 2,
-            AccountField::CodeHash => 3,
-        }
-    }
-
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            AccountField::Nonce => "NONCE",
-            AccountField::Balance => "BALANCE",
-            AccountField::StorageRoot => "STORAGE_ROOT",
-            AccountField::CodeHash => "CODE_HASH",
-        }
-    }
-}
-
-pub fn decode_account_field(account_rlp: &str, field: AccountField) -> String {
-    let decoded = <Account>::decode(&mut hex::decode(account_rlp).unwrap().as_slice()).unwrap();
-    match field {
-        AccountField::Nonce => decoded.nonce.to_string(),
-        AccountField::Balance => decoded.balance.to_string(),
-        AccountField::StorageRoot => decoded.storage_root.to_string(),
-        AccountField::CodeHash => decoded.code_hash.to_string(),
+        <Account>::decode(&mut hex::decode(rlp).unwrap().as_slice()).unwrap()
     }
 }
 

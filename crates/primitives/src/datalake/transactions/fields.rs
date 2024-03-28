@@ -3,59 +3,6 @@ use std::str::FromStr;
 use anyhow::{bail, Result};
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum TransactionsCollection {
-    Transactions(TransactionField),
-    TranasactionReceipts(TransactionReceiptField),
-}
-
-impl TransactionsCollection {
-    pub fn serialize(&self) -> Result<[u8; 2]> {
-        match self {
-            TransactionsCollection::Transactions(ref field) => Ok([0, field.to_index()]),
-            TransactionsCollection::TranasactionReceipts(ref field) => Ok([1, field.to_index()]),
-        }
-    }
-
-    pub fn deserialize(bytes: &[u8; 2]) -> Result<Self> {
-        if bytes.len() != 2 {
-            return Err(anyhow::Error::msg("Invalid transactions collection"));
-        }
-
-        match bytes[0] {
-            0 => Ok(TransactionsCollection::Transactions(
-                TransactionField::from_index(bytes[1])?,
-            )),
-            1 => Ok(TransactionsCollection::TranasactionReceipts(
-                TransactionReceiptField::from_index(bytes[1])?,
-            )),
-            _ => Err(anyhow::Error::msg("Unknown transactions collection")),
-        }
-    }
-}
-
-impl FromStr for TransactionsCollection {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self> {
-        // Split into two parts by '.'
-        let parts: Vec<&str> = s.split('.').collect();
-        if parts.len() != 2 {
-            bail!("Invalid transactions collection format");
-        }
-
-        match parts[0].to_uppercase().as_str() {
-            "TX" => Ok(TransactionsCollection::Transactions(
-                parts[1].to_uppercase().as_str().parse()?,
-            )),
-            "TX_RECEIPT" => Ok(TransactionsCollection::TranasactionReceipts(
-                parts[1].to_uppercase().as_str().parse()?,
-            )),
-            _ => bail!("Unknown transactions collection"),
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq)]
 pub enum TransactionField {
     // ===== Transaction fields =====
     Nonce,
@@ -192,50 +139,5 @@ impl TransactionReceiptField {
             3 => Ok(TransactionReceiptField::Bloom),
             _ => bail!("Invalid transaction receipt field index"),
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_tx_collection_serialize() {
-        let tx_collection = TransactionsCollection::Transactions(TransactionField::Nonce);
-        let serialized = tx_collection.serialize().unwrap();
-        assert_eq!(serialized, [0, 0]);
-
-        let tx_collection =
-            TransactionsCollection::TranasactionReceipts(TransactionReceiptField::Logs);
-        let serialized = tx_collection.serialize().unwrap();
-        assert_eq!(serialized, [1, 2]);
-
-        let tx_collection = TransactionsCollection::Transactions(TransactionField::AccessList);
-        let serialized = tx_collection.serialize().unwrap();
-        assert_eq!(serialized, [0, 10]);
-    }
-
-    #[test]
-    fn test_tx_collection_deserialize() {
-        let serialized = [0, 1];
-        let tx_collection = TransactionsCollection::deserialize(&serialized).unwrap();
-        assert_eq!(
-            tx_collection,
-            TransactionsCollection::Transactions(TransactionField::GasPrice)
-        );
-
-        let serialized = [1, 3];
-        let tx_collection = TransactionsCollection::deserialize(&serialized).unwrap();
-        assert_eq!(
-            tx_collection,
-            TransactionsCollection::TranasactionReceipts(TransactionReceiptField::Bloom)
-        );
-
-        let serialized = [0, 10];
-        let tx_collection = TransactionsCollection::deserialize(&serialized).unwrap();
-        assert_eq!(
-            tx_collection,
-            TransactionsCollection::Transactions(TransactionField::AccessList)
-        );
     }
 }

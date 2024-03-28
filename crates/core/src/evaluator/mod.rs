@@ -12,19 +12,17 @@ use std::{
 };
 use tokio::sync::RwLock;
 
-use crate::datalake::DatalakeCode;
+use crate::compiler::{DatalakeResult, Derivable};
 
-use super::{
-    datalake::{
-        base::{DatalakeResult, Derivable},
-        Datalake,
+use super::task::ComputationalTask;
+
+use hdp_primitives::{
+    datalake::{datalake_type::DatalakeType, envelope::DatalakeEnvelope},
+    format::{
+        split_big_endian_hex_into_parts, Account, AccountFormatted, Header, HeaderFormatted,
+        MMRMeta, ProcessedResult, ProcessedResultFormatted, Storage, StorageFormatted, Task,
+        TaskFormatted,
     },
-    task::ComputationalTask,
-};
-
-use hdp_primitives::format::{
-    split_big_endian_hex_into_parts, Account, AccountFormatted, Header, HeaderFormatted, MMRMeta,
-    ProcessedResult, ProcessedResultFormatted, Storage, StorageFormatted, Task, TaskFormatted,
 };
 
 use hdp_provider::evm::AbstractProvider;
@@ -48,7 +46,7 @@ pub struct EvaluatedDatalake {
     /// encoded datalake
     pub encoded_datalake: String,
     /// ex. dynamic datalake / block sampled datalake
-    pub datalake_type: DatalakeCode,
+    pub datalake_type: DatalakeType,
     /// ex. "header", "account", "storage"
     pub property_type: u8,
 }
@@ -153,7 +151,7 @@ impl EvaluationResult {
                 result_commitment: result_commitment.to_string(),
                 result_proof,
                 encoded_datalake: datalake.encoded_datalake.clone(),
-                datalake_type: datalake.datalake_type.index(),
+                datalake_type: datalake.datalake_type.into(),
                 property_type: datalake.property_type,
             });
         }
@@ -228,7 +226,7 @@ impl EvaluationResult {
                 result_commitment: result_commitment.to_string(),
                 result_proof,
                 encoded_datalake: evaluated_datalake.encoded_datalake.clone(),
-                datalake_type: evaluated_datalake.datalake_type.index(),
+                datalake_type: evaluated_datalake.datalake_type.into(),
                 property_type: evaluated_datalake.property_type,
             };
 
@@ -267,7 +265,7 @@ impl Default for EvaluationResult {
 
 pub async fn evaluator(
     mut computational_tasks: Vec<ComputationalTask>,
-    datalake_for_tasks: Option<Vec<Datalake>>,
+    datalake_for_tasks: Option<Vec<DatalakeEnvelope>>,
     provider: Arc<RwLock<AbstractProvider>>,
 ) -> Result<EvaluationResult> {
     let mut results = EvaluationResult::new();
@@ -277,13 +275,7 @@ pub async fn evaluator(
         for (datalake_idx, datalake) in datalake.iter().enumerate() {
             let task = &mut computational_tasks[datalake_idx];
 
-            task.datalake = match datalake {
-                Datalake::BlockSampled(block_datalake) => Some(block_datalake.derive()),
-                Datalake::DynamicLayout(dynamic_layout_datalake) => {
-                    Some(dynamic_layout_datalake.derive())
-                }
-                _ => bail!("Unknown datalake type"),
-            };
+            task.datalake = Some(datalake.derive());
         }
     }
 
@@ -299,7 +291,7 @@ pub async fn evaluator(
         };
 
         let datalake_result = datalake_base.compile(&provider).await?;
-        match datalake_base.datalake_type {
+        match datalake_base.datalake {
             Some(datalake) => {
                 let encoded_datalake = datalake.encode()?;
                 let aggregation_fn = AggregationFunction::from_str(&task.aggregate_fn_id)?;
@@ -416,7 +408,7 @@ mod tests {
             "0x242fe0d1fa98c743f84a168ff10abbcca83cb9e0424f4541fab5041cd63d3387".to_string(),
             EvaluatedDatalake {
                 encoded_datalake: "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000052229a000000000000000000000000000000000000000000000000000000000052229a000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000350375cec1db9dceb703200eaa6595f66885c962b92000000000000000000000000000000000000000000000000000000000000000020000000000000000000000".to_string(),
-                datalake_type:DatalakeCode::BlockSampled,
+                datalake_type:DatalakeType::BlockSampled,
                 property_type:3,
             }
         );
