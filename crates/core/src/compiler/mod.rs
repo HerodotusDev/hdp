@@ -1,9 +1,9 @@
 use std::{fmt, sync::Arc};
 
 use anyhow::{bail, Result};
-use hdp_primitives::{
-    datalake::envelope::DatalakeEnvelope,
-    format::{Account, Header, MMRMeta, Storage},
+use hdp_primitives::datalake::{
+    block_sampled::types::{Account, Header, MMRMeta, Storage},
+    envelope::DatalakeEnvelope,
 };
 use hdp_provider::evm::AbstractProvider;
 use serde::{Deserialize, Serialize};

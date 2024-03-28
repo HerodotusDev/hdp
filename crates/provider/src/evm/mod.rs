@@ -7,7 +7,7 @@ use tracing::{error, info};
 
 use hdp_primitives::{
     block::{account::Account, header::Header},
-    format::MMRMeta,
+    datalake::block_sampled::types::MMRMeta,
 };
 
 use self::{

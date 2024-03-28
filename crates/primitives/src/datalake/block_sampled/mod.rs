@@ -1,6 +1,7 @@
 pub mod collection;
 pub mod datalake;
 pub mod fields;
+pub mod types;
 
 // Export all types
 pub use collection::*;

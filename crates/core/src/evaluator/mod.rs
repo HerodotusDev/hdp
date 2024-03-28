@@ -16,13 +16,14 @@ use crate::compiler::{CompiledDatalake, Derivable};
 
 use super::task::ComputationalTask;
 
-use hdp_primitives::{
-    datalake::{datalake_type::DatalakeType, envelope::DatalakeEnvelope},
-    format::{
+use hdp_primitives::datalake::{
+    block_sampled::types::{
         split_big_endian_hex_into_parts, Account, AccountFormatted, Header, HeaderFormatted,
         MMRMeta, ProcessedResult, ProcessedResultFormatted, Storage, StorageFormatted, Task,
         TaskFormatted,
     },
+    datalake_type::DatalakeType,
+    envelope::DatalakeEnvelope,
 };
 
 use hdp_provider::evm::AbstractProvider;
@@ -334,7 +335,9 @@ pub async fn evaluator(
 mod tests {
 
     use super::*;
-    use hdp_primitives::format::{Account, Header, HeaderProof, MMRMeta, MPTProof, Storage};
+    use hdp_primitives::datalake::block_sampled::types::{
+        Account, Header, HeaderProof, MMRMeta, MPTProof, Storage,
+    };
 
     fn setup() -> EvaluationResult {
         let mut init_eval_result = EvaluationResult::new();

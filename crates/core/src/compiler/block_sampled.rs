@@ -5,7 +5,9 @@ use std::sync::Arc;
 use alloy_primitives::{hex, keccak256};
 use anyhow::Result;
 
-use hdp_primitives::format::{Account, Header, HeaderProof, MPTProof, Storage};
+use hdp_primitives::datalake::block_sampled::types::{
+    Account, Header, HeaderProof, MPTProof, Storage,
+};
 use hdp_provider::evm::AbstractProvider;
 use tokio::sync::RwLock;
 
