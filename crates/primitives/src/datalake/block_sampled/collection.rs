@@ -3,7 +3,7 @@ use std::str::FromStr;
 use alloy_primitives::{Address, U256};
 use anyhow::{bail, Result};
 
-use crate::datalake::DatalakeCollection;
+use crate::datalake::{DatalakeCollection, DatalakeField};
 
 use super::fields::{AccountField, HeaderField};
 

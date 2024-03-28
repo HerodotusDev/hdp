@@ -2,6 +2,8 @@ use std::str::FromStr;
 
 use anyhow::{bail, Result};
 
+use crate::datalake::DatalakeField;
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum TransactionField {
     // ===== Transaction fields =====
@@ -31,8 +33,8 @@ pub enum TransactionField {
 
 // Note: This index is use to parse the transaction datalake field from the datalake's sampled property.
 // It is not used to index the transaction datalake field itself.
-impl TransactionField {
-    pub fn from_index(index: u8) -> Result<Self> {
+impl DatalakeField for TransactionField {
+    fn from_index(index: u8) -> Result<Self> {
         match index {
             0 => Ok(TransactionField::Nonce),
             1 => Ok(TransactionField::GasPrice),
@@ -53,7 +55,7 @@ impl TransactionField {
         }
     }
 
-    pub fn to_index(&self) -> u8 {
+    fn to_index(&self) -> u8 {
         match self {
             TransactionField::Nonce => 0,
             TransactionField::GasPrice => 1,
@@ -71,6 +73,32 @@ impl TransactionField {
             TransactionField::BlobVersionedHashes => 13,
             TransactionField::MaxFeePerBlobGas => 14,
         }
+    }
+
+    /// return uppercase string
+    fn as_str(&self) -> &'static str {
+        match self {
+            TransactionField::Nonce => "NONCE",
+            TransactionField::GasPrice => "GAS_PRICE",
+            TransactionField::GasLimit => "GAS_LIMIT",
+            TransactionField::To => "TO",
+            TransactionField::Value => "VALUE",
+            TransactionField::Input => "INPUT",
+            TransactionField::V => "V",
+            TransactionField::R => "R",
+            TransactionField::S => "S",
+            TransactionField::ChainId => "CHAIN_ID",
+            TransactionField::AccessList => "ACCESS_LIST",
+            TransactionField::MaxFeePerGas => "MAX_FEE_PER_GAS",
+            TransactionField::MaxPriorityFeePerGas => "MAX_PRIORITY_FEE_PER_GAS",
+            TransactionField::BlobVersionedHashes => "BLOB_VERSIONED_HASHES",
+            TransactionField::MaxFeePerBlobGas => "MAX_FEE_PER_BLOB_GAS",
+        }
+    }
+
+    // TODO: Not implemented yet
+    fn decode_field_from_rlp(&self, _rlp: &str) -> String {
+        unimplemented!()
     }
 }
 
@@ -121,8 +149,8 @@ impl FromStr for TransactionReceiptField {
     }
 }
 
-impl TransactionReceiptField {
-    pub fn to_index(&self) -> u8 {
+impl DatalakeField for TransactionReceiptField {
+    fn to_index(&self) -> u8 {
         match self {
             TransactionReceiptField::Success => 0,
             TransactionReceiptField::CumulativeGasUsed => 1,
@@ -131,7 +159,7 @@ impl TransactionReceiptField {
         }
     }
 
-    pub fn from_index(index: u8) -> Result<Self> {
+    fn from_index(index: u8) -> Result<Self> {
         match index {
             0 => Ok(TransactionReceiptField::Success),
             1 => Ok(TransactionReceiptField::CumulativeGasUsed),
@@ -139,5 +167,19 @@ impl TransactionReceiptField {
             3 => Ok(TransactionReceiptField::Bloom),
             _ => bail!("Invalid transaction receipt field index"),
         }
+    }
+
+    fn as_str(&self) -> &'static str {
+        match self {
+            TransactionReceiptField::Success => "SUCCESS",
+            TransactionReceiptField::CumulativeGasUsed => "CUMULATIVE_GAS_USED",
+            TransactionReceiptField::Logs => "LOGS",
+            TransactionReceiptField::Bloom => "BLOOM",
+        }
+    }
+
+    // TODO: Not implemented yet
+    fn decode_field_from_rlp(&self, _rlp: &str) -> String {
+        unimplemented!()
     }
 }

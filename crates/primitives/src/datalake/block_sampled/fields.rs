@@ -6,7 +6,10 @@ use std::str::FromStr;
 
 use anyhow::{bail, Result};
 
-use crate::block::{account::Account, header::Header};
+use crate::{
+    block::{account::Account, header::Header},
+    datalake::DatalakeField,
+};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum HeaderField {
@@ -32,8 +35,8 @@ pub enum HeaderField {
     ParentBeaconBlockRoot,
 }
 
-impl HeaderField {
-    pub fn from_index(index: u8) -> Result<Self> {
+impl DatalakeField for HeaderField {
+    fn from_index(index: u8) -> Result<Self> {
         match index {
             0 => Ok(HeaderField::ParentHash),
             1 => Ok(HeaderField::OmmerHash),
@@ -59,7 +62,7 @@ impl HeaderField {
         }
     }
 
-    pub fn to_index(&self) -> u8 {
+    fn to_index(&self) -> u8 {
         match self {
             HeaderField::ParentHash => 0,
             HeaderField::OmmerHash => 1,
@@ -84,7 +87,7 @@ impl HeaderField {
         }
     }
 
-    pub fn as_str(&self) -> &'static str {
+    fn as_str(&self) -> &'static str {
         match self {
             HeaderField::ParentHash => "PARENT_HASH",
             HeaderField::OmmerHash => "OMMERS_HASH",
@@ -109,7 +112,7 @@ impl HeaderField {
         }
     }
 
-    pub fn decode_rlp(&self, header_rlp: &str) -> String {
+    fn decode_field_from_rlp(&self, header_rlp: &str) -> String {
         let decoded = <Header>::rlp_decode(header_rlp);
 
         match self {
@@ -193,8 +196,8 @@ impl FromStr for AccountField {
     }
 }
 
-impl AccountField {
-    pub fn from_index(index: u8) -> Result<Self> {
+impl DatalakeField for AccountField {
+    fn from_index(index: u8) -> Result<Self> {
         match index {
             0 => Ok(AccountField::Nonce),
             1 => Ok(AccountField::Balance),
@@ -204,7 +207,7 @@ impl AccountField {
         }
     }
 
-    pub fn to_index(&self) -> u8 {
+    fn to_index(&self) -> u8 {
         match self {
             AccountField::Nonce => 0,
             AccountField::Balance => 1,
@@ -213,7 +216,7 @@ impl AccountField {
         }
     }
 
-    pub fn as_str(&self) -> &'static str {
+    fn as_str(&self) -> &'static str {
         match self {
             AccountField::Nonce => "NONCE",
             AccountField::Balance => "BALANCE",
@@ -222,7 +225,7 @@ impl AccountField {
         }
     }
 
-    pub fn decode_rlp(&self, account_rlp: &str) -> String {
+    fn decode_field_from_rlp(&self, account_rlp: &str) -> String {
         let decoded = <Account>::rlp_decode(account_rlp);
         match self {
             AccountField::Nonce => decoded.nonce.to_string(),

@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use anyhow::{bail, Result};
 
-use crate::datalake::DatalakeCollection;
+use crate::datalake::{DatalakeCollection, DatalakeField};
 
 use super::{TransactionField, TransactionReceiptField};
 

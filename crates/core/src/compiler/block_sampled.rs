@@ -1,4 +1,7 @@
-use hdp_primitives::datalake::block_sampled::{BlockSampledCollection, BlockSampledDatalake};
+use hdp_primitives::datalake::{
+    block_sampled::{BlockSampledCollection, BlockSampledDatalake},
+    DatalakeField,
+};
 use hex::FromHex;
 use std::sync::Arc;
 
@@ -36,7 +39,7 @@ pub async fn compile_block_sampled_datalake(
                     continue;
                 }
                 let fetched_block = full_header_and_proof_result.0.get(&block).unwrap().clone();
-                let value = property.decode_rlp(&fetched_block.0);
+                let value = property.decode_field_from_rlp(&fetched_block.0);
 
                 headers.push(Header {
                     rlp: fetched_block.0,
@@ -69,7 +72,7 @@ pub async fn compile_block_sampled_datalake(
                 let fetched_block = full_header_and_proof_result.0.get(&block).unwrap().clone();
                 let acc = accounts_and_proofs_result.get(&block).unwrap().clone();
                 // encoded_account = acc.0.clone();
-                let value = property.decode_rlp(&acc.0);
+                let value = property.decode_field_from_rlp(&acc.0);
 
                 headers.push(Header {
                     rlp: fetched_block.0,

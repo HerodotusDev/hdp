@@ -19,3 +19,12 @@ pub trait Datalake {
     where
         Self: Sized;
 }
+
+pub trait DatalakeField {
+    fn from_index(index: u8) -> Result<Self>
+    where
+        Self: Sized;
+    fn to_index(&self) -> u8;
+    fn as_str(&self) -> &'static str;
+    fn decode_field_from_rlp(&self, rlp: &str) -> String;
+}
