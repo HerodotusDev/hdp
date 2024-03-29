@@ -1,13 +1,14 @@
-use crate::datalake::transactions::TransactionsDatalake;
-use crate::datalake::{Datalake, DatalakeCode};
-use crate::{
-    datalake::{block_sampled::BlockSampledDatalake, dynamic_layout::DynamicLayoutDatalake},
-    task::ComputationalTask,
-};
+use crate::task::ComputationalTask;
 use alloy_dyn_abi::{DynSolType, DynSolValue};
 use alloy_primitives::hex::FromHex;
-use anyhow::{Ok, Result};
-use hdp_primitives::utils::{bytes_to_hex_string, last_byte_to_u8};
+use anyhow::{bail, Ok, Result};
+use hdp_primitives::{
+    datalake::{
+        block_sampled::BlockSampledDatalake, datalake_type::DatalakeType,
+        envelope::DatalakeEnvelope, transactions::TransactionsDatalake, Datalake,
+    },
+    utils::{bytes_to_hex_string, last_byte_to_u8},
+};
 
 /// Decode a batch of tasks
 pub fn tasks_decoder(serialized_tasks_batch: String) -> Result<Vec<ComputationalTask>> {
@@ -36,7 +37,7 @@ pub fn task_decoder(serialized_task: String) -> Result<ComputationalTask> {
 }
 
 /// Decode a batch of datalakes
-pub fn datalakes_decoder(serialized_datalakes_batch: String) -> Result<Vec<Datalake>> {
+pub fn datalakes_decoder(serialized_datalakes_batch: String) -> Result<Vec<DatalakeEnvelope>> {
     let datalakes_type: DynSolType = "bytes[]".parse()?;
     let bytes = Vec::from_hex(serialized_datalakes_batch).expect("Invalid hex string");
     let serialized_datalakes = datalakes_type.abi_decode(&bytes)?;
@@ -48,15 +49,13 @@ pub fn datalakes_decoder(serialized_datalakes_batch: String) -> Result<Vec<Datal
             let datalake_code = datalake.as_bytes().unwrap().chunks(32).next().unwrap();
             let datalake_string = bytes_to_hex_string(datalake.as_bytes().unwrap());
 
-            let decoded_datalake = match DatalakeCode::from_index(last_byte_to_u8(datalake_code))? {
-                DatalakeCode::BlockSampled => {
-                    Datalake::BlockSampled(BlockSampledDatalake::decode(datalake_string)?)
+            let decoded_datalake = match DatalakeType::from_index(last_byte_to_u8(datalake_code))? {
+                DatalakeType::BlockSampled => {
+                    DatalakeEnvelope::BlockSampled(BlockSampledDatalake::decode(&datalake_string)?)
                 }
-                DatalakeCode::DynamicLayout => {
-                    Datalake::DynamicLayout(DynamicLayoutDatalake::deserialize(datalake_string)?)
-                }
-                DatalakeCode::Transactions => {
-                    Datalake::Transactions(TransactionsDatalake::decode(datalake_string)?)
+                DatalakeType::DynamicLayout => bail!("Unsupported datalake type"),
+                DatalakeType::Transactions => {
+                    DatalakeEnvelope::Transactions(TransactionsDatalake::decode(&datalake_string)?)
                 }
             };
 
@@ -68,19 +67,17 @@ pub fn datalakes_decoder(serialized_datalakes_batch: String) -> Result<Vec<Datal
 }
 
 /// Decode a single datalake
-pub fn datalake_decoder(serialized_datalake: String) -> Result<Datalake> {
+pub fn datalake_decoder(serialized_datalake: String) -> Result<DatalakeEnvelope> {
     let datalake_code = serialized_datalake.as_bytes().chunks(32).next().unwrap();
     let datalake_string = bytes_to_hex_string(serialized_datalake.as_bytes());
 
-    let decoded_datalake = match DatalakeCode::from_index(last_byte_to_u8(datalake_code))? {
-        DatalakeCode::BlockSampled => {
-            Datalake::BlockSampled(BlockSampledDatalake::decode(datalake_string)?)
+    let decoded_datalake = match DatalakeType::from_index(last_byte_to_u8(datalake_code))? {
+        DatalakeType::BlockSampled => {
+            DatalakeEnvelope::BlockSampled(BlockSampledDatalake::decode(&datalake_string)?)
         }
-        DatalakeCode::DynamicLayout => {
-            Datalake::DynamicLayout(DynamicLayoutDatalake::deserialize(datalake_string)?)
-        }
-        DatalakeCode::Transactions => {
-            Datalake::Transactions(TransactionsDatalake::decode(datalake_string)?)
+        DatalakeType::DynamicLayout => bail!("Unsupported datalake type"),
+        DatalakeType::Transactions => {
+            DatalakeEnvelope::Transactions(TransactionsDatalake::decode(&datalake_string)?)
         }
     };
 
@@ -88,16 +85,17 @@ pub fn datalake_decoder(serialized_datalake: String) -> Result<Datalake> {
 }
 
 /// Encode a batch of datalakes
-pub fn datalakes_encoder(datalakes: Vec<Datalake>) -> Result<String> {
+pub fn datalakes_encoder(datalakes: Vec<DatalakeEnvelope>) -> Result<String> {
     let mut encoded_datalakes: Vec<DynSolValue> = Vec::new();
 
     for datalake in datalakes {
         let encoded_datalake = match datalake {
-            Datalake::BlockSampled(block_sampled_datalake) => block_sampled_datalake.encode()?,
-            Datalake::DynamicLayout(dynamic_layout_datalake) => {
-                dynamic_layout_datalake.serialize()?
+            DatalakeEnvelope::BlockSampled(block_sampled_datalake) => {
+                block_sampled_datalake.encode()?
             }
-            Datalake::Transactions(transactions_datalake) => transactions_datalake.encode()?,
+            DatalakeEnvelope::Transactions(transactions_datalake) => {
+                transactions_datalake.encode()?
+            }
         };
         let bytes = Vec::from_hex(encoded_datalake).expect("Invalid hex string");
         encoded_datalakes.push(DynSolValue::Bytes(bytes));
@@ -126,8 +124,14 @@ pub fn tasks_encoder(tasks: Vec<ComputationalTask>) -> Result<String> {
 #[cfg(test)]
 mod tests {
 
+    use std::str::FromStr;
+
+    use alloy_primitives::Address;
+    use hdp_primitives::datalake::block_sampled::{
+        AccountField, BlockSampledCollection, HeaderField,
+    };
+
     use super::*;
-    use crate::datalake::{block_sampled::BlockSampledDatalake, Datalake};
 
     #[test]
     fn test_task_decoder() {
@@ -150,12 +154,12 @@ mod tests {
         let decoded_datalakes = datalakes_decoder(batched_block_datalake.to_string()).unwrap();
         assert_eq!(decoded_datalakes.len(), 4);
         for datalake in decoded_datalakes.clone() {
-            if let Datalake::BlockSampled(block_datalake) = datalake {
+            if let DatalakeEnvelope::BlockSampled(block_datalake) = datalake {
                 assert_eq!(block_datalake.block_range_start, 10399990);
                 assert_eq!(block_datalake.block_range_end, 10400000);
                 assert_eq!(
                     block_datalake.sampled_property,
-                    "header.base_fee_per_gas".to_string()
+                    BlockSampledCollection::Header(HeaderField::BaseFeePerGas)
                 );
                 assert_eq!(block_datalake.increment, 1);
             } else {
@@ -177,16 +181,20 @@ mod tests {
             4952103,
             "account.0x0a4de450feb156a2a51ed159b2fb99da26e5f3a3.nonce".to_string(),
             1,
-        );
-        let datalakes = vec![Datalake::BlockSampled(block_datalake.clone())];
+        )
+        .unwrap();
+        let datalakes = vec![DatalakeEnvelope::BlockSampled(block_datalake.clone())];
         assert_eq!(datalakes.len(), 1);
         for datalake in datalakes.clone() {
-            if let Datalake::BlockSampled(block_datalake) = datalake {
+            if let DatalakeEnvelope::BlockSampled(block_datalake) = datalake {
                 assert_eq!(block_datalake.block_range_start, 4952100);
                 assert_eq!(block_datalake.block_range_end, 4952103);
                 assert_eq!(
                     block_datalake.sampled_property,
-                    "account.0x0a4de450feb156a2a51ed159b2fb99da26e5f3a3.nonce".to_string()
+                    BlockSampledCollection::Account(
+                        Address::from_str("0x0a4de450feb156a2a51ed159b2fb99da26e5f3a3").unwrap(),
+                        AccountField::Nonce
+                    )
                 );
                 assert_eq!(block_datalake.increment, 1);
             } else {
@@ -207,12 +215,10 @@ mod tests {
     #[test]
     fn test_block_massive_datalake_decoder() {
         let batched_block_datalake = "0x00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000001800000000000000000000000000000000000000000000000000000000000000280000000000000000000000000000000000000000000000000000000000000038000000000000000000000000000000000000000000000000000000000000000e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000009ead1800000000000000000000000000000000000000000000000000000000009eb100000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000002010f00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000009ead1800000000000000000000000000000000000000000000000000000000009eb100000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000002010f00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000009ead1800000000000000000000000000000000000000000000000000000000009eb100000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000002010f00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000009ead1800000000000000000000000000000000000000000000000000000000009eb100000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000002010f000000000000000000000000000000000000000000000000000000000000";
-        let datalake_massive_block = Datalake::BlockSampled(BlockSampledDatalake::new(
-            10399000,
-            10400000,
-            "header.base_fee_per_gas".to_string(),
-            1,
-        ));
+        let datalake_massive_block = DatalakeEnvelope::BlockSampled(
+            BlockSampledDatalake::new(10399000, 10400000, "header.base_fee_per_gas".to_string(), 1)
+                .unwrap(),
+        );
 
         let batched_datalakes = vec![
             datalake_massive_block.clone(),
@@ -227,29 +233,6 @@ mod tests {
             datalakes_encoder(batched_datalakes).unwrap(),
             batched_block_datalake
         );
-    }
-
-    #[test]
-    fn test_dynamic_layout_datalake_decoder() {
-        let batched_dynamic_layer_datalake = "0x00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000001800000000000000000000000000000000000000000000000000000000000000280000000000000000000000000000000000000000000000000000000000000038000000000000000000000000000000000000000000000000000000000000000e0000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000009eb0f60000000000000000000000007b2f05ce9ae365c3dbf30657e2dc6449989e83d6000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000e0000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000009eb0f60000000000000000000000007b2f05ce9ae365c3dbf30657e2dc6449989e83d6000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000e0000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000009eb0f60000000000000000000000007b2f05ce9ae365c3dbf30657e2dc6449989e83d6000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000e0000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000009eb0f60000000000000000000000007b2f05ce9ae365c3dbf30657e2dc6449989e83d60000000000000000000000000000000000000000000000000000000000000005000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000000000001";
-        let decoded_datalakes =
-            datalakes_decoder(batched_dynamic_layer_datalake.to_string()).unwrap();
-        assert_eq!(decoded_datalakes.len(), 4);
-        for datalake in decoded_datalakes {
-            if let Datalake::DynamicLayout(dynamic_datalake) = datalake {
-                assert_eq!(dynamic_datalake.block_number, 10399990);
-                assert_eq!(
-                    dynamic_datalake.account_address,
-                    "0x7b2f05cE9aE365c3DBF30657e2DC6449989e83D6".to_string()
-                );
-                assert_eq!(dynamic_datalake.slot_index, 5);
-                assert_eq!(dynamic_datalake.initial_key, 0);
-                assert_eq!(dynamic_datalake.key_boundry, 3);
-                assert_eq!(dynamic_datalake.increment, 1);
-            } else {
-                panic!("Expected dynamic layout datalake");
-            }
-        }
     }
 
     #[test]
@@ -273,8 +256,8 @@ mod tests {
         .unwrap();
 
         let datalakes = vec![
-            Datalake::Transactions(transaction_datalake1),
-            Datalake::Transactions(transaction_datalake2),
+            DatalakeEnvelope::Transactions(transaction_datalake1),
+            DatalakeEnvelope::Transactions(transaction_datalake2),
         ];
         let encoded_datalakes = datalakes_encoder(datalakes).unwrap();
 
@@ -307,11 +290,11 @@ mod tests {
 
         assert_eq!(
             decoded_datalake[0],
-            Datalake::Transactions(transaction_datalake1)
+            DatalakeEnvelope::Transactions(transaction_datalake1)
         );
         assert_eq!(
             decoded_datalake[1],
-            Datalake::Transactions(transaction_datalake2)
+            DatalakeEnvelope::Transactions(transaction_datalake2)
         );
     }
 
@@ -336,8 +319,8 @@ mod tests {
         .unwrap();
 
         let datalakes = vec![
-            Datalake::Transactions(transaction_datalake1),
-            Datalake::Transactions(transaction_datalake2),
+            DatalakeEnvelope::Transactions(transaction_datalake1),
+            DatalakeEnvelope::Transactions(transaction_datalake2),
         ];
         let encoded_datalakes = datalakes_encoder(datalakes).unwrap();
 
@@ -370,11 +353,11 @@ mod tests {
 
         assert_eq!(
             decoded_datalake[0],
-            Datalake::Transactions(transaction_datalake1)
+            DatalakeEnvelope::Transactions(transaction_datalake1)
         );
         assert_eq!(
             decoded_datalake[1],
-            Datalake::Transactions(transaction_datalake2)
+            DatalakeEnvelope::Transactions(transaction_datalake2)
         );
     }
 }

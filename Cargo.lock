@@ -978,6 +978,7 @@ dependencies = [
  "clap",
  "dotenv",
  "hdp-core",
+ "hdp-primitives",
  "hdp-provider",
  "serde_json",
  "tokio",
@@ -1007,6 +1008,7 @@ dependencies = [
 name = "hdp-primitives"
 version = "0.2.0"
 dependencies = [
+ "alloy-dyn-abi",
  "alloy-primitives",
  "alloy-rlp",
  "anyhow",

@@ -1,5 +1,3 @@
-pub mod aggregation_fn;
-use aggregation_fn::AggregationFunction;
 use alloy_dyn_abi::DynSolValue;
 use alloy_merkle_tree::standard_binary_tree::StandardMerkleTree;
 use alloy_primitives::{hex::FromHex, FixedBytes, Keccak256, B256, U256};
@@ -12,19 +10,22 @@ use std::{
 };
 use tokio::sync::RwLock;
 
-use crate::datalake::DatalakeCode;
-
-use super::{
-    datalake::{
-        base::{DatalakeResult, Derivable},
-        Datalake,
-    },
-    task::ComputationalTask,
+use crate::{
+    aggregate_fn::AggregationFunction,
+    compiler::{CompiledDatalake, DatalakeCompiler},
+    task::ComputationalTaskWithDatalake,
 };
 
-use hdp_primitives::format::{
-    split_big_endian_hex_into_parts, Account, AccountFormatted, Header, HeaderFormatted, MMRMeta,
-    ProcessedResult, ProcessedResultFormatted, Storage, StorageFormatted, Task, TaskFormatted,
+use super::task::ComputationalTask;
+
+use hdp_primitives::datalake::{
+    block_sampled::types::{
+        split_big_endian_hex_into_parts, Account, AccountFormatted, Header, HeaderFormatted,
+        MMRMeta, ProcessedResult, ProcessedResultFormatted, Storage, StorageFormatted, Task,
+        TaskFormatted,
+    },
+    datalake_type::DatalakeType,
+    envelope::DatalakeEnvelope,
 };
 
 use hdp_provider::evm::AbstractProvider;
@@ -32,7 +33,7 @@ use hdp_provider::evm::AbstractProvider;
 #[derive(Serialize, Deserialize, Debug)]
 pub struct EvaluationResult {
     /// task_commitment -> fetched datalake relevant data
-    pub fetched_datalake_results: HashMap<String, DatalakeResult>,
+    pub fetched_datalake_results: HashMap<String, CompiledDatalake>,
     /// task_commitment -> compiled_result
     pub compiled_results: HashMap<String, String>,
     /// ordered task_commitment
@@ -48,7 +49,7 @@ pub struct EvaluatedDatalake {
     /// encoded datalake
     pub encoded_datalake: String,
     /// ex. dynamic datalake / block sampled datalake
-    pub datalake_type: DatalakeCode,
+    pub datalake_type: DatalakeType,
     /// ex. "header", "account", "storage"
     pub property_type: u8,
 }
@@ -153,7 +154,7 @@ impl EvaluationResult {
                 result_commitment: result_commitment.to_string(),
                 result_proof,
                 encoded_datalake: datalake.encoded_datalake.clone(),
-                datalake_type: datalake.datalake_type.index(),
+                datalake_type: datalake.datalake_type.into(),
                 property_type: datalake.property_type,
             });
         }
@@ -228,7 +229,7 @@ impl EvaluationResult {
                 result_commitment: result_commitment.to_string(),
                 result_proof,
                 encoded_datalake: evaluated_datalake.encoded_datalake.clone(),
-                datalake_type: evaluated_datalake.datalake_type.index(),
+                datalake_type: evaluated_datalake.datalake_type.into(),
                 property_type: evaluated_datalake.property_type,
             };
 
@@ -266,73 +267,59 @@ impl Default for EvaluationResult {
 }
 
 pub async fn evaluator(
-    mut computational_tasks: Vec<ComputationalTask>,
-    datalake_for_tasks: Option<Vec<Datalake>>,
+    computational_tasks: Vec<ComputationalTask>,
+    datalake_for_tasks: Vec<DatalakeEnvelope>,
     provider: Arc<RwLock<AbstractProvider>>,
 ) -> Result<EvaluationResult> {
     let mut results = EvaluationResult::new();
 
-    // If optional datalake_for_tasks is provided, need to assign the datalake to the corresponding task
-    if let Some(datalake) = datalake_for_tasks {
-        for (datalake_idx, datalake) in datalake.iter().enumerate() {
-            let task = &mut computational_tasks[datalake_idx];
-
-            task.datalake = match datalake {
-                Datalake::BlockSampled(block_datalake) => Some(block_datalake.derive()),
-                Datalake::DynamicLayout(dynamic_layout_datalake) => {
-                    Some(dynamic_layout_datalake.derive())
-                }
-                _ => bail!("Unknown datalake type"),
-            };
-        }
-    }
+    let tasks_with_datalake: Vec<ComputationalTaskWithDatalake> = datalake_for_tasks
+        .into_iter()
+        .zip(computational_tasks)
+        .map(|(datalake, task)| ComputationalTaskWithDatalake::new(datalake, task))
+        .collect();
 
     // Evaulate the compute expressions
-    for task in computational_tasks {
+    for task_with_datalake in tasks_with_datalake {
         // task_commitment is the unique identifier for the task
-        let task_commitment = task.to_string();
+        let task_commitment = task_with_datalake.commit();
         // Encode the task
-        let encoded_task = task.encode()?;
-        let mut datalake_base = match task.datalake {
-            Some(datalake) => datalake,
-            None => bail!("Task is not filled with datalake"),
-        };
+        let encoded_task = task_with_datalake.encode()?;
+        let inner_datalake = task_with_datalake.inner;
+        let encoded_datalake = inner_datalake.encode()?;
+        let datalake_type = inner_datalake.get_datalake_type();
+        let property_type = inner_datalake.get_collection_type().to_index();
+        let compiler = DatalakeCompiler::new(inner_datalake);
+        let datalake_result = compiler.compile(&provider).await?;
 
-        let datalake_result = datalake_base.compile(&provider).await?;
-        match datalake_base.datalake_type {
-            Some(datalake) => {
-                let encoded_datalake = datalake.encode()?;
-                let aggregation_fn = AggregationFunction::from_str(&task.aggregate_fn_id)?;
-                let aggregation_fn_ctx = task.aggregate_fn_ctx;
-                // Compute datalake over specified aggregation function
-                let result = aggregation_fn
-                    .operation(&datalake_result.compiled_results, aggregation_fn_ctx)?;
-                // Save the datalake results
-                results
-                    .compiled_results
-                    .insert(task_commitment.to_string(), result);
-                // Save order of tasks
-                results.ordered_tasks.push(task_commitment.to_string());
-                // Save the fetched datalake results
-                results
-                    .fetched_datalake_results
-                    .insert(task_commitment.to_string(), datalake_result);
-                // Save the task data
-                results
-                    .encoded_tasks
-                    .insert(task_commitment.to_string(), encoded_task);
-                // Save the datalake data
-                results.encoded_datalakes.insert(
-                    task_commitment,
-                    EvaluatedDatalake {
-                        encoded_datalake,
-                        datalake_type: datalake.get_datalake_type(),
-                        property_type: datalake.get_collection_type().to_index(),
-                    },
-                );
-            }
-            None => bail!("Datalake base is not filled with specific datalake"),
-        }
+        let aggregation_fn =
+            AggregationFunction::from_str(&task_with_datalake.task.aggregate_fn_id)?;
+        let aggregation_fn_ctx = task_with_datalake.task.aggregate_fn_ctx;
+        // Compute datalake over specified aggregation function
+        let result = aggregation_fn.operation(&datalake_result.values, aggregation_fn_ctx)?;
+        // Save the datalake results
+        results
+            .compiled_results
+            .insert(task_commitment.to_string(), result);
+        // Save order of tasks
+        results.ordered_tasks.push(task_commitment.to_string());
+        // Save the fetched datalake results
+        results
+            .fetched_datalake_results
+            .insert(task_commitment.to_string(), datalake_result);
+        // Save the task data
+        results
+            .encoded_tasks
+            .insert(task_commitment.to_string(), encoded_task);
+        // Save the datalake data
+        results.encoded_datalakes.insert(
+            task_commitment,
+            EvaluatedDatalake {
+                encoded_datalake,
+                datalake_type,
+                property_type,
+            },
+        );
     }
 
     Ok(results)
@@ -342,14 +329,16 @@ pub async fn evaluator(
 mod tests {
 
     use super::*;
-    use hdp_primitives::format::{Account, Header, HeaderProof, MMRMeta, MPTProof, Storage};
+    use hdp_primitives::datalake::block_sampled::types::{
+        Account, Header, HeaderProof, MMRMeta, MPTProof, Storage,
+    };
 
     fn setup() -> EvaluationResult {
         let mut init_eval_result = EvaluationResult::new();
         init_eval_result.fetched_datalake_results.insert(
             "0x242fe0d1fa98c743f84a168ff10abbcca83cb9e0424f4541fab5041cd63d3387".to_string(),
-            DatalakeResult {
-                compiled_results: vec!["0x9184e72a000".to_string()],
+            CompiledDatalake {
+                values: vec!["0x9184e72a000".to_string()],
                 headers: vec![Header {
                     rlp: "f90253a008a4f6a7d5055ce465e285415779bc338134600b750c06396531ce6a29d09f4ba01dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347941268ad189526ac0b386faf06effc46779c340ee6a0fa23637d8a5d4a624479b33410895951995bae67f7c16b00859f9ac630b9e020a0792c487bc3176e482c995a9a1a16041d456db8d52e0db6fb73b540a64e96feaca04406def0dad7a6c6ef8c41a59be6b5b89124391a5b0491c8a5339e859e24d7acb901001a820024432050a200d1bc129162042984e09002002806340a14630c0aca5060c140a0608e043199e90280a1418cb89f1020085394a48f412d00d05041ad00a09002801a30b50d10c008522a2203284384841e055052404040710462e48103580026004a4e6842518210c2060c0729944118e4d0801936d020008811bb0c0464028a0008219056543b1111890cac50c04805000a400040401089904927409ec6720b8001c80a204628d8400064b402a1220480c21418480c24d00446a743000180a880128245028010a00103a8036b06c119a20124c32482280cc14021b430082a9408840030d46c062010f0b290c194040888189e081100c1070280304c0a01808352229a8401c9c38084017f9a188465df90188a4e65746865726d696e64a0178bae25662326acf0824d8441db8493865a53b8c627dc8aea5eb50ed2102fdc8800000000000000008401d76098a06eb2bc6208c3733aa1158ff8a100cb5c7ad1706ac6c3fb95d28f28007a770403808404c20000a0195eac87285a920cb37eb2b2dcf6eb9853efa2547c386bfe58ca2ff0fe167eb5".to_string(),
                     proof: HeaderProof {
@@ -416,7 +405,7 @@ mod tests {
             "0x242fe0d1fa98c743f84a168ff10abbcca83cb9e0424f4541fab5041cd63d3387".to_string(),
             EvaluatedDatalake {
                 encoded_datalake: "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000052229a000000000000000000000000000000000000000000000000000000000052229a000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000350375cec1db9dceb703200eaa6595f66885c962b92000000000000000000000000000000000000000000000000000000000000000020000000000000000000000".to_string(),
-                datalake_type:DatalakeCode::BlockSampled,
+                datalake_type:DatalakeType::BlockSampled,
                 property_type:3,
             }
         );

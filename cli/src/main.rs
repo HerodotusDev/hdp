@@ -1,4 +1,8 @@
 use anyhow::{bail, Result};
+use hdp_primitives::datalake::{
+    block_sampled::BlockSampledDatalake, envelope::DatalakeEnvelope,
+    transactions::TransactionsDatalake,
+};
 use std::{sync::Arc, vec};
 use tracing_subscriber::FmtSubscriber;
 
@@ -9,7 +13,6 @@ use hdp_core::{
         tasks_encoder,
     },
     config::Config,
-    datalake::Datalake,
     evaluator::evaluator,
     task::ComputationalTask,
 };
@@ -130,7 +133,7 @@ enum DataLakeCommands {
 
 struct DecodeMultipleResult {
     tasks: Vec<ComputationalTask>,
-    datalakes: Vec<Datalake>,
+    datalakes: Vec<DatalakeEnvelope>,
 }
 
 struct EncodeMultipleResult {
@@ -155,7 +158,7 @@ async fn handle_decode_multiple(datalakes: String, tasks: String) -> Result<Deco
 
 async fn handle_encode_multiple(
     tasks: Vec<ComputationalTask>,
-    datalakes: Vec<Datalake>,
+    datalakes: Vec<DatalakeEnvelope>,
 ) -> Result<EncodeMultipleResult> {
     let encoded_datalakes = datalakes_encoder(datalakes)?;
     info!("Encoded datalakes: {}", encoded_datalakes);
@@ -185,7 +188,7 @@ async fn handle_run(
 
     match evaluator(
         decoded_result.tasks,
-        Some(decoded_result.datalakes),
+        decoded_result.datalakes,
         Arc::new(RwLock::new(provider)),
     )
     .await
@@ -239,14 +242,13 @@ async fn main() -> Result<()> {
                     sampled_property,
                     increment,
                 } => {
-                    let block_sampled_datalake =
-                        hdp_core::datalake::block_sampled::BlockSampledDatalake::new(
-                            block_range_start,
-                            block_range_end,
-                            sampled_property,
-                            increment,
-                        );
-                    Datalake::BlockSampled(block_sampled_datalake)
+                    let block_sampled_datalake = BlockSampledDatalake::new(
+                        block_range_start,
+                        block_range_end,
+                        sampled_property,
+                        increment,
+                    )?;
+                    DatalakeEnvelope::BlockSampled(block_sampled_datalake)
                 }
                 DataLakeCommands::Transactions {
                     address,
@@ -255,28 +257,22 @@ async fn main() -> Result<()> {
                     sampled_property,
                     increment,
                 } => {
-                    let transactions_datalake =
-                        hdp_core::datalake::transactions::TransactionsDatalake::new(
-                            address,
-                            from_nonce,
-                            to_nonce,
-                            sampled_property,
-                            increment,
-                        )?;
-                    Datalake::Transactions(transactions_datalake)
+                    let transactions_datalake = TransactionsDatalake::new(
+                        address,
+                        from_nonce,
+                        to_nonce,
+                        sampled_property,
+                        increment,
+                    )?;
+                    DatalakeEnvelope::Transactions(transactions_datalake)
                 }
             };
 
             let encoded_result = handle_encode_multiple(
-                vec![ComputationalTask::new(
-                    None,
-                    aggregate_fn_id,
-                    aggregate_fn_ctx,
-                )],
+                vec![ComputationalTask::new(aggregate_fn_id, aggregate_fn_ctx)],
                 vec![datalake],
             )
             .await?;
-
             // if allow_run is true, then run the evaluator
             if allow_run {
                 handle_run(
