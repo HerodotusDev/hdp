@@ -2,10 +2,9 @@ use hdp_primitives::datalake::{
     block_sampled::{BlockSampledCollection, BlockSampledDatalake},
     DatalakeField,
 };
-use hex::FromHex;
 use std::sync::Arc;
 
-use alloy_primitives::{hex, keccak256};
+use alloy_primitives::keccak256;
 use anyhow::Result;
 
 use hdp_primitives::datalake::block_sampled::types::{
@@ -88,12 +87,10 @@ pub async fn compile_block_sampled_datalake(
                 };
 
                 account_proofs.push(account_proof);
-
                 aggregation_set.push(value);
             }
 
-            let address_bytes = Vec::from_hex(address).expect("Invalid hex string");
-            let account_key = keccak256(address_bytes);
+            let account_key = keccak256(address);
 
             accounts.push(Account {
                 address: address.to_string(),
@@ -102,6 +99,8 @@ pub async fn compile_block_sampled_datalake(
             });
         }
         BlockSampledCollection::Storage(address, slot) => {
+            println!("Storage :{:?}", slot);
+
             let storages_and_proofs_result = abstract_provider
                 .get_range_storage_with_proof(
                     datalake.block_range_start,
@@ -142,11 +141,12 @@ pub async fn compile_block_sampled_datalake(
 
                 aggregation_set.push(acc_and_storage.2);
             }
-            // is le?
-            let storage_key = keccak256(slot.to_be_bytes_vec()).to_string();
 
-            let address_bytes = Vec::from_hex(address).expect("Invalid hex string");
-            let account_key = keccak256(address_bytes);
+            let storage_key = keccak256(slot).to_string();
+            println!("Storage key :{:?}", storage_key);
+            println!("address  :{:?}", address);
+
+            let account_key = keccak256(address);
 
             storages.push(Storage {
                 address: address.to_string(),

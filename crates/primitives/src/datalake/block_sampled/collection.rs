@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use alloy_primitives::{Address, U256};
+use alloy_primitives::{Address, StorageKey};
 use anyhow::{bail, Result};
 
 use crate::datalake::{DatalakeCollection, DatalakeField};
@@ -11,7 +11,7 @@ use super::fields::{AccountField, HeaderField};
 pub enum BlockSampledCollection {
     Header(HeaderField),
     Account(Address, AccountField),
-    Storage(Address, U256),
+    Storage(Address, StorageKey),
 }
 
 impl DatalakeCollection for BlockSampledCollection {
@@ -38,7 +38,7 @@ impl DatalakeCollection for BlockSampledCollection {
             BlockSampledCollection::Storage(address, slot) => {
                 serialized.push(3);
                 serialized.extend_from_slice(address.as_slice());
-                serialized.extend_from_slice(&slot.to_be_bytes::<32>());
+                serialized.extend_from_slice(slot.as_ref());
             }
         }
 
@@ -74,7 +74,7 @@ impl DatalakeCollection for BlockSampledCollection {
                     bail!("Invalid storage property");
                 }
                 let address = Address::from_slice(&serialized[1..21]);
-                let slot = U256::from_be_slice(&serialized[21..53]);
+                let slot = StorageKey::from_slice(&serialized[21..53]);
                 Ok(BlockSampledCollection::Storage(address, slot))
             }
             _ => bail!("Unknown block sampled collection"),
@@ -103,7 +103,7 @@ impl FromStr for BlockSampledCollection {
             }
             "STORAGE" => {
                 let address = Address::from_str(parts[1])?;
-                let slot = U256::from_str(parts[2])?;
+                let slot = StorageKey::from_str(parts[2])?;
                 Ok(BlockSampledCollection::Storage(address, slot))
             }
             _ => bail!("Unknown block sampled collection"),

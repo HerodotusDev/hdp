@@ -13,7 +13,7 @@ mod tests {
     use crate::datalake::{Datalake, DatalakeCollection};
 
     use super::*;
-    use alloy_primitives::{Address, U256};
+    use alloy_primitives::{Address, StorageKey};
     use std::str::FromStr;
 
     #[test]
@@ -163,7 +163,10 @@ mod tests {
             block_datalake.sampled_property,
             BlockSampledCollection::Storage(
                 Address::from_str("0x7b2f05ce9ae365c3dbf30657e2dc6449989e83d6").unwrap(),
-                U256::from(0xff)
+                StorageKey::from_str(
+                    "0x00000000000000000000000000000000000000000000000000000000000000ff"
+                )
+                .unwrap()
             )
         );
     }
@@ -214,8 +217,12 @@ mod tests {
     fn test_storage_collection_serialize() {
         let storage_collection = BlockSampledCollection::Storage(
             Address::from_str("0x7b2f05ce9ae365c3dbf30657e2dc6449989e83d6").unwrap(),
-            U256::from(0xfffe),
+            StorageKey::from_str(
+                "0x000000000000000000000000000000000000000000000000000000000000fffe",
+            )
+            .unwrap(),
         );
+
         let serialized = storage_collection.serialize().unwrap();
         assert_eq!(
             serialized,
