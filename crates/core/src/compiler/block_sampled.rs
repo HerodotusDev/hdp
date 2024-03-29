@@ -91,7 +91,6 @@ pub async fn compile_block_sampled_datalake(
             }
 
             let account_key = keccak256(address);
-
             accounts.push(Account {
                 address: address.to_string(),
                 account_key: account_key.to_string(),
@@ -99,8 +98,6 @@ pub async fn compile_block_sampled_datalake(
             });
         }
         BlockSampledCollection::Storage(address, slot) => {
-            println!("Storage :{:?}", slot);
-
             let storages_and_proofs_result = abstract_provider
                 .get_range_storage_with_proof(
                     datalake.block_range_start,
@@ -143,9 +140,6 @@ pub async fn compile_block_sampled_datalake(
             }
 
             let storage_key = keccak256(slot).to_string();
-            println!("Storage key :{:?}", storage_key);
-            println!("address  :{:?}", address);
-
             let account_key = keccak256(address);
 
             storages.push(Storage {
