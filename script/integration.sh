@@ -3,6 +3,9 @@
 # Base directory where the folders 'storage' and 'account' and 'header' are located
 BASE_DIR="example"
 
+# Use command line arguments as target directories. If no arguments are provided, default to "header account storage".
+TARGET_DIRS=${@:-"header account storage"}
+
 # Function to process each input.json file
 process_file() {
     inputFilePath=$1
@@ -29,8 +32,8 @@ process_file() {
     fi
 }
 
-# Loop through 'storage', 'account', and 'header' directories
-for dir in header account storage; do
+# Loop through specified directories
+for dir in $TARGET_DIRS; do
     # Find all directories within the main directories
     find "${BASE_DIR}/${dir}" -type d | while read -r subDir; do
         # Check if run.sh exists in the directory

@@ -1,12 +1,12 @@
 pub mod collection;
 pub mod datalake;
-pub mod fields;
+pub mod rlp_fields;
 pub mod types;
 
 // Export all types
 pub use collection::*;
 pub use datalake::*;
-pub use fields::*;
+pub use rlp_fields::*;
 
 #[cfg(test)]
 mod tests {
