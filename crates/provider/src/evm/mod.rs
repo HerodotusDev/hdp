@@ -524,6 +524,95 @@ impl AbstractProvider {
 
         Ok(result)
     }
+
+    pub async fn get_block_range_from_nonce_range(
+        &self,
+        start_nonce: u64,
+        end_nonce: u64,
+        incremental: u64,
+        sender: String,
+    ) -> Result<Vec<u64>> {
+        // `eth_getTransactionCount` to loop through blocks and find the block range by nonce range
+        let mut block_range = vec![];
+        let latest_block_number = self.account_provider.get_latest_block_number().await?;
+
+        // use the latest block number as the upper bound
+        let mut upper_bound = latest_block_number;
+        // use the genesis block number as the lower bound
+        let mut lower_bound = 0;
+
+        // use binary search to find the corresponding block for start nonce.
+        // block should have nonce same as start nonce + 1 and nonce of previous block should be same as start nonce
+
+        while lower_bound < upper_bound {
+            let mid = (lower_bound + upper_bound) / 2;
+            let mid_nonce = self
+                .account_provider
+                .get_transaction_count(&sender, mid)
+                .await?;
+
+            match mid_nonce == start_nonce {
+                true => {
+                    // loop back to find the block number that contains the transaction
+                    let mut block_number = mid;
+                    loop {
+                        let next_block_nonce = self
+                            .account_provider
+                            .get_transaction_count(&sender, block_number + 1)
+                            .await?;
+                        if next_block_nonce > start_nonce {
+                            block_range.push(block_number + 1);
+                            break;
+                        }
+                        block_number += 1;
+                    }
+                    break;
+                }
+                false => {
+                    if mid_nonce < start_nonce {
+                        lower_bound = mid + 1;
+                    } else {
+                        upper_bound = mid;
+                    }
+                }
+            }
+        }
+
+        let target_nonce_range: Vec<u64> = (start_nonce..=end_nonce)
+            .step_by(incremental as usize)
+            .collect();
+
+        // block range[0] is the block number that contains the transaction that change nonce from start_nonce to start_nonce + 1
+        // loop foward to find all block number that contain the transaction that change nonce from start_nonce to end_nonce
+        let mut block_number = block_range[0] + 1;
+        loop {
+            let block_nonce = self
+                .account_provider
+                .get_transaction_count(&sender, block_number)
+                .await?;
+            if target_nonce_range.contains(&block_nonce) {
+                loop {
+                    let next_block_nonce = self
+                        .account_provider
+                        .get_transaction_count(&sender, block_number + 1)
+                        .await?;
+                    if next_block_nonce > block_nonce {
+                        block_range.push(block_number + 1);
+                        break;
+                    }
+                    block_number += 1;
+                }
+            }
+
+            if block_nonce == end_nonce {
+                break;
+            }
+
+            block_number += 1;
+        }
+
+        Ok(block_range)
+    }
 }
 
 #[cfg(test)]
@@ -678,5 +767,21 @@ mod tests {
         let storage_value = storage_value.unwrap();
         assert_eq!(storage_value.0, "0x0");
         assert_eq!(storage_value.1, vec!["0xf838a120290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563959441ad2bc63a2059f9b623533d87fe99887d794847"]);
+    }
+
+    #[tokio::test]
+    async fn get_block_range_from_nonce_range() {
+        let provider = AbstractProvider::new(SEPOLIA_RPC_URL, 11155111);
+        let block_range = provider
+            .get_block_range_from_nonce_range(63878, 63888, 1, SEPOLIA_TARGET_ADDRESS.to_string())
+            .await
+            .unwrap();
+        assert_eq!(
+            block_range,
+            vec![
+                5604974, 5604986, 5604994, 5605004, 5605015, 5605024, 5605034, 5605044, 5605054,
+                5605064, 5605075
+            ]
+        );
     }
 }

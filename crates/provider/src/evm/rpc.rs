@@ -29,6 +29,43 @@ impl RpcProvider {
 }
 
 impl RpcProvider {
+    pub async fn get_latest_block_number(&self) -> Result<u64> {
+        let rpc_request: Value = json!({
+            "jsonrpc": "2.0",
+            "method": "eth_blockNumber",
+            "params": [],
+            "id": 1,
+        });
+
+        let response = self
+            .client
+            .post(self.url)
+            .header(header::CONTENT_TYPE, "application/json")
+            .json(&rpc_request)
+            .send()
+            .await
+            .map_err(|e| anyhow!("Failed to send request: {}", e))?;
+
+        // Check if the response status is success
+        if !response.status().is_success() {
+            return Err(anyhow!(
+                "RPC request `eth_blockNumber` failed with status: {}",
+                response.status()
+            ));
+        }
+
+        // Parse the response body as JSON
+        let rpc_response: Value = response
+            .json()
+            .await
+            .map_err(|e| anyhow!("Failed to parse response: {}", e))?;
+        let result = &rpc_response["result"];
+
+        let block_number: String = from_value(result.clone())?;
+        let block_number_u64 = u64::from_str_radix(&block_number[2..], 16).unwrap();
+
+        Ok(block_number_u64)
+    }
     pub async fn get_transaction_count(&self, address: &str, block_number: u64) -> Result<u64> {
         let rpc_request: Value = json!({
             "jsonrpc": "2.0",
