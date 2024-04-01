@@ -29,6 +29,44 @@ impl RpcProvider {
 }
 
 impl RpcProvider {
+    pub async fn get_transaction_count(&self, address: &str, block_number: u64) -> Result<u64> {
+        let rpc_request: Value = json!({
+            "jsonrpc": "2.0",
+            "method": "eth_getTransactionCount",
+            "params": [address, format!("0x{:x}", block_number)],
+            "id": 1,
+        });
+
+        let response = self
+            .client
+            .post(self.url)
+            .header(header::CONTENT_TYPE, "application/json")
+            .json(&rpc_request)
+            .send()
+            .await
+            .map_err(|e| anyhow!("Failed to send request: {}", e))?;
+
+        // Check if the response status is success
+        if !response.status().is_success() {
+            return Err(anyhow!(
+                "RPC request `eth_getBlockByNumber` failed with status: {}",
+                response.status()
+            ));
+        }
+
+        // Parse the response body as JSON
+        let rpc_response: Value = response
+            .json()
+            .await
+            .map_err(|e| anyhow!("Failed to parse response: {}", e))?;
+        let result = &rpc_response["result"];
+
+        let tx_count: String = from_value(result.clone())?;
+        let tx_count_u64 = u64::from_str_radix(&tx_count[2..], 16).unwrap();
+
+        Ok(tx_count_u64)
+    }
+
     pub async fn get_block_by_number(&self, block_number: u64) -> Result<BlockHeaderFromRpc> {
         let rpc_request: Value = json!({
             "jsonrpc": "2.0",
@@ -261,5 +299,30 @@ mod tests {
 
         let block_4952229 = block_header.1.get(&4952229).unwrap();
         assert_eq!(block_4952229.block_number, 4952229);
+    }
+
+    // Non-paid personal alchemy endpoint
+    const SEPOLIA_RPC_URL: &str =
+        "https://eth-sepolia.g.alchemy.com/v2/a-w72ZvoUS0dfMD_LBPAuRzHOlQEhi_m";
+
+    const SEPOLIA_TARGET_ADDRESS: &str = "0x7f2c6f930306d3aa736b3a6c6a98f512f74036d4";
+
+    #[tokio::test]
+    async fn test_get_transaction_count() {
+        let rpc_provider = RpcProvider::new(SEPOLIA_RPC_URL, 1);
+
+        let tx_count = rpc_provider
+            .get_transaction_count(SEPOLIA_TARGET_ADDRESS, 4952200)
+            .await
+            .unwrap();
+
+        assert_eq!(tx_count, 6786);
+
+        let tx_count = rpc_provider
+            .get_transaction_count(SEPOLIA_TARGET_ADDRESS, 4942101)
+            .await
+            .unwrap();
+
+        assert_eq!(tx_count, 5776);
     }
 }
