@@ -86,7 +86,7 @@ impl RpcProvider {
         // Check if the response status is success
         if !response.status().is_success() {
             return Err(anyhow!(
-                "RPC request `eth_getBlockByNumber` failed with status: {}",
+                "RPC request `eth_getTransactionCount` failed with status: {}",
                 response.status()
             ));
         }

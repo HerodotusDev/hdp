@@ -1,8 +1,12 @@
 use anyhow::{bail, Result};
 use core::panic;
 use futures::future::join_all;
-use std::{collections::HashMap, sync::Arc, time::Instant};
-use tokio::sync::RwLock;
+use std::{
+    collections::HashMap,
+    sync::Arc,
+    time::{Duration, Instant},
+};
+use tokio::{join, sync::RwLock, task};
 use tracing::{error, info};
 
 use hdp_primitives::{
@@ -26,6 +30,7 @@ const HERODOTUS_RS_INDEXER_URL: &str = "https://rs-indexer.api.herodotus.cloud/a
 ///
 /// TODO: Optimization idea, Lock only rpc provider and keep the memory provider unlocked
 /// but handle requests so that it would not make duplicate requests
+#[derive(Clone)]
 pub struct AbstractProvider {
     /// [`InMemoryProvider`] is used to fetch data from memory.
     // TODO: It's not using for now
@@ -533,85 +538,130 @@ impl AbstractProvider {
         sender: String,
     ) -> Result<Vec<u64>> {
         // `eth_getTransactionCount` to loop through blocks and find the block range by nonce range
-        let mut block_range = vec![];
         let latest_block_number = self.account_provider.get_latest_block_number().await?;
 
-        // use the latest block number as the upper bound
-        let mut upper_bound = latest_block_number;
-        // use the genesis block number as the lower bound
-        let mut lower_bound = 0;
+        // Perform binary searches in parallel
+        let (start_block_result, end_block_result) = join!(
+            self.binary_search_for_nonce(start_nonce, &sender, 0, latest_block_number),
+            self.binary_search_for_nonce(end_nonce, &sender, 0, latest_block_number)
+        );
 
-        // use binary search to find the corresponding block for start nonce.
-        // block should have nonce same as start nonce + 1 and nonce of previous block should be same as start nonce
+        let start_block = start_block_result?;
+        let end_block = end_block_result?;
 
-        while lower_bound < upper_bound {
-            let mid = (lower_bound + upper_bound) / 2;
-            let mid_nonce = self
-                .account_provider
-                .get_transaction_count(&sender, mid)
-                .await?;
-
-            match mid_nonce == start_nonce {
-                true => {
-                    // loop back to find the block number that contains the transaction
-                    let mut block_number = mid;
-                    loop {
-                        let next_block_nonce = self
-                            .account_provider
-                            .get_transaction_count(&sender, block_number + 1)
-                            .await?;
-                        if next_block_nonce > start_nonce {
-                            block_range.push(block_number + 1);
-                            break;
-                        }
-                        block_number += 1;
-                    }
-                    break;
-                }
-                false => {
-                    if mid_nonce < start_nonce {
-                        lower_bound = mid + 1;
-                    } else {
-                        upper_bound = mid;
-                    }
-                }
-            }
-        }
+        println!("✅start_block: {}", start_block);
+        println!("✅end_block: {}", end_block);
 
         let target_nonce_range: Vec<u64> = (start_nonce..=end_nonce)
             .step_by(incremental as usize)
             .collect();
 
-        // block range[0] is the block number that contains the transaction that change nonce from start_nonce to start_nonce + 1
-        // loop foward to find all block number that contain the transaction that change nonce from start_nonce to end_nonce
-        let mut block_number = block_range[0] + 1;
-        loop {
-            let block_nonce = self
+        println!("✅target_nonce_range: {:?}", target_nonce_range);
+        // use the genesis block number as the lower bound
+        let lower_bound = start_block;
+        // use the latest block number as the upper bound
+        let upper_bound = end_block;
+        let self_arc = Arc::new(self.clone());
+        // TODO: chunk the target_nonce_range into 5(?) and perform binary searches concurrently
+        // TODO: loop through the chunks and update the lower and upper bounds
+        let futures: Vec<_> = target_nonce_range
+            .into_iter()
+            .map(|nonce| {
+                let self_clone = Arc::clone(&self_arc);
+                let sender_clone = sender.clone();
+
+                task::spawn(async move {
+                    self_clone
+                        .binary_search_for_nonce(nonce, &sender_clone, lower_bound, upper_bound)
+                        .await
+                })
+            })
+            .collect();
+
+        let results: Vec<u64> = join_all(futures)
+            .await
+            .into_iter()
+            .map(|res| res.unwrap().unwrap())
+            .collect();
+        Ok(results)
+    }
+
+    async fn binary_search_for_nonce(
+        &self,
+        target_nonce: u64,
+        sender: &str,
+        lower_bound: u64,
+        upper_bound: u64,
+    ) -> Result<u64> {
+        let mut total_duration = Duration::new(0, 0);
+        let mut total_rpc_call = 0;
+        let mut inner_lower_bound = lower_bound;
+        let mut inner_upper_bound = upper_bound;
+        // println!("🔍target_nonce: {}", target_nonce);
+        // println!("🔍lower_bound: {}", lower_bound);
+        // println!("🔍upper_bound: {}", upper_bound);
+
+        while inner_lower_bound < inner_upper_bound {
+            let mid = (inner_lower_bound + inner_upper_bound) / 2;
+            let start_fetch = Instant::now();
+            let mid_nonce = self
                 .account_provider
-                .get_transaction_count(&sender, block_number)
-                .await?;
-            if target_nonce_range.contains(&block_nonce) {
-                loop {
-                    let next_block_nonce = self
-                        .account_provider
-                        .get_transaction_count(&sender, block_number + 1)
-                        .await?;
-                    if next_block_nonce > block_nonce {
-                        block_range.push(block_number + 1);
-                        break;
+                .get_transaction_count(sender, mid)
+                .await
+                .unwrap();
+            let duration = start_fetch.elapsed();
+            info!("Time taken (tx_count): {:?}", duration);
+            total_duration += duration;
+            total_rpc_call += 1;
+
+            match mid_nonce == target_nonce {
+                true => {
+                    // loop back to find the block number that contains the transaction
+                    let mut block_number = mid;
+                    // TODO: probably require to chunk the loop and make buffer per each chunk loop
+                    // TODO: or not using loop, use more efficient way
+                    loop {
+                        let start_fetch = Instant::now();
+                        let next_block_nonce = self
+                            .account_provider
+                            .get_transaction_count(sender, block_number + 1)
+                            .await?;
+                        let duration = start_fetch.elapsed();
+                        info!("Time taken (tx_count): {:?}", duration);
+                        total_duration += duration;
+                        total_rpc_call += 1;
+
+                        if next_block_nonce > target_nonce {
+                            println!(
+                                "🕒total_duration: {:?} for {:?} rpc calls",
+                                total_duration, total_rpc_call
+                            );
+
+                            return Ok(block_number + 1);
+                        }
+                        block_number += 1;
                     }
-                    block_number += 1;
+                }
+                false => {
+                    if mid_nonce < target_nonce {
+                        inner_lower_bound = mid + 1;
+                    } else {
+                        inner_upper_bound = mid;
+                    }
                 }
             }
-
-            if block_nonce == end_nonce {
-                break;
-            }
-
-            block_number += 1;
         }
 
-        Ok(block_range)
+        println!("😌target_nonce: {}", target_nonce);
+        println!("inner_lower_bound: {}", inner_lower_bound);
+        println!("inner_upper_bound: {}", inner_upper_bound);
+
+        println!(
+            "🕒total_duration: {:?} for {:?} rpc calls",
+            total_duration, total_rpc_call
+        );
+
+        Ok(inner_lower_bound)
     }
 }
 
@@ -769,19 +819,35 @@ mod tests {
         assert_eq!(storage_value.1, vec!["0xf838a120290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563959441ad2bc63a2059f9b623533d87fe99887d794847"]);
     }
 
+    // TODO: Chunk the concurrent range to handle `429 Too Many Requests`
+    // #[tokio::test]
+    // async fn get_block_range_from_nonce_range() {
+    //     let provider = AbstractProvider::new(SEPOLIA_RPC_URL, 11155111);
+    //     let block_range = provider
+    //         .get_block_range_from_nonce_range(63878, 63888, 1, SEPOLIA_TARGET_ADDRESS.to_string())
+    //         .await
+    //         .unwrap();
+    //     assert_eq!(
+    //         block_range,
+    //         vec![
+    //             5604974, 5604986, 5604994, 5605004, 5605015, 5605024, 5605034, 5605044, 5605054,
+    //             5605064, 5605075
+    //         ]
+    //     );
+    // }
+
     #[tokio::test]
-    async fn get_block_range_from_nonce_range() {
+    async fn get_block_range_from_nonce_smol_range() {
+        // The range is doable with non chunked approach
         let provider = AbstractProvider::new(SEPOLIA_RPC_URL, 11155111);
+
         let block_range = provider
-            .get_block_range_from_nonce_range(63878, 63888, 1, SEPOLIA_TARGET_ADDRESS.to_string())
+            .get_block_range_from_nonce_range(63878, 63885, 1, SEPOLIA_TARGET_ADDRESS.to_string())
             .await
             .unwrap();
         assert_eq!(
             block_range,
-            vec![
-                5604974, 5604986, 5604994, 5605004, 5605015, 5605024, 5605034, 5605044, 5605054,
-                5605064, 5605075
-            ]
+            vec![5604974, 5604986, 5604994, 5605004, 5605015, 5605024, 5605034, 5605044]
         );
     }
 }

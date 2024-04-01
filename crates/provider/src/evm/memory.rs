@@ -24,6 +24,7 @@ type StoredAccounts = HashMap<String, (RlpEncodedValue, MPTProof, StoredStorages
 type StoredStorages = HashMap<String, (String, MPTProof)>;
 
 /// [`InMemoryProvider`] is a memoizer that stores the data in memory.
+#[derive(Debug, Clone)]
 pub struct InMemoryProvider {
     pub cached_headers: StoredHeaders,
     pub cached_accounts: HashMap<u64, StoredAccounts>,
