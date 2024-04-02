@@ -9,6 +9,7 @@ use hdp_primitives::block::{
     header::{
         BlockHeaderFromRpc, MMRFromNewIndexer, MMRMetaFromNewIndexer, MMRProofFromNewIndexer,
     },
+    tx::TxFromRpc,
 };
 
 #[derive(Debug, Clone)]
@@ -66,6 +67,7 @@ impl RpcProvider {
 
         Ok(block_number_u64)
     }
+
     pub async fn get_transaction_count(&self, address: &str, block_number: u64) -> Result<u64> {
         let rpc_request: Value = json!({
             "jsonrpc": "2.0",
@@ -214,6 +216,65 @@ impl RpcProvider {
         Ok(account_from_rpc)
     }
 
+    pub async fn get_tx_hashes_from_etherscan(
+        &self,
+        from_block: u64,
+        to_block: u64,
+        offset: u64,
+        sender: String,
+        api_key: String,
+    ) -> Result<Vec<TxFromRpc>> {
+        let query_params = &[
+            ("module", "account"),
+            ("action", "txlist"),
+            ("address", &sender),
+            ("startblock", &from_block.to_string()),
+            ("endblock", &to_block.to_string()),
+            ("page", "1"),
+            ("offset", &offset.to_string()),
+            ("sort", "asc"),
+            ("apikey", &api_key),
+        ];
+
+        let url = format!("{}/api", &self.url);
+
+        let response = self
+            .client
+            .get(url)
+            .header(header::CONTENT_TYPE, "application/json")
+            .query(&query_params)
+            .send()
+            .await
+            .map_err(|e| anyhow!("Failed to send request: {}", e))?;
+
+        // Check if the response status is success
+        if !response.status().is_success() {
+            bail!(
+                "etherscan api request failed with status: {}",
+                response.status()
+            );
+        }
+
+        // Parse the response body as JSON
+        let rpc_response: Value = response
+            .json()
+            .await
+            .map_err(|e| anyhow!("Failed to parse response: {}", e))?;
+
+        let tx_from_etherscan: Vec<TxFromRpc> = from_value(rpc_response["result"].clone())?;
+
+        if tx_from_etherscan.is_empty() {
+            bail!(
+                "No transactions found for address {} in block numbers: {} - {}",
+                sender,
+                from_block,
+                to_block
+            );
+        } else {
+            Ok(tx_from_etherscan)
+        }
+    }
+
     // TODO: result should not chunked
     pub async fn get_sequencial_headers_and_mmr_from_indexer(
         &self,
@@ -348,6 +409,7 @@ mod tests {
         "https://eth-sepolia.g.alchemy.com/v2/a-w72ZvoUS0dfMD_LBPAuRzHOlQEhi_m";
 
     const SEPOLIA_TARGET_ADDRESS: &str = "0x7f2c6f930306d3aa736b3a6c6a98f512f74036d4";
+    const ETHERSCAN_API_KEY: &str = "YourApiKeyToken";
 
     #[tokio::test]
     async fn test_get_transaction_count() {
@@ -407,5 +469,25 @@ mod tests {
             .unwrap(),
         );
         assert_eq!(account, expected_account);
+    }
+
+    const SEPOLIA_ETHERSCAN_RPC_URL: &str = "https://api-sepolia.etherscan.io";
+
+    #[tokio::test]
+    async fn test_tx_from_etherscan() {
+        let rpc_provider = RpcProvider::new(SEPOLIA_ETHERSCAN_RPC_URL, 11155111);
+
+        let tx_hashes = rpc_provider
+            .get_tx_hashes_from_etherscan(
+                5604974,
+                5605054,
+                10,
+                SEPOLIA_TARGET_ADDRESS.to_string(),
+                ETHERSCAN_API_KEY.to_string(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(tx_hashes.len(), 9);
     }
 }

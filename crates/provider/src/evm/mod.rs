@@ -6,11 +6,11 @@ use std::{
     sync::Arc,
     time::{Duration, Instant},
 };
-use tokio::{join, sync::RwLock, task};
+use tokio::{join, sync::RwLock};
 use tracing::{error, info};
 
 use hdp_primitives::{
-    block::{account::Account, header::Header},
+    block::{account::Account, header::Header, tx::TxFromRpc},
     datalake::block_sampled::types::MMRMeta,
 };
 
@@ -24,6 +24,10 @@ pub(crate) mod rpc;
 
 // For more information swagger doc: https://rs-indexer.api.herodotus.cloud/swagger
 const HERODOTUS_RS_INDEXER_URL: &str = "https://rs-indexer.api.herodotus.cloud/accumulators";
+const ETHERSCAN_API: &str = "https://api.etherscan.io";
+const ETHERSCAN_SEPOLIA_API: &str = "https://api-sepolia.etherscan.io";
+// note: non-paid personal api key
+const ETHERSCAN_API_KEY: &str = "8NTJDKIRBG8CPNQX5YGZVNGPHRYEUDTXZW";
 
 /// [`AbstractProvider`] abstracts the fetching of data from the RPC and memory.
 ///  It uses a [`InMemoryProvider`] and a [`RpcProvider`] to fetch data.
@@ -39,14 +43,26 @@ pub struct AbstractProvider {
     account_provider: RpcProvider,
     /// Fetch block headers and MMR data from the Herodotus indexer.
     header_provider: RpcProvider,
+    /// Fetch tx data from the Etherscan API.
+    tx_provider: RpcProvider,
 }
 
 impl AbstractProvider {
     pub fn new(rpc_url: &'static str, chain_id: u64) -> Self {
+        let tx_provider = RpcProvider::new(
+            if chain_id == 1 {
+                ETHERSCAN_API
+            } else {
+                ETHERSCAN_SEPOLIA_API
+            },
+            chain_id,
+        );
+
         Self {
             memory: InMemoryProvider::new(),
             account_provider: RpcProvider::new(rpc_url, chain_id),
             header_provider: RpcProvider::new(HERODOTUS_RS_INDEXER_URL, chain_id),
+            tx_provider,
         }
     }
 
@@ -536,82 +552,53 @@ impl AbstractProvider {
         end_nonce: u64,
         incremental: u64,
         sender: String,
-    ) -> Result<Vec<u64>> {
+    ) -> Result<Vec<TxFromRpc>> {
         // `eth_getTransactionCount` to loop through blocks and find the block range by nonce range
         let latest_block_number = self.account_provider.get_latest_block_number().await?;
 
-        // Perform binary searches in parallel
+        //  Perform binary searches for start and end block in concurrent
         let (start_block_result, end_block_result) = join!(
             self.binary_search_for_nonce(start_nonce, &sender, 0, latest_block_number),
-            self.binary_search_for_nonce(end_nonce, &sender, 0, latest_block_number)
+            self.binary_search_for_nonce(end_nonce + 1, &sender, 0, latest_block_number)
         );
 
         let start_block = start_block_result?;
         let end_block = end_block_result?;
+        // ideally offset should be 1, but somehow etherscan api is unstable for last element
+        let offset = end_nonce - start_nonce + 2;
 
-        println!("✅start_block: {}", start_block);
-        println!("✅end_block: {}", end_block);
+        // call etherscan get_tx_hashes_from_etherscan
+        let tx_result = self
+            .tx_provider
+            .get_tx_hashes_from_etherscan(
+                start_block,
+                end_block,
+                offset,
+                sender,
+                ETHERSCAN_API_KEY.to_string(),
+            )
+            .await?;
 
         let target_nonce_range: Vec<u64> = (start_nonce..=end_nonce)
             .step_by(incremental as usize)
             .collect();
 
-        if target_nonce_range.len() > 2 {
-            // Slicing the vector to skip the first and the last elements, then converting to a vector
-            let target_nonce_range_sliced =
-                target_nonce_range[1..target_nonce_range.len() - 1].to_vec();
+        let mut tx_hashes = vec![];
 
-            // chunk the target_nonce_range into 5
-            let target_nonce_range_chunks: Vec<Vec<u64>> = target_nonce_range_sliced
-                .chunks(5)
-                .map(|x| x.to_vec())
-                .collect();
-            println!("✅target_nonce_range: {:?}", target_nonce_range);
-            // use the genesis block number as the lower bound
-            let lower_bound = start_block;
-            // use the latest block number as the upper bound
-            let upper_bound = end_block - 1;
-            let self_arc = Arc::new(self.clone());
-            // TODO: chunk the target_nonce_range into 5(?) and perform binary searches concurrently
-            // TODO: loop through the chunks and update the lower and upper bounds
-            let mut results = vec![];
-            for one_chunked_nonce_range in target_nonce_range_chunks {
-                let futures: Vec<_> = one_chunked_nonce_range
-                    .into_iter()
-                    .map(|nonce| {
-                        let self_clone = Arc::clone(&self_arc);
-                        let sender_clone = sender.clone();
+        // TODO: need to handle TxFromRpc in Rlp comptible Tx struct
 
-                        task::spawn(async move {
-                            self_clone
-                                .binary_search_for_nonce(
-                                    nonce,
-                                    &sender_clone,
-                                    lower_bound,
-                                    upper_bound,
-                                )
-                                .await
-                        })
-                    })
-                    .collect();
+        for target_nonce in target_nonce_range {
+            let tx = tx_result
+                .iter()
+                .find(|tx| tx.nonce == target_nonce.to_string())
+                .unwrap_or_else(|| {
+                    panic!("Tx not found for nonce: {}", target_nonce);
+                });
 
-                let chunked_results: Vec<u64> = join_all(futures)
-                    .await
-                    .into_iter()
-                    .map(|res| res.unwrap().unwrap())
-                    .collect();
-                println!("✅results: {:?}", chunked_results);
-                results.extend(chunked_results);
-            }
-
-            // insert the start and end block numbers to the results
-            results.insert(0, start_block);
-            results.push(end_block);
-
-            Ok(results)
-        } else {
-            Ok(vec![start_block, end_block])
+            tx_hashes.push(tx.clone());
         }
+
+        Ok(tx_hashes)
     }
 
     async fn binary_search_for_nonce(
@@ -622,66 +609,39 @@ impl AbstractProvider {
         upper_bound: u64,
     ) -> Result<u64> {
         let mut total_duration = Duration::new(0, 0);
-        let mut total_rpc_call = 0;
+        // let mut total_rpc_call = 0;
         let mut inner_lower_bound = lower_bound;
         let mut inner_upper_bound = upper_bound;
 
         while inner_lower_bound <= inner_upper_bound {
             let mid = (inner_lower_bound + inner_upper_bound) / 2;
             let start_fetch = Instant::now();
+
             let mid_nonce = self
                 .account_provider
                 .get_transaction_count(sender, mid)
-                .await
-                .unwrap();
+                .await?;
+
             let duration = start_fetch.elapsed();
-            info!("Time taken (tx_count): {:?}", duration);
+
             total_duration += duration;
-            total_rpc_call += 1;
+            //   total_rpc_call += 1;
 
-            #[allow(clippy::comparison_chain)]
-            if mid_nonce == target_nonce {
-                let start_fetch = Instant::now();
-                let next_block_nonce = self
-                    .account_provider
-                    .get_transaction_count(sender, mid + 1)
-                    .await?;
-                let duration = start_fetch.elapsed();
-                info!("Time taken (tx_count): {:?}", duration);
-                total_duration += duration;
-                total_rpc_call += 1;
-
-                // This is indeed transition
-                if next_block_nonce == target_nonce + 1 {
-                    // mid + 1 is the block number of first transition
-                    return Ok(mid + 1);
-                } else {
-                    // This means index is in range of target nonces
-                    inner_lower_bound = mid + 1;
+            match mid_nonce == target_nonce {
+                true => {
+                    // println!(
+                    //     "🕒total_duration: {:?} for {:?} rpc calls",
+                    //     total_duration, total_rpc_call
+                    // );
+                    return Ok(mid);
                 }
-            } else if mid_nonce < target_nonce {
-                inner_lower_bound = mid + 1;
-            } else if mid_nonce > target_nonce {
-                inner_upper_bound = mid - 1;
+                false => match mid_nonce < target_nonce {
+                    true => inner_lower_bound = mid + 1,
+                    false => inner_upper_bound = mid - 1,
+                },
             }
-
-            // println!("target: {}", target_nonce);
-            // println!("🔍mid: {}", mid);
-            // println!("🔍mid_nonce: {}", mid_nonce);
-            // println!("🔍inner_lower_bound: {}", inner_lower_bound);
-            // println!("🔍inner_upper_bound: {}", inner_upper_bound);
         }
-
-        println!("😌target_nonce: {}", target_nonce);
-        println!("inner_lower_bound: {}", inner_lower_bound);
-        println!("inner_upper_bound: {}", inner_upper_bound);
-
-        println!(
-            "🕒total_duration: {:?} for {:?} rpc calls",
-            total_duration, total_rpc_call
-        );
-
-        Ok(inner_lower_bound)
+        bail!("Nonce not found")
     }
 }
 
@@ -698,7 +658,7 @@ mod tests {
     const SEPOLIA_RPC_URL: &str =
         "https://eth-sepolia.g.alchemy.com/v2/xar76cftwEtqTBWdF4ZFy9n8FLHAETDv";
 
-    //  const SEPOLIA_TARGET_ADDRESS: &str = "0x7f2c6f930306d3aa736b3a6c6a98f512f74036d4";
+    const SEPOLIA_TARGET_ADDRESS: &str = "0x7f2c6f930306d3aa736b3a6c6a98f512f74036d4";
 
     #[tokio::test]
     async fn test_provider_get_rlp_header() {
@@ -723,71 +683,79 @@ mod tests {
         );
     }
 
-    // Both test works, but if call concurrently with other tests, CI will fails
-    // #[tokio::test]
-    // async fn get_block_range_from_massive_nonce_range() {
-    //     let provider = AbstractProvider::new(SEPOLIA_RPC_URL, 11155111);
-    //     let block_range = provider
-    //         .get_block_range_from_nonce_range(63878, 63898, 1, SEPOLIA_TARGET_ADDRESS.to_string())
-    //         .await
-    //         .unwrap();
-    //     assert_eq!(
-    //         block_range,
-    //         vec![
-    //             5604974, 5604986, 5604994, 5605004, 5605015, 5605024, 5605034, 5605044, 5605054,
-    //             5605064, 5605075, 5605084, 5605094, 5605104, 5605114, 5605127, 5605134, 5605145,
-    //             5605154, 5605164, 5605174
-    //         ]
-    //     );
-    // }
+    #[tokio::test]
+    async fn get_block_range_from_massive_nonce_range() {
+        let provider = AbstractProvider::new(SEPOLIA_RPC_URL, 11155111);
+        let block_range = provider
+            .get_block_range_from_nonce_range(63878, 63987, 1, SEPOLIA_TARGET_ADDRESS.to_string())
+            .await
+            .unwrap();
 
-    // #[tokio::test]
-    // async fn get_block_range_from_nonce_range() {
-    //     let provider = AbstractProvider::new(SEPOLIA_RPC_URL, 11155111);
-    //     let block_range = provider
-    //         .get_block_range_from_nonce_range(63878, 63888, 1, SEPOLIA_TARGET_ADDRESS.to_string())
-    //         .await
-    //         .unwrap();
-    //     assert_eq!(
-    //         block_range,
-    //         vec![
-    //             5604974, 5604986, 5604994, 5605004, 5605015, 5605024, 5605034, 5605044, 5605054,
-    //             5605064, 5605075
-    //         ]
-    //     );
-    // }
+        let block_range: Vec<u64> = block_range
+            .iter()
+            .map(|block| block.block_number.parse().unwrap())
+            .collect::<Vec<_>>();
+        assert_eq!(
+            block_range,
+            vec![
+                5604974, 5604986, 5604994, 5605004, 5605015, 5605024, 5605034, 5605044, 5605054,
+                5605064, 5605075, 5605084, 5605094, 5605104, 5605114, 5605127, 5605134, 5605145,
+                5605154, 5605164, 5605174, 5605185, 5605195, 5605204, 5605215, 5605224, 5605234,
+                5605244, 5605254, 5605264, 5605274, 5605284, 5605294, 5605304, 5605314, 5605324,
+                5605334, 5605344, 5605358, 5605364, 5605374, 5605384, 5605394, 5605404, 5605416,
+                5605425, 5605438, 5605444, 5605454, 5605464, 5605474, 5605484, 5605495, 5605504,
+                5605514, 5605524, 5605535, 5605544, 5605554, 5605565, 5605574, 5605586, 5605594,
+                5605604, 5605614, 5605625, 5605634, 5605644, 5605654, 5605666, 5605677, 5605684,
+                5605694, 5605705, 5605714, 5605724, 5605734, 5605744, 5605754, 5605764, 5605774,
+                5605784, 5605796, 5605804, 5605814, 5605824, 5605834, 5605844, 5605854, 5605864,
+                5605875, 5605884, 5605894, 5605905, 5605914, 5605925, 5605935, 5605944, 5605954,
+                5605964, 5605975, 5605985, 5605996, 5606005, 5606014, 5606024, 5606036, 5606044,
+                5606054, 5606066
+            ]
+        );
+    }
 
-    // #[tokio::test]
-    // async fn get_block_range_from_nonce_smol_range() {
-    //     let provider = AbstractProvider::new(SEPOLIA_RPC_URL, 11155111);
+    #[tokio::test]
+    async fn get_block_range_from_nonce_range() {
+        let provider = AbstractProvider::new(SEPOLIA_RPC_URL, 11155111);
+        let block_range = provider
+            .get_block_range_from_nonce_range(63878, 63887, 1, SEPOLIA_TARGET_ADDRESS.to_string())
+            .await
+            .unwrap();
+        let block_range: Vec<u64> = block_range
+            .iter()
+            .map(|block| block.block_number.parse().unwrap())
+            .collect::<Vec<_>>();
+        assert_eq!(
+            block_range,
+            vec![
+                5604974, 5604986, 5604994, 5605004, 5605015, 5605024, 5605034, 5605044, 5605054,
+                5605064
+            ]
+        );
+    }
 
-    //     let block_range = provider
-    //         .get_block_range_from_nonce_range(63878, 63885, 1, SEPOLIA_TARGET_ADDRESS.to_string())
-    //         .await
-    //         .unwrap();
-    //     assert_eq!(
-    //         block_range,
-    //         vec![5604974, 5604986, 5604994, 5605004, 5605015, 5605024, 5605034, 5605044]
-    //     );
-    // }
+    const SEPOLIA_TARGET_ADDRESS_NON_CONSTANT: &str = "0x0a4De450feB156A2A51eD159b2fb99Da26E5F3A3";
 
-    // const SEPOLIA_TARGET_ADDRESS_NON_CONSTANT: &str = "0x0a4De450feB156A2A51eD159b2fb99Da26E5F3A3";
-
-    // #[tokio::test]
-    // async fn get_block_range_from_nonce_range_non_constant() {
-    //     let provider = AbstractProvider::new(SEPOLIA_RPC_URL, 11155111);
-    //     let block_range = provider
-    //         .get_block_range_from_nonce_range(
-    //             520,
-    //             524,
-    //             1,
-    //             SEPOLIA_TARGET_ADDRESS_NON_CONSTANT.to_string(),
-    //         )
-    //         .await
-    //         .unwrap();
-    //     assert_eq!(
-    //         block_range,
-    //         vec![5530433, 5530441, 5530878, 5556642, 5572347]
-    //     );
-    // }
+    #[tokio::test]
+    async fn get_block_range_from_nonce_range_non_constant() {
+        let provider = AbstractProvider::new(SEPOLIA_RPC_URL, 11155111);
+        let block_range = provider
+            .get_block_range_from_nonce_range(
+                520,
+                524,
+                1,
+                SEPOLIA_TARGET_ADDRESS_NON_CONSTANT.to_string(),
+            )
+            .await
+            .unwrap();
+        let block_range: Vec<u64> = block_range
+            .iter()
+            .map(|block| block.block_number.parse().unwrap())
+            .collect::<Vec<_>>();
+        assert_eq!(
+            block_range,
+            vec![5530433, 5530441, 5530878, 5556642, 5572347]
+        );
+    }
 }
