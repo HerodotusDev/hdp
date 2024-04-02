@@ -556,34 +556,62 @@ impl AbstractProvider {
             .step_by(incremental as usize)
             .collect();
 
-        println!("✅target_nonce_range: {:?}", target_nonce_range);
-        // use the genesis block number as the lower bound
-        let lower_bound = start_block;
-        // use the latest block number as the upper bound
-        let upper_bound = end_block;
-        let self_arc = Arc::new(self.clone());
-        // TODO: chunk the target_nonce_range into 5(?) and perform binary searches concurrently
-        // TODO: loop through the chunks and update the lower and upper bounds
-        let futures: Vec<_> = target_nonce_range
-            .into_iter()
-            .map(|nonce| {
-                let self_clone = Arc::clone(&self_arc);
-                let sender_clone = sender.clone();
+        if target_nonce_range.len() > 2 {
+            // Slicing the vector to skip the first and the last elements, then converting to a vector
+            let target_nonce_range_sliced =
+                target_nonce_range[1..target_nonce_range.len() - 1].to_vec();
 
-                task::spawn(async move {
-                    self_clone
-                        .binary_search_for_nonce(nonce, &sender_clone, lower_bound, upper_bound)
-                        .await
-                })
-            })
-            .collect();
+            // chunk the target_nonce_range into 5
+            let target_nonce_range_chunks: Vec<Vec<u64>> = target_nonce_range_sliced
+                .chunks(8)
+                .map(|x| x.to_vec())
+                .collect();
+            println!("✅target_nonce_range: {:?}", target_nonce_range);
+            // use the genesis block number as the lower bound
+            let lower_bound = start_block;
+            // use the latest block number as the upper bound
+            let upper_bound = end_block - 1;
+            let self_arc = Arc::new(self.clone());
+            // TODO: chunk the target_nonce_range into 5(?) and perform binary searches concurrently
+            // TODO: loop through the chunks and update the lower and upper bounds
+            let mut results = vec![];
+            for one_chunked_nonce_range in target_nonce_range_chunks {
+                let futures: Vec<_> = one_chunked_nonce_range
+                    .into_iter()
+                    .map(|nonce| {
+                        let self_clone = Arc::clone(&self_arc);
+                        let sender_clone = sender.clone();
 
-        let results: Vec<u64> = join_all(futures)
-            .await
-            .into_iter()
-            .map(|res| res.unwrap().unwrap())
-            .collect();
-        Ok(results)
+                        task::spawn(async move {
+                            self_clone
+                                .binary_search_for_nonce(
+                                    nonce,
+                                    &sender_clone,
+                                    lower_bound,
+                                    upper_bound,
+                                )
+                                .await
+                        })
+                    })
+                    .collect();
+
+                let chunked_results: Vec<u64> = join_all(futures)
+                    .await
+                    .into_iter()
+                    .map(|res| res.unwrap().unwrap())
+                    .collect();
+                println!("✅results: {:?}", chunked_results);
+                results.extend(chunked_results);
+            }
+
+            // insert the start and end block numbers to the results
+            results.insert(0, start_block);
+            results.push(end_block);
+
+            Ok(results)
+        } else {
+            Ok(vec![start_block, end_block])
+        }
     }
 
     async fn binary_search_for_nonce(
@@ -597,11 +625,8 @@ impl AbstractProvider {
         let mut total_rpc_call = 0;
         let mut inner_lower_bound = lower_bound;
         let mut inner_upper_bound = upper_bound;
-        // println!("🔍target_nonce: {}", target_nonce);
-        // println!("🔍lower_bound: {}", lower_bound);
-        // println!("🔍upper_bound: {}", upper_bound);
 
-        while inner_lower_bound < inner_upper_bound {
+        while inner_lower_bound <= inner_upper_bound {
             let mid = (inner_lower_bound + inner_upper_bound) / 2;
             let start_fetch = Instant::now();
             let mid_nonce = self
@@ -614,42 +639,37 @@ impl AbstractProvider {
             total_duration += duration;
             total_rpc_call += 1;
 
-            match mid_nonce == target_nonce {
-                true => {
-                    // loop back to find the block number that contains the transaction
-                    let mut block_number = mid;
-                    // TODO: probably require to chunk the loop and make buffer per each chunk loop
-                    // TODO: or not using loop, use more efficient way
-                    loop {
-                        let start_fetch = Instant::now();
-                        let next_block_nonce = self
-                            .account_provider
-                            .get_transaction_count(sender, block_number + 1)
-                            .await?;
-                        let duration = start_fetch.elapsed();
-                        info!("Time taken (tx_count): {:?}", duration);
-                        total_duration += duration;
-                        total_rpc_call += 1;
+            #[allow(clippy::comparison_chain)]
+            if mid_nonce == target_nonce {
+                let start_fetch = Instant::now();
+                let next_block_nonce = self
+                    .account_provider
+                    .get_transaction_count(sender, mid + 1)
+                    .await?;
+                let duration = start_fetch.elapsed();
+                info!("Time taken (tx_count): {:?}", duration);
+                total_duration += duration;
+                total_rpc_call += 1;
 
-                        if next_block_nonce > target_nonce {
-                            println!(
-                                "🕒total_duration: {:?} for {:?} rpc calls",
-                                total_duration, total_rpc_call
-                            );
-
-                            return Ok(block_number + 1);
-                        }
-                        block_number += 1;
-                    }
+                // This is indeed transition
+                if next_block_nonce == target_nonce + 1 {
+                    // mid + 1 is the block number of first transition
+                    return Ok(mid + 1);
+                } else {
+                    // This means index is in range of target nonces
+                    inner_lower_bound = mid + 1;
                 }
-                false => {
-                    if mid_nonce < target_nonce {
-                        inner_lower_bound = mid + 1;
-                    } else {
-                        inner_upper_bound = mid;
-                    }
-                }
+            } else if mid_nonce < target_nonce {
+                inner_lower_bound = mid + 1;
+            } else if mid_nonce > target_nonce {
+                inner_upper_bound = mid - 1;
             }
+
+            // println!("target: {}", target_nonce);
+            // println!("🔍mid: {}", mid);
+            // println!("🔍mid_nonce: {}", mid_nonce);
+            // println!("🔍inner_lower_bound: {}", inner_lower_bound);
+            // println!("🔍inner_upper_bound: {}", inner_upper_bound);
         }
 
         println!("😌target_nonce: {}", target_nonce);
@@ -819,22 +839,39 @@ mod tests {
         assert_eq!(storage_value.1, vec!["0xf838a120290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563959441ad2bc63a2059f9b623533d87fe99887d794847"]);
     }
 
+    #[tokio::test]
+    async fn get_block_range_from_massive_nonce_range() {
+        let provider = AbstractProvider::new(SEPOLIA_RPC_URL, 11155111);
+        let block_range = provider
+            .get_block_range_from_nonce_range(63878, 63898, 1, SEPOLIA_TARGET_ADDRESS.to_string())
+            .await
+            .unwrap();
+        assert_eq!(
+            block_range,
+            vec![
+                5604974, 5604986, 5604994, 5605004, 5605015, 5605024, 5605034, 5605044, 5605054,
+                5605064, 5605075, 5605084, 5605094, 5605104, 5605114, 5605127, 5605134, 5605145,
+                5605154, 5605164, 5605174
+            ]
+        );
+    }
+
     // TODO: Chunk the concurrent range to handle `429 Too Many Requests`
-    // #[tokio::test]
-    // async fn get_block_range_from_nonce_range() {
-    //     let provider = AbstractProvider::new(SEPOLIA_RPC_URL, 11155111);
-    //     let block_range = provider
-    //         .get_block_range_from_nonce_range(63878, 63888, 1, SEPOLIA_TARGET_ADDRESS.to_string())
-    //         .await
-    //         .unwrap();
-    //     assert_eq!(
-    //         block_range,
-    //         vec![
-    //             5604974, 5604986, 5604994, 5605004, 5605015, 5605024, 5605034, 5605044, 5605054,
-    //             5605064, 5605075
-    //         ]
-    //     );
-    // }
+    #[tokio::test]
+    async fn get_block_range_from_nonce_range() {
+        let provider = AbstractProvider::new(SEPOLIA_RPC_URL, 11155111);
+        let block_range = provider
+            .get_block_range_from_nonce_range(63878, 63888, 1, SEPOLIA_TARGET_ADDRESS.to_string())
+            .await
+            .unwrap();
+        assert_eq!(
+            block_range,
+            vec![
+                5604974, 5604986, 5604994, 5605004, 5605015, 5605024, 5605034, 5605044, 5605054,
+                5605064, 5605075
+            ]
+        );
+    }
 
     #[tokio::test]
     async fn get_block_range_from_nonce_smol_range() {
@@ -848,6 +885,28 @@ mod tests {
         assert_eq!(
             block_range,
             vec![5604974, 5604986, 5604994, 5605004, 5605015, 5605024, 5605034, 5605044]
+        );
+    }
+
+    const SEPOLIA_TARGET_ADDRESS_NON_CONSTANT: &str = "0x0a4De450feB156A2A51eD159b2fb99Da26E5F3A3";
+
+    // TODO: Handle non-constant nonce range (should not approach with loop)
+    // TODO: If then, chunk with nonce range, it doesn't matter
+    #[tokio::test]
+    async fn get_block_range_from_nonce_range_non_constant() {
+        let provider = AbstractProvider::new(SEPOLIA_RPC_URL, 11155111);
+        let block_range = provider
+            .get_block_range_from_nonce_range(
+                520,
+                524,
+                1,
+                SEPOLIA_TARGET_ADDRESS_NON_CONSTANT.to_string(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(
+            block_range,
+            vec![5530433, 5530441, 5530878, 5556642, 5572347]
         );
     }
 }
