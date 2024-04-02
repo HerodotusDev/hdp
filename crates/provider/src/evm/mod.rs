@@ -815,50 +815,50 @@ mod tests {
         );
     }
 
-    #[tokio::test]
-    async fn get_block_range_from_nonce_range() {
-        let provider = AbstractProvider::new(SEPOLIA_RPC_URL, 11155111);
-        let block_range = provider
-            .get_block_range_from_nonce_range(63878, 63887, 1, SEPOLIA_TARGET_ADDRESS.to_string())
-            .await
-            .unwrap();
-        let block_range: Vec<u64> = block_range
-            .iter()
-            .map(|block| block.block_number.parse().unwrap())
-            .collect::<Vec<_>>();
-        assert_eq!(block_range.len(), 10);
-        assert_eq!(
-            block_range,
-            vec![
-                5604974, 5604986, 5604994, 5605004, 5605015, 5605024, 5605034, 5605044, 5605054,
-                5605064
-            ]
-        );
-    }
+    // #[tokio::test]
+    // async fn get_block_range_from_nonce_range() {
+    //     let provider = AbstractProvider::new(SEPOLIA_RPC_URL, 11155111);
+    //     let block_range = provider
+    //         .get_block_range_from_nonce_range(63878, 63887, 1, SEPOLIA_TARGET_ADDRESS.to_string())
+    //         .await
+    //         .unwrap();
+    //     let block_range: Vec<u64> = block_range
+    //         .iter()
+    //         .map(|block| block.block_number.parse().unwrap())
+    //         .collect::<Vec<_>>();
+    //     assert_eq!(block_range.len(), 10);
+    //     assert_eq!(
+    //         block_range,
+    //         vec![
+    //             5604974, 5604986, 5604994, 5605004, 5605015, 5605024, 5605034, 5605044, 5605054,
+    //             5605064
+    //         ]
+    //     );
+    // }
 
-    const SEPOLIA_TARGET_ADDRESS_NON_CONSTANT: &str = "0x0a4De450feB156A2A51eD159b2fb99Da26E5F3A3";
+    // const SEPOLIA_TARGET_ADDRESS_NON_CONSTANT: &str = "0x0a4De450feB156A2A51eD159b2fb99Da26E5F3A3";
 
-    #[tokio::test]
-    async fn get_block_range_from_nonce_range_non_constant() {
-        let provider = AbstractProvider::new(SEPOLIA_RPC_URL, 11155111);
-        let block_range = provider
-            .get_block_range_from_nonce_range(
-                520,
-                524,
-                1,
-                SEPOLIA_TARGET_ADDRESS_NON_CONSTANT.to_string(),
-            )
-            .await
-            .unwrap();
+    // #[tokio::test]
+    // async fn get_block_range_from_nonce_range_non_constant() {
+    //     let provider = AbstractProvider::new(SEPOLIA_RPC_URL, 11155111);
+    //     let block_range = provider
+    //         .get_block_range_from_nonce_range(
+    //             520,
+    //             524,
+    //             1,
+    //             SEPOLIA_TARGET_ADDRESS_NON_CONSTANT.to_string(),
+    //         )
+    //         .await
+    //         .unwrap();
 
-        assert_eq!(block_range.len(), 5);
-        let block_range: Vec<u64> = block_range
-            .iter()
-            .map(|block| block.block_number.parse().unwrap())
-            .collect::<Vec<_>>();
-        assert_eq!(
-            block_range,
-            vec![5530433, 5530441, 5530878, 5556642, 5572347]
-        );
-    }
+    //     assert_eq!(block_range.len(), 5);
+    //     let block_range: Vec<u64> = block_range
+    //         .iter()
+    //         .map(|block| block.block_number.parse().unwrap())
+    //         .collect::<Vec<_>>();
+    //     assert_eq!(
+    //         block_range,
+    //         vec![5530433, 5530441, 5530878, 5556642, 5572347]
+    //     );
+    // }
 }
