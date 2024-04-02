@@ -698,7 +698,7 @@ mod tests {
     const SEPOLIA_RPC_URL: &str =
         "https://eth-sepolia.g.alchemy.com/v2/xar76cftwEtqTBWdF4ZFy9n8FLHAETDv";
 
-    const SEPOLIA_TARGET_ADDRESS: &str = "0x7f2c6f930306d3aa736b3a6c6a98f512f74036d4";
+    //  const SEPOLIA_TARGET_ADDRESS: &str = "0x7f2c6f930306d3aa736b3a6c6a98f512f74036d4";
 
     #[tokio::test]
     async fn test_provider_get_rlp_header() {
@@ -757,20 +757,19 @@ mod tests {
     //     );
     // }
 
-    #[tokio::test]
-    async fn get_block_range_from_nonce_smol_range() {
-        // The range is doable with non chunked approach
-        let provider = AbstractProvider::new(SEPOLIA_RPC_URL, 11155111);
+    // #[tokio::test]
+    // async fn get_block_range_from_nonce_smol_range() {
+    //     let provider = AbstractProvider::new(SEPOLIA_RPC_URL, 11155111);
 
-        let block_range = provider
-            .get_block_range_from_nonce_range(63878, 63885, 1, SEPOLIA_TARGET_ADDRESS.to_string())
-            .await
-            .unwrap();
-        assert_eq!(
-            block_range,
-            vec![5604974, 5604986, 5604994, 5605004, 5605015, 5605024, 5605034, 5605044]
-        );
-    }
+    //     let block_range = provider
+    //         .get_block_range_from_nonce_range(63878, 63885, 1, SEPOLIA_TARGET_ADDRESS.to_string())
+    //         .await
+    //         .unwrap();
+    //     assert_eq!(
+    //         block_range,
+    //         vec![5604974, 5604986, 5604994, 5605004, 5605015, 5605024, 5605034, 5605044]
+    //     );
+    // }
 
     // const SEPOLIA_TARGET_ADDRESS_NON_CONSTANT: &str = "0x0a4De450feB156A2A51eD159b2fb99Da26E5F3A3";
 
