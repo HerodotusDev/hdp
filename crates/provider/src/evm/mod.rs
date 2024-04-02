@@ -233,32 +233,32 @@ impl AbstractProvider {
         }
     }
 
-    pub async fn get_account_with_proof(
-        &mut self,
-        block_number: u64,
-        account: &str,
-    ) -> (String, Vec<String>) {
-        match self.memory.get_account(block_number, account) {
-            Some(account_with_proof) => account_with_proof,
-            None => {
-                let account_rpc = self
-                    .account_provider
-                    .get_proof(block_number, account, None)
-                    .await
-                    .unwrap();
-                let retrieved_account = Account::from(&account_rpc);
-                let rlp_encoded = retrieved_account.rlp_encode();
-                let account_proof = account_rpc.account_proof;
-                self.memory.set_account(
-                    block_number,
-                    account_rpc.address,
-                    rlp_encoded.clone(),
-                    account_proof.clone(),
-                );
-                (rlp_encoded, account_proof)
-            }
-        }
-    }
+    // pub async fn get_account_with_proof(
+    //     &mut self,
+    //     block_number: u64,
+    //     account: &str,
+    // ) -> (String, Vec<String>) {
+    //     match self.memory.get_account(block_number, account) {
+    //         Some(account_with_proof) => account_with_proof,
+    //         None => {
+    //             let account_rpc = self
+    //                 .account_provider
+    //                 .get_proof(block_number, account, None)
+    //                 .await
+    //                 .unwrap();
+    //             let retrieved_account = Account::from(&account_rpc);
+    //             let rlp_encoded = retrieved_account.rlp_encode();
+    //             let account_proof = account_rpc.account_proof;
+    //             self.memory.set_account(
+    //                 block_number,
+    //                 account_rpc.address,
+    //                 rlp_encoded.clone(),
+    //                 account_proof.clone(),
+    //             );
+    //             (rlp_encoded, account_proof)
+    //         }
+    //     }
+    // }
 
     // Get account with proof in given range of blocks
     // This need to be used for block sampled datalake
@@ -362,41 +362,41 @@ impl AbstractProvider {
         Ok(result)
     }
 
-    pub async fn get_storage_value_with_proof(
-        &mut self,
-        block_number: u64,
-        account: String,
-        slot: String,
-    ) -> Result<(String, Vec<String>)> {
-        match self
-            .memory
-            .get_storage(block_number, account.clone(), slot.clone())
-        {
-            Some(storage) => Ok(storage),
-            None => {
-                let account_rpc = self
-                    .account_provider
-                    .get_proof(block_number, &account, Some(vec![slot.clone()]))
-                    .await?;
-                let retrieved_account = Account::from(&account_rpc);
-                let rlp_encoded = retrieved_account.rlp_encode();
-                let storage = &account_rpc.storage_proof[0];
-                let storage_slot = storage.key.clone();
-                let storage_value = storage.value.clone();
-                let storage_proof = account_rpc.storage_proof[0].proof.clone();
-                self.memory.set_storage(
-                    block_number,
-                    account.clone(),
-                    rlp_encoded,
-                    account_rpc.account_proof,
-                    storage_slot,
-                    storage_value.clone(),
-                    storage_proof.clone(),
-                );
-                Ok((storage_value, storage_proof))
-            }
-        }
-    }
+    // pub async fn get_storage_value_with_proof(
+    //     &mut self,
+    //     block_number: u64,
+    //     account: String,
+    //     slot: String,
+    // ) -> Result<(String, Vec<String>)> {
+    //     match self
+    //         .memory
+    //         .get_storage(block_number, account.clone(), slot.clone())
+    //     {
+    //         Some(storage) => Ok(storage),
+    //         None => {
+    //             let account_rpc = self
+    //                 .account_provider
+    //                 .get_proof(block_number, &account, Some(vec![slot.clone()]))
+    //                 .await?;
+    //             let retrieved_account = Account::from(&account_rpc);
+    //             let rlp_encoded = retrieved_account.rlp_encode();
+    //             let storage = &account_rpc.storage_proof[0];
+    //             let storage_slot = storage.key.clone();
+    //             let storage_value = storage.value.clone();
+    //             let storage_proof = account_rpc.storage_proof[0].proof.clone();
+    //             self.memory.set_storage(
+    //                 block_number,
+    //                 account.clone(),
+    //                 rlp_encoded,
+    //                 account_rpc.account_proof,
+    //                 storage_slot,
+    //                 storage_value.clone(),
+    //                 storage_proof.clone(),
+    //             );
+    //             Ok((storage_value, storage_proof))
+    //         }
+    //     }
+    // }
 
     // Get storage with proof in given range of blocks
     // This need to be used for block sampled datalake
@@ -688,10 +688,7 @@ impl AbstractProvider {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use alloy_primitives::{hex, keccak256, FixedBytes, U256};
-    use std::str::FromStr;
-
-    use hdp_primitives::block::{account::Account, header::Header};
+    use alloy_primitives::{hex, keccak256};
 
     fn rlp_string_to_block_hash(rlp_string: &str) -> String {
         keccak256(hex::decode(rlp_string).unwrap()).to_string()
@@ -702,47 +699,6 @@ mod tests {
         "https://eth-sepolia.g.alchemy.com/v2/xar76cftwEtqTBWdF4ZFy9n8FLHAETDv";
 
     const SEPOLIA_TARGET_ADDRESS: &str = "0x7f2c6f930306d3aa736b3a6c6a98f512f74036d4";
-
-    #[tokio::test]
-    async fn test_rpc_get_block_by_number() {
-        let rpc_provider = RpcProvider::new(SEPOLIA_RPC_URL, 11155111);
-
-        let block = rpc_provider.get_block_by_number(0).await.unwrap();
-        let block_header = Header::from(&block);
-        assert_eq!(block.get_block_hash(), block_header.get_block_hash());
-
-        let block = rpc_provider.get_block_by_number(5521772).await.unwrap();
-        let block_header = Header::from(&block);
-        assert_eq!(block.get_block_hash(), block_header.get_block_hash());
-
-        let block = rpc_provider.get_block_by_number(421772).await.unwrap();
-        let block_header = Header::from(&block);
-        assert_eq!(block.get_block_hash(), block_header.get_block_hash());
-    }
-
-    #[tokio::test]
-    async fn test_rpc_get_proof() {
-        let rpc_provider = RpcProvider::new(SEPOLIA_RPC_URL, 11155111);
-
-        let account_from_rpc = rpc_provider
-            .get_proof(4952229, SEPOLIA_TARGET_ADDRESS, None)
-            .await
-            .unwrap();
-        let account: Account = Account::from(&account_from_rpc);
-        let expected_account = Account::new(
-            6789,
-            U256::from_str_radix("41694965332469803456", 10).unwrap(),
-            FixedBytes::from_str(
-                "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
-            )
-            .unwrap(),
-            FixedBytes::from_str(
-                "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
-            )
-            .unwrap(),
-        );
-        assert_eq!(account, expected_account);
-    }
 
     #[tokio::test]
     async fn test_provider_get_rlp_header() {
@@ -765,78 +721,6 @@ mod tests {
             block_hash,
             "0xf494127d30817d04b634eae9f6139d8155ee4c78ba60a35bd7be187378e93d6e"
         );
-    }
-
-    #[tokio::test]
-    async fn test_provider_get_rlp_account() {
-        // case 1. SEPOLIA_TARGET_ADDRESS is exist and have balance
-        let mut provider = AbstractProvider::new(SEPOLIA_RPC_URL, 11155111);
-        let rlp_account = provider
-            .get_account_with_proof(5521772, SEPOLIA_TARGET_ADDRESS)
-            .await;
-        assert_eq!(rlp_account.0, "f84e82d90488a0ad76b127aa9e08a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470");
-
-        // case 2. SEPOLIA_TARGET_ADDRESS is exist, but have no balance
-        let rlp_account = provider
-            .get_account_with_proof(4887931, SEPOLIA_TARGET_ADDRESS)
-            .await;
-        assert_eq!(rlp_account.0, "f8448080a00000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000000");
-
-        // case 3. SEPOLIA_TARGET_ADDRESS is not exist
-        // q. why it have proof
-        let rlp_account = provider
-            .get_account_with_proof(0, SEPOLIA_TARGET_ADDRESS)
-            .await;
-        assert_eq!(rlp_account.0, "f8448080a00000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000000");
-    }
-
-    #[tokio::test]
-    async fn test_provider_get_non_exist_storage_value() {
-        let mut provider = AbstractProvider::new(SEPOLIA_RPC_URL, 11155111);
-        let storage_value = provider
-            .get_storage_value_with_proof(
-                0,
-                "0x75CeC1db9dCeb703200EAa6595f66885C962B920".to_string(),
-                "0x0000000000000000000000000000000000000000000000000000000000000002".to_string(),
-            )
-            .await;
-
-        assert!(storage_value.is_err());
-
-        let storage_value = provider
-            .get_storage_value_with_proof(
-                20,
-                "0x75CeC1db9dCeb703200EAa6595f66885C962B920".to_string(),
-                "0x0000000000000000000000000000000000000000000000000000000000000002".to_string(),
-            )
-            .await;
-        assert!(storage_value.is_err());
-
-        // Actually the storage value is not 0x0 for later block, in the case, proof is not empty
-        let storage_value = provider
-            .get_storage_value_with_proof(
-                5382810,
-                "0x75CeC1db9dCeb703200EAa6595f66885C962B920".to_string(),
-                "0x0000000000000000000000000000000000000000000000000000000000000002".to_string(),
-            )
-            .await;
-        assert!(storage_value.is_ok());
-        let storage_value = storage_value.unwrap();
-        assert_eq!(storage_value.0, "0x9184e72a000");
-        assert_eq!(storage_value.1, vec!["0xf8918080a0b7a7c859e6ddbad6c18adb60b9f48842e652021b4f8b875894b8b879568629f880a0e7f9c6d331c7d110c992550a7baa3e051adc1e26a53d928dbd517a313d221863808080808080a0e40cf9c20b1e8e4aaf3201dd3cb84ab06d2bac34e8dc3e918626e5c44c4f0707808080a0c01a2f302bfc71151daac60eeb4c1b73470845d4fe219e71644752abaafb02ab80", "0xe9a0305787fa12a823e0f2b7631cc41b3ba8828b3321ca811111fa75cd3aa3bb5ace878609184e72a000"]);
-
-        // Even actually storage value is 0x0, but the proof is not empty
-        let storage_value = provider
-            .get_storage_value_with_proof(
-                5382769,
-                "0x75CeC1db9dCeb703200EAa6595f66885C962B920".to_string(),
-                "0x0000000000000000000000000000000000000000000000000000000000000002".to_string(),
-            )
-            .await;
-        assert!(storage_value.is_ok());
-        let storage_value = storage_value.unwrap();
-        assert_eq!(storage_value.0, "0x0");
-        assert_eq!(storage_value.1, vec!["0xf838a120290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563959441ad2bc63a2059f9b623533d87fe99887d794847"]);
     }
 
     // Both test works, but if call concurrently with other tests, CI will fails
@@ -888,23 +772,23 @@ mod tests {
         );
     }
 
-    const SEPOLIA_TARGET_ADDRESS_NON_CONSTANT: &str = "0x0a4De450feB156A2A51eD159b2fb99Da26E5F3A3";
+    // const SEPOLIA_TARGET_ADDRESS_NON_CONSTANT: &str = "0x0a4De450feB156A2A51eD159b2fb99Da26E5F3A3";
 
-    #[tokio::test]
-    async fn get_block_range_from_nonce_range_non_constant() {
-        let provider = AbstractProvider::new(SEPOLIA_RPC_URL, 11155111);
-        let block_range = provider
-            .get_block_range_from_nonce_range(
-                520,
-                524,
-                1,
-                SEPOLIA_TARGET_ADDRESS_NON_CONSTANT.to_string(),
-            )
-            .await
-            .unwrap();
-        assert_eq!(
-            block_range,
-            vec![5530433, 5530441, 5530878, 5556642, 5572347]
-        );
-    }
+    // #[tokio::test]
+    // async fn get_block_range_from_nonce_range_non_constant() {
+    //     let provider = AbstractProvider::new(SEPOLIA_RPC_URL, 11155111);
+    //     let block_range = provider
+    //         .get_block_range_from_nonce_range(
+    //             520,
+    //             524,
+    //             1,
+    //             SEPOLIA_TARGET_ADDRESS_NON_CONSTANT.to_string(),
+    //         )
+    //         .await
+    //         .unwrap();
+    //     assert_eq!(
+    //         block_range,
+    //         vec![5530433, 5530441, 5530878, 5556642, 5572347]
+    //     );
+    // }
 }

@@ -214,36 +214,36 @@ impl InMemoryProvider {
     //     self.cached_mmrs.insert(mmr_id, (root, size, peaks));
     // }
 
-    pub fn set_account(
-        &mut self,
-        block_number: u64,
-        address: String,
-        encoded_account: RlpEncodedValue,
-        account_proof: MPTProof,
-    ) {
-        self.cached_accounts
-            .entry(block_number)
-            .or_default()
-            .insert(address, (encoded_account, account_proof, HashMap::new()));
-    }
+    // pub fn set_account(
+    //     &mut self,
+    //     block_number: u64,
+    //     address: String,
+    //     encoded_account: RlpEncodedValue,
+    //     account_proof: MPTProof,
+    // ) {
+    //     self.cached_accounts
+    //         .entry(block_number)
+    //         .or_default()
+    //         .insert(address, (encoded_account, account_proof, HashMap::new()));
+    // }
 
-    #[allow(clippy::too_many_arguments)]
-    pub fn set_storage(
-        &mut self,
-        block_number: u64,
-        address: String,
-        encoded_account: RlpEncodedValue,
-        account_proof: MPTProof,
-        slot: String,
-        value: String,
-        storage_proof: MPTProof,
-    ) {
-        self.cached_accounts
-            .entry(block_number)
-            .or_default()
-            .entry(address)
-            .or_insert((encoded_account, account_proof, HashMap::new()))
-            .2
-            .insert(slot, (value, storage_proof));
-    }
+    // #[allow(clippy::too_many_arguments)]
+    // pub fn set_storage(
+    //     &mut self,
+    //     block_number: u64,
+    //     address: String,
+    //     encoded_account: RlpEncodedValue,
+    //     account_proof: MPTProof,
+    //     slot: String,
+    //     value: String,
+    //     storage_proof: MPTProof,
+    // ) {
+    //     self.cached_accounts
+    //         .entry(block_number)
+    //         .or_default()
+    //         .entry(address)
+    //         .or_insert((encoded_account, account_proof, HashMap::new()))
+    //         .2
+    //         .insert(slot, (value, storage_proof));
+    // }
 }

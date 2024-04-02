@@ -294,6 +294,11 @@ impl RpcProvider {
 
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
+
+    use alloy_primitives::{FixedBytes, U256};
+    use hdp_primitives::block::{account::Account, header::Header};
+
     use super::*;
 
     const HERODOTUS_RS_INDEXER_URL: &str = "https://rs-indexer.api.herodotus.cloud/accumulators";
@@ -361,5 +366,46 @@ mod tests {
             .unwrap();
 
         assert_eq!(tx_count, 5776);
+    }
+
+    #[tokio::test]
+    async fn test_get_block_by_number() {
+        let rpc_provider = RpcProvider::new(SEPOLIA_RPC_URL, 11155111);
+
+        let block = rpc_provider.get_block_by_number(0).await.unwrap();
+        let block_header = Header::from(&block);
+        assert_eq!(block.get_block_hash(), block_header.get_block_hash());
+
+        let block = rpc_provider.get_block_by_number(5521772).await.unwrap();
+        let block_header = Header::from(&block);
+        assert_eq!(block.get_block_hash(), block_header.get_block_hash());
+
+        let block = rpc_provider.get_block_by_number(421772).await.unwrap();
+        let block_header = Header::from(&block);
+        assert_eq!(block.get_block_hash(), block_header.get_block_hash())
+    }
+
+    #[tokio::test]
+    async fn test_rpc_get_proof() {
+        let rpc_provider = RpcProvider::new(SEPOLIA_RPC_URL, 11155111);
+
+        let account_from_rpc = rpc_provider
+            .get_proof(4952229, SEPOLIA_TARGET_ADDRESS, None)
+            .await
+            .unwrap();
+        let account: Account = Account::from(&account_from_rpc);
+        let expected_account = Account::new(
+            6789,
+            U256::from_str_radix("41694965332469803456", 10).unwrap(),
+            FixedBytes::from_str(
+                "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+            )
+            .unwrap(),
+            FixedBytes::from_str(
+                "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+            )
+            .unwrap(),
+        );
+        assert_eq!(account, expected_account);
     }
 }
