@@ -274,6 +274,8 @@ impl RpcProvider {
         } else {
             let mut filtered_txs = vec![];
             let mut index = 0;
+            let target_nonce_range_len = target_nonce_range.len();
+            let mut non_founded_txs = vec![];
             for target_nonce in target_nonce_range {
                 while index < tx_from_etherscan.len()
                     && tx_from_etherscan[index].nonce.parse::<u64>().unwrap() < target_nonce
@@ -283,13 +285,50 @@ impl RpcProvider {
                 if index < tx_from_etherscan.len()
                     && tx_from_etherscan[index].nonce.parse::<u64>().unwrap() == target_nonce
                 {
+                    // TODO: Do conversion from TxFromRpc to Tx decode/encode rlp
                     filtered_txs.push(tx_from_etherscan[index].clone());
                 } else {
-                    panic!("Tx not found for nonce: {}", target_nonce);
+                    non_founded_txs.push(target_nonce);
                 }
             }
+
+            // TODO: Etherscan API is not stable, Handle non founded txs
+
+            if target_nonce_range_len != filtered_txs.len() {
+                bail!("Not all txs found for nonce range")
+            }
+
             Ok(filtered_txs)
         }
+    }
+
+    pub async fn binary_search_for_nonce(
+        &self,
+        target_nonce: u64,
+        sender: &str,
+        lower_bound: u64,
+        upper_bound: u64,
+    ) -> Result<u64> {
+        let mut inner_lower_bound = lower_bound;
+        let mut inner_upper_bound = upper_bound;
+
+        while inner_lower_bound <= inner_upper_bound {
+            let mid = (inner_lower_bound + inner_upper_bound) / 2;
+
+            let mid_nonce = self.get_transaction_count(sender, mid).await?;
+
+            match mid_nonce == target_nonce {
+                true => {
+                    return Ok(mid);
+                }
+                false => match mid_nonce < target_nonce {
+                    true => inner_lower_bound = mid + 1,
+                    false => inner_upper_bound = mid - 1,
+                },
+            }
+        }
+
+        bail!("Nonce {} not found for sender: {}", target_nonce, sender)
     }
 
     // TODO: result should not chunked

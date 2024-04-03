@@ -1,11 +1,7 @@
 use anyhow::{bail, Result};
 use core::panic;
 use futures::future::join_all;
-use std::{
-    collections::HashMap,
-    sync::Arc,
-    time::{Duration, Instant},
-};
+use std::{collections::HashMap, sync::Arc, time::Instant};
 use tokio::{join, sync::RwLock};
 use tracing::{error, info};
 
@@ -49,6 +45,7 @@ pub struct AbstractProvider {
 
 impl AbstractProvider {
     pub fn new(rpc_url: &'static str, chain_id: u64) -> Self {
+        // TODO: Handle in better way
         let tx_provider = RpcProvider::new(
             if chain_id == 1 {
                 ETHERSCAN_API
@@ -558,12 +555,23 @@ impl AbstractProvider {
 
         //  Perform binary searches for start and end block in concurrent
         let (start_block_result, end_block_result) = join!(
-            self.binary_search_for_nonce(start_nonce, &sender, 0, latest_block_number),
-            self.binary_search_for_nonce(end_nonce + 1, &sender, 0, latest_block_number)
+            self.account_provider.binary_search_for_nonce(
+                start_nonce,
+                &sender,
+                0,
+                latest_block_number
+            ),
+            self.account_provider.binary_search_for_nonce(
+                end_nonce + 1,
+                &sender,
+                0,
+                latest_block_number
+            )
         );
 
         let start_block = start_block_result?;
         let end_block = end_block_result?;
+
         // ideally offset should be 1, but somehow etherscan api is unstable for last and first element
         let offset = end_nonce - start_nonce + 2;
 
@@ -584,52 +592,7 @@ impl AbstractProvider {
             )
             .await?;
 
-        assert_eq!(tx_result.len(), target_nonce_range.len());
-
         Ok(tx_result)
-    }
-
-    async fn binary_search_for_nonce(
-        &self,
-        target_nonce: u64,
-        sender: &str,
-        lower_bound: u64,
-        upper_bound: u64,
-    ) -> Result<u64> {
-        let mut total_duration = Duration::new(0, 0);
-        // let mut total_rpc_call = 0;
-        let mut inner_lower_bound = lower_bound;
-        let mut inner_upper_bound = upper_bound;
-
-        while inner_lower_bound <= inner_upper_bound {
-            let mid = (inner_lower_bound + inner_upper_bound) / 2;
-            let start_fetch = Instant::now();
-
-            let mid_nonce = self
-                .account_provider
-                .get_transaction_count(sender, mid)
-                .await?;
-
-            let duration = start_fetch.elapsed();
-
-            total_duration += duration;
-            //   total_rpc_call += 1;
-
-            match mid_nonce == target_nonce {
-                true => {
-                    // println!(
-                    //     "🕒total_duration: {:?} for {:?} rpc calls",
-                    //     total_duration, total_rpc_call
-                    // );
-                    return Ok(mid);
-                }
-                false => match mid_nonce < target_nonce {
-                    true => inner_lower_bound = mid + 1,
-                    false => inner_upper_bound = mid - 1,
-                },
-            }
-        }
-        bail!("Nonce not found")
     }
 }
 
