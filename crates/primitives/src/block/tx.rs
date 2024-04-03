@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct TxFromRpc {
+pub struct TxFromEtherscan {
     pub block_number: String,
     pub time_stamp: String,
     pub hash: String,

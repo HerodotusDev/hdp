@@ -9,13 +9,13 @@ use hdp_primitives::block::{
     header::{
         BlockHeaderFromRpc, MMRFromNewIndexer, MMRMetaFromNewIndexer, MMRProofFromNewIndexer,
     },
-    tx::TxFromRpc,
+    tx::TxFromEtherscan,
 };
 
 #[derive(Debug, Clone)]
 pub struct RpcProvider {
     client: Client,
-    url: &'static str,
+    pub url: &'static str,
     chain_id: u64,
 }
 
@@ -224,7 +224,7 @@ impl RpcProvider {
         sender: String,
         api_key: String,
         target_nonce_range: Vec<u64>,
-    ) -> Result<Vec<TxFromRpc>> {
+    ) -> Result<Vec<TxFromEtherscan>> {
         let query_params = &[
             ("module", "account"),
             ("action", "txlist"),
@@ -262,7 +262,7 @@ impl RpcProvider {
             .await
             .map_err(|e| anyhow!("Failed to parse response: {}", e))?;
 
-        let tx_from_etherscan: Vec<TxFromRpc> = from_value(rpc_response["result"].clone())?;
+        let tx_from_etherscan: Vec<TxFromEtherscan> = from_value(rpc_response["result"].clone())?;
 
         if tx_from_etherscan.is_empty() {
             bail!(
