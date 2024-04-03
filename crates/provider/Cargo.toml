@@ -16,3 +16,5 @@ tokio.workspace = true
 tracing.workspace = true
 
 futures = "0.3.30"
+# TODO: ideally should published
+eth-trie-proofs = { git = "https://github.com/HerodotusDev/eth-trie-proofs.git", branch = "main" }
