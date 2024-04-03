@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, vec};
 
 use anyhow::{anyhow, bail, Result};
 use reqwest::{header, Client};
@@ -223,6 +223,7 @@ impl RpcProvider {
         offset: u64,
         sender: String,
         api_key: String,
+        target_nonce_range: Vec<u64>,
     ) -> Result<Vec<TxFromRpc>> {
         let query_params = &[
             ("module", "account"),
@@ -271,7 +272,23 @@ impl RpcProvider {
                 to_block
             );
         } else {
-            Ok(tx_from_etherscan)
+            let mut filtered_txs = vec![];
+            let mut index = 0;
+            for target_nonce in target_nonce_range {
+                while index < tx_from_etherscan.len()
+                    && tx_from_etherscan[index].nonce.parse::<u64>().unwrap() < target_nonce
+                {
+                    index += 1;
+                }
+                if index < tx_from_etherscan.len()
+                    && tx_from_etherscan[index].nonce.parse::<u64>().unwrap() == target_nonce
+                {
+                    filtered_txs.push(tx_from_etherscan[index].clone());
+                } else {
+                    panic!("Tx not found for nonce: {}", target_nonce);
+                }
+            }
+            Ok(filtered_txs)
         }
     }
 
@@ -479,15 +496,16 @@ mod tests {
 
         let tx_hashes = rpc_provider
             .get_tx_hashes_from_etherscan(
-                5604974,
-                5605054,
+                5617230,
+                5617255,
                 10,
                 SEPOLIA_TARGET_ADDRESS.to_string(),
                 ETHERSCAN_API_KEY.to_string(),
+                vec![65102, 65103, 65104],
             )
             .await
             .unwrap();
 
-        assert_eq!(tx_hashes.len(), 9);
+        assert_eq!(tx_hashes.len(), 3);
     }
 }
