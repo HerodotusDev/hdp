@@ -1,5 +1,6 @@
 pub mod collection;
 pub mod datalake;
+pub mod output;
 pub mod rlp_fields;
 
 // Export all types

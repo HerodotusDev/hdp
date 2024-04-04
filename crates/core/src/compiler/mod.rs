@@ -1,34 +1,40 @@
 use std::{fmt, sync::Arc};
 
 use anyhow::{bail, Result};
-use hdp_primitives::datalake::{
-    block_sampled::types::{Account, Header, MMRMeta, Storage},
-    envelope::DatalakeEnvelope,
-};
+use hdp_primitives::datalake::envelope::DatalakeEnvelope;
 use hdp_provider::evm::AbstractProvider;
 use serde::{Deserialize, Serialize};
 use tokio::sync::RwLock;
 
-use self::block_sampled::compile_block_sampled_datalake;
+use self::{
+    block_sampled::{compile_block_sampled_datalake, CompiledBlockSampledDatalake},
+    transactions::CompiledTransactionsDatalake,
+};
 
 pub mod block_sampled;
 pub mod test;
+pub mod transactions;
 
-/// [`CompiledDatalake`] is a unified structure that contains all the required data to verify the datalake
-///
-/// Contains compiled results, headers, accounts, storages, and mmr_meta data.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct CompiledDatalake {
-    /// Targeted datalake's compiled results
-    pub values: Vec<String>,
-    /// Headers related to the datalake
-    pub headers: Vec<Header>,
-    /// Accounts related to the datalake
-    pub accounts: Vec<Account>,
-    /// Storages related to the datalake
-    pub storages: Vec<Storage>,
-    /// MMR meta data related to the headers
-    pub mmr_meta: MMRMeta,
+pub enum CompiledDatalakeEnvelope {
+    /// Block sampled datalake
+    BlockSampled(CompiledBlockSampledDatalake),
+    /// Transactions datalake
+    Transactions(CompiledTransactionsDatalake),
+}
+
+impl CompiledDatalakeEnvelope {
+    ///Get values from compiled datalake
+    pub fn get_values(&self) -> Vec<String> {
+        match self {
+            CompiledDatalakeEnvelope::BlockSampled(compiled_block_sampled_datalake) => {
+                compiled_block_sampled_datalake.values.clone()
+            }
+            CompiledDatalakeEnvelope::Transactions(compiled_transactions_datalake) => {
+                compiled_transactions_datalake.values.clone()
+            }
+        }
+    }
 }
 
 pub struct DatalakeCompiler {
@@ -62,11 +68,11 @@ impl DatalakeCompiler {
     pub async fn compile(
         &self,
         provider: &Arc<RwLock<AbstractProvider>>,
-    ) -> Result<CompiledDatalake> {
+    ) -> Result<CompiledDatalakeEnvelope> {
         let result_datapoints = match &self.datalake {
-            DatalakeEnvelope::BlockSampled(datalake) => {
-                compile_block_sampled_datalake(datalake.clone(), provider).await?
-            }
+            DatalakeEnvelope::BlockSampled(datalake) => CompiledDatalakeEnvelope::BlockSampled(
+                compile_block_sampled_datalake(datalake.clone(), provider).await?,
+            ),
             DatalakeEnvelope::Transactions(_) => {
                 bail!("Transactions datalake type doesn't support yet")
             }
