@@ -966,6 +966,7 @@ dependencies = [
 [[package]]
 name = "eth-trie-proofs"
 version = "0.1.0"
+source = "git+https://github.com/HerodotusDev/eth-trie-proofs.git?branch=main#ec1f9c25a30bfacd412ddfdff573eb9048ab8788"
 dependencies = [
  "alloy-consensus",
  "alloy-eips",
