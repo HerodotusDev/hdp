@@ -1,7 +1,10 @@
 use std::str::FromStr;
 
 use alloy_dyn_abi::{DynSolType, DynSolValue};
-use alloy_primitives::{hex::FromHex, keccak256, FixedBytes};
+use alloy_primitives::{
+    hex::{self, FromHex},
+    keccak256, FixedBytes,
+};
 use anyhow::{bail, Result};
 
 use hdp_primitives::{
@@ -37,7 +40,7 @@ impl ComputationalTaskWithDatalake {
             DynSolValue::FixedBytes(utf8_str_to_fixed_bytes32(&self.task.aggregate_fn_id), 32);
         let aggregate_fn_ctx_value = match &self.task.aggregate_fn_ctx {
             None => DynSolValue::Bytes("".to_string().into_bytes()),
-            Some(ctx) => DynSolValue::Bytes(ctx.clone().into_bytes()),
+            Some(ctx) => DynSolValue::Bytes(hex::decode(ctx)?),
         };
 
         let header_tuple_value = DynSolValue::Tuple(vec![
@@ -75,7 +78,7 @@ impl ComputationalTask {
 
         let aggregate_fn_ctx_value = match &self.aggregate_fn_ctx {
             None => DynSolValue::Bytes("".to_string().into_bytes()),
-            Some(ctx) => DynSolValue::Bytes(ctx.clone().into_bytes()),
+            Some(ctx) => DynSolValue::Bytes(hex::decode(ctx)?),
         };
 
         let header_tuple_value =
@@ -96,8 +99,17 @@ impl ComputationalTask {
             DynSolValue::FixedBytes(bytes, _) => fixed_bytes_str_to_utf8_str(bytes)?,
             _ => bail!("Invalid aggregate_fn_id type"),
         };
-
-        let aggregate_fn_ctx = value[1].as_str().map(|s| s.to_string());
+        // Turn bytes into hex string
+        let aggregate_fn_ctx = match value[1].as_bytes() {
+            Some(bytes) => {
+                if bytes.is_empty() {
+                    None
+                } else {
+                    Some(bytes_to_hex_string(bytes))
+                }
+            }
+            None => None,
+        };
 
         Ok(ComputationalTask {
             aggregate_fn_id,

@@ -28,6 +28,11 @@ pub fn bytes_to_hex_string(bytes: &[u8]) -> String {
     format!("0x{}", hex::encode(bytes))
 }
 
+pub fn hex_string_to_bytes(hex_string: &str) -> Result<Vec<u8>> {
+    let hex_string = hex_string.trim_start_matches("0x");
+    Ok(hex::decode(hex_string)?)
+}
+
 /// Get the last byte of a byte array as a u8
 pub fn last_byte_to_u8(bytes: &[u8]) -> u8 {
     *bytes.last().unwrap_or(&0)
@@ -66,10 +71,18 @@ mod tests {
         let input = [0, 0, 0, 0, 0];
         let result = bytes_to_hex_string(&input);
         assert_eq!(result, "0x0000000000");
+        assert_eq!(hex_string_to_bytes(&result).unwrap(), input);
 
         let input = [0, 0, 0, 9, 2];
         let result = bytes_to_hex_string(&input);
         assert_eq!(result, "0x0000000902");
+
+        let hex = "030fff";
+        let input = hex_string_to_bytes(hex).unwrap();
+        assert_eq!(input, [3, 15, 255]);
+        let result = bytes_to_hex_string(&input);
+        assert_eq!(result, "0x030fff");
+        assert_eq!(hex_string_to_bytes(&result).unwrap(), input);
     }
 
     #[test]
