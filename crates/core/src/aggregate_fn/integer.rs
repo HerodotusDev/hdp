@@ -112,6 +112,7 @@ pub fn sum(values: &[U256]) -> Result<String> {
 /// - 04: Less than (<)
 /// - 05: Less than or equal (<=)
 pub fn count_if(values: &[U256], ctx: &str) -> Result<String> {
+    let ctx = ctx.trim_start_matches("0x");
     let logical_operator = &ctx[0..2];
     let value_to_compare = U256::from_str_radix(&ctx[2..], 16).unwrap();
 

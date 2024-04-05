@@ -1,24 +1,39 @@
 use hdp_primitives::datalake::{
     block_sampled::{BlockSampledCollection, BlockSampledDatalake},
+    output::{Header, HeaderProof, MMRMeta, MPTProof},
     DatalakeField,
 };
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
 use alloy_primitives::keccak256;
 use anyhow::Result;
 
-use hdp_primitives::datalake::block_sampled::types::{
-    Account, Header, HeaderProof, MPTProof, Storage,
-};
+use hdp_primitives::datalake::block_sampled::output::{Account, Storage};
 use hdp_provider::evm::AbstractProvider;
 use tokio::sync::RwLock;
 
-use super::CompiledDatalake;
+/// [`CompiledBlockSampledDatalake`] is a unified structure that contains all the required data to verify the datalake
+///
+/// Contains compiled results, headers, accounts, storages, and mmr_meta data.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CompiledBlockSampledDatalake {
+    /// Targeted datalake's compiled results
+    pub values: Vec<String>,
+    /// Headers related to the datalake
+    pub headers: Vec<Header>,
+    /// Accounts related to the datalake
+    pub accounts: Vec<Account>,
+    /// Storages related to the datalake
+    pub storages: Vec<Storage>,
+    /// MMR meta data related to the headers
+    pub mmr_meta: MMRMeta,
+}
 
 pub async fn compile_block_sampled_datalake(
     datalake: BlockSampledDatalake,
     provider: &Arc<RwLock<AbstractProvider>>,
-) -> Result<CompiledDatalake> {
+) -> Result<CompiledBlockSampledDatalake> {
     let mut abstract_provider = provider.write().await;
 
     let mut aggregation_set: Vec<String> = Vec::new();
@@ -156,7 +171,7 @@ pub async fn compile_block_sampled_datalake(
         }
     }
 
-    Ok(CompiledDatalake {
+    Ok(CompiledBlockSampledDatalake {
         values: aggregation_set,
         headers,
         accounts,
