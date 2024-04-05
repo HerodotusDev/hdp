@@ -450,7 +450,7 @@ mod tests {
             .unwrap();
 
         let mmr_meta = &block_header.0;
-        assert_eq!(mmr_meta.mmr_id, 3);
+        assert_eq!(mmr_meta.mmr_id, 5);
         let length = block_header.1.len();
         assert_eq!(length, 30);
         let block_4952200 = block_header.1.get(&4952200).unwrap();
