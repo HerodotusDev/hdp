@@ -77,9 +77,6 @@ All examples are tested with `script/integration.sh`. The currently compiled HDP
 ```bash
 # Install with cargo
 ❯ cargo install --git https://github.com/HerodotusDev/hdp --locked --force
-
-# Run the HDP
-❯ hdp run --help
 ```
 
 ### Build from source
@@ -90,9 +87,24 @@ All examples are tested with `script/integration.sh`. The currently compiled HDP
 
 # install hdp
 ❯ cargo install --path cli -f
+```
 
-# Run the HDP
-❯ hdp run --help
+## Quick Start
+
+For new users not familiar with how to send HDP requests, we provide the `hdp start` command to enter the interactive CLI app.
+
+```bash
+# Start the HDP
+❯ hdp start
+Welcome to Herodotus Data Processor interactive CLI! 🛰️
+
+                _   _   ____    ____
+                | | | | |  _ \  |  _ \
+                | |_| | | | | | | |_) |
+                |  _  | | |_| | |  __/
+                |_| |_| |____/  |_|
+
+? Step 1. What's your datalake type?
 ```
 
 ## HDP run
