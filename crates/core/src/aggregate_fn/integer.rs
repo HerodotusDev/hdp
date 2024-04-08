@@ -157,6 +157,18 @@ pub fn count_if(values: &[U256], ctx: &str) -> Result<String> {
     Ok(condition_satisfiability_count.to_string())
 }
 
+pub fn count_if_operator_matcher(operator_bytes: String) -> Result<String> {
+    match operator_bytes.as_str() {
+        "=" => Ok("00".into()),
+        "!=" => Ok("01".into()),
+        ">" => Ok("02".into()),
+        ">=" => Ok("03".into()),
+        "<" => Ok("04".into()),
+        "<=" => Ok("05".into()),
+        _ => bail!("invalid operation"),
+    }
+}
+
 // Handle division properly using U256 type
 fn divide(a: U256, b: U256) -> String {
     if b.is_zero() {

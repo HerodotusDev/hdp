@@ -9,6 +9,7 @@ use tracing_subscriber::FmtSubscriber;
 
 use clap::{Parser, Subcommand};
 use hdp_core::{
+    aggregate_fn::integer::count_if_operator_matcher,
     codec::{
         datalake_decoder, datalakes_decoder, datalakes_encoder, task_decoder, tasks_decoder,
         tasks_encoder,
@@ -251,17 +252,23 @@ async fn main() -> Result<()> {
                     match choice {
                         "Block Sampled" => {
                             let block_range_start: u64 = inquire::Text::new("Block range start")
-                                .with_help_message("Enter the block range start")
+                                .with_help_message(
+                                    "What is the block range start? (Enter to set default)",
+                                )
                                 .with_default("4952200")
                                 .prompt()?
                                 .parse()?;
                             let block_range_end: u64 = inquire::Text::new("Block range end")
-                                .with_help_message("Enter the block range end")
+                                .with_help_message(
+                                    "What is the block range end? (Enter to set default)",
+                                )
                                 .with_default("4952229")
                                 .prompt()?
                                 .parse()?;
                             let increment: u64 = inquire::Text::new("Increment")
-                                .with_help_message("Enter the increment")
+                                .with_help_message(
+                                    "How many blocks to skip in the range? (Enter to set default)",
+                                )
                                 .with_default("1")
                                 .prompt()?
                                 .parse()?;
@@ -270,6 +277,7 @@ async fn main() -> Result<()> {
                                 "Sample Property: Select block sample type",
                                 collection_opts,
                             )
+                            .with_help_message("What type of block sample do you want to process?")
                             .prompt()?;
                             let sampled_property = match collection_ans {
                                 "header" => {
@@ -297,7 +305,7 @@ async fn main() -> Result<()> {
                                     ];
 
                                     let header_ans: &str =
-                                        Select::new("Select detail header property", header_opts)
+                                        Select::new("Select detail header property", header_opts).with_help_message("What header property do you want to sample? (all properties are decodable from rlp encoded data)")
                                             .prompt()?;
 
                                     format!("header.{}", header_ans)
@@ -310,6 +318,7 @@ async fn main() -> Result<()> {
                                         vec!["nonce", "balance", "storage_root", "code_hash"];
                                     let account_ans: &str =
                                         Select::new("Select detail account property", account_opts)
+                                        .with_help_message("What account property do you want to sample? (all properties are decodable from rlp encoded data)")
                                             .prompt()?;
                                     format!("account.{}.{}", address, account_ans)
                                 }
@@ -336,20 +345,37 @@ async fn main() -> Result<()> {
                             let task_opts: Vec<&str> = vec!["AVG", "SUM", "MIN", "MAX", "COUNTIF"];
 
                             let aggregate_fn_id = Select::new(
-                                "Step 2. How do you want to aggregate this datalake?",
+                                "Select the aggregation function",
                                 task_opts,
+                            )
+                            .with_help_message(
+                                "Step 2. What type of aggregation do you want to perform on the datalake?",
                             )
                             .prompt()?
                             .to_lowercase();
 
                             let aggregate_fn_ctx = match aggregate_fn_id.as_str() {
                                 "countif" => {
-                                    let ctx: String =
-                                        inquire::Text::new("Enter the detail ctx for countif")
-                                            .with_help_message("Enter the ctx")
+                                    let operator_opts: Vec<&str> =
+                                        vec!["=", "!=", ">", ">=", "<", "<="];
+                                    let operator_bytes = count_if_operator_matcher(
+                                        Select::new("Select the COURNIF operator", operator_opts)
+                                            .with_help_message(
+                                                "How would like to set opersation case?",
+                                            )
                                             .prompt()?
-                                            .parse()?;
-                                    Some(ctx)
+                                            .into(),
+                                    )?;
+
+                                    let value: String = inquire::Text::new(
+                                        "Enter the value to compare",
+                                    )
+                                    .with_help_message(
+                                        "Make sure to input hexadecimal bytes in even length: fff(X), 0fff(O)",
+                                    )
+                                    .prompt()?
+                                    .parse()?;
+                                    Some(format!("{}{}", operator_bytes, value))
                                 }
                                 _ => None,
                             };
