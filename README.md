@@ -150,7 +150,7 @@ Finally, add proper tests to see if it works as expected. Especially for integer
 
 ```console
 ❯ hdp --help
-Herodotus Data Processor in Rust
+Interact Herodotus Data Processor via CLI
 
 Usage: hdp <COMMAND>
 
