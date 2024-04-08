@@ -231,11 +231,20 @@ async fn main() -> Result<()> {
     dotenv::dotenv().ok();
     match cli.command {
         Commands::Start => {
-            info!("HDP Cli Started");
+            println!("Welcome to Herodotus Data Processor interactive CLI! 🛰️");
+            println!(
+                r"
+                _   _   ____    ____  
+                | | | | |  _ \  |  _ \ 
+                | |_| | | | | | | |_) |
+                |  _  | | |_| | |  __/ 
+                |_| |_| |____/  |_|    
+    "
+            );
             let datalake_opts: Vec<&str> = vec!["Block Sampled", "Transactions By Block"];
 
             let ans: Result<&str, InquireError> =
-                Select::new("Step1. What's your datalake type?", datalake_opts).prompt();
+                Select::new("Step 1. What's your datalake type?", datalake_opts).prompt();
 
             match ans {
                 Ok(choice) => {
@@ -327,7 +336,7 @@ async fn main() -> Result<()> {
                             let task_opts: Vec<&str> = vec!["AVG", "SUM", "MIN", "MAX", "COUNTIF"];
 
                             let aggregate_fn_id = Select::new(
-                                "Step2. How do you want to aggregate this datalake?",
+                                "Step 2. How do you want to aggregate this datalake?",
                                 task_opts,
                             )
                             .prompt()?
