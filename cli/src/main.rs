@@ -3,11 +3,13 @@ use hdp_primitives::datalake::{
     block_sampled::BlockSampledDatalake, envelope::DatalakeEnvelope,
     transactions::TransactionsDatalake,
 };
+use inquire::{error::InquireError, Select};
 use std::{sync::Arc, vec};
 use tracing_subscriber::FmtSubscriber;
 
 use clap::{Parser, Subcommand};
 use hdp_core::{
+    aggregate_fn::integer::count_if_operator_matcher,
     codec::{
         datalake_decoder, datalakes_decoder, datalakes_encoder, task_decoder, tasks_decoder,
         tasks_encoder,
@@ -33,6 +35,7 @@ struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum Commands {
+    Start,
     ///  Encode the task and datalake in batched format test purposes
     #[command(arg_required_else_help = true)]
     Encode {
@@ -73,7 +76,10 @@ enum Commands {
 
     /// Decode one task and one datalake (not batched format)
     #[command(arg_required_else_help = true)]
-    DecodeOne { task: String, datalake: String },
+    DecodeOne {
+        task: String,
+        datalake: String,
+    },
     /// Run the evaluator
     Run {
         /// Batched tasks bytes
@@ -225,6 +231,211 @@ async fn main() -> Result<()> {
     let cli = Cli::parse();
     dotenv::dotenv().ok();
     match cli.command {
+        Commands::Start => {
+            println!("Welcome to Herodotus Data Processor interactive CLI! 🛰️");
+            println!(
+                r"
+                _   _   ____    ____  
+                | | | | |  _ \  |  _ \ 
+                | |_| | | | | | | |_) |
+                |  _  | | |_| | |  __/ 
+                |_| |_| |____/  |_|    
+    "
+            );
+            let datalake_opts: Vec<&str> = vec!["Block Sampled", "Transactions By Block"];
+
+            let ans: Result<&str, InquireError> =
+                Select::new("Step 1. What's your datalake type?", datalake_opts).prompt();
+
+            match ans {
+                Ok(choice) => {
+                    match choice {
+                        "Block Sampled" => {
+                            let block_range_start: u64 = inquire::Text::new("Block range start")
+                                .with_help_message(
+                                    "What is the block range start? (Enter to set default)",
+                                )
+                                .with_default("4952200")
+                                .prompt()?
+                                .parse()?;
+                            let block_range_end: u64 = inquire::Text::new("Block range end")
+                                .with_help_message(
+                                    "What is the block range end? (Enter to set default)",
+                                )
+                                .with_default("4952229")
+                                .prompt()?
+                                .parse()?;
+                            let increment: u64 = inquire::Text::new("Increment")
+                                .with_help_message(
+                                    "How many blocks to skip in the range? (Enter to set default)",
+                                )
+                                .with_default("1")
+                                .prompt()?
+                                .parse()?;
+                            let collection_opts: Vec<&str> = vec!["header", "account", "storage"];
+                            let collection_ans: &str = Select::new(
+                                "Sample Property: Select block sample type",
+                                collection_opts,
+                            )
+                            .with_help_message("What type of block sample do you want to process?")
+                            .prompt()?;
+                            let sampled_property = match collection_ans {
+                                "header" => {
+                                    let header_opts: Vec<&str> = vec![
+                                        "parent_hash",
+                                        "ommers_hash",
+                                        "beneficiary",
+                                        "state_root",
+                                        "transactions_root",
+                                        "receipts_root",
+                                        "logs_bloom",
+                                        "difficulty",
+                                        "number",
+                                        "gas_limit",
+                                        "gas_used",
+                                        "timestamp",
+                                        "extra_data",
+                                        "mix_hash",
+                                        "nonce",
+                                        "base_fee_per_gas",
+                                        "withdrawals_root",
+                                        "blob_gas_used",
+                                        "excess_blob_gas",
+                                        "parent_beacon_block_root",
+                                    ];
+
+                                    let header_ans: &str =
+                                        Select::new("Select detail header property", header_opts).with_help_message("What header property do you want to sample? (all properties are decodable from rlp encoded data)")
+                                            .prompt()?;
+
+                                    format!("header.{}", header_ans)
+                                }
+                                "account" => {
+                                    let address = inquire::Text::new("Enter target address")
+                                        .with_help_message("Enter target address")
+                                        .prompt()?;
+                                    let account_opts: Vec<&str> =
+                                        vec!["nonce", "balance", "storage_root", "code_hash"];
+                                    let account_ans: &str =
+                                        Select::new("Select detail account property", account_opts)
+                                        .with_help_message("What account property do you want to sample? (all properties are decodable from rlp encoded data)")
+                                            .prompt()?;
+                                    format!("account.{}.{}", address, account_ans)
+                                }
+                                "storage" => {
+                                    let address = inquire::Text::new("Enter target address")
+                                        .with_help_message("Enter target address")
+                                        .prompt()?;
+                                    let storage_key =
+                                        inquire::Text::new("Enter target storage key")
+                                            .with_help_message("Enter the storage key")
+                                            .prompt()?;
+                                    format!("storage.{}.{}", address, storage_key)
+                                }
+                                _ => "".to_string(),
+                            };
+                            let block_sampled_datalake = BlockSampledDatalake::new(
+                                block_range_start,
+                                block_range_end,
+                                sampled_property,
+                                increment,
+                            )?;
+                            let datalake = DatalakeEnvelope::BlockSampled(block_sampled_datalake);
+
+                            let task_opts: Vec<&str> = vec!["AVG", "SUM", "MIN", "MAX", "COUNTIF"];
+
+                            let aggregate_fn_id = Select::new(
+                                "Select the aggregation function",
+                                task_opts,
+                            )
+                            .with_help_message(
+                                "Step 2. What type of aggregation do you want to perform on the datalake?",
+                            )
+                            .prompt()?
+                            .to_lowercase();
+
+                            let aggregate_fn_ctx = match aggregate_fn_id.as_str() {
+                                "countif" => {
+                                    let operator_opts: Vec<&str> =
+                                        vec!["=", "!=", ">", ">=", "<", "<="];
+                                    let operator_bytes = count_if_operator_matcher(
+                                        Select::new("Select the COURNIF operator", operator_opts)
+                                            .with_help_message(
+                                                "How would like to set opersation case?",
+                                            )
+                                            .prompt()?
+                                            .into(),
+                                    )?;
+
+                                    let value: String = inquire::Text::new(
+                                        "Enter the value to compare",
+                                    )
+                                    .with_help_message(
+                                        "Make sure to input hexadecimal bytes in even length: fff(X), 0fff(O)",
+                                    )
+                                    .prompt()?
+                                    .parse()?;
+                                    Some(format!("{}{}", operator_bytes, value))
+                                }
+                                _ => None,
+                            };
+
+                            let encoded_result = handle_encode_multiple(
+                                vec![ComputationalTask::new(aggregate_fn_id, aggregate_fn_ctx)],
+                                vec![datalake],
+                            )
+                            .await?;
+
+                            let allow_run: bool =
+                                inquire::Confirm::new("Do you want to run the evaluator?")
+                                    .with_default(true)
+                                    .prompt()?;
+                            if allow_run {
+                                let rpc_url: Option<String> =
+                                    match inquire::Text::new("Enter RPC URL: ")
+                                        .with_help_message("Skip if you have it in your .env file")
+                                        .prompt()
+                                    {
+                                        Ok(url) => Some(url),
+                                        Err(_) => None,
+                                    };
+                                let chain_id: Option<u64> =
+                                    match inquire::Text::new("Enter Chain ID: ")
+                                        .with_help_message("Skip if you have it in your .env file")
+                                        .prompt()
+                                    {
+                                        Ok(chain_id) => match chain_id.as_str() {
+                                            "" => None,
+                                            _ => Some(chain_id.parse()?),
+                                        },
+                                        Err(_) => None,
+                                    };
+                                let output_file: String =
+                                    inquire::Text::new("Enter Output file path: ")
+                                        .with_default("output.json")
+                                        .prompt()?;
+                                let cairo_input: String =
+                                    inquire::Text::new("Enter Cairo input file path:")
+                                        .with_default("input.json")
+                                        .prompt()?;
+
+                                handle_run(
+                                    Some(encoded_result.tasks),
+                                    Some(encoded_result.datalakes),
+                                    rpc_url,
+                                    chain_id,
+                                    Some(output_file),
+                                    Some(cairo_input),
+                                )
+                                .await?
+                            }
+                        }
+                        _ => eprintln!("Invalid choice"),
+                    };
+                }
+                Err(_) => println!("There was an error, please try again"),
+            }
+        }
         Commands::Encode {
             allow_run,
             rpc_url,

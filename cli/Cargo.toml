@@ -3,7 +3,7 @@ name = "hdp-cli"
 version = "0.2.0"
 edition = "2021"
 license = "GPL-3.0"
-description = "Herodotus Data Processor in Rust"
+description = "Interact Herodotus Data Processor via CLI"
 authors = ["Pia <pia@herodotus.dev>"]
 homepage = "https://herodotus.dev/"
 repository = "https://github.com/HerodotusDev/hdp"
@@ -25,6 +25,7 @@ hdp-core = { workspace = true }
 anyhow = { workspace = true }
 tokio = { workspace = true }
 serde_json = { workspace = true }
+serde = { workspace = true }
 tracing = { workspace = true }
 hdp-provider = { workspace = true }
 hdp-primitives = { workspace = true }
@@ -32,3 +33,5 @@ hdp-primitives = { workspace = true }
 clap = { version = "4.4.4", features = ["derive"] }
 dotenv = "0.15.0"
 tracing-subscriber = "0.3.0"
+toml = "0.8.12"
+inquire = "0.7.4"
