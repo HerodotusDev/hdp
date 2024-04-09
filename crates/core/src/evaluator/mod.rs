@@ -11,7 +11,6 @@ use std::{
 use tokio::sync::RwLock;
 
 use crate::{
-    aggregate_fn::AggregationFunction,
     compiler::{CompiledDatalakeEnvelope, DatalakeCompiler},
     task::ComputationalTaskWithDatalake,
 };
@@ -305,11 +304,10 @@ pub async fn evaluator(
         let compiler = DatalakeCompiler::new(inner_datalake);
         let datalake_result = compiler.compile(&provider).await?;
 
-        let aggregation_fn =
-            AggregationFunction::from_str(&task_with_datalake.task.aggregate_fn_id)?;
-        let aggregation_fn_ctx = task_with_datalake.task.aggregate_fn_ctx;
+        let aggregation_fn = &task_with_datalake.task.aggregate_fn_id;
+        let fn_context = task_with_datalake.task.aggregate_fn_ctx;
         // Compute datalake over specified aggregation function
-        let result = aggregation_fn.operation(&datalake_result.get_values(), aggregation_fn_ctx)?;
+        let result = aggregation_fn.operation(&datalake_result.get_values(), fn_context)?;
         // Save the datalake results
         results
             .compiled_results

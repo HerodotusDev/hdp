@@ -29,6 +29,7 @@ serde = { workspace = true }
 tracing = { workspace = true }
 hdp-provider = { workspace = true }
 hdp-primitives = { workspace = true }
+alloy-primitives = { workspace = true }
 
 clap = { version = "4.4.4", features = ["derive"] }
 dotenv = "0.15.0"

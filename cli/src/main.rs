@@ -1,15 +1,16 @@
+use alloy_primitives::U256;
 use anyhow::{bail, Result};
 use hdp_primitives::datalake::{
     block_sampled::BlockSampledDatalake, envelope::DatalakeEnvelope,
     transactions::TransactionsDatalake,
 };
 use inquire::{error::InquireError, Select};
-use std::{sync::Arc, vec};
+use std::{str::FromStr, sync::Arc, vec};
 use tracing_subscriber::FmtSubscriber;
 
 use clap::{Parser, Subcommand};
 use hdp_core::{
-    aggregate_fn::integer::count_if_operator_matcher,
+    aggregate_fn::{integer::Operator, FunctionContext},
     codec::{
         datalake_decoder, datalakes_decoder, datalakes_encoder, task_decoder, tasks_decoder,
         tasks_encoder,
@@ -45,8 +46,9 @@ enum Commands {
 
         /// The aggregate function id e.g. "sum", "min", "avg"
         aggregate_fn_id: String,
-        /// The aggregate function context. It depends on the aggregate function
-        aggregate_fn_ctx: Option<String>,
+
+        aggregate_fn_ctx: Option<FunctionContext>,
+
         #[command(subcommand)]
         command: DataLakeCommands,
 
@@ -342,7 +344,7 @@ async fn main() -> Result<()> {
                             )?;
                             let datalake = DatalakeEnvelope::BlockSampled(block_sampled_datalake);
 
-                            let task_opts: Vec<&str> = vec!["AVG", "SUM", "MIN", "MAX", "COUNTIF"];
+                            let task_opts: Vec<&str> = vec!["AVG", "SUM", "MIN", "MAX", "COUNT"];
 
                             let aggregate_fn_id = Select::new(
                                 "Select the aggregation function",
@@ -352,30 +354,25 @@ async fn main() -> Result<()> {
                                 "Step 2. What type of aggregation do you want to perform on the datalake?",
                             )
                             .prompt()?
-                            .to_lowercase();
+                      ;
 
-                            let aggregate_fn_ctx = match aggregate_fn_id.as_str() {
-                                "countif" => {
-                                    let operator_opts: Vec<&str> =
-                                        vec!["=", "!=", ">", ">=", "<", "<="];
-                                    let operator_bytes = count_if_operator_matcher(
-                                        Select::new("Select the COURNIF operator", operator_opts)
-                                            .with_help_message(
-                                                "How would like to set opersation case?",
-                                            )
-                                            .prompt()?
-                                            .into(),
-                                    )?;
-
-                                    let value: String = inquire::Text::new(
-                                        "Enter the value to compare",
+                            let aggregate_fn_ctx = match aggregate_fn_id {
+                                "COUNT" => {
+                                    let operator_ans: String = Select::new(
+                                        "Select the COURNIF operator",
+                                        vec!["=", "!=", ">", ">=", "<", "<="],
                                     )
-                                    .with_help_message(
-                                        "Make sure to input hexadecimal bytes in even length: fff(X), 0fff(O)",
-                                    )
+                                    .with_help_message("How would like to set opersation case?")
                                     .prompt()?
-                                    .parse()?;
-                                    Some(format!("{}{}", operator_bytes, value))
+                                    .into();
+                                    let value_to_compare: String =
+                                        inquire::Text::new("Enter the value to compare")
+                                            .with_help_message("Make sure to input Uint256 value")
+                                            .prompt()?;
+                                    Some(FunctionContext::new(
+                                        Operator::from_symbol(&operator_ans)?,
+                                        U256::from_str(&value_to_compare)?,
+                                    ))
                                 }
                                 _ => None,
                             };
@@ -480,7 +477,7 @@ async fn main() -> Result<()> {
             };
 
             let encoded_result = handle_encode_multiple(
-                vec![ComputationalTask::new(aggregate_fn_id, aggregate_fn_ctx)],
+                vec![ComputationalTask::new(&aggregate_fn_id, aggregate_fn_ctx)],
                 vec![datalake],
             )
             .await?;
