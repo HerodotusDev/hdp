@@ -1,0 +1,1 @@
+hdp encode -a -o example/wip/min_header/output.json -c example/wip/min_header/input.json "min" -b 5515000 5515029 "header.blob_gas_used" 1
