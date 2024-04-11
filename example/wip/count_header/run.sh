@@ -1,1 +1,0 @@
-hdp encode -a -o example/wip/count_header/output.json -c example/wip/count_header/input.json "count" "gt.100000" -b 5515000 5515029 "header.blob_gas_used" 1
