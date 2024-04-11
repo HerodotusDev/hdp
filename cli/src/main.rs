@@ -36,6 +36,7 @@ struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum Commands {
+    /// New to the HDP CLI? Start here!
     Start,
     ///  Encode the task and datalake in batched format test purposes
     #[command(arg_required_else_help = true)]
@@ -78,10 +79,7 @@ enum Commands {
 
     /// Decode one task and one datalake (not batched format)
     #[command(arg_required_else_help = true)]
-    DecodeOne {
-        task: String,
-        datalake: String,
-    },
+    DecodeOne { task: String, datalake: String },
     /// Run the evaluator
     Run {
         /// Batched tasks bytes

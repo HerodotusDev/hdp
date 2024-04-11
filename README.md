@@ -41,34 +41,34 @@ _Note: Sum and Avg functions support only for numbers as expected input type_
 
 All examples are tested with `script/integration.sh`. The currently compiled HDP Cairo program supports all the features below. If you want to run the script locally, check out the [readme](https://github.com/HerodotusDev/hdp/tree/main/example).
 
-|                                 | SUM | AVG |
-| ------------------------------- | --- | --- |
-| account.nonce                   | ✅  | ✅  |
-| account.balance                 | ✅  | ✅  |
-| account.storage_root            | -   | -   |
-| account.code_hash               | -   | -   |
-| storage.key ( value is num )    | ✅  | ✅  |
-| storage.key (value is hash )    | -   | -   |
-| header.parent_hash              | -   | -   |
-| header.ommers_hash              | -   | -   |
-| header.beneficiary              | -   | -   |
-| header.state_root               | -   | -   |
-| header.transactions_root        | -   | -   |
-| header.receipts_root            | -   | -   |
-| header.logs_bloom               | -   | -   |
-| header.difficulty               | ✅  | ✅  |
-| header.number                   | ✅  | ✅  |
-| header.gas_limit                | ✅  | ✅  |
-| header.gas_used                 | ✅  | ✅  |
-| header.timestamp                | ✅  | ✅  |
-| header.extra_data               | -   | -   |
-| header.mix_hash                 | -   | -   |
-| header.nonce                    | ✅  | ✅  |
-| header.base_fee_per_gas         | ✅  | ✅  |
-| header.withdrawals_root         | -   | -   |
-| header.blob_gas_used            | ✅  | ✅  |
-| header.excess_blob_gas          | ✅  | ✅  |
-| header.parent_beacon_block_root | -   | -   |
+|                                 | SUM | AVG | MIN | MAX | COUNT |
+| ------------------------------- | --- | --- | --- | --- | ----- |
+| account.nonce                   | ✅  | ✅  | ✅  | ✅  | ✅    |
+| account.balance                 | ✅  | ✅  | ✅  | ✅  | ✅    |
+| account.storage_root            | -   | -   | -   | -   | -     |
+| account.code_hash               | -   | -   | -   | -   | -     |
+| storage.key ( value is num )    | ✅  | ✅  | ✅  | ✅  | ✅    |
+| storage.key (value is hash )    | -   | -   | -   | -   | -     |
+| header.parent_hash              | -   | -   | -   | -   | -     |
+| header.ommers_hash              | -   | -   | -   | -   | -     |
+| header.beneficiary              | -   | -   | -   | -   | -     |
+| header.state_root               | -   | -   | -   | -   | -     |
+| header.transactions_root        | -   | -   | -   | -   | -     |
+| header.receipts_root            | -   | -   | -   | -   | -     |
+| header.logs_bloom               | -   | -   | -   | -   | -     |
+| header.difficulty               | ✅  | ✅  | ✅  | ✅  | ✅    |
+| header.number                   | ✅  | ✅  | ✅  | ✅  | ✅    |
+| header.gas_limit                | ✅  | ✅  | ✅  | ✅  | ✅    |
+| header.gas_used                 | ✅  | ✅  | ✅  | ✅  | ✅    |
+| header.timestamp                | ✅  | ✅  | ✅  | ✅  | ✅    |
+| header.extra_data               | -   | -   | -   | -   | -     |
+| header.mix_hash                 | -   | -   | -   | -   | -     |
+| header.nonce                    | ✅  | ✅  | ✅  | ✅  | ✅    |
+| header.base_fee_per_gas         | ✅  | ✅  | ✅  | ✅  | ✅    |
+| header.withdrawals_root         | -   | -   | -   | -   | -     |
+| header.blob_gas_used            | ✅  | ✅  | ✅  | ✅  | ✅    |
+| header.excess_blob_gas          | ✅  | ✅  | ✅  | ✅  | ✅    |
+| header.parent_beacon_block_root | -   | -   | -   | -   | -     |
 
 ## Install HDP
 
@@ -135,7 +135,7 @@ Support passing argument as env variable or as arguments.
 hdp run
 
 # run herodotus data processing
-hdp run 0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000006073756d000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000  0x00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004b902400000000000000000000000000000000000000000000000000000000004b9027000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000016027f2c6f930306d3aa736b3a6c6a98f512f74036d40000000000000000000000 ${Input your RPC Provider -- this example is Etherum Sepolia} ${Input Chain ID that you are target on}
+hdp run ${Encoded Task} ${Encoded Datalake} ${Input your RPC Provider -- this example is Etherum Sepolia} ${Input Chain ID that you are target on}
 
 ```
 
@@ -167,6 +167,7 @@ Interact Herodotus Data Processor via CLI
 Usage: hdp <COMMAND>
 
 Commands:
+  start       New to the HDP CLI? Start here!
   encode      Encode the task and datalake in batched format test purposes
   decode      Decode batch tasks and datalakes
   decode-one  Decode one task and one datalake (not batched format)
