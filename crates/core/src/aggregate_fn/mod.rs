@@ -3,6 +3,8 @@ use std::str::FromStr;
 use alloy_primitives::U256;
 use anyhow::{bail, Result};
 
+use self::integer::Operator;
+
 pub mod integer;
 pub mod string;
 
@@ -16,16 +18,15 @@ pub mod string;
 /// - MERKLE - Return the merkle root of the values
 /// - STD - Standard deviation
 /// - SUM - Sum of values
-/// - COUNTIF - Count number of values that satisfy a condition
+/// - COUNT - Count number of values that satisfy a condition
+#[derive(Debug, PartialEq, Eq)]
 pub enum AggregationFunction {
     AVG,
-    BLOOM,
-    MAX,
-    MIN,
-    MERKLE,
-    STD,
     SUM,
-    COUNTIF,
+    MIN,
+    MAX,
+    COUNT,
+    MERKLE,
 }
 
 /// Get [`AggregationFunction`] from function id
@@ -34,51 +35,86 @@ impl FromStr for AggregationFunction {
 
     fn from_str(function_id: &str) -> Result<Self, Self::Err> {
         match function_id.to_uppercase().as_str() {
-            "AVG" => Ok(AggregationFunction::AVG),
-            "BLOOM" => Ok(AggregationFunction::BLOOM),
-            "MAX" => Ok(AggregationFunction::MAX),
-            "MIN" => Ok(AggregationFunction::MIN),
-            "MERKLE" => Ok(AggregationFunction::MERKLE),
-            "STD" => Ok(AggregationFunction::STD),
-            "SUM" => Ok(AggregationFunction::SUM),
-            "COUNTIF" => Ok(AggregationFunction::COUNTIF),
+            "AVG" => Ok(Self::AVG),
+            "SUM" => Ok(Self::SUM),
+            "MIN" => Ok(Self::MIN),
+            "MAX" => Ok(Self::MAX),
+            "COUNT" => Ok(Self::COUNT),
+            "MERKLE" => Ok(Self::MERKLE),
             _ => bail!("Unknown aggregation function"),
         }
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FunctionContext {
+    pub operator: Operator,
+    pub value_to_compare: U256,
+}
+
+impl FromStr for FunctionContext {
+    type Err = anyhow::Error;
+
+    fn from_str(context: &str) -> Result<Self, Self::Err> {
+        let parts: Vec<&str> = context.split('.').collect();
+        if parts.len() != 2 {
+            bail!("Invalid FnContext format");
+        }
+        let operator = parts[0].to_string();
+        let value_to_compare = parts[1].to_string();
+
+        Ok(Self {
+            operator: Operator::from_str(&operator).unwrap(),
+            value_to_compare: U256::from_str(&value_to_compare)?,
+        })
+    }
+}
+
+impl FunctionContext {
+    pub fn new(operator: Operator, value_to_compare: U256) -> Self {
+        Self {
+            operator,
+            value_to_compare,
+        }
+    }
+}
+
 impl AggregationFunction {
-    pub fn get_index(&self) -> u8 {
-        match self {
+    pub fn to_index(function_id: &Self) -> u8 {
+        match function_id {
             AggregationFunction::AVG => 0,
-            AggregationFunction::BLOOM => 1,
-            AggregationFunction::MAX => 2,
-            AggregationFunction::MIN => 3,
-            AggregationFunction::MERKLE => 4,
-            AggregationFunction::STD => 5,
-            AggregationFunction::SUM => 6,
-            AggregationFunction::COUNTIF => 7,
+            AggregationFunction::SUM => 1,
+            AggregationFunction::MIN => 2,
+            AggregationFunction::MAX => 3,
+            AggregationFunction::COUNT => 4,
+            AggregationFunction::MERKLE => 5,
         }
     }
 
-    pub fn operation(&self, values: &[String], ctx: Option<String>) -> Result<String> {
+    pub fn from_index(index: u8) -> Result<Self> {
+        match index {
+            0 => Ok(AggregationFunction::AVG),
+            1 => Ok(AggregationFunction::SUM),
+            2 => Ok(AggregationFunction::MIN),
+            3 => Ok(AggregationFunction::MAX),
+            4 => Ok(AggregationFunction::COUNT),
+            5 => Ok(AggregationFunction::MERKLE),
+            _ => bail!("Unknown aggregation function index"),
+        }
+    }
+
+    pub fn operation(&self, values: &[String], ctx: Option<FunctionContext>) -> Result<String> {
         match self {
             // Aggregation functions for integer values
             AggregationFunction::AVG => integer::average(&parse_int_value(values).unwrap()),
-            AggregationFunction::BLOOM => {
-                integer::bloom_filterize(&parse_int_value(values).unwrap())
-            }
             AggregationFunction::MAX => integer::find_max(&parse_int_value(values).unwrap()),
             AggregationFunction::MIN => integer::find_min(&parse_int_value(values).unwrap()),
-            AggregationFunction::STD => {
-                integer::standard_deviation(&parse_int_value(values).unwrap())
-            }
             AggregationFunction::SUM => integer::sum(&parse_int_value(values).unwrap()),
-            AggregationFunction::COUNTIF => {
+            AggregationFunction::COUNT => {
                 if let Some(ctx) = ctx {
-                    integer::count_if(&parse_int_value(values).unwrap(), &ctx)
+                    integer::count(&parse_int_value(values).unwrap(), &ctx)
                 } else {
-                    bail!("Context not provided for COUNTIF")
+                    bail!("Context not provided for COUNT")
                 }
             }
             // Aggregation functions for string values
@@ -337,18 +373,31 @@ mod tests {
     }
 
     #[test]
-    fn test_countif() {
-        let count_if = AggregationFunction::COUNTIF;
+    fn test_count() {
+        let count = AggregationFunction::COUNT;
 
         // 4952100 ~ 4952100, account.0x7f2c6f930306d3aa736b3a6c6a98f512f74036d4.nonce
         let values = vec!["6776".to_string()];
         // logical_operator: 03 (>=)
         // value_to_compare: 0x0000000000000000000000000000000000000000000000000000000000000fff (4095)
-        let result = count_if.operation(&values, Some("03fff".into())).unwrap();
+        let result = count
+            .operation(
+                &values,
+                Some(FunctionContext::new(
+                    Operator::GreaterThanOrEqual,
+                    U256::from(4095),
+                )),
+            )
+            .unwrap();
         assert_eq!(result, "1");
         // logical_operator: 00 (=)
         // value_to_compare: 0x0000000000000000000000000000000000000000000000000000000000001A78 (6776)
-        let result = count_if.operation(&values, Some("001A78".into())).unwrap();
+        let result = count
+            .operation(
+                &values,
+                Some(FunctionContext::new(Operator::Equal, U256::from(6776))),
+            )
+            .unwrap();
         assert_eq!(result, "1");
 
         // 4952100 ~ 4952110, account.0x7f2c6f930306d3aa736b3a6c6a98f512f74036d4.nonce
@@ -367,20 +416,39 @@ mod tests {
         ];
         // logical_operator: 01 (!=)
         // value_to_compare: 0x0000000000000000000000000000000000000000000000000000000000001A78 (6776)
-        let result = count_if.operation(&values, Some("011A78".into())).unwrap();
+        let result = count
+            .operation(
+                &values,
+                Some(FunctionContext::new(Operator::NotEqual, U256::from(6776))),
+            )
+            .unwrap();
         assert_eq!(result, "8");
 
         // logical_operator: 02 (>)
         // value_to_compare: 0x0000000000000000000000000000000000000000000000000000000000001A78 (6776)
-        let result = count_if.operation(&values, Some("021A78".into())).unwrap();
+        let result = count
+            .operation(
+                &values,
+                Some(FunctionContext::new(
+                    Operator::GreaterThan,
+                    U256::from(6776),
+                )),
+            )
+            .unwrap();
         assert_eq!(result, "8");
 
         // 5382810 ~ 5382810, storage.0x75CeC1db9dCeb703200EAa6595f66885C962B920.0x0000000000000000000000000000000000000000000000000000000000000002
         let values = vec!["0x9184e72a000".to_string()];
         // logical_operator: 00 (=)
         // value_to_compare: 0x000000000000000000000000000000000000000000000000000009184e72a000 (10000000000000)
-        let result = count_if
-            .operation(&values, Some("009184e72a000".into()))
+        let result = count
+            .operation(
+                &values,
+                Some(FunctionContext::new(
+                    Operator::Equal,
+                    U256::from_str("10000000000000").unwrap(),
+                )),
+            )
             .unwrap();
         assert_eq!(result, "1");
 
@@ -393,8 +461,14 @@ mod tests {
             "0x9184e72a000".to_string(),
             "0x9184e72a000".to_string(),
         ];
-        let result = count_if
-            .operation(&values, Some("059184e72a001".into()))
+        let result = count
+            .operation(
+                &values,
+                Some(FunctionContext::new(
+                    Operator::LessThanOrEqual,
+                    U256::from_str("10000000000001").unwrap(),
+                )),
+            )
             .unwrap();
         assert_eq!(result, "4");
 
@@ -414,8 +488,14 @@ mod tests {
             "41697095938570171564".to_string(),
             "41697095938570171564".to_string(),
         ];
-        let result = count_if
-            .operation(&values, Some("05242A9D7D5DFDBB4AC".into()))
+        let result = count
+            .operation(
+                &values,
+                Some(FunctionContext::new(
+                    Operator::LessThanOrEqual,
+                    U256::from_str("41697095938570171564").unwrap(),
+                )),
+            )
             .unwrap();
         assert_eq!(result, "8");
     }

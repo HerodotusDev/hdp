@@ -1,5 +1,9 @@
+use std::str::FromStr;
+
 use alloy_primitives::U256;
 use anyhow::{bail, Result};
+
+use super::FunctionContext;
 
 /// Returns the average of the values: [`AVG`](https://en.wikipedia.org/wiki/Average)
 pub fn average(values: &[U256]) -> Result<String> {
@@ -111,61 +115,111 @@ pub fn sum(values: &[U256]) -> Result<String> {
 /// - 03: Greater than or equal (>=)
 /// - 04: Less than (<)
 /// - 05: Less than or equal (<=)
-pub fn count_if(values: &[U256], ctx: &str) -> Result<String> {
-    let ctx = ctx.trim_start_matches("0x");
-    let logical_operator = &ctx[0..2];
-    let value_to_compare = U256::from_str_radix(&ctx[2..], 16).unwrap();
+pub fn count(values: &[U256], ctx: &FunctionContext) -> Result<String> {
+    let logical_operator = &ctx.operator;
+    let value_to_compare = ctx.value_to_compare;
 
     let mut condition_satisfiability_count = 0;
 
     for value in values {
         match logical_operator {
-            "00" => {
+            Operator::Equal => {
                 if value == &value_to_compare {
                     condition_satisfiability_count += 1;
                 }
             }
-            "01" => {
+            Operator::NotEqual => {
                 if value != &value_to_compare {
                     condition_satisfiability_count += 1;
                 }
             }
-            "02" => {
+            Operator::GreaterThan => {
                 if value > &value_to_compare {
                     condition_satisfiability_count += 1;
                 }
             }
-            "03" => {
+            Operator::GreaterThanOrEqual => {
                 if value >= &value_to_compare {
                     condition_satisfiability_count += 1;
                 }
             }
-            "04" => {
+            Operator::LessThan => {
                 if value < &value_to_compare {
                     condition_satisfiability_count += 1;
                 }
             }
-            "05" => {
+            Operator::LessThanOrEqual => {
                 if value <= &value_to_compare {
                     condition_satisfiability_count += 1;
                 }
             }
-            _ => bail!("Unknown logical operator"),
         }
     }
 
     Ok(condition_satisfiability_count.to_string())
 }
 
-pub fn count_if_operator_matcher(operator_bytes: String) -> Result<String> {
-    match operator_bytes.as_str() {
-        "=" => Ok("00".into()),
-        "!=" => Ok("01".into()),
-        ">" => Ok("02".into()),
-        ">=" => Ok("03".into()),
-        "<" => Ok("04".into()),
-        "<=" => Ok("05".into()),
-        _ => bail!("invalid operation"),
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Operator {
+    Equal,
+    NotEqual,
+    GreaterThan,
+    GreaterThanOrEqual,
+    LessThan,
+    LessThanOrEqual,
+}
+
+impl FromStr for Operator {
+    type Err = anyhow::Error;
+
+    fn from_str(operator: &str) -> Result<Self> {
+        match operator {
+            "eq" => Ok(Self::Equal),
+            "nq" => Ok(Self::NotEqual),
+            "gt" => Ok(Self::GreaterThan),
+            "gteq" => Ok(Self::GreaterThanOrEqual),
+            "lt" => Ok(Self::LessThan),
+            "lteq=" => Ok(Self::LessThanOrEqual),
+            _ => bail!("Unknown logical operator"),
+        }
+    }
+}
+
+impl Operator {
+    pub fn from_symbol(symbol: &str) -> Result<Self> {
+        match symbol {
+            "=" => Ok(Self::Equal),
+            "!=" => Ok(Self::NotEqual),
+            ">" => Ok(Self::GreaterThan),
+            ">=" => Ok(Self::GreaterThanOrEqual),
+            "<" => Ok(Self::LessThan),
+            "<=" => Ok(Self::LessThanOrEqual),
+            _ => bail!("Unknown logical operator"),
+        }
+    }
+    // Convert operator to bytes
+    pub fn to_index(operator: &Self) -> u8 {
+        match operator {
+            Operator::Equal => 1,
+            Operator::NotEqual => 2,
+            Operator::GreaterThan => 3,
+            Operator::GreaterThanOrEqual => 4,
+            Operator::LessThan => 5,
+            Operator::LessThanOrEqual => 6,
+        }
+    }
+
+    pub fn from_index(bytes: u8) -> Result<Option<Self>> {
+        match bytes {
+            0 => Ok(None),
+            1 => Ok(Some(Operator::Equal)),
+            2 => Ok(Some(Operator::NotEqual)),
+            3 => Ok(Some(Operator::GreaterThan)),
+            4 => Ok(Some(Operator::GreaterThanOrEqual)),
+            5 => Ok(Some(Operator::LessThan)),
+            6 => Ok(Some(Operator::LessThanOrEqual)),
+            _ => bail!("Unknown logical operator"),
+        }
     }
 }
 
@@ -292,11 +346,27 @@ mod tests {
     }
 
     #[test]
-    fn test_countif() {
+    fn test_count() {
         let values = vec![U256::from(1), U256::from(165), U256::from(3)];
-        assert_eq!(count_if(&values, "04a5").unwrap(), "2".to_string());
+        //    assert_eq!(count(&values, "04a5").unwrap(), "2".to_string());
+        assert_eq!(
+            count(
+                &values,
+                &FunctionContext::new(Operator::GreaterThanOrEqual, U256::from(2))
+            )
+            .unwrap(),
+            "2".to_string()
+        );
 
         let values = vec![U256::from(1), U256::from(10)];
-        assert_eq!(count_if(&values, "0000000000a").unwrap(), "1".to_string());
+        //assert_eq!(count(&values, "0000000000a").unwrap(), "1".to_string());
+        assert_eq!(
+            count(
+                &values,
+                &FunctionContext::new(Operator::GreaterThan, U256::from(1))
+            )
+            .unwrap(),
+            "1".to_string()
+        );
     }
 }

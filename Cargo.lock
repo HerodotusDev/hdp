@@ -1317,6 +1317,7 @@ dependencies = [
 name = "hdp-cli"
 version = "0.2.0"
 dependencies = [
+ "alloy-primitives",
  "anyhow",
  "clap",
  "dotenv",

@@ -154,7 +154,7 @@ Most likely you would have to define a new module at this [aggregation_fn/mod.rs
 
 Depends on the expected input type, if it's an integer use [`U256`](https://docs.rs/alloy-primitives/latest/alloy_primitives/index.html#reexport.U256) and if it's a string then just use string.
 
-Just like [`COUNT_IF`](https://github.com/HerodotusDev/hdp/blob/1d19daceb84d4e8f7ef46774ecc94aebb42b0007/crates/core/src/aggregate_fn/integer.rs#L114) function, if you need additional context to utilize in operation, you could pass it and utilize it.
+Just like [`COUNT`](https://github.com/HerodotusDev/hdp/blob/1d19daceb84d4e8f7ef46774ecc94aebb42b0007/crates/core/src/aggregate_fn/integer.rs#L114) function, if you need additional context to utilize in operation, you could pass it and utilize it.
 
 Finally, add proper tests to see if it works as expected. Especially for integer type, make sure it works well with bytes32 length value.
 

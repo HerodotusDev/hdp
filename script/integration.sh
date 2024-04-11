@@ -4,7 +4,7 @@
 BASE_DIR="example"
 
 # Use command line arguments as target directories. If no arguments are provided, default to "header account storage".
-TARGET_DIRS=${@:-"header account storage"}
+TARGET_DIRS=${@:-"header account storage min_max_count"}
 
 # Function to process each input.json file
 process_file() {
