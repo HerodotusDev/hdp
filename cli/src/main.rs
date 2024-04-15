@@ -47,7 +47,9 @@ enum Commands {
 
         /// The aggregate function id e.g. "sum", "min", "avg"
         aggregate_fn_id: String,
-
+        /// Optional context for applying conditions on the aggregate function "count".
+        /// Format: "{operator}.{value}" (e.g., "eq.100" for equality, "gt.100" for greater-than).
+        /// Supported operators are in the [`Operator`] enum.
         aggregate_fn_ctx: Option<FunctionContext>,
 
         #[command(subcommand)]
