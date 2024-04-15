@@ -58,7 +58,7 @@ Welcome to Herodotus Data Processor interactive CLI! 🛰️
 
 ## Usage Examples
 
-The following examples demonstrate how to use the HDP CLI to encode various blockchain data elements into a format suitable for processing. Each command highlights a different function of the HDP system, from averaging values to counting transactions based on specific criteria.
+The following examples demonstrate how to use the HDP CLI to encode various blockchain data elements into a format suitable for processing. Each command highlights a different function of the HDP system, from averaging values to counting values based on specific criteria.
 
 Header value with `AVG`:
 
