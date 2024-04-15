@@ -177,9 +177,9 @@ For developers interested in extending the functionality of HDP by adding new mo
    - **Integer Inputs**: Use [`U256`](https://docs.rs/alloy-primitives/latest/alloy_primitives/index.html#reexport.U256) for handling large integers compatible with Ethereum's numeric constraints.
    - **String Inputs**: Use Rust's standard `String` type for text data.
 
-### Integration with Existing Functions
+### Context Required Operation
 
-For a practical example of how to integrate context-sensitive operations, refer to the implementation of the [`COUNT`](./core/src/aggregate_fn/integer.rs#L118) function. This example shows how to pass and utilize additional context for operations, which can be particularly useful for conditional processing or complex calculations.
+For a practical example of how to implement context-sensitive operations, refer to the implementation of the [`COUNT`](./crates/core/src/aggregate_fn/integer.rs#L118) function. This example shows how to pass and utilize additional context for operations, which can be particularly useful for conditional processing or complex calculations.
 
 ### Testing Your Module
 
