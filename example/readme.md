@@ -1,34 +1,35 @@
-# Examples
+# Integration Examples
 
-Here is all the example scripts for all supported requests in HDP. This example works with `script/integration.sh`.
+This section provides step-by-step instructions to run integration examples for HDP using the `script/integration.sh`. These examples demonstrate how to process requests and integrate them with the Cairo Program. Ensure you have the `RPC_URL` set in your `.env` file, as the script utilizes configuration from the environment variables.
 
-To run this script in local, follow the steps:
+## Preparing the Environment
 
-### Installing cairo-lang
+### Install cairo-lang v0.13.1
 
-_Make sure to have v0.13.1_
+1. **Clone the Cairo Program repository:**
+   ```bash
+   git clone https://github.com/HerodotusDev/offchain-evm-headers-processor-mirror
+   ```
+2. **Navigate to the project directory and set up the environment**:
+   Follow the instructions provided in the installation [guideline](https://github.com/HerodotusDev/offchain-evm-headers-processor-mirror/tree/main/src/hdp).
+3. **Activate the virtual environment**: `source venv/bin/activate`
+4. **Verify the installation of Cairo**: `cairo-compile --version`
 
-1. Create venv, ensure `python3.9.18 -m venv ./venv`
-2. Download cairo-lang 0.13.1 `wget https://github.com/starkware-libs/cairo-lang/releases/download/v0.13.1/cairo-lang-0.13.1.zip`
-3. Activate venv `source venv/bin/activate`
-4. install cairo-lang `pip3 install cairo-lang-0.13.1.zip`
-5. remove zip `rm cairo-lang-0.13.1.zip`
+### Running the Script
 
-### Run script
+Ensure you are within the virtual environment when executing the script to ensure all dependencies are correctly resolved.
 
 ```bash
 ./script/integration.sh
 ```
 
-Make sure you have `RPC_URL` in `.env` file. This example contains script that doesn't pass rpc url, meaning it get config from env local file in root.
+### Understanding the Logs
 
-### Logs
+The integration script logs several key steps, providing insights into the process:
 
-Per each example run, you would get this logs. The log contains 3 steps:
-
-1. get request from command line
-2. preprocess + fetch thorugh hdp cli
-3. pass the input.json to compiled Cairo Program ( HDP Cairo )
+1. **Request Handling**: Captures and logs the command-line request for data processing.
+2. **Preprocessing and Fetching**: Utilizes the HDP CLI to preprocess data and fetch necessary information through configured RPC endpoints.
+3. **Cairo Program Execution**: Inputs the preprocessed .json files to the Cairo Program (HDP Cairo), executing the computations and logging the results.
 
 ```console
 Running script in example/storage/sum_storage

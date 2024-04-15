@@ -36,6 +36,7 @@ struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum Commands {
+    /// New to the HDP CLI? Start here!
     Start,
     ///  Encode the task and datalake in batched format test purposes
     #[command(arg_required_else_help = true)]
@@ -46,7 +47,9 @@ enum Commands {
 
         /// The aggregate function id e.g. "sum", "min", "avg"
         aggregate_fn_id: String,
-
+        /// Optional context for applying conditions on the aggregate function "count".
+        /// Format: "{operator}.{value}" (e.g., "eq.100" for equality, "gt.100" for greater-than).
+        /// Supported operators are in the [`Operator`] enum.
         aggregate_fn_ctx: Option<FunctionContext>,
 
         #[command(subcommand)]
@@ -78,10 +81,7 @@ enum Commands {
 
     /// Decode one task and one datalake (not batched format)
     #[command(arg_required_else_help = true)]
-    DecodeOne {
-        task: String,
-        datalake: String,
-    },
+    DecodeOne { task: String, datalake: String },
     /// Run the evaluator
     Run {
         /// Batched tasks bytes
