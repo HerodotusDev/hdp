@@ -56,33 +56,45 @@ Welcome to Herodotus Data Processor interactive CLI! 🛰️
 ? Step 1. What's your datalake type?
 ```
 
-### Usage Examples
+## Usage Examples
 
-Header value with `AVG`
+The following examples demonstrate how to use the HDP CLI to encode various blockchain data elements into a format suitable for processing. Each command highlights a different function of the HDP system, from averaging values to counting transactions based on specific criteria.
+
+Header value with `AVG`:
 
 ```
 hdp encode "avg" -b 4952100 4952110 "header.base_fee_per_gas" 1
 ```
 
-Account value with `SUM`
+Account value with `SUM`:
 
 ```
 hdp encode "sum" -b 4952100 4952110 "account.0x7f2c6f930306d3aa736b3a6c6a98f512f74036d4.nonce" 2
 ```
 
-Storage value with `AVG`
+Storage value with `AVG`:
 
 ```
 hdp encode "avg" -b 5382810 5382820 "storage.0x75CeC1db9dCeb703200EAa6595f66885C962B920.0x0000000000000000000000000000000000000000000000000000000000000002" 1
 ```
 
-Account value with `COUNT`
+Account value with `COUNT`:
 
 ```
 hdp encode "count" "gt.1000" -b 4952100 4952110 "account.0x7f2c6f930306d3aa736b3a6c6a98f512f74036d4.nonce" 2
 ```
 
-For more detailed usage, refer to the commands below or the help documentation:
+After encoding, you can directly run processing tasks using environmental configurations for RPC and Chain ID, as shown below:
+
+```bash
+# pro tip: run herodotus data processing with `.env`
+hdp run
+
+# run herodotus data processing
+hdp run ${Encoded Task} ${Encoded Datalake} ${Input your RPC Provider -- this example is Etherum Sepolia} ${Input Chain ID that you are target on}
+```
+
+For a more comprehensive guide on commands available within HDP CLI:
 
 ```console
 ❯ hdp --help
@@ -143,36 +155,6 @@ _Note: Fields marked with "-" are not applicable for the specified aggregate fun
 
 - Please ensure that the data fields you are applying these functions contain numeric values to avoid computational errors.
 - For details on how these tests are performed or to contribute to the further development of tests, please refer to the [Integration Test Guide](./example/readme.md).
-
-## HDP run
-
-```console
-❯ hdp run --help
-Run the evaluator
-
-Usage: hdp run [OPTIONS] [TASKS] [DATALAKES] [RPC_URL] [CHAIN_ID]
-
-Arguments:
-  [TASKS]      Batched tasks bytes
-  [DATALAKES]  Batched datalakes bytes
-  [RPC_URL]    The RPC URL to fetch the data
-  [CHAIN_ID]   The chain id to fetch the data
-
-Options:
-  -o, --output-file <OUTPUT_FILE>  Path to the file to save the output result
-  -c, --cairo-input <CAIRO_INPUT>  Path to the file to save the input.json in cairo format
-  -h, --help                       Print help
-```
-
-Support passing argument as env variable or as arguments.
-
-```bash
-# pro tip: run herodotus data processing with `.env`
-hdp run
-
-# run herodotus data processing
-hdp run ${Encoded Task} ${Encoded Datalake} ${Input your RPC Provider -- this example is Etherum Sepolia} ${Input Chain ID that you are target on}
-```
 
 ## Development
 
