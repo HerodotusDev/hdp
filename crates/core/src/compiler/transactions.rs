@@ -3,7 +3,7 @@ use hdp_primitives::datalake::{
     output::{Header, HeaderProof, MMRMeta},
     transactions::{
         output::{Transaction, TransactionReceipt},
-        TransactionsCollection, TransactionsDatalake,
+        TransactionsCollection, TransactionsInBlockDatalake,
     },
     DatalakeField,
 };
@@ -25,18 +25,13 @@ pub struct CompiledTransactionsDatalake {
 }
 
 pub async fn compile_tx_datalake(
-    datalake: TransactionsDatalake,
+    datalake: TransactionsInBlockDatalake,
     provider: &Arc<RwLock<AbstractProvider>>,
 ) -> Result<CompiledTransactionsDatalake> {
     let abstract_provider = provider.write().await;
     let mut aggregation_set: Vec<String> = Vec::new();
     let full_tx_and_proof_result = abstract_provider
-        .get_tx_with_proof_from_nonce_range(
-            datalake.from_base_nonce,
-            datalake.to_base_nonce,
-            datalake.increment,
-            datalake.address.to_string(),
-        )
+        .get_tx_with_proof_from_nonce_range(datalake.target_block, datalake.increment)
         .await?;
 
     let _target_block_number_range = full_tx_and_proof_result

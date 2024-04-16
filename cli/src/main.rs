@@ -2,7 +2,7 @@ use alloy_primitives::U256;
 use anyhow::{bail, Result};
 use hdp_primitives::datalake::{
     block_sampled::BlockSampledDatalake, envelope::DatalakeEnvelope,
-    transactions::TransactionsDatalake,
+    transactions::TransactionsInBlockDatalake,
 };
 use inquire::{error::InquireError, Select};
 use std::{str::FromStr, sync::Arc, vec};
@@ -122,18 +122,14 @@ enum DataLakeCommands {
     ///  Encode the transactions data lake for test purposes
     #[command(arg_required_else_help = true)]
     #[command(short_flag = 't')]
-    Transactions {
-        /// Sender address of the transactions
-        address: String,
-        /// From nonce
-        from_nonce: u64,
-        /// To nonce
-        to_nonce: u64,
+    TransactionsInBlock {
+        /// target block number
+        target_block: u64,
         /// Sampled property
         /// Fields from transaction: "chain_id", "gas_price"... etc
         /// Fields from transaction receipt: "cumulative_gas_used".. etc
         sampled_property: String,
-        /// Increment number of given range nonce
+        /// Increment number of transactions in the block
         #[arg(default_value_t = 1)]
         increment: u64,
     },
@@ -458,17 +454,13 @@ async fn main() -> Result<()> {
                     )?;
                     DatalakeEnvelope::BlockSampled(block_sampled_datalake)
                 }
-                DataLakeCommands::Transactions {
-                    address,
-                    from_nonce,
-                    to_nonce,
+                DataLakeCommands::TransactionsInBlock {
+                    target_block,
                     sampled_property,
                     increment,
                 } => {
-                    let transactions_datalake = TransactionsDatalake::new(
-                        address,
-                        from_nonce,
-                        to_nonce,
+                    let transactions_datalake = TransactionsInBlockDatalake::new(
+                        target_block,
                         sampled_property,
                         increment,
                     )?;
