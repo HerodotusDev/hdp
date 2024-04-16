@@ -6,6 +6,13 @@ use serde::{Deserialize, Serialize};
 
 use crate::utils::bytes_to_hex_string;
 
+use super::{
+    block_sampled::output::{Account, AccountFormatted, Storage, StorageFormatted},
+    transactions::output::{
+        Transaction, TransactionFormatted, TransactionReceipt, TransactionReceiptFormatted,
+    },
+};
+
 //==============================================================================
 // for int type, use uint type
 // for string type, if formatted, use chunk[] to store field elements
@@ -175,4 +182,32 @@ pub struct MMRMeta {
     pub size: u64,
     // hex encoded
     pub peaks: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProcessedResult {
+    // U256 type
+    pub results_root: String,
+    // U256 type
+    pub tasks_root: String,
+    pub headers: Vec<Header>,
+    pub mmr: MMRMeta,
+    pub accounts: Vec<Account>,
+    pub storages: Vec<Storage>,
+    pub transactions: Vec<Transaction>,
+    pub transaction_receipts: Vec<TransactionReceipt>,
+    pub tasks: Vec<Task>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProcessedResultFormatted {
+    pub results_root: Uint256,
+    pub tasks_root: Uint256,
+    pub headers: Vec<HeaderFormatted>,
+    pub mmr: MMRMeta,
+    pub accounts: Vec<AccountFormatted>,
+    pub storages: Vec<StorageFormatted>,
+    pub transactions: Vec<TransactionFormatted>,
+    pub transaction_receipts: Vec<TransactionReceiptFormatted>,
+    pub tasks: Vec<TaskFormatted>,
 }

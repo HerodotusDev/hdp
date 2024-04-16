@@ -18,14 +18,12 @@ use crate::{
 use super::task::ComputationalTask;
 
 use hdp_primitives::datalake::{
-    block_sampled::output::{
-        Account, AccountFormatted, ProcessedResult, ProcessedResultFormatted, Storage,
-        StorageFormatted,
-    },
+    block_sampled::output::{Account, AccountFormatted, Storage, StorageFormatted},
     datalake_type::DatalakeType,
     envelope::DatalakeEnvelope,
     output::{
-        split_big_endian_hex_into_parts, Header, HeaderFormatted, MMRMeta, Task, TaskFormatted,
+        split_big_endian_hex_into_parts, Header, HeaderFormatted, MMRMeta, ProcessedResult,
+        ProcessedResultFormatted, Task, TaskFormatted,
     },
 };
 
@@ -171,6 +169,8 @@ impl EvaluationResult {
             accounts: flattened_accounts.into_iter().collect(),
             mmr: assume_mmr_meta.unwrap(),
             storages: flattened_storages.into_iter().collect(),
+            transactions: vec![],
+            transaction_receipts: vec![],
             tasks: procesed_tasks,
         };
 
@@ -255,6 +255,8 @@ impl EvaluationResult {
             accounts: flattened_accounts.into_iter().collect(),
             mmr: assume_mmr_meta.unwrap(),
             storages: flattened_storages.into_iter().collect(),
+            transactions: vec![],
+            transaction_receipts: vec![],
             tasks: procesed_tasks,
         };
 

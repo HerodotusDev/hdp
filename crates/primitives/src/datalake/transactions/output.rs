@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::datalake::output::{
     hex_to_8_byte_chunks_little_endian, split_little_endian_hex_into_parts,
-    CairoFormattedChunkResult, Header, HeaderFormatted, MMRMeta, Task, TaskFormatted, Uint256,
+    CairoFormattedChunkResult, Uint256,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -85,28 +85,4 @@ pub struct TransactionReceiptFormatted {
     /// proof_bytes_len is the byte( 8 bit ) length from each proof string
     pub proof_bytes_len: Vec<u64>,
     pub proof: Vec<Vec<String>>,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct ProcessedResult {
-    // U256 type
-    pub results_root: String,
-    // U256 type
-    pub tasks_root: String,
-    pub headers: Vec<Header>,
-    pub mmr: MMRMeta,
-    pub transactions: Vec<Transaction>,
-    pub transaction_receipts: Vec<TransactionReceipt>,
-    pub tasks: Vec<Task>,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct ProcessedResultFormatted {
-    pub results_root: Uint256,
-    pub tasks_root: Uint256,
-    pub headers: Vec<HeaderFormatted>,
-    pub mmr: MMRMeta,
-    pub transactions: Vec<TransactionFormatted>,
-    pub transaction_receipts: Vec<TransactionReceiptFormatted>,
-    pub tasks: Vec<TaskFormatted>,
 }
