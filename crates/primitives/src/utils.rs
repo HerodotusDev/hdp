@@ -23,6 +23,19 @@ pub fn utf8_str_to_fixed_bytes32(s: &str) -> FixedBytes<32> {
     FixedBytes::from(fixed_bytes)
 }
 
+pub fn bytes_to_fixed_bytes32(bytes: &[u8]) -> FixedBytes<32> {
+    // Initialize a 32-byte array filled with 0
+    let mut bytes32: [u8; 32] = [0; 32];
+
+    // Calculate the start position to copy the input bytes at the end of bytes32
+    let start_pos = 32 - bytes.len();
+
+    // Copy the input bytes to the right position in the bytes32 array
+    bytes32[start_pos..].copy_from_slice(bytes);
+
+    FixedBytes::from(bytes32)
+}
+
 /// Convert a byte array into a hex string
 pub fn bytes_to_hex_string(bytes: &[u8]) -> String {
     format!("0x{}", hex::encode(bytes))

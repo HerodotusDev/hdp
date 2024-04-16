@@ -5,7 +5,7 @@ use crate::datalake::output::{
     CairoFormattedChunkResult, Uint256,
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub struct Transaction {
     // U256 type
     pub key: String,
@@ -36,7 +36,7 @@ impl Transaction {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub struct TransactionFormatted {
     // U256 type
     pub key: Uint256,
@@ -46,7 +46,7 @@ pub struct TransactionFormatted {
     pub proof: Vec<Vec<String>>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub struct TransactionReceipt {
     // U256 type
     pub key: String,
@@ -77,7 +77,7 @@ impl TransactionReceipt {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub struct TransactionReceiptFormatted {
     // U256 type
     pub key: Uint256,

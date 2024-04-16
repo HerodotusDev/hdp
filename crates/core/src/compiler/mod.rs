@@ -1,6 +1,6 @@
 use std::{fmt, sync::Arc};
 
-use anyhow::{bail, Result};
+use anyhow::Result;
 use hdp_primitives::datalake::envelope::DatalakeEnvelope;
 use hdp_provider::evm::AbstractProvider;
 use serde::{Deserialize, Serialize};
@@ -8,7 +8,7 @@ use tokio::sync::RwLock;
 
 use self::{
     block_sampled::{compile_block_sampled_datalake, CompiledBlockSampledDatalake},
-    transactions::CompiledTransactionsDatalake,
+    transactions::{compile_tx_datalake, CompiledTransactionsDatalake},
 };
 
 pub mod block_sampled;
@@ -73,9 +73,9 @@ impl DatalakeCompiler {
             DatalakeEnvelope::BlockSampled(datalake) => CompiledDatalakeEnvelope::BlockSampled(
                 compile_block_sampled_datalake(datalake.clone(), provider).await?,
             ),
-            DatalakeEnvelope::Transactions(_) => {
-                bail!("Transactions datalake type doesn't support yet")
-            }
+            DatalakeEnvelope::Transactions(datalake) => CompiledDatalakeEnvelope::Transactions(
+                compile_tx_datalake(datalake.clone(), provider).await?,
+            ),
         };
 
         Ok(result_datapoints)
