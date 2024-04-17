@@ -16,7 +16,7 @@ pub struct Account {
 }
 
 impl Account {
-    pub fn to_cairo_format(&self) -> AccountFormatted {
+    pub(crate) fn to_cairo_format(&self) -> AccountFormatted {
         let address_chunk_result = hex_to_8_byte_chunks_little_endian(&self.address);
         let account_key = split_little_endian_hex_into_parts(&self.account_key);
         let proofs = self
@@ -51,7 +51,7 @@ impl Account {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
-pub struct AccountFormatted {
+pub(crate) struct AccountFormatted {
     pub address: Vec<String>,
     pub account_key: Uint256,
     pub proofs: Vec<MPTProofFormatted>,
@@ -67,7 +67,7 @@ pub struct Storage {
 }
 
 impl Storage {
-    pub fn to_cairo_format(&self) -> StorageFormatted {
+    pub(crate) fn to_cairo_format(&self) -> StorageFormatted {
         let address_chunk_result = hex_to_8_byte_chunks_little_endian(&self.address);
         let slot_chunk_result = hex_to_8_byte_chunks_little_endian(&self.slot);
         let storage_key = split_little_endian_hex_into_parts(&self.storage_key);
@@ -107,7 +107,7 @@ impl Storage {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
-pub struct StorageFormatted {
+pub(crate) struct StorageFormatted {
     // chunked address
     pub address: Vec<String>,
     // chunked storage slot

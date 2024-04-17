@@ -199,15 +199,62 @@ pub struct ProcessedResult {
     pub tasks: Vec<Task>,
 }
 
+impl ProcessedResult {
+    pub fn to_cairo_format(&self) -> ProcessedResultFormatted {
+        let headers = self
+            .headers
+            .iter()
+            .map(|header| header.to_cairo_format())
+            .collect();
+        let accounts = self
+            .accounts
+            .iter()
+            .map(|account| account.to_cairo_format())
+            .collect();
+        let storages = self
+            .storages
+            .iter()
+            .map(|storage| storage.to_cairo_format())
+            .collect();
+        let transactions = self
+            .transactions
+            .iter()
+            .map(|transaction| transaction.to_cairo_format())
+            .collect();
+        let transaction_receipts = self
+            .transaction_receipts
+            .iter()
+            .map(|receipt| receipt.to_cairo_format())
+            .collect();
+        let tasks = self
+            .tasks
+            .iter()
+            .map(|task| task.to_cairo_format())
+            .collect();
+
+        ProcessedResultFormatted {
+            results_root: split_little_endian_hex_into_parts(&self.results_root),
+            tasks_root: split_little_endian_hex_into_parts(&self.tasks_root),
+            headers,
+            mmr: self.mmr.clone(),
+            accounts,
+            storages,
+            transactions,
+            transaction_receipts,
+            tasks,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ProcessedResultFormatted {
     pub results_root: Uint256,
     pub tasks_root: Uint256,
     pub headers: Vec<HeaderFormatted>,
     pub mmr: MMRMeta,
-    pub accounts: Vec<AccountFormatted>,
-    pub storages: Vec<StorageFormatted>,
-    pub transactions: Vec<TransactionFormatted>,
-    pub transaction_receipts: Vec<TransactionReceiptFormatted>,
+    accounts: Vec<AccountFormatted>,
+    storages: Vec<StorageFormatted>,
+    transactions: Vec<TransactionFormatted>,
+    transaction_receipts: Vec<TransactionReceiptFormatted>,
     pub tasks: Vec<TaskFormatted>,
 }

@@ -1,7 +1,12 @@
 use std::{fmt, sync::Arc};
 
-use anyhow::Result;
-use hdp_primitives::datalake::envelope::DatalakeEnvelope;
+use anyhow::{bail, Result};
+use hdp_primitives::datalake::{
+    block_sampled::output::{Account, Storage},
+    envelope::DatalakeEnvelope,
+    output::{Header, MMRMeta},
+    transactions::output::{Transaction, TransactionReceipt},
+};
 use hdp_provider::evm::AbstractProvider;
 use serde::{Deserialize, Serialize};
 use tokio::sync::RwLock;
@@ -32,6 +37,78 @@ impl CompiledDatalakeEnvelope {
             }
             CompiledDatalakeEnvelope::Transactions(compiled_transactions_datalake) => {
                 compiled_transactions_datalake.values.clone()
+            }
+        }
+    }
+
+    ///Get headers from compiled datalake
+    pub fn get_headers(&self) -> Vec<Header> {
+        match self {
+            CompiledDatalakeEnvelope::BlockSampled(compiled_block_sampled_datalake) => {
+                compiled_block_sampled_datalake.headers.clone()
+            }
+            CompiledDatalakeEnvelope::Transactions(compiled_transactions_datalake) => {
+                compiled_transactions_datalake.headers.clone()
+            }
+        }
+    }
+
+    ///Get account from compiled datalake
+    pub fn get_accounts(&self) -> Result<Vec<Account>> {
+        match self {
+            CompiledDatalakeEnvelope::BlockSampled(compiled_block_sampled_datalake) => {
+                Ok(compiled_block_sampled_datalake.accounts.clone())
+            }
+            CompiledDatalakeEnvelope::Transactions(_) => {
+                bail!("transactions datalake does not have accounts")
+            }
+        }
+    }
+
+    /// Get storages from compiled datalake
+    pub fn get_storages(&self) -> Result<Vec<Storage>> {
+        match self {
+            CompiledDatalakeEnvelope::BlockSampled(compiled_block_sampled_datalake) => {
+                Ok(compiled_block_sampled_datalake.storages.clone())
+            }
+            CompiledDatalakeEnvelope::Transactions(_) => {
+                bail!("transactions datalake does not have storages")
+            }
+        }
+    }
+
+    /// Get transactions from compiled datalake
+    pub fn get_transactions(&self) -> Result<Vec<Transaction>> {
+        match self {
+            CompiledDatalakeEnvelope::BlockSampled(_) => {
+                bail!("block sampled datalake does not have transactions")
+            }
+            CompiledDatalakeEnvelope::Transactions(compiled_transactions_datalake) => {
+                Ok(compiled_transactions_datalake.transactions.clone())
+            }
+        }
+    }
+
+    /// Get transaction receipts from compiled datalake
+    pub fn get_transaction_receipts(&self) -> Result<Vec<TransactionReceipt>> {
+        match self {
+            CompiledDatalakeEnvelope::BlockSampled(_) => {
+                bail!("block sampled datalake does not have transaction receipts")
+            }
+            CompiledDatalakeEnvelope::Transactions(compiled_transactions_datalake) => {
+                Ok(compiled_transactions_datalake.transaction_receipts.clone())
+            }
+        }
+    }
+
+    /// Get mmr_meta from compiled datalake
+    pub fn get_mmr_meta(&self) -> Result<MMRMeta> {
+        match self {
+            CompiledDatalakeEnvelope::BlockSampled(compiled_block_sampled_datalake) => {
+                Ok(compiled_block_sampled_datalake.mmr_meta.clone())
+            }
+            CompiledDatalakeEnvelope::Transactions(compiled_transactions_datalake) => {
+                Ok(compiled_transactions_datalake.mmr_meta.clone())
             }
         }
     }
