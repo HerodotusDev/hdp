@@ -1,8 +1,10 @@
 use std::str::FromStr;
 
+use alloy_primitives::hex;
 use anyhow::{bail, Result};
+use eth_trie_proofs::tx::ConsensusTx;
 
-use crate::datalake::DatalakeField;
+use crate::{datalake::DatalakeField, utils::bytes_to_hex_string};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TransactionField {
@@ -96,9 +98,41 @@ impl DatalakeField for TransactionField {
         }
     }
 
-    // TODO: Not implemented yet
-    fn decode_field_from_rlp(&self, _rlp: &str) -> String {
-        unimplemented!()
+    fn decode_field_from_rlp(&self, rlp: &str) -> String {
+        let raw_tx = ConsensusTx::rlp_decode(hex::decode(rlp).unwrap().as_slice()).unwrap();
+        match self {
+            TransactionField::Nonce => raw_tx.nonce().to_string(),
+            TransactionField::GasPrice => raw_tx.gas_price().map(|x| x.to_string()).unwrap(),
+            TransactionField::GasLimit => raw_tx.gas_limit().to_string(),
+            TransactionField::To => raw_tx.to().to().map(|x| x.to_string()).unwrap(),
+            TransactionField::Value => raw_tx.value().to_string(),
+            TransactionField::Input => bytes_to_hex_string(raw_tx.input()),
+            TransactionField::V => raw_tx.v().to_string(),
+            TransactionField::R => raw_tx.r().to_string(),
+            TransactionField::S => raw_tx.s().to_string(),
+            TransactionField::ChainId => raw_tx.chain_id().map(|x| x.to_string()).unwrap(),
+            // TODO:  string should be properly rlp encoded
+            TransactionField::AccessList => raw_tx
+                .access_list()
+                .map(|_| "access_list".to_string())
+                .unwrap(),
+            TransactionField::MaxFeePerGas => {
+                raw_tx.max_fee_per_gas().map(|x| x.to_string()).unwrap()
+            }
+            TransactionField::MaxPriorityFeePerGas => raw_tx
+                .max_priority_fee_per_gas()
+                .map(|x| x.to_string())
+                .unwrap(),
+            // TODO:  string should be properly rlp encoded
+            TransactionField::BlobVersionedHashes => raw_tx
+                .blob_versioned_hashes()
+                .map(|x| x[0].to_string())
+                .unwrap(),
+            TransactionField::MaxFeePerBlobGas => raw_tx
+                .max_fee_per_blob_gas()
+                .map(|x| x.to_string())
+                .unwrap(),
+        }
     }
 }
 

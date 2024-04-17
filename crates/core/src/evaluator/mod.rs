@@ -18,14 +18,15 @@ use crate::{
 use super::task::ComputationalTask;
 
 use hdp_primitives::datalake::{
-    block_sampled::output::{
-        Account, AccountFormatted, ProcessedResult, ProcessedResultFormatted, Storage,
-        StorageFormatted,
-    },
+    block_sampled::output::{Account, AccountFormatted, Storage, StorageFormatted},
     datalake_type::DatalakeType,
     envelope::DatalakeEnvelope,
     output::{
-        split_big_endian_hex_into_parts, Header, HeaderFormatted, MMRMeta, Task, TaskFormatted,
+        split_big_endian_hex_into_parts, Header, HeaderFormatted, MMRMeta, ProcessedResult,
+        ProcessedResultFormatted, Task, TaskFormatted,
+    },
+    transactions::output::{
+        Transaction, TransactionFormatted, TransactionReceipt, TransactionReceiptFormatted,
     },
 };
 
@@ -111,57 +112,114 @@ impl EvaluationResult {
         let mut flattened_headers: HashSet<Header> = HashSet::new();
         let mut flattened_accounts: HashSet<Account> = HashSet::new();
         let mut flattened_storages: HashSet<Storage> = HashSet::new();
+        let mut flattened_transactions: HashSet<Transaction> = HashSet::new();
+        let mut flattened_transaction_receipts: HashSet<TransactionReceipt> = HashSet::new();
         let mut assume_mmr_meta: Option<MMRMeta> = None;
 
         let mut procesed_tasks: Vec<Task> = vec![];
 
         for task_commitment in &self.ordered_tasks {
-            // TODO: Bad
-            let datalake_result = match self.fetched_datalake_results.get(task_commitment) {
+            match self.fetched_datalake_results.get(task_commitment) {
                 Some(result) => match result {
-                    CompiledDatalakeEnvelope::BlockSampled(block_sampled) => block_sampled,
-                    _ => bail!("Datalake type not supported"),
+                    CompiledDatalakeEnvelope::BlockSampled(compiled_block_sampled) => {
+                        let header_set: HashSet<Header> =
+                            compiled_block_sampled.headers.iter().cloned().collect();
+                        let account_set: HashSet<Account> =
+                            compiled_block_sampled.accounts.iter().cloned().collect();
+                        let storage_set: HashSet<Storage> =
+                            compiled_block_sampled.storages.iter().cloned().collect();
+                        flattened_headers.extend(header_set);
+                        flattened_accounts.extend(account_set);
+                        flattened_storages.extend(storage_set);
+                        assume_mmr_meta = Some(compiled_block_sampled.mmr_meta.clone());
+
+                        let result = match self.compiled_results.get(task_commitment) {
+                            Some(result) => result,
+                            None => bail!("Task commitment not found in compiled results"),
+                        };
+                        let typed_task_commitment = FixedBytes::from_hex(task_commitment)?;
+                        let task_proof = tasks_merkle_tree
+                            .get_proof(&DynSolValue::FixedBytes(typed_task_commitment, 32));
+                        let result_commitment =
+                            evaluation_result_to_result_commitment(task_commitment, result);
+                        let result_proof = results_merkle_tree
+                            .get_proof(&DynSolValue::FixedBytes(result_commitment, 32));
+                        let encoded_task = match self.encoded_tasks.get(task_commitment) {
+                            Some(encoded_task) => encoded_task.to_string(),
+                            None => bail!("Task commitment not found in encoded tasks"),
+                        };
+                        let datalake = match self.encoded_datalakes.get(task_commitment) {
+                            Some(datalake) => datalake,
+                            None => bail!("Task commitment not found in encoded datalakes"),
+                        };
+
+                        procesed_tasks.push(Task {
+                            encoded_task,
+                            task_commitment: task_commitment.to_string(),
+                            task_proof,
+                            compiled_result: result.to_string(),
+                            result_commitment: result_commitment.to_string(),
+                            result_proof,
+                            encoded_datalake: datalake.encoded_datalake.clone(),
+                            datalake_type: datalake.datalake_type.into(),
+                            property_type: datalake.property_type,
+                        });
+                    }
+                    CompiledDatalakeEnvelope::Transactions(compiled_transactions_in_block) => {
+                        let transaction_set: HashSet<Transaction> = compiled_transactions_in_block
+                            .transactions
+                            .iter()
+                            .cloned()
+                            .collect();
+                        let transaction_receipt_set: HashSet<TransactionReceipt> =
+                            compiled_transactions_in_block
+                                .transaction_receipts
+                                .iter()
+                                .cloned()
+                                .collect();
+
+                        flattened_transactions.extend(transaction_set);
+                        flattened_transaction_receipts.extend(transaction_receipt_set);
+                        assume_mmr_meta = Some(compiled_transactions_in_block.mmr_meta.clone());
+
+                        let result = match self.compiled_results.get(task_commitment) {
+                            Some(result) => result,
+                            None => bail!("Task commitment not found in compiled results"),
+                        };
+
+                        let typed_task_commitment = FixedBytes::from_hex(task_commitment)?;
+                        let task_proof = tasks_merkle_tree
+                            .get_proof(&DynSolValue::FixedBytes(typed_task_commitment, 32));
+                        let result_commitment =
+                            evaluation_result_to_result_commitment(task_commitment, result);
+                        let result_proof = results_merkle_tree
+                            .get_proof(&DynSolValue::FixedBytes(result_commitment, 32));
+                        let encoded_task = match self.encoded_tasks.get(task_commitment) {
+                            Some(encoded_task) => encoded_task.to_string(),
+                            None => bail!("Task commitment not found in encoded tasks"),
+                        };
+                        let datalake = match self.encoded_datalakes.get(task_commitment) {
+                            Some(datalake) => datalake,
+                            None => bail!("Task commitment not found in encoded datalakes"),
+                        };
+
+                        let task = Task {
+                            encoded_task,
+                            task_commitment: task_commitment.to_string(),
+                            task_proof,
+                            compiled_result: result.to_string(),
+                            result_commitment: result_commitment.to_string(),
+                            result_proof,
+                            encoded_datalake: datalake.encoded_datalake.clone(),
+                            datalake_type: datalake.datalake_type.into(),
+                            property_type: datalake.property_type,
+                        };
+
+                        procesed_tasks.push(task);
+                    }
                 },
                 None => bail!("Task commitment not found in fetched datalake results"),
             };
-            let header_set: HashSet<Header> = datalake_result.headers.iter().cloned().collect();
-            let account_set: HashSet<Account> = datalake_result.accounts.iter().cloned().collect();
-            let storage_set: HashSet<Storage> = datalake_result.storages.iter().cloned().collect();
-            flattened_headers.extend(header_set);
-            flattened_accounts.extend(account_set);
-            flattened_storages.extend(storage_set);
-            assume_mmr_meta = Some(datalake_result.mmr_meta.clone());
-
-            let result = match self.compiled_results.get(task_commitment) {
-                Some(result) => result,
-                None => bail!("Task commitment not found in compiled results"),
-            };
-            let typed_task_commitment = FixedBytes::from_hex(task_commitment)?;
-            let task_proof =
-                tasks_merkle_tree.get_proof(&DynSolValue::FixedBytes(typed_task_commitment, 32));
-            let result_commitment = evaluation_result_to_result_commitment(task_commitment, result);
-            let result_proof =
-                results_merkle_tree.get_proof(&DynSolValue::FixedBytes(result_commitment, 32));
-            let encoded_task = match self.encoded_tasks.get(task_commitment) {
-                Some(encoded_task) => encoded_task.to_string(),
-                None => bail!("Task commitment not found in encoded tasks"),
-            };
-            let datalake = match self.encoded_datalakes.get(task_commitment) {
-                Some(datalake) => datalake,
-                None => bail!("Task commitment not found in encoded datalakes"),
-            };
-
-            procesed_tasks.push(Task {
-                encoded_task,
-                task_commitment: task_commitment.to_string(),
-                task_proof,
-                compiled_result: result.to_string(),
-                result_commitment: result_commitment.to_string(),
-                result_proof,
-                encoded_datalake: datalake.encoded_datalake.clone(),
-                datalake_type: datalake.datalake_type.into(),
-                property_type: datalake.property_type,
-            });
         }
 
         let processed_result = ProcessedResult {
@@ -171,6 +229,8 @@ impl EvaluationResult {
             accounts: flattened_accounts.into_iter().collect(),
             mmr: assume_mmr_meta.unwrap(),
             storages: flattened_storages.into_iter().collect(),
+            transactions: flattened_transactions.into_iter().collect(),
+            transaction_receipts: flattened_transaction_receipts.into_iter().collect(),
             tasks: procesed_tasks,
         };
 
@@ -185,76 +245,147 @@ impl EvaluationResult {
         let result_merkle_root = results_merkle_tree.root();
 
         // 3. flatten the datalake result for all tasks
-        let mut flattened_deaders: HashSet<HeaderFormatted> = HashSet::new();
+        let mut flattened_headers: HashSet<HeaderFormatted> = HashSet::new();
         let mut flattened_accounts: HashSet<AccountFormatted> = HashSet::new();
         let mut flattened_storages: HashSet<StorageFormatted> = HashSet::new();
+        let mut flattened_transactions: HashSet<TransactionFormatted> = HashSet::new();
+        let mut flattened_transaction_receipts: HashSet<TransactionReceiptFormatted> =
+            HashSet::new();
         let mut assume_mmr_meta: Option<MMRMeta> = None;
 
         let mut procesed_tasks: Vec<TaskFormatted> = vec![];
 
         for task_commitment in &self.ordered_tasks {
-            // TODO: Bad
-            let datalake_result = match self.fetched_datalake_results.get(task_commitment) {
+            match self.fetched_datalake_results.get(task_commitment) {
                 Some(result) => match result {
-                    CompiledDatalakeEnvelope::BlockSampled(block_sampled) => block_sampled,
-                    _ => bail!("Datalake type not supported"),
+                    CompiledDatalakeEnvelope::BlockSampled(compiled_block_sampled) => {
+                        let header_set: HashSet<HeaderFormatted> = compiled_block_sampled
+                            .headers
+                            .iter()
+                            .cloned()
+                            .map(|h| h.to_cairo_format())
+                            .collect();
+                        let account_set: HashSet<AccountFormatted> = compiled_block_sampled
+                            .accounts
+                            .iter()
+                            .cloned()
+                            .map(|h| h.to_cairo_format())
+                            .collect();
+                        let storage_set: HashSet<StorageFormatted> = compiled_block_sampled
+                            .storages
+                            .iter()
+                            .cloned()
+                            .map(|h| h.to_cairo_format())
+                            .collect();
+                        flattened_headers.extend(header_set);
+                        flattened_accounts.extend(account_set);
+                        flattened_storages.extend(storage_set);
+                        assume_mmr_meta = Some(compiled_block_sampled.mmr_meta.clone());
+
+                        let result = match self.compiled_results.get(task_commitment) {
+                            Some(result) => result,
+                            None => bail!("Task commitment not found in compiled results"),
+                        };
+                        let typed_task_commitment = FixedBytes::from_hex(task_commitment)?;
+                        let task_proof = tasks_merkle_tree
+                            .get_proof(&DynSolValue::FixedBytes(typed_task_commitment, 32));
+                        let result_commitment =
+                            evaluation_result_to_result_commitment(task_commitment, result);
+                        let result_proof = results_merkle_tree
+                            .get_proof(&DynSolValue::FixedBytes(result_commitment, 32));
+                        let encoded_task = match self.encoded_tasks.get(task_commitment) {
+                            Some(encoded_task) => encoded_task.to_string(),
+                            None => bail!("Task commitment not found in encoded tasks"),
+                        };
+                        let datalake = match self.encoded_datalakes.get(task_commitment) {
+                            Some(datalake) => datalake,
+                            None => bail!("Task commitment not found in encoded datalakes"),
+                        };
+
+                        procesed_tasks.push(
+                            Task {
+                                encoded_task,
+                                task_commitment: task_commitment.to_string(),
+                                task_proof,
+                                compiled_result: result.to_string(),
+                                result_commitment: result_commitment.to_string(),
+                                result_proof,
+                                encoded_datalake: datalake.encoded_datalake.clone(),
+                                datalake_type: datalake.datalake_type.into(),
+                                property_type: datalake.property_type,
+                            }
+                            .to_cairo_format(),
+                        );
+                    }
+                    CompiledDatalakeEnvelope::Transactions(compiled_transactions_in_block) => {
+                        let transaction_set: HashSet<TransactionFormatted> =
+                            compiled_transactions_in_block
+                                .transactions
+                                .iter()
+                                .cloned()
+                                .map(|h| h.to_cairo_format())
+                                .collect();
+                        let transaction_receipt_set: HashSet<TransactionReceiptFormatted> =
+                            compiled_transactions_in_block
+                                .transaction_receipts
+                                .iter()
+                                .cloned()
+                                .map(|h| h.to_cairo_format())
+                                .collect();
+                        flattened_transactions.extend(transaction_set);
+                        flattened_transaction_receipts.extend(transaction_receipt_set);
+                        assume_mmr_meta = Some(compiled_transactions_in_block.mmr_meta.clone());
+
+                        let result = match self.compiled_results.get(task_commitment) {
+                            Some(result) => result,
+                            None => bail!("Task commitment not found in compiled results"),
+                        };
+
+                        let typed_task_commitment = FixedBytes::from_hex(task_commitment)?;
+                        let task_proof = tasks_merkle_tree
+                            .get_proof(&DynSolValue::FixedBytes(typed_task_commitment, 32));
+                        let result_commitment =
+                            evaluation_result_to_result_commitment(task_commitment, result);
+                        let result_proof = results_merkle_tree
+                            .get_proof(&DynSolValue::FixedBytes(result_commitment, 32));
+                        let encoded_task = match self.encoded_tasks.get(task_commitment) {
+                            Some(encoded_task) => encoded_task.to_string(),
+                            None => bail!("Task commitment not found in encoded tasks"),
+                        };
+                        let datalake = match self.encoded_datalakes.get(task_commitment) {
+                            Some(datalake) => datalake,
+                            None => bail!("Task commitment not found in encoded datalakes"),
+                        };
+
+                        procesed_tasks.push(
+                            Task {
+                                encoded_task,
+                                task_commitment: task_commitment.to_string(),
+                                task_proof,
+                                compiled_result: result.to_string(),
+                                result_commitment: result_commitment.to_string(),
+                                result_proof,
+                                encoded_datalake: datalake.encoded_datalake.clone(),
+                                datalake_type: datalake.datalake_type.into(),
+                                property_type: datalake.property_type,
+                            }
+                            .to_cairo_format(),
+                        );
+                    }
                 },
                 None => bail!("Task commitment not found in fetched datalake results"),
             };
-            let header_set: HashSet<HeaderFormatted> = datalake_result
-                .headers
-                .iter()
-                .cloned()
-                .map(|h| h.to_cairo_format())
-                .collect();
-            let account_set: HashSet<AccountFormatted> = datalake_result
-                .accounts
-                .iter()
-                .cloned()
-                .map(|a| a.to_cairo_format())
-                .collect();
-            let storage_set: HashSet<StorageFormatted> = datalake_result
-                .storages
-                .iter()
-                .cloned()
-                .map(|s| s.to_cairo_format())
-                .collect();
-            flattened_deaders.extend(header_set);
-            flattened_accounts.extend(account_set);
-            flattened_storages.extend(storage_set);
-            assume_mmr_meta = Some(datalake_result.mmr_meta.clone());
-
-            let result = self.compiled_results.get(task_commitment).unwrap();
-            let typed_task_commitment = FixedBytes::from_hex(task_commitment).unwrap();
-            let task_proof =
-                tasks_merkle_tree.get_proof(&DynSolValue::FixedBytes(typed_task_commitment, 32));
-            let result_commitment = evaluation_result_to_result_commitment(task_commitment, result);
-            let result_proof =
-                results_merkle_tree.get_proof(&DynSolValue::FixedBytes(result_commitment, 32));
-            let encoded_task = self.encoded_tasks.get(task_commitment).unwrap().to_string();
-            let evaluated_datalake = self.encoded_datalakes.get(task_commitment).unwrap();
-            let task = Task {
-                encoded_task,
-                task_commitment: task_commitment.to_string(),
-                task_proof,
-                compiled_result: result.to_string(),
-                result_commitment: result_commitment.to_string(),
-                result_proof,
-                encoded_datalake: evaluated_datalake.encoded_datalake.clone(),
-                datalake_type: evaluated_datalake.datalake_type.into(),
-                property_type: evaluated_datalake.property_type,
-            };
-
-            procesed_tasks.push(task.to_cairo_format());
         }
 
         let processed_result = ProcessedResultFormatted {
             results_root: split_big_endian_hex_into_parts(&result_merkle_root.to_string()),
             tasks_root: split_big_endian_hex_into_parts(&task_merkle_root.to_string()),
-            headers: flattened_deaders.into_iter().collect(),
+            headers: flattened_headers.into_iter().collect(),
             accounts: flattened_accounts.into_iter().collect(),
             mmr: assume_mmr_meta.unwrap(),
             storages: flattened_storages.into_iter().collect(),
+            transactions: flattened_transactions.into_iter().collect(),
+            transaction_receipts: flattened_transaction_receipts.into_iter().collect(),
             tasks: procesed_tasks,
         };
 

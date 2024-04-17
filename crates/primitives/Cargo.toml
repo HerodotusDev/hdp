@@ -12,3 +12,4 @@ anyhow = { workspace = true }
 alloy-dyn-abi = { workspace = true }
 alloy-rlp = { workspace = true, features = ["derive"] }
 alloy-primitives = { workspace = true, features = ["rlp", "serde"] }
+eth-trie-proofs.workspace = true

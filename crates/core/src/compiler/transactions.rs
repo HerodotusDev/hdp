@@ -1,11 +1,15 @@
+use alloy_primitives::U256;
 use anyhow::Result;
-use hdp_primitives::datalake::{
-    output::{Header, HeaderProof, MMRMeta},
-    transactions::{
-        output::{Transaction, TransactionReceipt},
-        TransactionsCollection, TransactionsDatalake,
+use hdp_primitives::{
+    datalake::{
+        output::{Header, HeaderProof, MMRMeta},
+        transactions::{
+            output::{Transaction, TransactionReceipt},
+            TransactionsCollection, TransactionsInBlockDatalake,
+        },
+        DatalakeField,
     },
-    DatalakeField,
+    utils::bytes_to_fixed_bytes32,
 };
 use hdp_provider::evm::AbstractProvider;
 use serde::{Deserialize, Serialize};
@@ -25,34 +29,17 @@ pub struct CompiledTransactionsDatalake {
 }
 
 pub async fn compile_tx_datalake(
-    datalake: TransactionsDatalake,
+    datalake: TransactionsInBlockDatalake,
     provider: &Arc<RwLock<AbstractProvider>>,
 ) -> Result<CompiledTransactionsDatalake> {
     let abstract_provider = provider.write().await;
     let mut aggregation_set: Vec<String> = Vec::new();
     let full_tx_and_proof_result = abstract_provider
-        .get_tx_with_proof_from_nonce_range(
-            datalake.from_base_nonce,
-            datalake.to_base_nonce,
-            datalake.increment,
-            datalake.address.to_string(),
-        )
+        .get_tx_with_proof_from_nonce_range(datalake.target_block, datalake.increment)
         .await?;
 
-    let _target_block_number_range = full_tx_and_proof_result
-        .iter()
-        .map(|(block_number, _, _, _)| *block_number)
-        .collect::<Vec<u64>>();
-    // let range_length = target_block_number_range.len();
-    // TODO: Indexer should handle array of blocks, not only sequence of blocks
-    // let full_header_and_proof_result = abstract_provider
-    //     .get_sequencial_full_header_with_proof(
-    //         target_block_number_range[0],
-    //         target_block_number_range[range_length - 1],
-    //     )
-    //     .await?;
     let full_header_and_proof_result = abstract_provider
-        .get_sequencial_full_header_with_proof(5530433, 5530434)
+        .get_sequencial_full_header_with_proof(datalake.target_block, datalake.target_block)
         .await?;
     let mmr_meta = full_header_and_proof_result.1;
     let mut headers: Vec<Header> = vec![];
@@ -63,8 +50,19 @@ pub async fn compile_tx_datalake(
             for (block_number, tx_index, rlp_encoded_tx, proof) in full_tx_and_proof_result {
                 let value = property.decode_field_from_rlp(&rlp_encoded_tx);
 
+                // println!("value: {:?}", value);
+                // println!("block_number: {:?}", FixedBytes::from(tx_index).to_string());
+                // println!(
+                //     "tx_index: {:?}",
+                //     B256::from_slice(&tx_index.to_be_bytes()).to_string()
+                // );
+
+                let ket_hex_string =
+                    bytes_to_fixed_bytes32(&alloy_rlp::encode(U256::from(tx_index)));
+                // println!("key_hex_string: {:?}", ket_hex_string);
+
                 transactions.push(Transaction {
-                    key: tx_index.to_string(),
+                    key: ket_hex_string.to_string(),
                     block_number,
                     proof,
                 });

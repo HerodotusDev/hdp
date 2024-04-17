@@ -1,0 +1,1 @@
+hdp encode -a -o example/transaction/sum_nonce/output.json -c example/transaction/sum_nonce/input.json "sum" -t 5608949 "tx.nonce" 20

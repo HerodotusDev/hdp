@@ -2,8 +2,10 @@ use anyhow::Result;
 
 use super::{
     block_sampled::BlockSampledDatalake,
-    datalake_type::{DatalakeType, BLOCK_SAMPLED_DATALAKE_TYPE_ID, TRANSACTIONS_DATALAKE_TYPE_ID},
-    transactions::TransactionsDatalake,
+    datalake_type::{
+        DatalakeType, BLOCK_SAMPLED_DATALAKE_TYPE_ID, TRANSACTIONS_IN_BLOCK_DATALAKE_TYPE_ID,
+    },
+    transactions::TransactionsInBlockDatalake,
     Datalake, DatalakeCollection,
 };
 
@@ -11,14 +13,14 @@ use super::{
 #[derive(Debug, Clone, PartialEq)]
 pub enum DatalakeEnvelope {
     BlockSampled(BlockSampledDatalake),
-    Transactions(TransactionsDatalake),
+    Transactions(TransactionsInBlockDatalake),
 }
 
 impl DatalakeEnvelope {
     pub fn to_index(&self) -> u8 {
         match self {
             DatalakeEnvelope::BlockSampled(_) => BLOCK_SAMPLED_DATALAKE_TYPE_ID,
-            DatalakeEnvelope::Transactions(_) => TRANSACTIONS_DATALAKE_TYPE_ID,
+            DatalakeEnvelope::Transactions(_) => TRANSACTIONS_IN_BLOCK_DATALAKE_TYPE_ID,
         }
     }
 
@@ -49,8 +51,8 @@ impl DatalakeEnvelope {
                 BlockSampledDatalake::decode(data)?,
             )),
             DatalakeType::DynamicLayout => Err(anyhow::anyhow!("Unsupported datalake type")),
-            DatalakeType::Transactions => Ok(DatalakeEnvelope::Transactions(
-                TransactionsDatalake::decode(data)?,
+            DatalakeType::TransactionsInBlock => Ok(DatalakeEnvelope::Transactions(
+                TransactionsInBlockDatalake::decode(data)?,
             )),
         }
     }
@@ -58,7 +60,7 @@ impl DatalakeEnvelope {
     pub fn get_datalake_type(&self) -> DatalakeType {
         match self {
             DatalakeEnvelope::BlockSampled(_) => DatalakeType::BlockSampled,
-            DatalakeEnvelope::Transactions(_) => DatalakeType::Transactions,
+            DatalakeEnvelope::Transactions(_) => DatalakeType::TransactionsInBlock,
         }
     }
 }

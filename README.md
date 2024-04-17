@@ -148,6 +148,18 @@ Here is the support matrix indicating which blockchain elements are tested for e
 | `header.excess_blob_gas`      | ✅  | ✅  | ✅  | ✅  | ✅    |
 | `header.nonce`                | ✅  | ✅  | ✅  | ✅  | ✅    |
 | Other `header` elements       | -   | -   | -   | -   | -     |
+| `tx.nonce`                    | ✅  | ✅  | ✅  | ✅  | ✅    |
+| `tx.gas_price`                | ✅  | ✅  | ✅  | ✅  | ✅    |
+| `tx.gas_limit`                | ✅  | ✅  | ✅  | ✅  | ✅    |
+| `tx.value`                    | ✅  | ✅  | ✅  | ✅  | ✅    |
+| `tx.v`                        | ✅  | ✅  | ✅  | ✅  | ✅    |
+| `tx.r`                        | ✅  | ✅  | ✅  | ✅  | ✅    |
+| `tx.s`                        | ✅  | ✅  | ✅  | ✅  | ✅    |
+| `tx.chain_id`                 | ✅  | ✅  | ✅  | ✅  | ✅    |
+| `tx.max_fee_per_gas`          | ✅  | ✅  | ✅  | ✅  | ✅    |
+| `tx.max_priority_fee_per_gas` | ✅  | ✅  | ✅  | ✅  | ✅    |
+| `tx.max_fee_per_blob_gas`     | ✅  | ✅  | ✅  | ✅  | ✅    |
+| Other `tx` elements           | -   | -   | -   | -   | -     |
 
 _Note: Fields marked with "-" are not applicable for the specified aggregate functions because they do not contain numeric data or the data type is not suitable for these calculations._
 

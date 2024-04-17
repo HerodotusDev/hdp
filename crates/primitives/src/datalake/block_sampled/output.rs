@@ -4,8 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::datalake::output::{
     hex_to_8_byte_chunks_little_endian, split_little_endian_hex_into_parts,
-    CairoFormattedChunkResult, Header, HeaderFormatted, MMRMeta, MPTProof, MPTProofFormatted, Task,
-    TaskFormatted, Uint256,
+    CairoFormattedChunkResult, MPTProof, MPTProofFormatted, Uint256,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
@@ -116,30 +115,6 @@ pub struct StorageFormatted {
     // keccak(slot) as uint256
     pub storage_key: Uint256,
     pub proofs: Vec<MPTProofFormatted>,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct ProcessedResult {
-    // U256 type
-    pub results_root: String,
-    // U256 type
-    pub tasks_root: String,
-    pub headers: Vec<Header>,
-    pub mmr: MMRMeta,
-    pub accounts: Vec<Account>,
-    pub storages: Vec<Storage>,
-    pub tasks: Vec<Task>,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct ProcessedResultFormatted {
-    pub results_root: Uint256,
-    pub tasks_root: Uint256,
-    pub headers: Vec<HeaderFormatted>,
-    pub mmr: MMRMeta,
-    pub accounts: Vec<AccountFormatted>,
-    pub storages: Vec<StorageFormatted>,
-    pub tasks: Vec<TaskFormatted>,
 }
 
 #[cfg(test)]
