@@ -166,6 +166,11 @@ impl EvaluationResult {
                         });
                     }
                     CompiledDatalakeEnvelope::Transactions(compiled_transactions_in_block) => {
+                        let header_set: HashSet<Header> = compiled_transactions_in_block
+                            .headers
+                            .iter()
+                            .cloned()
+                            .collect();
                         let transaction_set: HashSet<Transaction> = compiled_transactions_in_block
                             .transactions
                             .iter()
@@ -177,7 +182,7 @@ impl EvaluationResult {
                                 .iter()
                                 .cloned()
                                 .collect();
-
+                        flattened_headers.extend(header_set);
                         flattened_transactions.extend(transaction_set);
                         flattened_transaction_receipts.extend(transaction_receipt_set);
                         assume_mmr_meta = Some(compiled_transactions_in_block.mmr_meta.clone());
@@ -318,6 +323,12 @@ impl EvaluationResult {
                         );
                     }
                     CompiledDatalakeEnvelope::Transactions(compiled_transactions_in_block) => {
+                        let header_set: HashSet<HeaderFormatted> = compiled_transactions_in_block
+                            .headers
+                            .iter()
+                            .cloned()
+                            .map(|h| h.to_cairo_format())
+                            .collect();
                         let transaction_set: HashSet<TransactionFormatted> =
                             compiled_transactions_in_block
                                 .transactions
@@ -332,6 +343,7 @@ impl EvaluationResult {
                                 .cloned()
                                 .map(|h| h.to_cairo_format())
                                 .collect();
+                        flattened_headers.extend(header_set);
                         flattened_transactions.extend(transaction_set);
                         flattened_transaction_receipts.extend(transaction_receipt_set);
                         assume_mmr_meta = Some(compiled_transactions_in_block.mmr_meta.clone());

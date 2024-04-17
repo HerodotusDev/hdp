@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use alloy_primitives::hex;
 use anyhow::{bail, Result};
-use eth_trie_proofs::tx::ConsensusTx;
+use eth_trie_proofs::{tx::ConsensusTx, tx_receipt::ConsensusTxReceipt};
 
 use crate::{datalake::DatalakeField, utils::bytes_to_hex_string};
 
@@ -212,8 +212,21 @@ impl DatalakeField for TransactionReceiptField {
         }
     }
 
-    // TODO: Not implemented yet
-    fn decode_field_from_rlp(&self, _rlp: &str) -> String {
-        unimplemented!()
+    fn decode_field_from_rlp(&self, rlp: &str) -> String {
+        let raw_tx_receipt =
+            ConsensusTxReceipt::rlp_decode(hex::decode(rlp).unwrap().as_slice()).unwrap();
+
+        match self {
+            TransactionReceiptField::Success => match raw_tx_receipt.success() {
+                true => "1".to_string(),
+                false => "0".to_string(),
+            },
+            TransactionReceiptField::CumulativeGasUsed => {
+                raw_tx_receipt.cumulative_gas_used().to_string()
+            }
+            // TODO: string should be properly rlp encoded
+            TransactionReceiptField::Logs => "logs".to_string(),
+            TransactionReceiptField::Bloom => "bloom".to_string(),
+        }
     }
 }

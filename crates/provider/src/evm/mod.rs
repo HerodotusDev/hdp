@@ -1,7 +1,7 @@
 use alloy_primitives::Bytes;
 use anyhow::{bail, Result};
 use core::panic;
-use eth_trie_proofs::tx_trie::TxsMptHandler;
+use eth_trie_proofs::{tx_receipt_trie::TxReceiptsMptHandler, tx_trie::TxsMptHandler};
 use futures::future::join_all;
 use std::{collections::HashMap, sync::Arc, time::Instant};
 use tokio::sync::RwLock;
@@ -531,9 +531,9 @@ impl AbstractProvider {
         Ok(result)
     }
 
-    /// Fetches the encoded transaction with proof from the MPT tree for the given block number.
-    /// The transaction is fetched from the MPT tree and the proof is generated from the MPT tree.
-    pub async fn get_tx_with_proof_from_nonce_range(
+    /// Fetches the encoded transaction with proof from the MPT trie for the given block number.
+    /// The transaction is fetched from the MPT trie and the proof is generated from the MPT trie.
+    pub async fn get_tx_with_proof_from_block(
         &self,
         target_block: u64,
         incremental: u64,
@@ -562,6 +562,39 @@ impl AbstractProvider {
         }
 
         Ok(tx_with_proof)
+    }
+
+    /// Fetches the encoded transaction receipt with proof from the MPT trie for the given block number.
+    /// The transaction receipt is fetched from the MPT trie and the proof is generated from the MPT trie.
+    pub async fn get_tx_receipt_with_proof_from_block(
+        &self,
+        target_block: u64,
+        incremental: u64,
+    ) -> Result<Vec<(u64, u64, String, Vec<String>)>> {
+        let mut tx_receipt_with_proof = vec![];
+        let mut tx_reciepts_mpt_handler = TxReceiptsMptHandler::new(self.tx_provider.url).unwrap();
+
+        tx_reciepts_mpt_handler
+            .build_tx_receipts_tree_from_block(target_block)
+            .await
+            .unwrap();
+        let tx_receipts = tx_reciepts_mpt_handler.get_elements().unwrap();
+        let tx_receipts_length = tx_receipts.len();
+        let target_tx_receipt_index_range = (0..tx_receipts_length).step_by(incremental as usize);
+        for tx_receipt_index in target_tx_receipt_index_range {
+            let target_tx_receipt_index = tx_receipt_index as u64;
+            let proof = tx_reciepts_mpt_handler
+                .get_proof(target_tx_receipt_index)
+                .unwrap()
+                .into_iter()
+                .map(|x| Bytes::from(x).to_string())
+                .collect::<Vec<_>>();
+            let consensus_tx_receipt = tx_receipts[tx_receipt_index].clone();
+            let rlp = Bytes::from(consensus_tx_receipt.rlp_encode()).to_string();
+            tx_receipt_with_proof.push((target_block, target_tx_receipt_index, rlp, proof));
+        }
+
+        Ok(tx_receipt_with_proof)
     }
 }
 
@@ -605,7 +638,7 @@ mod tests {
     async fn get_block_range_from_nonce_range_non_constant() {
         let provider = AbstractProvider::new(SEPOLIA_RPC_URL, 11155111);
         let block_range = provider
-            .get_tx_with_proof_from_nonce_range(5530433, 1)
+            .get_tx_with_proof_from_block(5530433, 1)
             .await
             .unwrap();
 
@@ -613,7 +646,7 @@ mod tests {
         assert_eq!(block_range[0].2,"0xf874830199258504a817c8008304ce78943d803617b9607357009fedadf646ad341e246adc88016345785d8a0000808401546d72a088de6c88f53048817fd31c44683fd796a2f529ced61950c610904a809b6342e4a0578d92174df2e1dba4fe88d4a33e868e89392210fad9bc02104b40fcb37792ec");
 
         let block_range = provider
-            .get_tx_with_proof_from_nonce_range(5530433, 3)
+            .get_tx_with_proof_from_block(5530433, 3)
             .await
             .unwrap();
 
