@@ -16,7 +16,7 @@ mod tests {
 
     #[test]
     fn test_transactions_datalake() {
-        let encoded_datalake= "0x000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000f42400000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000";
+        let encoded_datalake= "0x000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000f42400000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000020100000000000000000000000000000000000000000000000000000000000000";
 
         let transaction_datalake =
             TransactionsInBlockDatalake::new(1000000, "tx.nonce".to_string(), 1).unwrap();
@@ -27,7 +27,7 @@ mod tests {
 
         assert_eq!(
             transaction_datalake.commit(),
-            "0xea54b0bfa744c90a27af6e4faa502976bc84e8180f7e09c8e083dfd1d1a11a22"
+            "0xd1cc3bc248fcb1b57b249b27b79eb317cf9f38e3b4ec157f99f116d22d0d0b6a"
         );
 
         assert_eq!(
@@ -41,7 +41,7 @@ mod tests {
 
     #[test]
     fn test_transactions_datalake_receipt() {
-        let encoded_datalake = "0x000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000f42400000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000020100000000000000000000000000000000000000000000000000000000000000";
+        let encoded_datalake = "0x000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000f42400000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000020200000000000000000000000000000000000000000000000000000000000000";
         let transaction_datalake =
             TransactionsInBlockDatalake::new(1000000, "tx_receipt.success".to_string(), 1).unwrap();
 
@@ -51,7 +51,7 @@ mod tests {
 
         assert_eq!(
             transaction_datalake.commit(),
-            "0xd1cc3bc248fcb1b57b249b27b79eb317cf9f38e3b4ec157f99f116d22d0d0b6a"
+            "0x1d0ff6dcd6eba2d1b638c469bd1d68a479173bace1f13922be20defa74cbacfb"
         );
 
         assert_eq!(
@@ -67,35 +67,35 @@ mod tests {
     fn test_tx_collection_serialize() {
         let tx_collection = TransactionsCollection::Transactions(TransactionField::Nonce);
         let serialized = tx_collection.serialize().unwrap();
-        assert_eq!(serialized, [0, 0]);
+        assert_eq!(serialized, [1, 0]);
 
         let tx_collection =
             TransactionsCollection::TranasactionReceipts(TransactionReceiptField::Logs);
         let serialized = tx_collection.serialize().unwrap();
-        assert_eq!(serialized, [1, 2]);
+        assert_eq!(serialized, [2, 2]);
 
         let tx_collection = TransactionsCollection::Transactions(TransactionField::AccessList);
         let serialized = tx_collection.serialize().unwrap();
-        assert_eq!(serialized, [0, 10]);
+        assert_eq!(serialized, [1, 10]);
     }
 
     #[test]
     fn test_tx_collection_deserialize() {
-        let serialized = [0, 1];
+        let serialized = [1, 1];
         let tx_collection = TransactionsCollection::deserialize(&serialized).unwrap();
         assert_eq!(
             tx_collection,
             TransactionsCollection::Transactions(TransactionField::GasPrice)
         );
 
-        let serialized = [1, 3];
+        let serialized = [2, 3];
         let tx_collection = TransactionsCollection::deserialize(&serialized).unwrap();
         assert_eq!(
             tx_collection,
             TransactionsCollection::TranasactionReceipts(TransactionReceiptField::Bloom)
         );
 
-        let serialized = [0, 10];
+        let serialized = [1, 10];
         let tx_collection = TransactionsCollection::deserialize(&serialized).unwrap();
         assert_eq!(
             tx_collection,

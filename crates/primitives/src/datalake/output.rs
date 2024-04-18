@@ -233,8 +233,8 @@ impl ProcessedResult {
             .collect();
 
         ProcessedResultFormatted {
-            results_root: split_little_endian_hex_into_parts(&self.results_root),
-            tasks_root: split_little_endian_hex_into_parts(&self.tasks_root),
+            results_root: split_big_endian_hex_into_parts(&self.results_root),
+            tasks_root: split_big_endian_hex_into_parts(&self.tasks_root),
             headers,
             mmr: self.mmr.clone(),
             accounts,
@@ -257,4 +257,45 @@ pub struct ProcessedResultFormatted {
     transactions: Vec<TransactionFormatted>,
     transaction_receipts: Vec<TransactionReceiptFormatted>,
     pub tasks: Vec<TaskFormatted>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_split_big_endian_hex_into_parts() {
+        let hex_str = "0x60870c80ce4e1d0c35e34f08b1648e8a4fdc7818eea7caedbd316c63a3863562";
+        let result = split_big_endian_hex_into_parts(hex_str);
+        assert_eq!(
+            result,
+            Uint256 {
+                high: "0x60870c80ce4e1d0c35e34f08b1648e8a".to_string(),
+                low: "0x4fdc7818eea7caedbd316c63a3863562".to_string()
+            }
+        );
+
+        let hex_str = "0x8ddadb3a246d9988d78871b11dca322a2df53381bfacb9edc42cedfd263b691d";
+        let result = split_little_endian_hex_into_parts(hex_str);
+        assert_eq!(
+            result,
+            Uint256 {
+                high: "0x1d693b26fded2cc4edb9acbf8133f52d".to_string(),
+                low: "0x2a32ca1db17188d788996d243adbda8d".to_string()
+            }
+        );
+    }
+
+    #[test]
+    fn test_split_little_endian_hex_into_parts() {
+        let hex_str = "0x8ddadb3a246d9988d78871b11dca322a2df53381bfacb9edc42cedfd263b691d";
+        let result = split_little_endian_hex_into_parts(hex_str);
+        assert_eq!(
+            result,
+            Uint256 {
+                high: "0x1d693b26fded2cc4edb9acbf8133f52d".to_string(),
+                low: "0x2a32ca1db17188d788996d243adbda8d".to_string()
+            }
+        );
+    }
 }

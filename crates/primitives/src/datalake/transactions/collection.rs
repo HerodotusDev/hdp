@@ -45,9 +45,9 @@ impl DatalakeCollection for TransactionsCollection {
 
     fn serialize(&self) -> Result<Vec<u8>> {
         match self {
-            TransactionsCollection::Transactions(ref field) => Ok([0, field.to_index()].to_vec()),
+            TransactionsCollection::Transactions(ref field) => Ok([1, field.to_index()].to_vec()),
             TransactionsCollection::TranasactionReceipts(ref field) => {
-                Ok([1, field.to_index()].to_vec())
+                Ok([2, field.to_index()].to_vec())
             }
         }
     }
@@ -58,10 +58,10 @@ impl DatalakeCollection for TransactionsCollection {
         }
 
         match bytes[0] {
-            0 => Ok(TransactionsCollection::Transactions(
+            1 => Ok(TransactionsCollection::Transactions(
                 TransactionField::from_index(bytes[1])?,
             )),
-            1 => Ok(TransactionsCollection::TranasactionReceipts(
+            2 => Ok(TransactionsCollection::TranasactionReceipts(
                 TransactionReceiptField::from_index(bytes[1])?,
             )),
             _ => Err(anyhow::Error::msg("Unknown transactions collection")),
