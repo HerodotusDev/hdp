@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 pub const BLOCK_SAMPLED_DATALAKE_TYPE_ID: u8 = 0;
 
 /// Identifier for an [`TransactionsDatalake`] type.
-pub const TRANSACTIONS_IN_BLOCK_DATALAKE_TYPE_ID: u8 = 2;
+pub const TRANSACTIONS_IN_BLOCK_DATALAKE_TYPE_ID: u8 = 1;
 
 #[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq)]
 pub enum DatalakeType {
