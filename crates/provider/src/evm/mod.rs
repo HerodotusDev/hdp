@@ -33,21 +33,18 @@ pub struct AbstractProvider {
     /// [`InMemoryProvider`] is used to fetch data from memory.
     // TODO: It's not using for now
     memory: InMemoryProvider,
-    /// Fetch data from the RPC for account and storage.
-    account_provider: RpcProvider,
+    /// Fetch data from the RPC
+    rpc_provider: RpcProvider,
     /// Fetch block headers and MMR data from the Herodotus indexer.
-    header_provider: RpcProvider,
-    /// Fetch tx data from the RPC
-    tx_provider: RpcProvider,
+    indexer: RpcProvider,
 }
 
 impl AbstractProvider {
     pub fn new(rpc_url: &'static str, chain_id: u64) -> Self {
         Self {
             memory: InMemoryProvider::new(),
-            account_provider: RpcProvider::new(rpc_url, chain_id),
-            header_provider: RpcProvider::new(HERODOTUS_RS_INDEXER_URL, chain_id),
-            tx_provider: RpcProvider::new(rpc_url, chain_id),
+            rpc_provider: RpcProvider::new(rpc_url, chain_id),
+            indexer: RpcProvider::new(HERODOTUS_RS_INDEXER_URL, chain_id),
         }
     }
 
@@ -64,7 +61,7 @@ impl AbstractProvider {
         let start_fetch = Instant::now();
 
         let mmr_data = self
-            .header_provider
+            .indexer
             .get_sequencial_headers_and_mmr_from_indexer(start_block, end_block)
             .await;
 
@@ -221,7 +218,7 @@ impl AbstractProvider {
             Some(header) => header,
             None => {
                 let header_rpc = self
-                    .account_provider
+                    .rpc_provider
                     .get_block_by_number(block_number)
                     .await
                     .unwrap();
@@ -298,7 +295,7 @@ impl AbstractProvider {
                 .into_iter()
                 .map(|block_number| {
                     let blocks_map_clone = blocks_map.clone();
-                    let rpc_clone = self.account_provider.clone(); // Assume self.rpc can be cloned or is wrapped in Arc
+                    let rpc_clone = self.rpc_provider.clone(); // Assume self.rpc can be cloned or is wrapped in Arc
                     let address_clone = address.clone();
                     async move {
                         let should_fetch = {
@@ -450,7 +447,7 @@ impl AbstractProvider {
                 .into_iter()
                 .map(|block_number| {
                     let blocks_map_clone = blocks_map.clone();
-                    let rpc_clone = self.account_provider.clone(); // Assume self.rpc can be cloned or is wrapped in Arc
+                    let rpc_clone = self.rpc_provider.clone(); // Assume self.rpc can be cloned or is wrapped in Arc
                     let address_clone = address.clone();
                     let slot_clone = slot.clone();
                     async move {
@@ -539,8 +536,8 @@ impl AbstractProvider {
         incremental: u64,
     ) -> Result<Vec<(u64, u64, String, Vec<String>)>> {
         let mut tx_with_proof = vec![];
-
-        let mut txs_mpt_handler = TxsMptHandler::new(self.tx_provider.url).unwrap();
+        println!("self.rpc_provider.url: {}", (self.rpc_provider.url));
+        let mut txs_mpt_handler = TxsMptHandler::new(self.rpc_provider.url).unwrap();
         txs_mpt_handler
             .build_tx_tree_from_block(target_block)
             .await
@@ -572,7 +569,7 @@ impl AbstractProvider {
         incremental: u64,
     ) -> Result<Vec<(u64, u64, String, Vec<String>)>> {
         let mut tx_receipt_with_proof = vec![];
-        let mut tx_reciepts_mpt_handler = TxReceiptsMptHandler::new(self.tx_provider.url).unwrap();
+        let mut tx_reciepts_mpt_handler = TxReceiptsMptHandler::new(self.rpc_provider.url).unwrap();
 
         tx_reciepts_mpt_handler
             .build_tx_receipts_tree_from_block(target_block)
