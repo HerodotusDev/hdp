@@ -33,6 +33,28 @@ pub enum TransactionField {
     MaxFeePerBlobGas,
 }
 
+impl TransactionField {
+    pub fn variants() -> Vec<String> {
+        vec![
+            "NONCE".to_string(),
+            "GAS_PRICE".to_string(),
+            "GAS_LIMIT".to_string(),
+            "TO".to_string(),
+            "VALUE".to_string(),
+            "INPUT".to_string(),
+            "V".to_string(),
+            "R".to_string(),
+            "S".to_string(),
+            "CHAIN_ID".to_string(),
+            "ACCESS_LIST".to_string(),
+            "MAX_FEE_PER_GAS".to_string(),
+            "MAX_PRIORITY_FEE_PER_GAS".to_string(),
+            "BLOB_VERSIONED_HASHES".to_string(),
+            "MAX_FEE_PER_BLOB_GAS".to_string(),
+        ]
+    }
+}
+
 // Note: This index is use to parse the transaction datalake field from the datalake's sampled property.
 // It is not used to index the transaction datalake field itself.
 impl DatalakeField for TransactionField {
@@ -167,6 +189,17 @@ pub enum TransactionReceiptField {
     CumulativeGasUsed,
     Logs,
     Bloom,
+}
+
+impl TransactionReceiptField {
+    pub fn variants() -> Vec<String> {
+        vec![
+            "SUCCESS".to_string(),
+            "CUMULATIVE_GAS_USED".to_string(),
+            "LOGS".to_string(),
+            "BLOOM".to_string(),
+        ]
+    }
 }
 
 impl FromStr for TransactionReceiptField {

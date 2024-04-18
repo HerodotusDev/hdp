@@ -14,6 +14,35 @@ pub enum BlockSampledCollection {
     Storage(Address, StorageKey),
 }
 
+pub enum BlockSampledCollectionType {
+    Header,
+    Account,
+    Storage,
+}
+
+impl BlockSampledCollectionType {
+    pub fn variants() -> Vec<String> {
+        vec![
+            "HEADER".to_string(),
+            "ACCOUNT".to_string(),
+            "STORAGE".to_string(),
+        ]
+    }
+}
+
+impl FromStr for BlockSampledCollectionType {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        match s.to_uppercase().as_str() {
+            "HEADER" => Ok(BlockSampledCollectionType::Header),
+            "ACCOUNT" => Ok(BlockSampledCollectionType::Account),
+            "STORAGE" => Ok(BlockSampledCollectionType::Storage),
+            _ => bail!("Unknown block sampled collection type"),
+        }
+    }
+}
+
 impl DatalakeCollection for BlockSampledCollection {
     fn to_index(&self) -> u8 {
         match self {

@@ -50,7 +50,6 @@ impl DatalakeEnvelope {
             DatalakeType::BlockSampled => Ok(DatalakeEnvelope::BlockSampled(
                 BlockSampledDatalake::decode(data)?,
             )),
-            DatalakeType::DynamicLayout => Err(anyhow::anyhow!("Unsupported datalake type")),
             DatalakeType::TransactionsInBlock => Ok(DatalakeEnvelope::Transactions(
                 TransactionsInBlockDatalake::decode(data)?,
             )),

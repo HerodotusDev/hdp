@@ -14,7 +14,7 @@ pub struct Transaction {
 }
 
 impl Transaction {
-    pub fn to_cairo_format(&self) -> TransactionFormatted {
+    pub(crate) fn to_cairo_format(&self) -> TransactionFormatted {
         let tx_key = split_little_endian_hex_into_parts(&self.key);
         let proof_chunk_result: Vec<CairoFormattedChunkResult> = self
             .proof
@@ -37,7 +37,7 @@ impl Transaction {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
-pub struct TransactionFormatted {
+pub(crate) struct TransactionFormatted {
     // U256 type
     pub key: Uint256,
     pub block_number: u64,
@@ -55,7 +55,7 @@ pub struct TransactionReceipt {
 }
 
 impl TransactionReceipt {
-    pub fn to_cairo_format(&self) -> TransactionReceiptFormatted {
+    pub(crate) fn to_cairo_format(&self) -> TransactionReceiptFormatted {
         let tx_key = split_little_endian_hex_into_parts(&self.key);
         let proof_chunk_result: Vec<CairoFormattedChunkResult> = self
             .proof
@@ -78,7 +78,7 @@ impl TransactionReceipt {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
-pub struct TransactionReceiptFormatted {
+pub(crate) struct TransactionReceiptFormatted {
     // U256 type
     pub key: Uint256,
     pub block_number: u64,
