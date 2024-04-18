@@ -1,7 +1,7 @@
 use crate::task::ComputationalTask;
 use alloy_dyn_abi::{DynSolType, DynSolValue};
 use alloy_primitives::hex::FromHex;
-use anyhow::{bail, Ok, Result};
+use anyhow::{Ok, Result};
 use hdp_primitives::{
     datalake::{
         block_sampled::BlockSampledDatalake, datalake_type::DatalakeType,
@@ -53,7 +53,6 @@ pub fn datalakes_decoder(serialized_datalakes_batch: String) -> Result<Vec<Datal
                 DatalakeType::BlockSampled => {
                     DatalakeEnvelope::BlockSampled(BlockSampledDatalake::decode(&datalake_string)?)
                 }
-                DatalakeType::DynamicLayout => bail!("Unsupported datalake type"),
                 DatalakeType::TransactionsInBlock => DatalakeEnvelope::Transactions(
                     TransactionsInBlockDatalake::decode(&datalake_string)?,
                 ),
@@ -75,7 +74,6 @@ pub fn datalake_decoder(serialized_datalake: String) -> Result<DatalakeEnvelope>
         DatalakeType::BlockSampled => {
             DatalakeEnvelope::BlockSampled(BlockSampledDatalake::decode(&datalake_string)?)
         }
-        DatalakeType::DynamicLayout => bail!("Unsupported datalake type"),
         DatalakeType::TransactionsInBlock => {
             DatalakeEnvelope::Transactions(TransactionsInBlockDatalake::decode(&datalake_string)?)
         }

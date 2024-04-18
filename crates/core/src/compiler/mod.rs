@@ -17,7 +17,6 @@ use self::{
 };
 
 pub mod block_sampled;
-pub mod test;
 pub mod transactions;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
