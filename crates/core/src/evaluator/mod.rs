@@ -62,7 +62,7 @@ impl EvaluationResult {
         }
     }
 
-    pub fn get_processed_result(&self) -> Result<ProcessedResult> {
+    fn get_processed_result(&self) -> Result<ProcessedResult> {
         // 1. build merkle tree
         let (tasks_merkle_tree, results_merkle_tree) = self.build_merkle_tree()?;
 
@@ -173,7 +173,7 @@ impl EvaluationResult {
         Ok(processed_result)
     }
 
-    pub fn build_merkle_tree(&self) -> Result<(StandardMerkleTree, StandardMerkleTree)> {
+    fn build_merkle_tree(&self) -> Result<(StandardMerkleTree, StandardMerkleTree)> {
         let mut tasks_leaves = Vec::new();
         let mut results_leaves = Vec::new();
 
@@ -206,18 +206,18 @@ impl EvaluationResult {
         Ok(())
     }
 
-    pub fn to_general_json(&self) -> Result<String> {
+    fn to_general_json(&self) -> Result<String> {
         let processed_result = self.get_processed_result()?;
         Ok(serde_json::to_string(&processed_result)?)
     }
 
-    pub fn to_cairo_formatted_json(&self) -> Result<String> {
+    fn to_cairo_formatted_json(&self) -> Result<String> {
         let processed_result = self.get_processed_result()?.to_cairo_format();
         Ok(serde_json::to_string(&processed_result)?)
     }
 }
 
-pub fn evaluation_result_to_result_commitment(
+fn evaluation_result_to_result_commitment(
     task_commitment: &str,
     compiled_result: &str,
 ) -> FixedBytes<32> {
