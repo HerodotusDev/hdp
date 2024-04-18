@@ -536,7 +536,6 @@ impl AbstractProvider {
         incremental: u64,
     ) -> Result<Vec<(u64, u64, String, Vec<String>)>> {
         let mut tx_with_proof = vec![];
-        println!("self.rpc_provider.url: {}", (self.rpc_provider.url));
         let mut txs_mpt_handler = TxsMptHandler::new(self.rpc_provider.url).unwrap();
         txs_mpt_handler
             .build_tx_tree_from_block(target_block)

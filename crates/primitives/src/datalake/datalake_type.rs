@@ -1,5 +1,6 @@
 use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 
 /// Identifier for a [`BlockSampledDatalake`] type.
 pub const BLOCK_SAMPLED_DATALAKE_TYPE_ID: u8 = 0;
@@ -13,6 +14,18 @@ pub enum DatalakeType {
     TransactionsInBlock = 1,
 }
 
+impl FromStr for DatalakeType {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        match s {
+            "BLOCK_SAMPLED" => Ok(DatalakeType::BlockSampled),
+            "TRANSACTIONS_IN_BLOCK" => Ok(DatalakeType::TransactionsInBlock),
+            _ => bail!("Unknown datalake type"),
+        }
+    }
+}
+
 impl From<DatalakeType> for u8 {
     fn from(value: DatalakeType) -> Self {
         match value {
@@ -23,6 +36,13 @@ impl From<DatalakeType> for u8 {
 }
 
 impl DatalakeType {
+    pub fn variants() -> Vec<String> {
+        vec!["BLOCK_SAMPLED", "TRANSACTIONS_IN_BLOCK"]
+            .into_iter()
+            .map(String::from)
+            .collect()
+    }
+
     pub fn to_u8(self) -> u8 {
         self.into()
     }

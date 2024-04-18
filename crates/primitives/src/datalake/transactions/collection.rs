@@ -6,6 +6,29 @@ use crate::datalake::{DatalakeCollection, DatalakeField};
 
 use super::{TransactionField, TransactionReceiptField};
 
+pub enum TransactionsCollectionType {
+    Transactions,
+    TransactionReceipts,
+}
+
+impl TransactionsCollectionType {
+    pub fn variants() -> Vec<String> {
+        vec!["TX".to_string(), "TX_RECEIPT".to_string()]
+    }
+}
+
+impl FromStr for TransactionsCollectionType {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        match s.to_uppercase().as_str() {
+            "TX" => Ok(TransactionsCollectionType::Transactions),
+            "TX_RECEIPT" => Ok(TransactionsCollectionType::TransactionReceipts),
+            _ => bail!("Unknown transactions collection type"),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum TransactionsCollection {
     Transactions(TransactionField),

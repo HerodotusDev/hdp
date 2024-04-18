@@ -35,6 +35,33 @@ pub enum HeaderField {
     ParentBeaconBlockRoot,
 }
 
+impl HeaderField {
+    pub fn variants() -> Vec<String> {
+        vec![
+            "PARENT_HASH".to_string(),
+            "OMMERS_HASH".to_string(),
+            "BENEFICIARY".to_string(),
+            "STATE_ROOT".to_string(),
+            "TRANSACTIONS_ROOT".to_string(),
+            "RECEIPTS_ROOT".to_string(),
+            "LOGS_BLOOM".to_string(),
+            "DIFFICULTY".to_string(),
+            "NUMBER".to_string(),
+            "GAS_LIMIT".to_string(),
+            "GAS_USED".to_string(),
+            "TIMESTAMP".to_string(),
+            "EXTRA_DATA".to_string(),
+            "MIX_HASH".to_string(),
+            "NONCE".to_string(),
+            "BASE_FEE_PER_GAS".to_string(),
+            "WITHDRAWALS_ROOT".to_string(),
+            "BLOB_GAS_USED".to_string(),
+            "EXCESS_BLOB_GAS".to_string(),
+            "PARENT_BEACON_BLOCK_ROOT".to_string(),
+        ]
+    }
+}
+
 impl DatalakeField for HeaderField {
     fn from_index(index: u8) -> Result<Self> {
         match index {
@@ -180,6 +207,17 @@ pub enum AccountField {
     Balance,
     StorageRoot,
     CodeHash,
+}
+
+impl AccountField {
+    pub fn variants() -> Vec<String> {
+        vec![
+            "NONCE".to_string(),
+            "BALANCE".to_string(),
+            "STORAGE_ROOT".to_string(),
+            "CODE_HASH".to_string(),
+        ]
+    }
 }
 
 impl FromStr for AccountField {
