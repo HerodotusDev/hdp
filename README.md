@@ -25,17 +25,17 @@ The HDP CLI is designed to process human-readable requests and convert them into
 
 ```bash
 # Install with cargo
-❯ cargo install --git https://github.com/HerodotusDev/hdp --locked --force
+cargo install --git https://github.com/HerodotusDev/hdp --locked --force
 ```
 
 ### Build from source
 
 ```bash
 # clone repo
-❯ git clone https://github.com/HerodotusDev/hdp.git
+git clone https://github.com/HerodotusDev/hdp.git
 
 # install hdp
-❯ cargo install --path cli -f
+cargo install --path cli -f
 ```
 
 ## Getting Started
@@ -44,7 +44,11 @@ To launch the interactive CLI:
 
 ```bash
 # Start the HDP
-❯ hdp start
+hdp start
+```
+Expected output:
+
+```plaintext
 Welcome to Herodotus Data Processor interactive CLI! 🛰️
 
                 _   _   ____    ____
@@ -62,19 +66,19 @@ The following examples demonstrate how to use the HDP CLI to encode various bloc
 
 Header value with `AVG`:
 
-```
+```bash
 hdp encode "avg" -b 4952100 4952110 "header.base_fee_per_gas" 1
 ```
 
 Account value with `SUM`:
 
-```
+```bash
 hdp encode "sum" -b 4952100 4952110 "account.0x7f2c6f930306d3aa736b3a6c6a98f512f74036d4.nonce" 2
 ```
 
 Storage value with `AVG`:
 
-```
+```bash
 hdp encode "avg" -b 5382810 5382820 "storage.0x75CeC1db9dCeb703200EAa6595f66885C962B920.0x0000000000000000000000000000000000000000000000000000000000000002" 1
 ```
 
@@ -89,18 +93,22 @@ After encoding, you can directly run processing tasks using environmental config
 ```bash
 # pro tip: run herodotus data processing with `.env`
 hdp run
+```
 
+```bash
 # run herodotus data processing
 hdp run ${Encoded Task} ${Encoded Datalake} ${Input your RPC Provider -- this example is Etherum Sepolia} ${Input Chain ID that you are target on}
 ```
 
 For a more comprehensive guide on commands available within HDP CLI:
 
-```console
-❯ hdp --help
+```bash
+hdp --help
+```
+```plaintext
 Interact Herodotus Data Processor via CLI
 
-Usage: hdp <COMMAND>
+Usage: `hdp <COMMAND>`
 
 Commands:
   start       New to the HDP CLI? Start here!
