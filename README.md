@@ -105,6 +105,7 @@ For a more comprehensive guide on commands available within HDP CLI:
 ```bash
 hdp --help
 ```
+Expected output : 
 ```plaintext
 Interact Herodotus Data Processor via CLI
 
