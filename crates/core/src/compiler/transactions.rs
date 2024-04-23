@@ -25,6 +25,10 @@ pub struct CompiledTransactionsDatalake {
     pub transaction_receipts: Vec<TransactionReceipt>,
     /// MMR meta data related to the headers
     pub mmr_meta: MMRMeta,
+    /// Last proof of the tx
+    pub last_tx_markers: Vec<Transaction>,
+    /// Last proof of the receipt
+    pub last_receipt_markers: Vec<TransactionReceipt>,
 }
 
 pub async fn compile_tx_datalake(
@@ -41,6 +45,8 @@ pub async fn compile_tx_datalake(
     let mut headers: Vec<Header> = vec![];
     let mut transactions: Vec<Transaction> = vec![];
     let mut transaction_receipts: Vec<TransactionReceipt> = vec![];
+    let mut last_tx_markers: Vec<Transaction> = vec![];
+    let mut last_receipt_markers: Vec<TransactionReceipt> = vec![];
 
     match datalake.sampled_property {
         TransactionsCollection::Transactions(property) => {
@@ -84,7 +90,7 @@ pub async fn compile_tx_datalake(
             let (block_number, tx_index, proof) = last_proof;
             let key_fixed_bytes = tx_index_to_tx_key(tx_index);
 
-            transactions.push(Transaction {
+            last_tx_markers.push(Transaction {
                 key: key_fixed_bytes.to_string(),
                 block_number,
                 proof,
@@ -131,7 +137,7 @@ pub async fn compile_tx_datalake(
             // Add the last proof as a last element of the transaction_receipts
             let (block_number, tx_index, proof) = last_proof;
             let key_fixed_bytes = tx_index_to_tx_key(tx_index);
-            transaction_receipts.push(TransactionReceipt {
+            last_receipt_markers.push(TransactionReceipt {
                 key: key_fixed_bytes.to_string(),
                 block_number,
                 proof,
@@ -145,6 +151,8 @@ pub async fn compile_tx_datalake(
         transactions,
         transaction_receipts,
         mmr_meta,
+        last_tx_markers,
+        last_receipt_markers,
     })
 }
 

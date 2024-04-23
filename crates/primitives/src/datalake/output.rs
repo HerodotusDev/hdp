@@ -197,6 +197,10 @@ pub struct ProcessedResult {
     pub transactions: Vec<Transaction>,
     pub transaction_receipts: Vec<TransactionReceipt>,
     pub tasks: Vec<Task>,
+    /// Store the proof of the last +1 tx to verify the inclusion of the tx.
+    pub last_tx_markers: Vec<Transaction>,
+    /// Store the proof of the last +1 receipt to verify the inclusion of the receipt.
+    pub last_receipt_markers: Vec<TransactionReceipt>,
 }
 
 impl ProcessedResult {
@@ -231,6 +235,16 @@ impl ProcessedResult {
             .iter()
             .map(|task| task.to_cairo_format())
             .collect();
+        let last_tx_markers = self
+            .last_tx_markers
+            .iter()
+            .map(|tx| tx.to_cairo_format())
+            .collect();
+        let last_receipt_markers = self
+            .last_receipt_markers
+            .iter()
+            .map(|receipt| receipt.to_cairo_format())
+            .collect();
 
         ProcessedResultFormatted {
             results_root: split_big_endian_hex_into_parts(&self.results_root),
@@ -241,6 +255,8 @@ impl ProcessedResult {
             storages,
             transactions,
             transaction_receipts,
+            last_tx_markers,
+            last_receipt_markers,
             tasks,
         }
     }
@@ -256,6 +272,8 @@ pub struct ProcessedResultFormatted {
     storages: Vec<StorageFormatted>,
     transactions: Vec<TransactionFormatted>,
     transaction_receipts: Vec<TransactionReceiptFormatted>,
+    last_tx_markers: Vec<TransactionFormatted>,
+    last_receipt_markers: Vec<TransactionReceiptFormatted>,
     pub tasks: Vec<TaskFormatted>,
 }
 
