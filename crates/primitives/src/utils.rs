@@ -23,24 +23,6 @@ pub fn utf8_str_to_fixed_bytes32(s: &str) -> FixedBytes<32> {
     FixedBytes::from(fixed_bytes)
 }
 
-pub fn u64_to_fixed_bytes32(value: u64) -> FixedBytes<32> {
-    let mut buffer = [0u8; 32];
-    // Convert the u64 value to an array of bytes in little-endian format
-    let value_bytes = value.to_le_bytes();
-
-    // remove 0 from the beginning
-    let value_bytes = value_bytes
-        .iter()
-        .skip_while(|&x| *x == 0)
-        .copied()
-        .collect::<Vec<u8>>();
-
-    let end: usize = value_bytes.len();
-    buffer[0..end].copy_from_slice(&value_bytes);
-
-    FixedBytes::from(buffer)
-}
-
 /// Convert a byte array into a hex string
 pub fn bytes_to_hex_string(bytes: &[u8]) -> String {
     format!("0x{}", hex::encode(bytes))
@@ -58,8 +40,6 @@ pub fn last_byte_to_u8(bytes: &[u8]) -> u8 {
 
 #[cfg(test)]
 mod tests {
-    use crate::datalake::output::{split_little_endian_hex_into_parts, Uint256};
-
     use super::*;
     use alloy_primitives::{hex::FromHex, FixedBytes};
 
@@ -118,58 +98,5 @@ mod tests {
         let input = [0, 0, 0, 9, 255];
         let result = last_byte_to_u8(&input);
         assert_eq!(result, 255);
-    }
-
-    #[test]
-    fn test_u64_to_fixed_bytes32() {
-        let value = 0u64;
-        let result = u64_to_fixed_bytes32(value);
-        assert_eq!(
-            result,
-            FixedBytes::from_hex(
-                "0x0000000000000000000000000000000000000000000000000000000000000000"
-            )
-            .unwrap()
-        );
-
-        let value = 20u64;
-        let result = u64_to_fixed_bytes32(value);
-        assert_eq!(
-            result,
-            FixedBytes::from_hex(
-                "0x1400000000000000000000000000000000000000000000000000000000000000"
-            )
-            .unwrap()
-        );
-
-        let value = 10000u64;
-        let result = u64_to_fixed_bytes32(value);
-        assert_eq!(
-            result,
-            FixedBytes::from_hex(
-                "0x1027000000000000000000000000000000000000000000000000000000000000"
-            )
-            .unwrap()
-        );
-
-        let value = 33226u64;
-        let result = u64_to_fixed_bytes32(value);
-        assert_eq!(
-            result,
-            FixedBytes::from_hex(
-                "0xca81000000000000000000000000000000000000000000000000000000000000"
-            )
-            .unwrap()
-        );
-
-        assert_eq!(
-            split_little_endian_hex_into_parts(
-                "0xca81000000000000000000000000000000000000000000000000000000000000"
-            ),
-            Uint256 {
-                low: "0x000000000000000000000000000081ca".to_string(),
-                high: "0x00000000000000000000000000000000".to_string()
-            }
-        )
     }
 }
