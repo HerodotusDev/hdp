@@ -1,4 +1,3 @@
-use alloy_primitives::U256;
 use anyhow::Result;
 use hdp_primitives::{
     datalake::{
@@ -9,7 +8,7 @@ use hdp_primitives::{
         },
         DatalakeField,
     },
-    utils::bytes_to_fixed_bytes32,
+    utils::u64_to_fixed_bytes32,
 };
 use hdp_provider::evm::AbstractProvider;
 use serde::{Deserialize, Serialize};
@@ -53,8 +52,10 @@ pub async fn compile_tx_datalake(
 
             for (block_number, tx_index, rlp_encoded_tx, proof) in full_tx_and_proof_result {
                 let value = property.decode_field_from_rlp(&rlp_encoded_tx);
-                let key_fixed_bytes =
-                    bytes_to_fixed_bytes32(&alloy_rlp::encode(U256::from(tx_index)));
+                let key_fixed_bytes = u64_to_fixed_bytes32(tx_index);
+
+                println!("key_fixed_bytes: {:?}", key_fixed_bytes);
+                println!("tx_index: {:?}", tx_index);
 
                 transactions.push(Transaction {
                     key: key_fixed_bytes.to_string(),
@@ -92,8 +93,10 @@ pub async fn compile_tx_datalake(
                 full_tx_receipt_and_proof_result
             {
                 let value = property.decode_field_from_rlp(&rlp_encoded_tx_receipt);
-                let key_fixed_bytes =
-                    bytes_to_fixed_bytes32(&alloy_rlp::encode(U256::from(tx_index)));
+                let key_fixed_bytes = u64_to_fixed_bytes32(tx_index);
+
+                println!("key_fixed_bytes: {:?}", key_fixed_bytes);
+                println!("tx_index: {:?}", tx_index);
 
                 transaction_receipts.push(TransactionReceipt {
                     key: key_fixed_bytes.to_string(),
