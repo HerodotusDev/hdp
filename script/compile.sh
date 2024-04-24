@@ -5,9 +5,11 @@ cd hdp-cairo && source ./venv/bin/activate
 cairo_file=./src/hdp.cairo
 cairo-compile --version
 echo "Compiling $cairo_file using cairo-compile ..."
-pwd
 cairo-compile --cairo_path="packages/eth_essentials" "$cairo_file" --output "../compiled_cairo/hdp.json"
- local status=$?
+echo "Computing $cairo_file program hash using cairo-hash-program ..."
+cairo-hash-program --program  "../compiled_cairo/hdp.json"
+cd ..
+local status=$?
     if [ $status -eq 0 ]; then
         echo "$(date '+%Y-%m-%d %H:%M:%S') - Successfully compiled $1"
     else
