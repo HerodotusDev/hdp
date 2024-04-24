@@ -9,7 +9,7 @@ echo "Setting up virtual environment..."
 cd hdp-cairo
 
 # Attempt to run 'make setup' and handle potential errors
-if ! make setup; then
+if ! make setup VENV_PATH=../venv; then
   echo "Failed to install hdp-cairo submodule. Please check the makefile within hdp-cairo."
   exit 1
 fi

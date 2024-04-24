@@ -6,3 +6,6 @@ compile:
 
 integration:
 	./script/integration.sh
+
+update-submodule:
+	git submodule update --remote 
