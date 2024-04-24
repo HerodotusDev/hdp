@@ -24,14 +24,14 @@ workspace = false
 description = "Run the CI pipeline"
 dependencies = ["format", "clippy", "test"]
 
-[tasks.clone]
+[tasks.clone-hdp-cairo]
 workspace = false
 description = "Clone the repository"
 ignore_errors = true
 command = "git"
 args = ["clone", "https://github.com/HerodotusDev/hdp-cairo.git"]
 
-[tasks.setup]
+[tasks.cairo-setup]
 workspace = false
 description = "Setup the Cairo environment"
 script = '''
@@ -39,7 +39,7 @@ echo "Setting up the environment..."
 ./script/setup.sh
 '''
 
-[tasks.compile]
+[tasks.cairo-compile]
 workspace = false
 description = "Compile the HDP Cairo program (requires setup)"
 script = '''
@@ -47,7 +47,7 @@ echo "Compiling the program..."
 ./script/compile.sh
 '''
 
-[tasks.integration]
+[tasks.integration-test]
 workspace = false
 description = "Run the integration tests, provide folder name as argument in env INTEGRATION_ARGS (requires compile)"
 env = { INTEGRATION_ARGS = "min_max_count" }
@@ -70,7 +70,12 @@ rm -rf tools
 [tasks.run-full-flow]
 workspace = false
 description = "Run the full flow of Integration tests"
-dependencies = ["clone", "setup", "compile", "integration"]
+dependencies = [
+    "clone-hdp-cairo",
+    "cairo-setup",
+    "cairo-compile",
+    "integration-test",
+]
 
 [config]
 unstable_features = ["CTRL_C_HANDLING"]
