@@ -9,17 +9,17 @@ Follow these steps to set up and run integration tests:
 1. **Update Cairo Environment:**
    Update and initialize the `hdp-cairo` submodule and its internal submodules to their latest state. This step also sets up the virtual environment required for testing with Cairo VM.
    ```bash
-   make setup
+   cargo make clone
    ```
 2. **Compile new Program**:
    Compile the latest `hdp.cairo` into a JSON file and output the program hash. This step ensures you have the latest version of the program compiled for testing.
    ```bash
-   make compile
+   cargo make compile
    ```
 3. **Run Integration Test**:
    Verify that you are in the correct environment to run `cairo-run`. This step executes all provided example input files against the compiled Cairo program.
    ```bash
-   make integration
+   cargo make integration
    ```
 
 ### Understanding the Logs
