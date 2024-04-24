@@ -2,7 +2,7 @@
 
 # Setup the hdp-cairo submodule
 echo "Setting up hdp-cairo submodule..."
-git submodule update --init --recursive
+git submodule update --init
 
 # Setup hdp-cairo virtual environment
 echo "Setting up virtual environment..."
