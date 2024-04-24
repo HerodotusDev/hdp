@@ -4,61 +4,73 @@ CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = true
 [tasks.format]
 install_crate = "rustfmt"
 command = "cargo"
-args = ["fmt", "--", "--emit=files"]
+args = ["fmt", "--", "--check"]
 
 [tasks.clean]
 command = "cargo"
 args = ["clean"]
 
-[tasks.build]
+[tasks.clippy]
 command = "cargo"
-args = ["build"]
+args = ["clippy", "--all-targets", "--all-features", "--", "-D", "warnings"]
 
 [tasks.test]
 workspace = false
 command = "cargo"
 args = ["nextest", "run", "--workspace", "${@}"]
 
-[tasks.pre-clone]
+[tasks.run-ci-flow]
 workspace = false
-description = "Clean up existing directory"
-script = '''
-if [ -d "./hdp-cairo" ]; then
-    echo "Removing existing hdp-cairo directory..."
-    rm -rf ./hdp-cairo
-else
-    echo "No existing directory to remove."
-fi
-'''
+description = "Run the CI pipeline"
+dependencies = ["format", "clippy", "test"]
 
 [tasks.clone]
 workspace = false
 description = "Clone the repository"
-dependencies = ["pre-clone"]
+ignore_errors = true
 command = "git"
 args = ["clone", "https://github.com/HerodotusDev/hdp-cairo.git"]
 
 [tasks.setup]
 workspace = false
+description = "Setup the Cairo environment"
 script = '''
-echo "Setting up the project..."
+echo "Setting up the environment..."
 ./script/setup.sh
 '''
 
 [tasks.compile]
 workspace = false
+description = "Compile the HDP Cairo program (requires setup)"
 script = '''
-echo "Compiling the project..." 
+echo "Compiling the program..." 
 ./script/compile.sh
 '''
 
 [tasks.integration]
 workspace = false
+description = "Run the integration tests, provide folder name as argument in env INTEGRATION_ARGS (requires compile)"
 env = { INTEGRATION_ARGS = "min_max_count" }
 script = '''
 echo "Running integration tests with arguments: $INTEGRATION_ARGS"
 ./script/integration.sh $INTEGRATION_ARGS
 '''
+
+[tasks.reset-setup]
+workspace = false
+description = "Reset all the setup and compiled files to back to the initial state"
+script = '''
+echo "Removing the setup and compiled files..."
+rm -rf ./compiled_cairo/hdp.json
+rm -rf ./hdp-cairo
+rm -rf venv
+rm -rf tools
+'''
+
+[tasks.run-full-flow]
+workspace = false
+description = "Run the full flow of Integration tests"
+dependencies = ["clone", "setup", "compile", "integration"]
 
 [config]
 unstable_features = ["CTRL_C_HANDLING"]
