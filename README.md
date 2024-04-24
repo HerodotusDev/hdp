@@ -121,7 +121,7 @@ Integration testing in HDP ensures that the functionality of aggregate functions
 
 ### Testing Environment
 
-Our integration tests utilize `script/integration.sh` to verify the correct operation of each function across the supported fields. To execute these tests locally, refer to the [Integration Test Guide](./example/readme.md) for detailed instructions.
+Our integration tests utilize `make integration` script to verify the correct operation of each function across the supported fields. To execute these tests locally, refer to the [Integration Test Guide](./example/readme.md) for detailed instructions.
 
 ### Supported Aggregate Functions
 

@@ -5,4 +5,4 @@ compile:
 	./script/compile.sh
 
 integration:
-	./script/integration.sh 
+	./script/integration.sh

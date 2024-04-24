@@ -1,10 +1,25 @@
 #!/bin/bash
 
+prepare_cairo_enviroment() {
+    cd hdp-cairo && source ./venv/bin/activate 
+    cairo-run --version
+    cd ..
+    local status=$?
+        if [ $status -eq 0 ]; then
+            echo "$(date '+%Y-%m-%d %H:%M:%S') - Successfully prepared"
+        else
+            echo "$(date '+%Y-%m-%d %H:%M:%S') - Failed to prepared"
+            return $status
+        fi
+}
+# Call the function to ensure the virtual environment is activated
+prepare_cairo_enviroment
+
 # Base directory where the folders 'storage' and 'account' and 'header' are located
 BASE_DIR="example"
 
 # Use command line arguments as target directories. If no arguments are provided, default to "header account storage".
-TARGET_DIRS=${@:-"header account storage min_max_count transaction"}
+TARGET_DIRS=${@:-"header account storage min_max_count"}
 
 # Loop through specified directories
 for dir in $TARGET_DIRS; do
