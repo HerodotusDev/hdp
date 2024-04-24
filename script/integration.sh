@@ -16,11 +16,15 @@ prepare_cairo_enviroment() {
 # Call the function to ensure the virtual environment is activated
 prepare_cairo_enviroment
 
+# Echoing arguments for debugging
+echo "Arguments received: $@"
+
 # Base directory where the folders 'storage' and 'account' and 'header' are located
 BASE_DIR="example"
 
-# Use command line arguments as target directories. If no arguments are provided, default to "header account storage".
-TARGET_DIRS=${@:-"header account storage min_max_count"}
+TARGET_DIRS=("$@")
+
+echo "Running integration tests on directories: ${TARGET_DIRS[@]}"
 
 # Loop through specified directories
 for dir in $TARGET_DIRS; do

@@ -1,0 +1,64 @@
+[env]
+CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = true
+
+[tasks.format]
+install_crate = "rustfmt"
+command = "cargo"
+args = ["fmt", "--", "--emit=files"]
+
+[tasks.clean]
+command = "cargo"
+args = ["clean"]
+
+[tasks.build]
+command = "cargo"
+args = ["build"]
+
+[tasks.test]
+workspace = false
+command = "cargo"
+args = ["nextest", "run", "--workspace", "${@}"]
+
+[tasks.pre-clone]
+workspace = false
+description = "Clean up existing directory"
+script = '''
+if [ -d "./hdp-cairo" ]; then
+    echo "Removing existing hdp-cairo directory..."
+    rm -rf ./hdp-cairo
+else
+    echo "No existing directory to remove."
+fi
+'''
+
+[tasks.clone]
+workspace = false
+description = "Clone the repository"
+dependencies = ["pre-clone"]
+command = "git"
+args = ["clone", "https://github.com/HerodotusDev/hdp-cairo.git"]
+
+[tasks.setup]
+workspace = false
+script = '''
+echo "Setting up the project..."
+./script/setup.sh
+'''
+
+[tasks.compile]
+workspace = false
+script = '''
+echo "Compiling the project..." 
+./script/compile.sh
+'''
+
+[tasks.integration]
+workspace = false
+env = { INTEGRATION_ARGS = "min_max_count" }
+script = '''
+echo "Running integration tests with arguments: $INTEGRATION_ARGS"
+./script/integration.sh $INTEGRATION_ARGS
+'''
+
+[config]
+unstable_features = ["CTRL_C_HANDLING"]
