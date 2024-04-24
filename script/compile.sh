@@ -1,7 +1,7 @@
 #!/bin/bash
 
 process_cairo_file() {
-cd hdp-cairo && source ./venv/bin/activate 
+source ./venv/bin/activate && cd hdp-cairo 
 cairo_file=./src/hdp.cairo
 cairo-compile --version
 echo "Compiling $cairo_file using cairo-compile ..."

@@ -1,9 +1,10 @@
 #!/bin/bash
 
 prepare_cairo_enviroment() {
-    cd hdp-cairo && source ./venv/bin/activate 
+    # Activate the virtual environment
+    source ./venv/bin/activate 
+    # Check if cairo-run is installed
     cairo-run --version
-    cd ..
     local status=$?
         if [ $status -eq 0 ]; then
             echo "$(date '+%Y-%m-%d %H:%M:%S') - Successfully prepared"
@@ -44,7 +45,7 @@ for dir in $TARGET_DIRS; do
                 
                 # Run the cairo-run command
                 cairo-run \
-                    --program=compiled_cairo/v1_hdp.json \
+                    --program=compiled_cairo/hdp.json \
                     --layout=starknet_with_keccak \
                     --program_input="${inputFilePath}" \
                     --cairo_pie_output "${pieFilePath}" \
