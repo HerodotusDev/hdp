@@ -10,8 +10,6 @@ if ! make setup VENV_PATH=../venv; then
   exit 1
 fi
 
-cp -r ./tools ../
-
 cd .. 
 
 # If we get this far, it means the installation was successful
