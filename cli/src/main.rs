@@ -106,7 +106,11 @@ enum Commands {
         cairo_input: Option<String>,
     },
     /// Return the compiled cairo file that works with integration test
-    CompiledCairo { output_path: String },
+    CompiledCairo {
+        /// Path to save the compiled cairo json file
+        #[arg(short, long)]
+        output_path: String,
+    },
 }
 
 #[derive(Subcommand, Clone, Debug, PartialEq, Eq)]
