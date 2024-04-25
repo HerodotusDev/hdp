@@ -13,19 +13,19 @@ Follow these steps to set up and run integration tests:
    cargo make clone-hdp-cairo
    ```
 
-   2. **Setup Cairo Environment:**
-      Sets up the virtual environment required for testing, including Cairo VM.
+2. **Setup Cairo Environment:**
+   Sets up the virtual environment required for testing, including Cairo VM.
 
    ```bash
-    cargo make cairo-setup
+   cargo make cairo-setup
    ```
 
-2. **Compile new Program**:
+3. **Compile new Program**:
    Compile the latest `hdp.cairo` into a JSON file and output the program hash. This step ensures you have the latest version of the program compiled for testing.
    ```bash
    cargo make cairo-compile
    ```
-3. **Run Integration Test**:
+4. **Run Integration Test**:
    Verify that you are in the correct environment to run `cairo-run`. This step executes all provided example input files against the compiled Cairo program.
    ```bash
    cargo make integration-test
@@ -39,7 +39,7 @@ If want to run full flow in one command, try:
  cargo make run-full-flow
 ```
 
-And if wan to reset all the setup and compiled files to back to the initial state, try:
+And if want to reset all the setup and compiled files to back the initial state, try:
 
 ```bash
 cargo make reset-setup
