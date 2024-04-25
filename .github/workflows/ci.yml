@@ -13,22 +13,23 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
+      - name: Display Python version
+        run: python -c "import sys; print(sys.version)"
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: stable
-
-      - name: Install clippy
-        run: rustup component add clippy
-
-      - name: Install rustfmt
-        run: rustup component add rustfmt
-
-      - name: Run clippy for native
-        run: cargo clippy --all --all-targets -- -D warnings
-
-      - name: Run fmt
-        run: cargo fmt -- --check
-
-      - name: Run tests
-        run: cargo test --all --all-targets -- --nocapture
+      - uses: taiki-e/install-action@nextest
+      - name: Install clippy and rustfmt
+        run: |
+          rustup component add clippy
+          rustup component add rustfmt
+      - name: Install cargo-make
+        run: cargo install --debug cargo-make
+      - name: Run clippy and formatter checks
+        run: cargo make run-ci-flow
+      - name: Run CI flow
+        run: cargo make run-full-flow

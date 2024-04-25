@@ -1,26 +1,48 @@
 # Integration Examples
 
-This section provides step-by-step instructions to run integration examples for HDP using the `script/integration.sh`. These examples demonstrate how to process requests and integrate them with the Cairo Program. Ensure you have the `RPC_URL` set in your `.env` file, as the script utilizes configuration from the environment variables.
+This guide provides detailed instructions for running integration tests using the Makefile in the HDP project. These examples demonstrate how to process requests and integrate them with the Cairo Program. Before starting, ensure you have the `RPC_URL` and `CHAIN_ID` set in your `.env` file, as the scripts utilize configuration from environment variables.
 
-## Preparing the Environment
+## Setup and Test Execution
 
-### Install cairo-lang v0.13.1
+Follow these steps to set up and run integration tests:
 
-1. **Clone the Cairo Program repository:**
+1. **Clone HDP Cairo:**
+   Clone the `hdp-cairo` repository to latest state.
+
    ```bash
-   git clone https://github.com/HerodotusDev/offchain-evm-headers-processor-mirror
+   cargo make clone-hdp-cairo
    ```
-2. **Navigate to the project directory and set up the environment**:
-   Follow the instructions provided in the installation [guideline](https://github.com/HerodotusDev/offchain-evm-headers-processor-mirror/tree/main/src/hdp).
-3. **Activate the virtual environment**: `source venv/bin/activate`
-4. **Verify the installation of Cairo**: `cairo-compile --version`
 
-### Running the Script
+2. **Setup Cairo Environment:**
+   Sets up the virtual environment required for testing, including Cairo VM.
 
-Ensure you are within the virtual environment when executing the script to ensure all dependencies are correctly resolved.
+   ```bash
+   cargo make cairo-setup
+   ```
+
+3. **Compile new Program**:
+   Compile the latest `hdp.cairo` into a JSON file and output the program hash. This step ensures you have the latest version of the program compiled for testing.
+   ```bash
+   cargo make cairo-compile
+   ```
+4. **Run Integration Test**:
+   Verify that you are in the correct environment to run `cairo-run`. This step executes all provided example input files against the compiled Cairo program.
+   ```bash
+   cargo make integration-test
+   ```
+
+### Fast Setup and Test Execution
+
+If want to run full flow in one command, try:
 
 ```bash
-./script/integration.sh
+ cargo make run-full-flow
+```
+
+And if want to reset all the setup and compiled files to back the initial state, try:
+
+```bash
+cargo make reset-setup
 ```
 
 ### Understanding the Logs
