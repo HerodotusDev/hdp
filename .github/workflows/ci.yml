@@ -32,3 +32,9 @@ jobs:
 
       - name: Run tests
         run: cargo test --all --all-targets -- --nocapture
+
+      - name: Install cargo-make
+        run: cargo install --debug cargo-make
+
+      - name: Run CI flow
+        run: cargo make run-full-flow
