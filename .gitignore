@@ -3,3 +3,4 @@ target
 *.pie
 venv
 tools
+hdp-cairo
