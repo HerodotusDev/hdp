@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 
 use crate::datalake::output::{
-    hex_to_8_byte_chunks_little_endian, split_little_endian_hex_into_parts,
-    CairoFormattedChunkResult, Uint256,
+    hex_to_8_byte_chunks_little_endian, split_big_endian_hex_into_parts,
+    split_little_endian_hex_into_parts, CairoFormattedChunkResult, Uint256,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
@@ -15,7 +15,7 @@ pub struct Transaction {
 
 impl Transaction {
     pub(crate) fn to_cairo_format(&self) -> TransactionFormatted {
-        let tx_key = split_little_endian_hex_into_parts(&self.key);
+        let tx_key = split_big_endian_hex_into_parts(&self.key);
         let proof_chunk_result: Vec<CairoFormattedChunkResult> = self
             .proof
             .iter()

@@ -3,8 +3,8 @@
 use serde::{Deserialize, Serialize};
 
 use crate::datalake::output::{
-    hex_to_8_byte_chunks_little_endian, split_little_endian_hex_into_parts,
-    CairoFormattedChunkResult, MPTProof, MPTProofFormatted, Uint256,
+    hex_to_8_byte_chunks_little_endian, split_big_endian_hex_into_parts, CairoFormattedChunkResult,
+    MPTProof, MPTProofFormatted, Uint256,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
@@ -18,7 +18,7 @@ pub struct Account {
 impl Account {
     pub(crate) fn to_cairo_format(&self) -> AccountFormatted {
         let address_chunk_result = hex_to_8_byte_chunks_little_endian(&self.address);
-        let account_key = split_little_endian_hex_into_parts(&self.account_key);
+        let account_key = split_big_endian_hex_into_parts(&self.account_key);
         let proofs = self
             .proofs
             .iter()
@@ -70,7 +70,7 @@ impl Storage {
     pub(crate) fn to_cairo_format(&self) -> StorageFormatted {
         let address_chunk_result = hex_to_8_byte_chunks_little_endian(&self.address);
         let slot_chunk_result = hex_to_8_byte_chunks_little_endian(&self.slot);
-        let storage_key = split_little_endian_hex_into_parts(&self.storage_key);
+        let storage_key = split_big_endian_hex_into_parts(&self.storage_key);
         let proofs = self
             .proofs
             .iter()
@@ -678,22 +678,22 @@ mod tests {
         assert_eq!(
             formatted_account.account_key,
             Uint256 {
-                low: "0x7edba2efc434cbfc8c16ff41ed16e54e".to_string(),
-                high: "0xa582fbb6f28628c10d48f93c369c364f".to_string()
+                low: "0x4f369c363cf9480dc12886f2b6fb82a5".to_string(),
+                high: "0x4ee516ed41ff168cfccb34c4efa2db7e".to_string()
             }
         );
     }
 
     #[test]
     fn test_split128_mpt_proof_key() {
-        let account_key_result = split_little_endian_hex_into_parts(
+        let account_key_result = split_big_endian_hex_into_parts(
             "0x4ee516ed41ff168cfccb34c4efa2db7e4f369c363cf9480dc12886f2b6fb82a5",
         );
         assert_eq!(
             account_key_result,
             Uint256 {
-                low: "0x7edba2efc434cbfc8c16ff41ed16e54e".to_string(),
-                high: "0xa582fbb6f28628c10d48f93c369c364f".to_string()
+                low: "0x4f369c363cf9480dc12886f2b6fb82a5".to_string(),
+                high: "0x4ee516ed41ff168cfccb34c4efa2db7e".to_string()
             }
         );
     }
@@ -734,8 +734,8 @@ mod tests {
         assert_eq!(
             formatted_storage.storage_key,
             Uint256 {
-                low: "0x28db122fc9f859f9003c599e0e5a57c2".to_string(),
-                high: "0x5bf8716f4416255ed002053b5a39c369".to_string()
+                low: "0x69c3395a3b0502d05e2516446f71f85b".to_string(),
+                high: "0xc2575a0e9e593c00f959f8c92f12db28".to_string()
             }
         );
     }
