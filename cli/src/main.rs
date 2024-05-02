@@ -130,27 +130,24 @@ enum DataLakeCommands {
         increment: u64,
     },
 
-    ///  Encode the transactions data lake for test purposes
+    /// Encode the transactions data lake for test purposes
     #[command(arg_required_else_help = true)]
     #[command(short_flag = 't')]
     TransactionsInBlock {
-        /// target block number
+        /// Target block number
         target_block: u64,
         /// Sampled property
         /// Fields from transaction: "chain_id", "gas_price"... etc
         /// Fields from transaction receipt: "cumulative_gas_used".. etc
         sampled_property: String,
-        /// Start index of transactions range ( default 0 )
-        #[arg(default_value_t = 0)]
+        /// Start index of transactions range
         start_index: u64,
-        /// End index of transactions range ( default 100 )
-        // TODO: make end index default to be the total number of transactions in the block
+        /// End index of transactions range
         end_index: u64,
         /// Increment number of transactions in the block
-        #[arg(default_value_t = 1)]
         increment: u64,
-
         /// Filter out the specific type of Txs
+        #[arg(value_delimiter = ',')]
         included_types: Vec<u8>,
     },
 }
