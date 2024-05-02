@@ -76,8 +76,6 @@ impl EvaluationResult {
         let mut flattened_storages: HashSet<Storage> = HashSet::new();
         let mut flattened_transactions: HashSet<Transaction> = HashSet::new();
         let mut flattened_transaction_receipts: HashSet<TransactionReceipt> = HashSet::new();
-        let mut flattened_last_tx_markers: HashSet<Transaction> = HashSet::new();
-        let mut flattened_last_receipt_markers: HashSet<TransactionReceipt> = HashSet::new();
         let mut assume_mmr_meta: Option<MMRMeta> = None;
 
         let mut tasks = Vec::new();
@@ -118,22 +116,9 @@ impl EvaluationResult {
                             .iter()
                             .cloned()
                             .collect();
-                    let last_tx_markers_set: HashSet<Transaction> = compiled_transactions_in_block
-                        .last_tx_markers
-                        .iter()
-                        .cloned()
-                        .collect();
-                    let last_receipt_markers_set: HashSet<TransactionReceipt> =
-                        compiled_transactions_in_block
-                            .last_receipt_markers
-                            .iter()
-                            .cloned()
-                            .collect();
                     flattened_headers.extend(header_set);
                     flattened_transactions.extend(transaction_set);
                     flattened_transaction_receipts.extend(transaction_receipt_set);
-                    flattened_last_tx_markers.extend(last_tx_markers_set);
-                    flattened_last_receipt_markers.extend(last_receipt_markers_set);
                     assume_mmr_meta = Some(compiled_transactions_in_block.mmr_meta.clone());
                 }
             }
@@ -182,8 +167,6 @@ impl EvaluationResult {
             storages: flattened_storages.into_iter().collect(),
             transactions: flattened_transactions.into_iter().collect(),
             transaction_receipts: flattened_transaction_receipts.into_iter().collect(),
-            last_tx_markers: flattened_last_tx_markers.into_iter().collect(),
-            last_receipt_markers: flattened_last_receipt_markers.into_iter().collect(),
             tasks,
         };
 

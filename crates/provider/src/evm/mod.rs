@@ -533,11 +533,10 @@ impl AbstractProvider {
     pub async fn get_tx_with_proof_from_block(
         &self,
         target_block: u64,
+        start_index: u64,
+        end_index: u64,
         incremental: u64,
-    ) -> Result<(
-        Vec<(u64, u64, String, Vec<String>)>,
-        (u64, u64, Vec<String>),
-    )> {
+    ) -> Result<Vec<(u64, u64, String, Vec<String>, u8)>> {
         let mut tx_with_proof = vec![];
         let mut txs_mpt_handler = TxsMptHandler::new(self.rpc_provider.url).unwrap();
         txs_mpt_handler
@@ -545,32 +544,22 @@ impl AbstractProvider {
             .await
             .unwrap();
         let txs = txs_mpt_handler.get_elements().unwrap();
-        let txs_length = txs.len();
-        let target_tx_index_range = (0..txs_length).step_by(incremental as usize);
+
+        let target_tx_index_range = (start_index..end_index).step_by(incremental as usize);
         for tx_index in target_tx_index_range {
-            let target_tx_index = tx_index as u64;
             let proof = txs_mpt_handler
-                .get_proof(target_tx_index)
+                .get_proof(tx_index)
                 .unwrap()
                 .into_iter()
                 .map(|x| Bytes::from(x).to_string())
                 .collect::<Vec<_>>();
-            let consensus_tx = txs[tx_index].clone();
+            let consensus_tx = txs[tx_index as usize].clone();
             let rlp = Bytes::from(consensus_tx.rlp_encode()).to_string();
-            tx_with_proof.push((target_block, target_tx_index, rlp, proof));
+            let tx_type = consensus_tx.0.tx_type() as u8;
+            tx_with_proof.push((target_block, tx_index, rlp, proof, tx_type));
         }
 
-        // Need to include last tx proof to prevent non-inclusion vulnerability
-        let proof = txs_mpt_handler
-            .get_proof(txs_length as u64)
-            .unwrap()
-            .into_iter()
-            .map(|x| Bytes::from(x).to_string())
-            .collect::<Vec<_>>();
-
-        let last_tx_proof = (target_block, txs_length as u64, proof);
-
-        Ok((tx_with_proof, last_tx_proof))
+        Ok(tx_with_proof)
     }
 
     /// Fetches the encoded transaction receipt with proof from the MPT trie for the given block number.
@@ -578,11 +567,10 @@ impl AbstractProvider {
     pub async fn get_tx_receipt_with_proof_from_block(
         &self,
         target_block: u64,
+        start_index: u64,
+        end_index: u64,
         incremental: u64,
-    ) -> Result<(
-        Vec<(u64, u64, String, Vec<String>)>,
-        (u64, u64, Vec<String>),
-    )> {
+    ) -> Result<Vec<(u64, u64, String, Vec<String>, u8)>> {
         let mut tx_receipt_with_proof = vec![];
         let mut tx_reciepts_mpt_handler = TxReceiptsMptHandler::new(self.rpc_provider.url).unwrap();
 
@@ -591,33 +579,28 @@ impl AbstractProvider {
             .await
             .unwrap();
         let tx_receipts = tx_reciepts_mpt_handler.get_elements().unwrap();
-        let tx_receipts_length = tx_receipts.len();
-        let target_tx_receipt_index_range = (0..tx_receipts_length).step_by(incremental as usize);
+        let target_tx_receipt_index_range = (start_index..end_index).step_by(incremental as usize);
 
         for tx_receipt_index in target_tx_receipt_index_range {
-            let target_tx_receipt_index = tx_receipt_index as u64;
             let proof = tx_reciepts_mpt_handler
-                .get_proof(target_tx_receipt_index)
+                .get_proof(tx_receipt_index)
                 .unwrap()
                 .into_iter()
                 .map(|x| Bytes::from(x).to_string())
                 .collect::<Vec<_>>();
-            let consensus_tx_receipt = tx_receipts[tx_receipt_index].clone();
+            let consensus_tx_receipt = tx_receipts[tx_receipt_index as usize].clone();
             let rlp = Bytes::from(consensus_tx_receipt.rlp_encode()).to_string();
-            tx_receipt_with_proof.push((target_block, target_tx_receipt_index, rlp, proof));
+            let tx_receipt_type = consensus_tx_receipt.0.tx_type() as u8;
+            tx_receipt_with_proof.push((
+                target_block,
+                tx_receipt_index,
+                rlp,
+                proof,
+                tx_receipt_type,
+            ));
         }
 
-        // Need to include last tx proof to prevent non-inclusion vulnerability
-        let proof = tx_reciepts_mpt_handler
-            .get_proof(tx_receipts_length as u64)
-            .unwrap()
-            .into_iter()
-            .map(|x| Bytes::from(x).to_string())
-            .collect::<Vec<_>>();
-
-        let last_tx_proof = (target_block, tx_receipts_length as u64, proof);
-
-        Ok((tx_receipt_with_proof, last_tx_proof))
+        Ok(tx_receipt_with_proof)
     }
 }
 
@@ -661,21 +644,18 @@ mod tests {
     async fn get_block_range_from_nonce_range_non_constant() {
         let provider = AbstractProvider::new(SEPOLIA_RPC_URL, 11155111);
         let block_range = provider
-            .get_tx_with_proof_from_block(5530433, 1)
+            .get_tx_with_proof_from_block(5530433, 10, 100, 1)
             .await
             .unwrap();
 
-        assert_eq!(block_range.0.len(), 119);
-        assert_eq!(block_range.0[0].2,"0xf874830199258504a817c8008304ce78943d803617b9607357009fedadf646ad341e246adc88016345785d8a0000808401546d72a088de6c88f53048817fd31c44683fd796a2f529ced61950c610904a809b6342e4a0578d92174df2e1dba4fe88d4a33e868e89392210fad9bc02104b40fcb37792ec");
+        assert_eq!(block_range.len(), 90);
+        assert_eq!(block_range[0].2,"0xf873830beeeb84faa6fd50830148209447b854ad2ddb01cfee0b07f4e2da0ac50277b1168806f05b59d3b20000808401546d72a06af2b103dfb7bccc757d575bc11c38f2ecd1a22ca2fcf95a602119582c607927a047329735997e3357dfd7d63eda024d35f7012855aa12ba210f9ed311a517b5e6");
 
         let block_range = provider
-            .get_tx_with_proof_from_block(5530433, 3)
+            .get_tx_with_proof_from_block(5530433, 10, 100, 3)
             .await
             .unwrap();
 
-        assert_eq!(block_range.0.len(), 40);
-
-        let last_proof = block_range.1;
-        assert_eq!(last_proof.1, 119);
+        assert_eq!(block_range.len(), 30);
     }
 }

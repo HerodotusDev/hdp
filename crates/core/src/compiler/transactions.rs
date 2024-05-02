@@ -25,10 +25,6 @@ pub struct CompiledTransactionsDatalake {
     pub transaction_receipts: Vec<TransactionReceipt>,
     /// MMR meta data related to the headers
     pub mmr_meta: MMRMeta,
-    /// Last proof of the tx
-    pub last_tx_markers: Vec<Transaction>,
-    /// Last proof of the receipt
-    pub last_receipt_markers: Vec<TransactionReceipt>,
 }
 
 pub async fn compile_tx_datalake(
@@ -45,16 +41,18 @@ pub async fn compile_tx_datalake(
     let mut headers: Vec<Header> = vec![];
     let mut transactions: Vec<Transaction> = vec![];
     let mut transaction_receipts: Vec<TransactionReceipt> = vec![];
-    let mut last_tx_markers: Vec<Transaction> = vec![];
-    let mut last_receipt_markers: Vec<TransactionReceipt> = vec![];
 
     match datalake.sampled_property {
         TransactionsCollection::Transactions(property) => {
-            let (full_tx_and_proof_result, last_proof) = abstract_provider
-                .get_tx_with_proof_from_block(datalake.target_block, datalake.increment)
-                .await?;
-
-            for (block_number, tx_index, rlp_encoded_tx, proof) in full_tx_and_proof_result {
+            for (block_number, tx_index, rlp_encoded_tx, proof, tx_type) in abstract_provider
+                .get_tx_with_proof_from_block(
+                    datalake.target_block,
+                    datalake.start_index,
+                    datalake.end_index,
+                    datalake.increment,
+                )
+                .await?
+            {
                 let value = property.decode_field_from_rlp(&rlp_encoded_tx);
 
                 let key_fixed_bytes = tx_index_to_tx_key(tx_index);
@@ -83,26 +81,22 @@ pub async fn compile_tx_datalake(
                     },
                 });
 
-                aggregation_set.push(value);
+                // depends on datalake.included_types filter the value to be included in the aggregation set
+                if datalake.included_types.is_included(tx_type) {
+                    aggregation_set.push(value);
+                }
             }
-
-            // Add the last proof as a last element of the transactions
-            let (block_number, tx_index, proof) = last_proof;
-            let key_fixed_bytes = tx_index_to_tx_key(tx_index);
-
-            last_tx_markers.push(Transaction {
-                key: key_fixed_bytes.to_string(),
-                block_number,
-                proof,
-            });
         }
         TransactionsCollection::TranasactionReceipts(property) => {
-            let (full_tx_receipt_and_proof_result, last_proof) = abstract_provider
-                .get_tx_receipt_with_proof_from_block(datalake.target_block, datalake.increment)
-                .await?;
-
-            for (block_number, tx_index, rlp_encoded_tx_receipt, proof) in
-                full_tx_receipt_and_proof_result
+            for (block_number, tx_index, rlp_encoded_tx_receipt, proof, tx_type) in
+                abstract_provider
+                    .get_tx_receipt_with_proof_from_block(
+                        datalake.target_block,
+                        datalake.start_index,
+                        datalake.end_index,
+                        datalake.increment,
+                    )
+                    .await?
             {
                 let value = property.decode_field_from_rlp(&rlp_encoded_tx_receipt);
                 let key_fixed_bytes = tx_index_to_tx_key(tx_index);
@@ -131,17 +125,11 @@ pub async fn compile_tx_datalake(
                     },
                 });
 
-                aggregation_set.push(value);
+                // depends on datalake.included_types filter the value to be included in the aggregation set
+                if datalake.included_types.is_included(tx_type) {
+                    aggregation_set.push(value);
+                }
             }
-
-            // Add the last proof as a last element of the transaction_receipts
-            let (block_number, tx_index, proof) = last_proof;
-            let key_fixed_bytes = tx_index_to_tx_key(tx_index);
-            last_receipt_markers.push(TransactionReceipt {
-                key: key_fixed_bytes.to_string(),
-                block_number,
-                proof,
-            });
         }
     }
 
@@ -151,8 +139,6 @@ pub async fn compile_tx_datalake(
         transactions,
         transaction_receipts,
         mmr_meta,
-        last_tx_markers,
-        last_receipt_markers,
     })
 }
 
@@ -161,16 +147,15 @@ fn tx_index_to_tx_key(tx_index: u64) -> String {
     let binding = alloy_rlp::encode(U256::from(tx_index));
     let tx_index_bytes = binding.as_slice();
     let mut buffer = [0u8; 32];
-    let start = 0;
-    let end = start + tx_index_bytes.len();
-    buffer[start..end].copy_from_slice(tx_index_bytes);
+    let start = 32 - tx_index_bytes.len();
+    buffer[start..].copy_from_slice(tx_index_bytes);
     FixedBytes::from(buffer).to_string()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use hdp_primitives::datalake::output::{split_little_endian_hex_into_parts, Uint256};
+    use hdp_primitives::datalake::output::{split_big_endian_hex_into_parts, Uint256};
 
     #[test]
     fn test_tx_index_to_tx_key() {
@@ -178,11 +163,11 @@ mod tests {
         let tx_index = 127u64;
         let tx_key = tx_index_to_tx_key(tx_index);
         let expected_tx_key =
-            "0x7f00000000000000000000000000000000000000000000000000000000000000".to_string();
+            "0x000000000000000000000000000000000000000000000000000000000000007f".to_string();
 
         assert_eq!(tx_key, expected_tx_key);
 
-        let split = split_little_endian_hex_into_parts(&expected_tx_key);
+        let split = split_big_endian_hex_into_parts(&expected_tx_key);
         assert_eq!(
             split,
             Uint256 {
@@ -195,15 +180,15 @@ mod tests {
         let tx_index = 303u64;
         let tx_key = tx_index_to_tx_key(tx_index);
         let expected_tx_key =
-            "0x82012f0000000000000000000000000000000000000000000000000000000000".to_string();
+            "0x000000000000000000000000000000000000000000000000000000000082012f".to_string();
 
         assert_eq!(tx_key, expected_tx_key);
 
-        let split = split_little_endian_hex_into_parts(&expected_tx_key);
+        let split = split_big_endian_hex_into_parts(&expected_tx_key);
         assert_eq!(
             split,
             Uint256 {
-                low: "0x000000000000000000000000002f0182".to_string(),
+                low: "0x0000000000000000000000000082012f".to_string(),
                 high: "0x00000000000000000000000000000000".to_string(),
             }
         )
