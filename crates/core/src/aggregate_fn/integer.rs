@@ -185,6 +185,19 @@ impl FromStr for Operator {
     }
 }
 
+impl ToString for Operator {
+    fn to_string(&self) -> String {
+        match self {
+            Operator::Equal => "eq".to_string(),
+            Operator::NotEqual => "nq".to_string(),
+            Operator::GreaterThan => "gt".to_string(),
+            Operator::GreaterThanOrEqual => "gteq".to_string(),
+            Operator::LessThan => "lt".to_string(),
+            Operator::LessThanOrEqual => "lteq".to_string(),
+        }
+    }
+}
+
 impl Operator {
     pub fn from_symbol(symbol: &str) -> Result<Self> {
         match symbol {

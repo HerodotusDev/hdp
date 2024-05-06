@@ -46,6 +46,19 @@ impl FromStr for AggregationFunction {
     }
 }
 
+impl ToString for AggregationFunction {
+    fn to_string(&self) -> String {
+        match self {
+            AggregationFunction::AVG => "avg".to_string(),
+            AggregationFunction::SUM => "sum".to_string(),
+            AggregationFunction::MIN => "min".to_string(),
+            AggregationFunction::MAX => "max".to_string(),
+            AggregationFunction::COUNT => "count".to_string(),
+            AggregationFunction::MERKLE => "merkle".to_string(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FunctionContext {
     pub operator: Operator,
@@ -67,6 +80,12 @@ impl FromStr for FunctionContext {
             operator: Operator::from_str(&operator).unwrap(),
             value_to_compare: U256::from_str(&value_to_compare)?,
         })
+    }
+}
+
+impl ToString for FunctionContext {
+    fn to_string(&self) -> String {
+        format!("{}.{}", self.operator.to_string(), self.value_to_compare)
     }
 }
 
