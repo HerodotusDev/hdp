@@ -114,31 +114,6 @@ impl DatalakeField for HeaderField {
         }
     }
 
-    fn as_str(&self) -> &'static str {
-        match self {
-            HeaderField::ParentHash => "PARENT_HASH",
-            HeaderField::OmmerHash => "OMMERS_HASH",
-            HeaderField::Beneficiary => "BENEFICIARY",
-            HeaderField::StateRoot => "STATE_ROOT",
-            HeaderField::TransactionsRoot => "TRANSACTIONS_ROOT",
-            HeaderField::ReceiptsRoot => "RECEIPTS_ROOT",
-            HeaderField::LogsBloom => "LOGS_BLOOM",
-            HeaderField::Difficulty => "DIFFICULTY",
-            HeaderField::Number => "NUMBER",
-            HeaderField::GasLimit => "GAS_LIMIT",
-            HeaderField::GasUsed => "GAS_USED",
-            HeaderField::Timestamp => "TIMESTAMP",
-            HeaderField::ExtraData => "EXTRA_DATA",
-            HeaderField::MixHash => "MIX_HASH",
-            HeaderField::Nonce => "NONCE",
-            HeaderField::BaseFeePerGas => "BASE_FEE_PER_GAS",
-            HeaderField::WithdrawalsRoot => "WITHDRAWALS_ROOT",
-            HeaderField::BlobGasUsed => "BLOB_GAS_USED",
-            HeaderField::ExcessBlobGas => "EXCESS_BLOB_GAS",
-            HeaderField::ParentBeaconBlockRoot => "PARENT_BEACON_BLOCK_ROOT",
-        }
-    }
-
     fn decode_field_from_rlp(&self, header_rlp: &str) -> String {
         let decoded = <Header>::rlp_decode(header_rlp);
 
@@ -199,6 +174,33 @@ impl FromStr for HeaderField {
     }
 }
 
+impl ToString for HeaderField {
+    fn to_string(&self) -> String {
+        match self {
+            HeaderField::ParentHash => "PARENT_HASH".to_string(),
+            HeaderField::OmmerHash => "OMMERS_HASH".to_string(),
+            HeaderField::Beneficiary => "BENEFICIARY".to_string(),
+            HeaderField::StateRoot => "STATE_ROOT".to_string(),
+            HeaderField::TransactionsRoot => "TRANSACTIONS_ROOT".to_string(),
+            HeaderField::ReceiptsRoot => "RECEIPTS_ROOT".to_string(),
+            HeaderField::LogsBloom => "LOGS_BLOOM".to_string(),
+            HeaderField::Difficulty => "DIFFICULTY".to_string(),
+            HeaderField::Number => "NUMBER".to_string(),
+            HeaderField::GasLimit => "GAS_LIMIT".to_string(),
+            HeaderField::GasUsed => "GAS_USED".to_string(),
+            HeaderField::Timestamp => "TIMESTAMP".to_string(),
+            HeaderField::ExtraData => "EXTRA_DATA".to_string(),
+            HeaderField::MixHash => "MIX_HASH".to_string(),
+            HeaderField::Nonce => "NONCE".to_string(),
+            HeaderField::BaseFeePerGas => "BASE_FEE_PER_GAS".to_string(),
+            HeaderField::WithdrawalsRoot => "WITHDRAWALS_ROOT".to_string(),
+            HeaderField::BlobGasUsed => "BLOB_GAS_USED".to_string(),
+            HeaderField::ExcessBlobGas => "EXCESS_BLOB_GAS".to_string(),
+            HeaderField::ParentBeaconBlockRoot => "PARENT_BEACON_BLOCK_ROOT".to_string(),
+        }
+    }
+}
+
 // == Account Field ==
 
 #[derive(Debug, Clone, PartialEq)]
@@ -254,15 +256,6 @@ impl DatalakeField for AccountField {
         }
     }
 
-    fn as_str(&self) -> &'static str {
-        match self {
-            AccountField::Nonce => "NONCE",
-            AccountField::Balance => "BALANCE",
-            AccountField::StorageRoot => "STORAGE_ROOT",
-            AccountField::CodeHash => "CODE_HASH",
-        }
-    }
-
     fn decode_field_from_rlp(&self, account_rlp: &str) -> String {
         let decoded = <Account>::rlp_decode(account_rlp);
         match self {
@@ -270,6 +263,17 @@ impl DatalakeField for AccountField {
             AccountField::Balance => decoded.balance.to_string(),
             AccountField::StorageRoot => decoded.storage_root.to_string(),
             AccountField::CodeHash => decoded.code_hash.to_string(),
+        }
+    }
+}
+
+impl ToString for AccountField {
+    fn to_string(&self) -> String {
+        match self {
+            AccountField::Nonce => "NONCE".to_string(),
+            AccountField::Balance => "BALANCE".to_string(),
+            AccountField::StorageRoot => "STORAGE_ROOT".to_string(),
+            AccountField::CodeHash => "CODE_HASH".to_string(),
         }
     }
 }

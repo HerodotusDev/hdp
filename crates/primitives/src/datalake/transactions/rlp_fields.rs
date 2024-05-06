@@ -99,27 +99,6 @@ impl DatalakeField for TransactionField {
         }
     }
 
-    /// return uppercase string
-    fn as_str(&self) -> &'static str {
-        match self {
-            TransactionField::Nonce => "NONCE",
-            TransactionField::GasPrice => "GAS_PRICE",
-            TransactionField::GasLimit => "GAS_LIMIT",
-            TransactionField::To => "TO",
-            TransactionField::Value => "VALUE",
-            TransactionField::Input => "INPUT",
-            TransactionField::V => "V",
-            TransactionField::R => "R",
-            TransactionField::S => "S",
-            TransactionField::ChainId => "CHAIN_ID",
-            TransactionField::AccessList => "ACCESS_LIST",
-            TransactionField::MaxFeePerGas => "MAX_FEE_PER_GAS",
-            TransactionField::MaxPriorityFeePerGas => "MAX_PRIORITY_FEE_PER_GAS",
-            TransactionField::BlobVersionedHashes => "BLOB_VERSIONED_HASHES",
-            TransactionField::MaxFeePerBlobGas => "MAX_FEE_PER_BLOB_GAS",
-        }
-    }
-
     fn decode_field_from_rlp(&self, rlp: &str) -> String {
         let raw_tx = ConsensusTx::rlp_decode(hex::decode(rlp).unwrap().as_slice()).unwrap();
         match self {
@@ -183,6 +162,28 @@ impl FromStr for TransactionField {
     }
 }
 
+impl ToString for TransactionField {
+    fn to_string(&self) -> String {
+        match self {
+            TransactionField::Nonce => "NONCE".to_string(),
+            TransactionField::GasPrice => "GAS_PRICE".to_string(),
+            TransactionField::GasLimit => "GAS_LIMIT".to_string(),
+            TransactionField::To => "TO".to_string(),
+            TransactionField::Value => "VALUE".to_string(),
+            TransactionField::Input => "INPUT".to_string(),
+            TransactionField::V => "V".to_string(),
+            TransactionField::R => "R".to_string(),
+            TransactionField::S => "S".to_string(),
+            TransactionField::ChainId => "CHAIN_ID".to_string(),
+            TransactionField::AccessList => "ACCESS_LIST".to_string(),
+            TransactionField::MaxFeePerGas => "MAX_FEE_PER_GAS".to_string(),
+            TransactionField::MaxPriorityFeePerGas => "MAX_PRIORITY_FEE_PER_GAS".to_string(),
+            TransactionField::BlobVersionedHashes => "BLOB_VERSIONED_HASHES".to_string(),
+            TransactionField::MaxFeePerBlobGas => "MAX_FEE_PER_BLOB_GAS".to_string(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum TransactionReceiptField {
     Success,
@@ -216,6 +217,17 @@ impl FromStr for TransactionReceiptField {
     }
 }
 
+impl ToString for TransactionReceiptField {
+    fn to_string(&self) -> String {
+        match self {
+            TransactionReceiptField::Success => "SUCCESS".to_string(),
+            TransactionReceiptField::CumulativeGasUsed => "CUMULATIVE_GAS_USED".to_string(),
+            TransactionReceiptField::Logs => "LOGS".to_string(),
+            TransactionReceiptField::Bloom => "BLOOM".to_string(),
+        }
+    }
+}
+
 impl DatalakeField for TransactionReceiptField {
     fn to_index(&self) -> u8 {
         match self {
@@ -233,15 +245,6 @@ impl DatalakeField for TransactionReceiptField {
             2 => Ok(TransactionReceiptField::Logs),
             3 => Ok(TransactionReceiptField::Bloom),
             _ => bail!("Invalid transaction receipt field index"),
-        }
-    }
-
-    fn as_str(&self) -> &'static str {
-        match self {
-            TransactionReceiptField::Success => "SUCCESS",
-            TransactionReceiptField::CumulativeGasUsed => "CUMULATIVE_GAS_USED",
-            TransactionReceiptField::Logs => "LOGS",
-            TransactionReceiptField::Bloom => "BLOOM",
         }
     }
 

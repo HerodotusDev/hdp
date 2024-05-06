@@ -139,3 +139,17 @@ impl FromStr for BlockSampledCollection {
         }
     }
 }
+
+impl ToString for BlockSampledCollection {
+    fn to_string(&self) -> String {
+        match self {
+            BlockSampledCollection::Header(field) => format!("header.{}", field.to_string()),
+            BlockSampledCollection::Account(address, field) => {
+                format!("account.{}.{}", address, field.to_string())
+            }
+            BlockSampledCollection::Storage(address, slot) => {
+                format!("storage.{}.{}", address, slot)
+            }
+        }
+    }
+}
