@@ -45,13 +45,12 @@ pub async fn compile_block_sampled_datalake(
     let mut headers: Vec<Header> = vec![];
     let mut accounts: Vec<Account> = vec![];
     let mut storages: Vec<Storage> = vec![];
+    let block_range = (datalake.block_range_start..=datalake.block_range_end)
+        .step_by(datalake.increment as usize);
 
     match datalake.sampled_property {
         BlockSampledCollection::Header(property) => {
-            for block in datalake.block_range_start..=datalake.block_range_end {
-                if block % datalake.increment != 0 {
-                    continue;
-                }
+            for block in block_range {
                 let fetched_block = full_header_and_proof_result.0.get(&block).unwrap().clone();
                 let value = property.decode_field_from_rlp(&fetched_block.0);
 
@@ -79,10 +78,7 @@ pub async fn compile_block_sampled_datalake(
             let mut account_proofs: Vec<MPTProof> = vec![];
             // let mut encoded_account = "".to_string();
 
-            for block in datalake.block_range_start..=datalake.block_range_end {
-                if block % datalake.increment != 0 {
-                    continue;
-                }
+            for block in block_range {
                 let fetched_block = full_header_and_proof_result.0.get(&block).unwrap().clone();
                 let acc = accounts_and_proofs_result.get(&block).unwrap().clone();
                 // encoded_account = acc.0.clone();
@@ -126,10 +122,7 @@ pub async fn compile_block_sampled_datalake(
             let mut storage_proofs: Vec<MPTProof> = vec![];
             let mut account_proofs: Vec<MPTProof> = vec![];
 
-            for i in datalake.block_range_start..=datalake.block_range_end {
-                if i % datalake.increment != 0 {
-                    continue;
-                }
+            for i in block_range {
                 let fetched_block = full_header_and_proof_result.0.get(&i).unwrap().clone();
                 let acc_and_storage = storages_and_proofs_result.get(&i).unwrap().clone();
 
