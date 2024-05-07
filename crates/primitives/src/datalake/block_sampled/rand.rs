@@ -27,14 +27,14 @@ impl Distribution<BlockSampledCollection> for Standard {
 
 impl Distribution<HeaderField> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> HeaderField {
-        let index: u8 = rng.gen_range(0..=HeaderField::variants().len() as u8);
+        let index: u8 = rng.gen_range(0..HeaderField::variants().len() as u8);
         HeaderField::from_index(index).unwrap()
     }
 }
 
 impl Distribution<AccountField> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> AccountField {
-        let index: u8 = rng.gen_range(0..=AccountField::variants().len() as u8);
+        let index: u8 = rng.gen_range(0..AccountField::variants().len() as u8);
         AccountField::from_index(index).unwrap()
     }
 }
