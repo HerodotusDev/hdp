@@ -1,1 +1,0 @@
-hdp encode -a -o example/transaction/sum_cumulated_gas_used/output.json -c example/transaction/sum_cumulated_gas_used/input.json sum -t 5608949 "tx_receipt.cumulative_gas_used" 1 51 1 1,1,1,1
