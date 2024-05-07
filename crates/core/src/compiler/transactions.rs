@@ -1,4 +1,4 @@
-use alloy_primitives::{FixedBytes, U256};
+use alloy_primitives::{hex, U256};
 use anyhow::Result;
 use hdp_primitives::datalake::{
     output::{Header, HeaderProof, MMRMeta},
@@ -145,52 +145,27 @@ pub async fn compile_tx_datalake(
 /// Convert a transaction index to a transaction key
 fn tx_index_to_tx_key(tx_index: u64) -> String {
     let binding = alloy_rlp::encode(U256::from(tx_index));
-    let tx_index_bytes = binding.as_slice();
-    let mut buffer = [0u8; 32];
-    let start = 32 - tx_index_bytes.len();
-    buffer[start..].copy_from_slice(tx_index_bytes);
-    FixedBytes::from(buffer).to_string()
+    format!("0x{}", hex::encode(binding))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use hdp_primitives::datalake::output::{split_big_endian_hex_into_parts, Uint256};
 
     #[test]
     fn test_tx_index_to_tx_key() {
         // no rlp prefix
         let tx_index = 127u64;
         let tx_key = tx_index_to_tx_key(tx_index);
-        let expected_tx_key =
-            "0x000000000000000000000000000000000000000000000000000000000000007f".to_string();
+        let expected_tx_key = "0x7f".to_string();
 
         assert_eq!(tx_key, expected_tx_key);
-
-        let split = split_big_endian_hex_into_parts(&expected_tx_key);
-        assert_eq!(
-            split,
-            Uint256 {
-                low: "0x0000000000000000000000000000007f".to_string(),
-                high: "0x00000000000000000000000000000000".to_string(),
-            }
-        );
 
         // rlpx prefix
         let tx_index = 303u64;
         let tx_key = tx_index_to_tx_key(tx_index);
-        let expected_tx_key =
-            "0x000000000000000000000000000000000000000000000000000000000082012f".to_string();
+        let expected_tx_key = "0x82012f".to_string();
 
         assert_eq!(tx_key, expected_tx_key);
-
-        let split = split_big_endian_hex_into_parts(&expected_tx_key);
-        assert_eq!(
-            split,
-            Uint256 {
-                low: "0x0000000000000000000000000082012f".to_string(),
-                high: "0x00000000000000000000000000000000".to_string(),
-            }
-        )
     }
 }

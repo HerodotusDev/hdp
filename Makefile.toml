@@ -54,7 +54,7 @@ echo "Compiling the program..."
 [tasks.integration-test]
 workspace = false
 description = "Run integration tests. Specify the folder name through the INTEGRATION_ARGS environment variable."
-env = { INTEGRATION_ARGS = "min_max_count" }
+env = { INTEGRATION_ARGS = "transaction" }
 script = '''
 echo "Running integration tests with arguments: $INTEGRATION_ARGS"
 ./script/integration.sh $INTEGRATION_ARGS

@@ -1,13 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-use crate::datalake::output::{
-    hex_to_8_byte_chunks_little_endian, split_big_endian_hex_into_parts, CairoFormattedChunkResult,
-    Uint256,
-};
+use crate::datalake::output::{hex_to_8_byte_chunks_little_endian, CairoFormattedChunkResult};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub struct Transaction {
-    // U256 type
     pub key: String,
     pub block_number: u64,
     pub proof: Vec<String>,
@@ -15,7 +11,7 @@ pub struct Transaction {
 
 impl Transaction {
     pub(crate) fn to_cairo_format(&self) -> TransactionFormatted {
-        let tx_key = split_big_endian_hex_into_parts(&self.key);
+        let key = self.key.clone();
         let proof_chunk_result: Vec<CairoFormattedChunkResult> = self
             .proof
             .iter()
@@ -28,7 +24,7 @@ impl Transaction {
             .map(|x| x.chunks.clone())
             .collect();
         TransactionFormatted {
-            key: tx_key,
+            key,
             block_number: self.block_number,
             proof_bytes_len,
             proof: proof_result,
@@ -38,8 +34,7 @@ impl Transaction {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub(crate) struct TransactionFormatted {
-    // U256 type
-    pub key: Uint256,
+    pub key: String,
     pub block_number: u64,
     /// proof_bytes_len is the byte( 8 bit ) length from each proof string
     pub proof_bytes_len: Vec<u64>,
@@ -48,7 +43,6 @@ pub(crate) struct TransactionFormatted {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub struct TransactionReceipt {
-    // U256 type
     pub key: String,
     pub block_number: u64,
     pub proof: Vec<String>,
@@ -56,7 +50,7 @@ pub struct TransactionReceipt {
 
 impl TransactionReceipt {
     pub(crate) fn to_cairo_format(&self) -> TransactionReceiptFormatted {
-        let tx_key = split_big_endian_hex_into_parts(&self.key);
+        let key = self.key.clone();
         let proof_chunk_result: Vec<CairoFormattedChunkResult> = self
             .proof
             .iter()
@@ -69,7 +63,7 @@ impl TransactionReceipt {
             .map(|x| x.chunks.clone())
             .collect();
         TransactionReceiptFormatted {
-            key: tx_key,
+            key,
             block_number: self.block_number,
             proof_bytes_len,
             proof: proof_result,
@@ -79,8 +73,7 @@ impl TransactionReceipt {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub(crate) struct TransactionReceiptFormatted {
-    // U256 type
-    pub key: Uint256,
+    pub key: String,
     pub block_number: u64,
     /// proof_bytes_len is the byte( 8 bit ) length from each proof string
     pub proof_bytes_len: Vec<u64>,
@@ -94,7 +87,7 @@ mod tests {
     #[test]
     fn test_transaction_to_cairo_format() {
         let tx = Transaction {
-            key: "0x3c00000000000000000000000000000000000000000000000000000000000000".to_string(),
+            key: "0x3c".to_string(),
             block_number: 56089491,
             proof: vec![
                 "0xf8f1a08cc9b883b97dba9b03d99eed8fd610e23d071548ec6d265f9894e36ba26d8d81a01169ff73ab2954ab11ac57b3cdf01078b06db293be44f6976efffea8b80fc89ca025fb87db0d4f7a77310a695f80563556c00ccc4f733e23b0e262d0227880fd53a03149b308e7d5be961643a0d97d063b20b4ae8ac838254f03bbfcd277791599dfa0fa80535271431021b3bc3a0d1260ea2788653b5baaeabcbda30fdcf7e8fb5762a023f963efe4d02cf9605fdefb699630abb3221ee5c85761ba35c71fff4fa394298080a01d5cb192e7df88bdb2d37f7004726c0dfe44e17418760965b251fd95de8da33a8080808080808080".to_string(),
@@ -104,34 +97,6 @@ mod tests {
 
         let tx_formatted = tx.to_cairo_format();
 
-        assert_eq!(
-            tx_formatted.key,
-            Uint256 {
-                low: "0x00000000000000000000000000000000".to_string(),
-                high: "0x3c000000000000000000000000000000".to_string()
-            }
-        )
-    }
-
-    #[test]
-    fn test_transaction_receipt_to_cairo_format() {
-        let tx = TransactionReceipt {
-            key: "0x8000000000000000000000000000000000000000000000000000000000000000".to_string(),
-            block_number: 5608949,
-            proof: vec![
-                "0xf8f1a0be2c1acd42b5657a3228bc4a4d04a33ce1aa9a2ee7629f9a5065c06ba3466c5ba0285f717870e061bae3209098ea5c3e0d5f4197f8cf667ee4fe1de432f18dbd53a0077c63b6fdbab86fe7c896910b39e7e2db8f9b68fa285c91f226f50d003b8293a081eec6eff8e934f97c6698c8838f971a34426f5170becc2ae5661da836dfe905a09421ae3ede58add5e1a1bddd1cb25999443268073baa58942ad584311fc8e5b7a092561733a1d8199d619eb7f4c1e29f97c185c609623c2e5897f5099ff0d36a3b8080a0c79ef2b5b98a8b0f49640c3fc639406c895dd028b3cf586b14a98060faae68f88080808080808080".to_string(),
-                "0xf9022c30b9022802f902240183019c0ab9010040000000800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000002000000000000008000080000000200002000000400080000000200000100000000000000000000000000000000000000100000000400010000000000000000000000000000000004000000100000000000000000000000040000000000000000000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000100000000000000000000000000000200000000000000000000000000000000000000000000000000000000f90119f89b94635d73d6c5ebdf9bae66b1fa9e9e07361305e7b9f863a0ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3efa0000000000000000000000000e877139db8095dd59fcbbfd65a02ae08592ac8eaa0000000000000000000000000faac219f116dca9e07bfc05e6cff6a9cd0d932eda0000000000000000000000000000000000000000000000000000000000000c350f87a94e877139db8095dd59fcbbfd65a02ae08592ac8eaf842a053bb90500b4bcd81f514e255a8d31018839272f80fc8c3d7f7f153e58c056568a080476f3abe9df2b74b1ba888993ef0fae6778a73c9118249b29dbcd8f73119cda00000000000000000000000000000000000000000000000000000000000000003".to_string(),
-            ]
-        };
-
-        let tx_formatted = tx.to_cairo_format();
-
-        assert_eq!(
-            tx_formatted.key,
-            Uint256 {
-                low: "0x00000000000000000000000000000000".to_string(),
-                high: "0x80000000000000000000000000000000".to_string()
-            }
-        )
+        assert_eq!(tx_formatted.key, "0x3c".to_string())
     }
 }
