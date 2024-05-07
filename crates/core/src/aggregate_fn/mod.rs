@@ -1,11 +1,11 @@
-use std::str::FromStr;
-
 use alloy_primitives::U256;
 use anyhow::{bail, Result};
+use std::str::FromStr;
 
 use self::integer::Operator;
 
 pub mod integer;
+pub mod rand;
 pub mod string;
 
 /// Aggregation function types

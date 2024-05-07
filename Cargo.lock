@@ -1424,6 +1424,7 @@ dependencies = [
  "anyhow",
  "hdp-primitives",
  "hdp-provider",
+ "rand",
  "reqwest",
  "serde",
  "serde_json",
@@ -1440,6 +1441,7 @@ dependencies = [
  "alloy-rlp",
  "anyhow",
  "eth-trie-proofs",
+ "rand",
  "serde",
 ]
 
