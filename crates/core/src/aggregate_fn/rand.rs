@@ -8,7 +8,7 @@ use super::{integer::Operator, AggregationFunction, FunctionContext};
 
 impl Distribution<AggregationFunction> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> AggregationFunction {
-        let index: u8 = rng.gen_range(0..=5);
+        let index: u8 = rng.gen_range(0..=4);
         AggregationFunction::from_index(index).unwrap()
     }
 }

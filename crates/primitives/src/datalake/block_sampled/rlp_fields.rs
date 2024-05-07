@@ -60,6 +60,21 @@ impl HeaderField {
             "PARENT_BEACON_BLOCK_ROOT".to_string(),
         ]
     }
+
+    pub fn integer_variants_index(index: u8) -> Self {
+        match index {
+            0 => HeaderField::Difficulty,
+            1 => HeaderField::Number,
+            2 => HeaderField::GasLimit,
+            3 => HeaderField::GasUsed,
+            4 => HeaderField::Timestamp,
+            5 => HeaderField::Nonce,
+            6 => HeaderField::BaseFeePerGas,
+            7 => HeaderField::BlobGasUsed,
+            8 => HeaderField::ExcessBlobGas,
+            _ => unreachable!(),
+        }
+    }
 }
 
 impl DatalakeField for HeaderField {
