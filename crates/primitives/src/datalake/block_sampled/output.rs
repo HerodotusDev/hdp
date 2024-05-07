@@ -3,14 +3,12 @@
 use serde::{Deserialize, Serialize};
 
 use crate::datalake::output::{
-    hex_to_8_byte_chunks_little_endian, split_big_endian_hex_into_parts, CairoFormattedChunkResult,
-    MPTProof, MPTProofFormatted, Uint256,
+    hex_to_8_byte_chunks_little_endian, CairoFormattedChunkResult, MPTProof, MPTProofFormatted,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub struct Account {
     pub address: String,
-    // U256 type
     pub account_key: String,
     pub proofs: Vec<MPTProof>,
 }
@@ -18,7 +16,7 @@ pub struct Account {
 impl Account {
     pub(crate) fn to_cairo_format(&self) -> AccountFormatted {
         let address_chunk_result = hex_to_8_byte_chunks_little_endian(&self.address);
-        let account_key = split_big_endian_hex_into_parts(&self.account_key);
+        let account_key = &self.account_key;
         let proofs = self
             .proofs
             .iter()
@@ -44,7 +42,7 @@ impl Account {
             .collect();
         AccountFormatted {
             address: address_chunk_result.chunks,
-            account_key,
+            account_key: account_key.into(),
             proofs,
         }
     }
@@ -53,7 +51,7 @@ impl Account {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub(crate) struct AccountFormatted {
     pub address: Vec<String>,
-    pub account_key: Uint256,
+    pub account_key: String,
     pub proofs: Vec<MPTProofFormatted>,
 }
 
@@ -61,7 +59,6 @@ pub(crate) struct AccountFormatted {
 pub struct Storage {
     pub address: String,
     pub slot: String,
-    // U256 type
     pub storage_key: String,
     pub proofs: Vec<MPTProof>,
 }
@@ -70,7 +67,7 @@ impl Storage {
     pub(crate) fn to_cairo_format(&self) -> StorageFormatted {
         let address_chunk_result = hex_to_8_byte_chunks_little_endian(&self.address);
         let slot_chunk_result = hex_to_8_byte_chunks_little_endian(&self.slot);
-        let storage_key = split_big_endian_hex_into_parts(&self.storage_key);
+        let storage_key = self.storage_key.clone();
         let proofs = self
             .proofs
             .iter()
@@ -112,8 +109,7 @@ pub(crate) struct StorageFormatted {
     pub address: Vec<String>,
     // chunked storage slot
     pub slot: Vec<String>,
-    // keccak(slot) as uint256
-    pub storage_key: Uint256,
+    pub storage_key: String,
     pub proofs: Vec<MPTProofFormatted>,
 }
 
@@ -677,10 +673,7 @@ mod tests {
 
         assert_eq!(
             formatted_account.account_key,
-            Uint256 {
-                low: "0x4f369c363cf9480dc12886f2b6fb82a5".to_string(),
-                high: "0x4ee516ed41ff168cfccb34c4efa2db7e".to_string()
-            }
+            "0x4ee516ed41ff168cfccb34c4efa2db7e4f369c363cf9480dc12886f2b6fb82a5"
         );
     }
 
@@ -733,10 +726,7 @@ mod tests {
 
         assert_eq!(
             formatted_storage.storage_key,
-            Uint256 {
-                low: "0x69c3395a3b0502d05e2516446f71f85b".to_string(),
-                high: "0xc2575a0e9e593c00f959f8c92f12db28".to_string()
-            }
+            "0xc2575a0e9e593c00f959f8c92f12db2869c3395a3b0502d05e2516446f71f85b"
         );
     }
 
