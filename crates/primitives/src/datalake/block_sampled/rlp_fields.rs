@@ -2,7 +2,7 @@
 //! The fields are defined as enums, and can be converted to and from their string representation.
 //! It is meant to be used in the `BlockSampled` struct, which is used to query fields from a block or account.
 
-use std::str::FromStr;
+use std::{fmt::Display, str::FromStr};
 
 use anyhow::{bail, Result};
 
@@ -60,6 +60,21 @@ impl HeaderField {
             "PARENT_BEACON_BLOCK_ROOT".to_string(),
         ]
     }
+
+    pub fn integer_variants_index(index: u8) -> Self {
+        match index {
+            0 => HeaderField::Difficulty,
+            1 => HeaderField::Number,
+            2 => HeaderField::GasLimit,
+            3 => HeaderField::GasUsed,
+            4 => HeaderField::Timestamp,
+            5 => HeaderField::Nonce,
+            6 => HeaderField::BaseFeePerGas,
+            7 => HeaderField::BlobGasUsed,
+            8 => HeaderField::ExcessBlobGas,
+            _ => unreachable!(),
+        }
+    }
 }
 
 impl DatalakeField for HeaderField {
@@ -111,31 +126,6 @@ impl DatalakeField for HeaderField {
             HeaderField::BlobGasUsed => 17,
             HeaderField::ExcessBlobGas => 18,
             HeaderField::ParentBeaconBlockRoot => 19,
-        }
-    }
-
-    fn as_str(&self) -> &'static str {
-        match self {
-            HeaderField::ParentHash => "PARENT_HASH",
-            HeaderField::OmmerHash => "OMMERS_HASH",
-            HeaderField::Beneficiary => "BENEFICIARY",
-            HeaderField::StateRoot => "STATE_ROOT",
-            HeaderField::TransactionsRoot => "TRANSACTIONS_ROOT",
-            HeaderField::ReceiptsRoot => "RECEIPTS_ROOT",
-            HeaderField::LogsBloom => "LOGS_BLOOM",
-            HeaderField::Difficulty => "DIFFICULTY",
-            HeaderField::Number => "NUMBER",
-            HeaderField::GasLimit => "GAS_LIMIT",
-            HeaderField::GasUsed => "GAS_USED",
-            HeaderField::Timestamp => "TIMESTAMP",
-            HeaderField::ExtraData => "EXTRA_DATA",
-            HeaderField::MixHash => "MIX_HASH",
-            HeaderField::Nonce => "NONCE",
-            HeaderField::BaseFeePerGas => "BASE_FEE_PER_GAS",
-            HeaderField::WithdrawalsRoot => "WITHDRAWALS_ROOT",
-            HeaderField::BlobGasUsed => "BLOB_GAS_USED",
-            HeaderField::ExcessBlobGas => "EXCESS_BLOB_GAS",
-            HeaderField::ParentBeaconBlockRoot => "PARENT_BEACON_BLOCK_ROOT",
         }
     }
 
@@ -199,6 +189,33 @@ impl FromStr for HeaderField {
     }
 }
 
+impl Display for HeaderField {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            HeaderField::ParentHash => write!(f, "PARENT_HASH"),
+            HeaderField::OmmerHash => write!(f, "OMMERS_HASH"),
+            HeaderField::Beneficiary => write!(f, "BENEFICIARY"),
+            HeaderField::StateRoot => write!(f, "STATE_ROOT"),
+            HeaderField::TransactionsRoot => write!(f, "TRANSACTIONS_ROOT"),
+            HeaderField::ReceiptsRoot => write!(f, "RECEIPTS_ROOT"),
+            HeaderField::LogsBloom => write!(f, "LOGS_BLOOM"),
+            HeaderField::Difficulty => write!(f, "DIFFICULTY"),
+            HeaderField::Number => write!(f, "NUMBER"),
+            HeaderField::GasLimit => write!(f, "GAS_LIMIT"),
+            HeaderField::GasUsed => write!(f, "GAS_USED"),
+            HeaderField::Timestamp => write!(f, "TIMESTAMP"),
+            HeaderField::ExtraData => write!(f, "EXTRA_DATA"),
+            HeaderField::MixHash => write!(f, "MIX_HASH"),
+            HeaderField::Nonce => write!(f, "NONCE"),
+            HeaderField::BaseFeePerGas => write!(f, "BASE_FEE_PER_GAS"),
+            HeaderField::WithdrawalsRoot => write!(f, "WITHDRAWALS_ROOT"),
+            HeaderField::BlobGasUsed => write!(f, "BLOB_GAS_USED"),
+            HeaderField::ExcessBlobGas => write!(f, "EXCESS_BLOB_GAS"),
+            HeaderField::ParentBeaconBlockRoot => write!(f, "PARENT_BEACON_BLOCK_ROOT"),
+        }
+    }
+}
+
 // == Account Field ==
 
 #[derive(Debug, Clone, PartialEq)]
@@ -254,15 +271,6 @@ impl DatalakeField for AccountField {
         }
     }
 
-    fn as_str(&self) -> &'static str {
-        match self {
-            AccountField::Nonce => "NONCE",
-            AccountField::Balance => "BALANCE",
-            AccountField::StorageRoot => "STORAGE_ROOT",
-            AccountField::CodeHash => "CODE_HASH",
-        }
-    }
-
     fn decode_field_from_rlp(&self, account_rlp: &str) -> String {
         let decoded = <Account>::rlp_decode(account_rlp);
         match self {
@@ -270,6 +278,17 @@ impl DatalakeField for AccountField {
             AccountField::Balance => decoded.balance.to_string(),
             AccountField::StorageRoot => decoded.storage_root.to_string(),
             AccountField::CodeHash => decoded.code_hash.to_string(),
+        }
+    }
+}
+
+impl Display for AccountField {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            AccountField::Nonce => write!(f, "NONCE"),
+            AccountField::Balance => write!(f, "BALANCE"),
+            AccountField::StorageRoot => write!(f, "STORAGE_ROOT"),
+            AccountField::CodeHash => write!(f, "CODE_HASH"),
         }
     }
 }

@@ -185,6 +185,20 @@ impl FromStr for Operator {
     }
 }
 
+impl std::fmt::Display for Operator {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let operator = match self {
+            Operator::Equal => "eq",
+            Operator::NotEqual => "nq",
+            Operator::GreaterThan => "gt",
+            Operator::GreaterThanOrEqual => "gteq",
+            Operator::LessThan => "lt",
+            Operator::LessThanOrEqual => "lteq",
+        };
+        write!(f, "{}", operator)
+    }
+}
+
 impl Operator {
     pub fn from_symbol(symbol: &str) -> Result<Self> {
         match symbol {

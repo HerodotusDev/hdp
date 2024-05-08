@@ -1,11 +1,11 @@
-use std::str::FromStr;
-
 use alloy_primitives::U256;
 use anyhow::{bail, Result};
+use std::str::FromStr;
 
 use self::integer::Operator;
 
 pub mod integer;
+pub mod rand;
 pub mod string;
 
 /// Aggregation function types
@@ -46,6 +46,18 @@ impl FromStr for AggregationFunction {
     }
 }
 
+impl std::fmt::Display for AggregationFunction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            AggregationFunction::AVG => write!(f, "avg"),
+            AggregationFunction::SUM => write!(f, "sum"),
+            AggregationFunction::MIN => write!(f, "min"),
+            AggregationFunction::MAX => write!(f, "max"),
+            AggregationFunction::COUNT => write!(f, "count"),
+            AggregationFunction::MERKLE => write!(f, "merkle"),
+        }
+    }
+}
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FunctionContext {
     pub operator: Operator,
@@ -67,6 +79,12 @@ impl FromStr for FunctionContext {
             operator: Operator::from_str(&operator).unwrap(),
             value_to_compare: U256::from_str(&value_to_compare)?,
         })
+    }
+}
+
+impl std::fmt::Display for FunctionContext {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}.{}", self.operator, self.value_to_compare)
     }
 }
 

@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{fmt::Display, str::FromStr};
 
 use alloy_primitives::{Address, StorageKey};
 use anyhow::{bail, Result};
@@ -136,6 +136,20 @@ impl FromStr for BlockSampledCollection {
                 Ok(BlockSampledCollection::Storage(address, slot))
             }
             _ => bail!("Unknown block sampled collection"),
+        }
+    }
+}
+
+impl Display for BlockSampledCollection {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            BlockSampledCollection::Header(field) => write!(f, "header.{}", field),
+            BlockSampledCollection::Account(address, field) => {
+                write!(f, "account.{}.{}", address, field)
+            }
+            BlockSampledCollection::Storage(address, slot) => {
+                write!(f, "storage.{}.{}", address, slot)
+            }
         }
     }
 }

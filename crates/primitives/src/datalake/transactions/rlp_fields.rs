@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{fmt::Display, str::FromStr};
 
 use alloy_primitives::hex;
 use anyhow::{bail, Result};
@@ -99,27 +99,6 @@ impl DatalakeField for TransactionField {
         }
     }
 
-    /// return uppercase string
-    fn as_str(&self) -> &'static str {
-        match self {
-            TransactionField::Nonce => "NONCE",
-            TransactionField::GasPrice => "GAS_PRICE",
-            TransactionField::GasLimit => "GAS_LIMIT",
-            TransactionField::To => "TO",
-            TransactionField::Value => "VALUE",
-            TransactionField::Input => "INPUT",
-            TransactionField::V => "V",
-            TransactionField::R => "R",
-            TransactionField::S => "S",
-            TransactionField::ChainId => "CHAIN_ID",
-            TransactionField::AccessList => "ACCESS_LIST",
-            TransactionField::MaxFeePerGas => "MAX_FEE_PER_GAS",
-            TransactionField::MaxPriorityFeePerGas => "MAX_PRIORITY_FEE_PER_GAS",
-            TransactionField::BlobVersionedHashes => "BLOB_VERSIONED_HASHES",
-            TransactionField::MaxFeePerBlobGas => "MAX_FEE_PER_BLOB_GAS",
-        }
-    }
-
     fn decode_field_from_rlp(&self, rlp: &str) -> String {
         let raw_tx = ConsensusTx::rlp_decode(hex::decode(rlp).unwrap().as_slice()).unwrap();
         match self {
@@ -183,6 +162,28 @@ impl FromStr for TransactionField {
     }
 }
 
+impl Display for TransactionField {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TransactionField::Nonce => write!(f, "NONCE"),
+            TransactionField::GasPrice => write!(f, "GAS_PRICE"),
+            TransactionField::GasLimit => write!(f, "GAS_LIMIT"),
+            TransactionField::To => write!(f, "TO"),
+            TransactionField::Value => write!(f, "VALUE"),
+            TransactionField::Input => write!(f, "INPUT"),
+            TransactionField::V => write!(f, "V"),
+            TransactionField::R => write!(f, "R"),
+            TransactionField::S => write!(f, "S"),
+            TransactionField::ChainId => write!(f, "CHAIN_ID"),
+            TransactionField::AccessList => write!(f, "ACCESS_LIST"),
+            TransactionField::MaxFeePerGas => write!(f, "MAX_FEE_PER_GAS"),
+            TransactionField::MaxPriorityFeePerGas => write!(f, "MAX_PRIORITY_FEE_PER_GAS"),
+            TransactionField::BlobVersionedHashes => write!(f, "BLOB_VERSIONED_HASHES"),
+            TransactionField::MaxFeePerBlobGas => write!(f, "MAX_FEE_PER_BLOB_GAS"),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum TransactionReceiptField {
     Success,
@@ -216,6 +217,17 @@ impl FromStr for TransactionReceiptField {
     }
 }
 
+impl Display for TransactionReceiptField {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TransactionReceiptField::Success => write!(f, "SUCCESS"),
+            TransactionReceiptField::CumulativeGasUsed => write!(f, "CUMULATIVE_GAS_USED"),
+            TransactionReceiptField::Logs => write!(f, "LOGS"),
+            TransactionReceiptField::Bloom => write!(f, "BLOOM"),
+        }
+    }
+}
+
 impl DatalakeField for TransactionReceiptField {
     fn to_index(&self) -> u8 {
         match self {
@@ -233,15 +245,6 @@ impl DatalakeField for TransactionReceiptField {
             2 => Ok(TransactionReceiptField::Logs),
             3 => Ok(TransactionReceiptField::Bloom),
             _ => bail!("Invalid transaction receipt field index"),
-        }
-    }
-
-    fn as_str(&self) -> &'static str {
-        match self {
-            TransactionReceiptField::Success => "SUCCESS",
-            TransactionReceiptField::CumulativeGasUsed => "CUMULATIVE_GAS_USED",
-            TransactionReceiptField::Logs => "LOGS",
-            TransactionReceiptField::Bloom => "BLOOM",
         }
     }
 
