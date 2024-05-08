@@ -1,6 +1,7 @@
 pub mod collection;
 pub mod datalake;
 pub mod output;
+pub mod rand;
 pub mod rlp_fields;
 
 // Export all types
