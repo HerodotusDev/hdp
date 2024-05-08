@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{fmt::Display, str::FromStr};
 
 use alloy_primitives::hex;
 use anyhow::{bail, Result};
@@ -162,24 +162,24 @@ impl FromStr for TransactionField {
     }
 }
 
-impl ToString for TransactionField {
-    fn to_string(&self) -> String {
+impl Display for TransactionField {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            TransactionField::Nonce => "NONCE".to_string(),
-            TransactionField::GasPrice => "GAS_PRICE".to_string(),
-            TransactionField::GasLimit => "GAS_LIMIT".to_string(),
-            TransactionField::To => "TO".to_string(),
-            TransactionField::Value => "VALUE".to_string(),
-            TransactionField::Input => "INPUT".to_string(),
-            TransactionField::V => "V".to_string(),
-            TransactionField::R => "R".to_string(),
-            TransactionField::S => "S".to_string(),
-            TransactionField::ChainId => "CHAIN_ID".to_string(),
-            TransactionField::AccessList => "ACCESS_LIST".to_string(),
-            TransactionField::MaxFeePerGas => "MAX_FEE_PER_GAS".to_string(),
-            TransactionField::MaxPriorityFeePerGas => "MAX_PRIORITY_FEE_PER_GAS".to_string(),
-            TransactionField::BlobVersionedHashes => "BLOB_VERSIONED_HASHES".to_string(),
-            TransactionField::MaxFeePerBlobGas => "MAX_FEE_PER_BLOB_GAS".to_string(),
+            TransactionField::Nonce => write!(f, "NONCE"),
+            TransactionField::GasPrice => write!(f, "GAS_PRICE"),
+            TransactionField::GasLimit => write!(f, "GAS_LIMIT"),
+            TransactionField::To => write!(f, "TO"),
+            TransactionField::Value => write!(f, "VALUE"),
+            TransactionField::Input => write!(f, "INPUT"),
+            TransactionField::V => write!(f, "V"),
+            TransactionField::R => write!(f, "R"),
+            TransactionField::S => write!(f, "S"),
+            TransactionField::ChainId => write!(f, "CHAIN_ID"),
+            TransactionField::AccessList => write!(f, "ACCESS_LIST"),
+            TransactionField::MaxFeePerGas => write!(f, "MAX_FEE_PER_GAS"),
+            TransactionField::MaxPriorityFeePerGas => write!(f, "MAX_PRIORITY_FEE_PER_GAS"),
+            TransactionField::BlobVersionedHashes => write!(f, "BLOB_VERSIONED_HASHES"),
+            TransactionField::MaxFeePerBlobGas => write!(f, "MAX_FEE_PER_BLOB_GAS"),
         }
     }
 }
@@ -217,13 +217,13 @@ impl FromStr for TransactionReceiptField {
     }
 }
 
-impl ToString for TransactionReceiptField {
-    fn to_string(&self) -> String {
+impl Display for TransactionReceiptField {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            TransactionReceiptField::Success => "SUCCESS".to_string(),
-            TransactionReceiptField::CumulativeGasUsed => "CUMULATIVE_GAS_USED".to_string(),
-            TransactionReceiptField::Logs => "LOGS".to_string(),
-            TransactionReceiptField::Bloom => "BLOOM".to_string(),
+            TransactionReceiptField::Success => write!(f, "SUCCESS"),
+            TransactionReceiptField::CumulativeGasUsed => write!(f, "CUMULATIVE_GAS_USED"),
+            TransactionReceiptField::Logs => write!(f, "LOGS"),
+            TransactionReceiptField::Bloom => write!(f, "BLOOM"),
         }
     }
 }

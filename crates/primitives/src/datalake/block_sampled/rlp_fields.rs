@@ -2,7 +2,7 @@
 //! The fields are defined as enums, and can be converted to and from their string representation.
 //! It is meant to be used in the `BlockSampled` struct, which is used to query fields from a block or account.
 
-use std::str::FromStr;
+use std::{fmt::Display, str::FromStr};
 
 use anyhow::{bail, Result};
 
@@ -189,29 +189,29 @@ impl FromStr for HeaderField {
     }
 }
 
-impl ToString for HeaderField {
-    fn to_string(&self) -> String {
+impl Display for HeaderField {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            HeaderField::ParentHash => "PARENT_HASH".to_string(),
-            HeaderField::OmmerHash => "OMMERS_HASH".to_string(),
-            HeaderField::Beneficiary => "BENEFICIARY".to_string(),
-            HeaderField::StateRoot => "STATE_ROOT".to_string(),
-            HeaderField::TransactionsRoot => "TRANSACTIONS_ROOT".to_string(),
-            HeaderField::ReceiptsRoot => "RECEIPTS_ROOT".to_string(),
-            HeaderField::LogsBloom => "LOGS_BLOOM".to_string(),
-            HeaderField::Difficulty => "DIFFICULTY".to_string(),
-            HeaderField::Number => "NUMBER".to_string(),
-            HeaderField::GasLimit => "GAS_LIMIT".to_string(),
-            HeaderField::GasUsed => "GAS_USED".to_string(),
-            HeaderField::Timestamp => "TIMESTAMP".to_string(),
-            HeaderField::ExtraData => "EXTRA_DATA".to_string(),
-            HeaderField::MixHash => "MIX_HASH".to_string(),
-            HeaderField::Nonce => "NONCE".to_string(),
-            HeaderField::BaseFeePerGas => "BASE_FEE_PER_GAS".to_string(),
-            HeaderField::WithdrawalsRoot => "WITHDRAWALS_ROOT".to_string(),
-            HeaderField::BlobGasUsed => "BLOB_GAS_USED".to_string(),
-            HeaderField::ExcessBlobGas => "EXCESS_BLOB_GAS".to_string(),
-            HeaderField::ParentBeaconBlockRoot => "PARENT_BEACON_BLOCK_ROOT".to_string(),
+            HeaderField::ParentHash => write!(f, "PARENT_HASH"),
+            HeaderField::OmmerHash => write!(f, "OMMERS_HASH"),
+            HeaderField::Beneficiary => write!(f, "BENEFICIARY"),
+            HeaderField::StateRoot => write!(f, "STATE_ROOT"),
+            HeaderField::TransactionsRoot => write!(f, "TRANSACTIONS_ROOT"),
+            HeaderField::ReceiptsRoot => write!(f, "RECEIPTS_ROOT"),
+            HeaderField::LogsBloom => write!(f, "LOGS_BLOOM"),
+            HeaderField::Difficulty => write!(f, "DIFFICULTY"),
+            HeaderField::Number => write!(f, "NUMBER"),
+            HeaderField::GasLimit => write!(f, "GAS_LIMIT"),
+            HeaderField::GasUsed => write!(f, "GAS_USED"),
+            HeaderField::Timestamp => write!(f, "TIMESTAMP"),
+            HeaderField::ExtraData => write!(f, "EXTRA_DATA"),
+            HeaderField::MixHash => write!(f, "MIX_HASH"),
+            HeaderField::Nonce => write!(f, "NONCE"),
+            HeaderField::BaseFeePerGas => write!(f, "BASE_FEE_PER_GAS"),
+            HeaderField::WithdrawalsRoot => write!(f, "WITHDRAWALS_ROOT"),
+            HeaderField::BlobGasUsed => write!(f, "BLOB_GAS_USED"),
+            HeaderField::ExcessBlobGas => write!(f, "EXCESS_BLOB_GAS"),
+            HeaderField::ParentBeaconBlockRoot => write!(f, "PARENT_BEACON_BLOCK_ROOT"),
         }
     }
 }
@@ -282,13 +282,13 @@ impl DatalakeField for AccountField {
     }
 }
 
-impl ToString for AccountField {
-    fn to_string(&self) -> String {
+impl Display for AccountField {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            AccountField::Nonce => "NONCE".to_string(),
-            AccountField::Balance => "BALANCE".to_string(),
-            AccountField::StorageRoot => "STORAGE_ROOT".to_string(),
-            AccountField::CodeHash => "CODE_HASH".to_string(),
+            AccountField::Nonce => write!(f, "NONCE"),
+            AccountField::Balance => write!(f, "BALANCE"),
+            AccountField::StorageRoot => write!(f, "STORAGE_ROOT"),
+            AccountField::CodeHash => write!(f, "CODE_HASH"),
         }
     }
 }

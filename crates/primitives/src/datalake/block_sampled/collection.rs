@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{fmt::Display, str::FromStr};
 
 use alloy_primitives::{Address, StorageKey};
 use anyhow::{bail, Result};
@@ -140,15 +140,15 @@ impl FromStr for BlockSampledCollection {
     }
 }
 
-impl ToString for BlockSampledCollection {
-    fn to_string(&self) -> String {
+impl Display for BlockSampledCollection {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            BlockSampledCollection::Header(field) => format!("header.{}", field.to_string()),
+            BlockSampledCollection::Header(field) => write!(f, "header.{}", field),
             BlockSampledCollection::Account(address, field) => {
-                format!("account.{}.{}", address, field.to_string())
+                write!(f, "account.{}.{}", address, field)
             }
             BlockSampledCollection::Storage(address, slot) => {
-                format!("storage.{}.{}", address, slot)
+                write!(f, "storage.{}.{}", address, slot)
             }
         }
     }

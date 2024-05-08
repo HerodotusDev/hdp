@@ -185,16 +185,17 @@ impl FromStr for Operator {
     }
 }
 
-impl ToString for Operator {
-    fn to_string(&self) -> String {
-        match self {
-            Operator::Equal => "eq".to_string(),
-            Operator::NotEqual => "nq".to_string(),
-            Operator::GreaterThan => "gt".to_string(),
-            Operator::GreaterThanOrEqual => "gteq".to_string(),
-            Operator::LessThan => "lt".to_string(),
-            Operator::LessThanOrEqual => "lteq".to_string(),
-        }
+impl std::fmt::Display for Operator {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let operator = match self {
+            Operator::Equal => "eq",
+            Operator::NotEqual => "nq",
+            Operator::GreaterThan => "gt",
+            Operator::GreaterThanOrEqual => "gteq",
+            Operator::LessThan => "lt",
+            Operator::LessThanOrEqual => "lteq",
+        };
+        write!(f, "{}", operator)
     }
 }
 

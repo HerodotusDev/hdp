@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{fmt::Display, str::FromStr};
 
 use self::datalake_type::DatalakeType;
 use anyhow::Result;
@@ -27,7 +27,7 @@ pub trait Datalake {
         Self: Sized;
 }
 
-pub trait DatalakeField: FromStr + ToString {
+pub trait DatalakeField: FromStr + Display {
     fn from_index(index: u8) -> Result<Self>
     where
         Self: Sized;
