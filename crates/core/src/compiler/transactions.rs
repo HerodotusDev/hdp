@@ -53,8 +53,6 @@ pub async fn compile_tx_datalake(
                 )
                 .await?
             {
-                let value = property.decode_field_from_rlp(&rlp_encoded_tx);
-
                 let key_fixed_bytes = tx_index_to_tx_key(tx_index);
 
                 transactions.push(Transaction {
@@ -83,6 +81,7 @@ pub async fn compile_tx_datalake(
 
                 // depends on datalake.included_types filter the value to be included in the aggregation set
                 if datalake.included_types.is_included(tx_type) {
+                    let value = property.decode_field_from_rlp(&rlp_encoded_tx);
                     aggregation_set.push(value);
                 }
             }
@@ -98,7 +97,6 @@ pub async fn compile_tx_datalake(
                     )
                     .await?
             {
-                let value = property.decode_field_from_rlp(&rlp_encoded_tx_receipt);
                 let key_fixed_bytes = tx_index_to_tx_key(tx_index);
 
                 transaction_receipts.push(TransactionReceipt {
@@ -127,6 +125,7 @@ pub async fn compile_tx_datalake(
 
                 // depends on datalake.included_types filter the value to be included in the aggregation set
                 if datalake.included_types.is_included(tx_type) {
+                    let value = property.decode_field_from_rlp(&rlp_encoded_tx_receipt);
                     aggregation_set.push(value);
                 }
             }
