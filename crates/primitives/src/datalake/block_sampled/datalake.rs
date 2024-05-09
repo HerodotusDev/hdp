@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use crate::{
-    datalake::{datalake_type::DatalakeType, Datalake, DatalakeCollection},
+    datalake::{datalake_type::DatalakeType, Datalake},
     utils::bytes_to_hex_string,
 };
 
@@ -9,12 +9,13 @@ use super::collection::BlockSampledCollection;
 use alloy_dyn_abi::{DynSolType, DynSolValue};
 use alloy_primitives::{hex::FromHex, keccak256};
 use anyhow::{bail, Result};
+use serde::Serialize;
 
 /// [`BlockSampledDatalake`] is a struct that represents a block sampled datalake.
 /// It contains the block range, the sampled property, and the increment.
 ///
 /// The block range is inclusive, so the block range is from `block_range_start` to `block_range_end`
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct BlockSampledDatalake {
     /// The start of the block range
     pub block_range_start: u64,
@@ -53,7 +54,7 @@ impl Datalake for BlockSampledDatalake {
         let datalake_code: DynSolValue = self.get_datalake_type().to_u8().into();
         let block_range_start: DynSolValue = self.block_range_start.into();
         let block_range_end: DynSolValue = self.block_range_end.into();
-        let sampled_property: DynSolValue = self.sampled_property.serialize()?.into();
+        let sampled_property: DynSolValue = serde_json::to_vec(&self.sampled_property)?.into();
         let increment: DynSolValue = self.increment.into();
 
         let tuple_value = DynSolValue::Tuple(vec![
@@ -93,7 +94,7 @@ impl Datalake for BlockSampledDatalake {
 
         let block_range_start = value[1].as_uint().unwrap().0.to_string().parse::<u64>()?;
         let block_range_end = value[2].as_uint().unwrap().0.to_string().parse::<u64>()?;
-        let sampled_property = BlockSampledCollection::deserialize(value[4].as_bytes().unwrap())?;
+        let sampled_property = serde_json::from_slice(value[4].as_bytes().unwrap())?;
         let increment = value[3].as_uint().unwrap().0.to_string().parse::<u64>()?;
 
         Ok(Self {

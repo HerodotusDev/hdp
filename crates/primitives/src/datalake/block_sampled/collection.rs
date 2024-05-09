@@ -1,7 +1,10 @@
-use std::{fmt::Display, str::FromStr};
-
 use alloy_primitives::{Address, StorageKey};
 use anyhow::{bail, Result};
+use serde::de::{self, Deserializer, Visitor};
+use serde::ser::Serializer;
+use serde::{Deserialize, Serialize};
+use serde_bytes::Bytes;
+use std::{fmt::Display, str::FromStr};
 
 use crate::datalake::{DatalakeCollection, DatalakeField};
 
@@ -51,63 +54,94 @@ impl DatalakeCollection for BlockSampledCollection {
             BlockSampledCollection::Storage(..) => 3,
         }
     }
+}
 
-    fn serialize(&self) -> Result<Vec<u8>> {
-        let mut serialized = Vec::new();
-        match self {
+impl<'de> Deserialize<'de> for BlockSampledCollection {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct BlockSampledCollectionVisitor;
+
+        impl<'de> Visitor<'de> for BlockSampledCollectionVisitor {
+            type Value = BlockSampledCollection;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("a byte array representing BlockSampledCollection")
+            }
+
+            fn visit_byte_buf<E>(self, bytes: std::vec::Vec<u8>) -> Result<Self::Value, E>
+            where
+                E: de::Error,
+            {
+                let bytes = bytes.to_vec();
+                if bytes.is_empty() {
+                    return Err(de::Error::invalid_length(0, &self));
+                }
+
+                match bytes[0] {
+                    1 => {
+                        if bytes.len() != 2 {
+                            return Err(de::Error::invalid_length(bytes.len(), &self));
+                        }
+                        let field = HeaderField::from_index(bytes[1]).map_err(de::Error::custom)?;
+                        Ok(BlockSampledCollection::Header(field))
+                    }
+                    2 => {
+                        if bytes.len() != 22 {
+                            return Err(de::Error::invalid_length(bytes.len(), &self));
+                        }
+                        let address = Address::from_slice(&bytes[1..21]);
+                        let field =
+                            AccountField::from_index(bytes[21]).map_err(de::Error::custom)?;
+                        Ok(BlockSampledCollection::Account(address, field))
+                    }
+                    3 => {
+                        if bytes.len() != 53 {
+                            return Err(de::Error::invalid_length(bytes.len(), &self));
+                        }
+                        let address = Address::from_slice(&bytes[1..21]);
+                        let slot = StorageKey::from_slice(&bytes[21..53]);
+                        Ok(BlockSampledCollection::Storage(address, slot))
+                    }
+                    _ => Err(de::Error::custom("Unknown block sampled collection")),
+                }
+            }
+        }
+
+        deserializer.deserialize_byte_buf(BlockSampledCollectionVisitor)
+    }
+}
+
+impl Serialize for BlockSampledCollection {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let bytes = match self {
             BlockSampledCollection::Header(field) => {
-                serialized.push(1);
-                serialized.push(field.to_index());
+                let mut bytes = Vec::with_capacity(2);
+                bytes.push(1);
+                bytes.push(field.to_index());
+                bytes
             }
             BlockSampledCollection::Account(address, field) => {
-                serialized.push(2);
-                serialized.extend_from_slice(address.as_slice());
-                serialized.push(field.to_index());
+                let mut bytes = Vec::with_capacity(22);
+                bytes.push(2);
+                bytes.extend_from_slice(address.as_slice());
+                bytes.push(field.to_index());
+                bytes
             }
             BlockSampledCollection::Storage(address, slot) => {
-                serialized.push(3);
-                serialized.extend_from_slice(address.as_slice());
-                serialized.extend_from_slice(slot.as_ref());
+                let mut bytes = Vec::with_capacity(53);
+                bytes.push(3);
+                bytes.extend_from_slice(address.as_slice());
+                bytes.extend_from_slice(slot.as_slice());
+                bytes
             }
-        }
-
-        Ok(serialized)
-    }
-
-    fn deserialize(serialized: &[u8]) -> Result<Self> {
-        if serialized.is_empty() {
-            bail!("Invalid block sampled collection");
-        }
-
-        match serialized[0] {
-            1 => {
-                if serialized.len() != 2 {
-                    bail!("Invalid header property");
-                }
-                Ok(BlockSampledCollection::Header(HeaderField::from_index(
-                    serialized[1],
-                )?))
-            }
-            2 => {
-                if serialized.len() != 22 {
-                    bail!("Invalid account property");
-                }
-                let address = Address::from_slice(&serialized[1..21]);
-                Ok(BlockSampledCollection::Account(
-                    address,
-                    AccountField::from_index(serialized[21])?,
-                ))
-            }
-            3 => {
-                if serialized.len() != 53 {
-                    bail!("Invalid storage property");
-                }
-                let address = Address::from_slice(&serialized[1..21]);
-                let slot = StorageKey::from_slice(&serialized[21..53]);
-                Ok(BlockSampledCollection::Storage(address, slot))
-            }
-            _ => bail!("Unknown block sampled collection"),
-        }
+        };
+        let bytes = Bytes::new(&bytes);
+        serializer.serialize_bytes(&bytes)
     }
 }
 

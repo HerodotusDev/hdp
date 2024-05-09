@@ -31,10 +31,10 @@ impl DatalakeEnvelope {
         }
     }
 
-    pub fn get_collection_type(&self) -> Box<dyn DatalakeCollection> {
+    pub fn get_collection_index(&self) -> u8 {
         match self {
-            DatalakeEnvelope::BlockSampled(datalake) => Box::new(datalake.sampled_property.clone()),
-            DatalakeEnvelope::Transactions(datalake) => Box::new(datalake.sampled_property.clone()),
+            DatalakeEnvelope::BlockSampled(datalake) => datalake.sampled_property.to_index(),
+            DatalakeEnvelope::Transactions(datalake) => datalake.sampled_property.to_index(),
         }
     }
 

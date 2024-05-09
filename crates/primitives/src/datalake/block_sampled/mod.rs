@@ -11,7 +11,7 @@ pub use rlp_fields::*;
 
 #[cfg(test)]
 mod tests {
-    use crate::datalake::{Datalake, DatalakeCollection};
+    use crate::datalake::Datalake;
 
     use super::*;
     use alloy_primitives::{Address, StorageKey};
@@ -175,11 +175,11 @@ mod tests {
     #[test]
     fn test_header_collection_serialize() {
         let header_collection = BlockSampledCollection::Header(HeaderField::BaseFeePerGas);
-        let serialized = header_collection.serialize().unwrap();
+        let serialized = serde_json::to_vec(&header_collection).unwrap();
         assert_eq!(serialized, [1, 15]);
 
         let header_collection = BlockSampledCollection::Header(HeaderField::Difficulty);
-        let serialized = header_collection.serialize().unwrap();
+        let serialized = bincode::serialize(&header_collection).unwrap();
         assert_eq!(serialized, [1, 7]);
     }
 
@@ -190,7 +190,7 @@ mod tests {
             AccountField::Nonce,
         );
 
-        let serialized = account_collection.serialize().unwrap();
+        let serialized = serde_json::to_vec(&account_collection).unwrap();
         assert_eq!(
             serialized,
             [
@@ -204,7 +204,7 @@ mod tests {
             AccountField::Balance,
         );
 
-        let serialized = account_collection.serialize().unwrap();
+        let serialized = serde_json::to_vec(&account_collection).unwrap();
         assert_eq!(
             serialized,
             [
@@ -224,7 +224,7 @@ mod tests {
             .unwrap(),
         );
 
-        let serialized = storage_collection.serialize().unwrap();
+        let serialized = serde_json::to_vec(&storage_collection).unwrap();
         assert_eq!(
             serialized,
             [

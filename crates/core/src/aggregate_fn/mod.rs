@@ -1,5 +1,6 @@
 use alloy_primitives::U256;
 use anyhow::{bail, Result};
+use serde::Serialize;
 use std::str::FromStr;
 
 use self::integer::Operator;
@@ -19,7 +20,7 @@ pub mod string;
 /// - STD - Standard deviation
 /// - SUM - Sum of values
 /// - COUNT - Count number of values that satisfy a condition
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Serialize)]
 pub enum AggregationFunction {
     AVG,
     SUM,
@@ -58,7 +59,7 @@ impl std::fmt::Display for AggregationFunction {
         }
     }
 }
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct FunctionContext {
     pub operator: Operator,
     pub value_to_compare: U256,

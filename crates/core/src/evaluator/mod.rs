@@ -255,7 +255,7 @@ pub async fn evaluator(
         let inner_datalake = task_with_datalake.inner;
         let encoded_datalake = inner_datalake.encode()?;
         let datalake_type = inner_datalake.get_datalake_type();
-        let property_type = inner_datalake.get_collection_type().to_index();
+        let property_type = inner_datalake.get_collection_index();
         let compiler = DatalakeCompiler::new(inner_datalake);
         let datalake_result = compiler.compile(&provider).await?;
 

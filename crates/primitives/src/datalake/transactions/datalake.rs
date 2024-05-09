@@ -64,7 +64,7 @@ impl Datalake for TransactionsInBlockDatalake {
     fn encode(&self) -> Result<String> {
         let datalake_code: DynSolValue = self.get_datalake_type().to_u8().into();
         let target_block: DynSolValue = self.target_block.into();
-        let sampled_property: DynSolValue = self.sampled_property.serialize()?.into();
+        let sampled_property: DynSolValue = serde_json::to_vec(&self.sampled_property)?.into();
         let start_index: DynSolValue = self.start_index.into();
         let end_index: DynSolValue = self.end_index.into();
         let increment: DynSolValue = self.increment.into();
@@ -113,7 +113,7 @@ impl Datalake for TransactionsInBlockDatalake {
         let end_index = value[3].as_uint().unwrap().0.to_string().parse::<u64>()?;
         let increment = value[4].as_uint().unwrap().0.to_string().parse::<u64>()?;
         let included_types = IncludedTypes::from_uint256(value[5].as_uint().unwrap().0);
-        let sampled_property = TransactionsCollection::deserialize(value[6].as_bytes().unwrap())?;
+        let sampled_property = serde_json::from_slice(&value[6].as_bytes().unwrap())?;
 
         Ok(Self {
             target_block,

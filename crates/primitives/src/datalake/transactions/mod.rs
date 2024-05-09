@@ -12,7 +12,7 @@ pub use rlp_fields::*;
 #[cfg(test)]
 mod tests {
 
-    use crate::datalake::{Datalake, DatalakeCollection};
+    use crate::datalake::Datalake;
     use alloy_primitives::U256;
 
     use super::*;
@@ -93,37 +93,37 @@ mod tests {
     #[test]
     fn test_tx_collection_serialize() {
         let tx_collection = TransactionsCollection::Transactions(TransactionField::Nonce);
-        let serialized = tx_collection.serialize().unwrap();
+        let serialized = serde_json::to_vec(&tx_collection).unwrap();
         assert_eq!(serialized, [1, 0]);
 
         let tx_collection =
             TransactionsCollection::TranasactionReceipts(TransactionReceiptField::Logs);
-        let serialized = tx_collection.serialize().unwrap();
+        let serialized = serde_json::to_vec(&tx_collection).unwrap();
         assert_eq!(serialized, [2, 2]);
 
         let tx_collection = TransactionsCollection::Transactions(TransactionField::AccessList);
-        let serialized = tx_collection.serialize().unwrap();
+        let serialized = serde_json::to_vec(&tx_collection).unwrap();
         assert_eq!(serialized, [1, 10]);
     }
 
     #[test]
     fn test_tx_collection_deserialize() {
         let serialized = [1, 1];
-        let tx_collection = TransactionsCollection::deserialize(&serialized).unwrap();
+        let tx_collection: TransactionsCollection = serde_json::from_slice(&serialized).unwrap();
         assert_eq!(
             tx_collection,
             TransactionsCollection::Transactions(TransactionField::GasPrice)
         );
 
         let serialized = [2, 3];
-        let tx_collection = TransactionsCollection::deserialize(&serialized).unwrap();
+        let tx_collection: TransactionsCollection = serde_json::from_slice(&serialized).unwrap();
         assert_eq!(
             tx_collection,
             TransactionsCollection::TranasactionReceipts(TransactionReceiptField::Bloom)
         );
 
         let serialized = [1, 10];
-        let tx_collection = TransactionsCollection::deserialize(&serialized).unwrap();
+        let tx_collection: TransactionsCollection = serde_json::from_slice(&serialized).unwrap();
         assert_eq!(
             tx_collection,
             TransactionsCollection::Transactions(TransactionField::AccessList)

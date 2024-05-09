@@ -5,13 +5,14 @@
 use std::{fmt::Display, str::FromStr};
 
 use anyhow::{bail, Result};
+use serde::Serialize;
 
 use crate::{
     block::{account::Account, header::Header},
     datalake::DatalakeField,
 };
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub enum HeaderField {
     ParentHash,
     OmmerHash,
@@ -218,7 +219,7 @@ impl Display for HeaderField {
 
 // == Account Field ==
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub enum AccountField {
     Nonce,
     Balance,

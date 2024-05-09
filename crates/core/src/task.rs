@@ -5,6 +5,7 @@ use alloy_primitives::{hex::FromHex, keccak256, FixedBytes, U256};
 use anyhow::{bail, Result};
 
 use hdp_primitives::{datalake::envelope::DatalakeEnvelope, utils::bytes_to_hex_string};
+use serde::Serialize;
 
 use crate::aggregate_fn::{integer::Operator, AggregationFunction, FunctionContext};
 
@@ -66,7 +67,7 @@ impl ComputationalTaskWithDatalake {
 }
 
 /// [`ComputationalTask`] is a structure that contains the aggregate function id and context
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Serialize)]
 pub struct ComputationalTask {
     pub aggregate_fn_id: AggregationFunction,
     pub aggregate_fn_ctx: Option<FunctionContext>,

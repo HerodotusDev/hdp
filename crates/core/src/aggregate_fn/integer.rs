@@ -2,6 +2,7 @@ use std::str::FromStr;
 
 use alloy_primitives::U256;
 use anyhow::{bail, Result};
+use serde::Serialize;
 
 use super::FunctionContext;
 
@@ -159,7 +160,7 @@ pub fn count(values: &[U256], ctx: &FunctionContext) -> Result<String> {
     Ok(condition_satisfiability_count.to_string())
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub enum Operator {
     Equal,
     NotEqual,

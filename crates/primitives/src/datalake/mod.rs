@@ -2,6 +2,7 @@ use std::{fmt::Display, str::FromStr};
 
 use self::datalake_type::DatalakeType;
 use anyhow::Result;
+use serde::{Deserialize, Serialize};
 
 pub mod block_sampled;
 pub mod datalake_type;
@@ -9,12 +10,8 @@ pub mod envelope;
 pub mod output;
 pub mod transactions;
 
-pub trait DatalakeCollection {
+pub trait DatalakeCollection: Serialize + Deserialize<'static> {
     fn to_index(&self) -> u8;
-    fn serialize(&self) -> Result<Vec<u8>>;
-    fn deserialize(encoded: &[u8]) -> Result<Self>
-    where
-        Self: Sized;
 }
 
 /// Define the common trait for all datalakes

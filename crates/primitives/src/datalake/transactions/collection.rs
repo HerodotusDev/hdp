@@ -1,6 +1,8 @@
-use std::{fmt::Display, str::FromStr};
-
 use anyhow::{bail, Result};
+use serde::de::{self, Deserializer, Visitor};
+use serde::ser::Serializer;
+use serde::{Deserialize, Serialize};
+use std::{fmt::Display, str::FromStr};
 
 use crate::datalake::{DatalakeCollection, DatalakeField};
 
@@ -42,30 +44,71 @@ impl DatalakeCollection for TransactionsCollection {
             TransactionsCollection::TranasactionReceipts(ref field) => field.to_index(),
         }
     }
+}
 
-    fn serialize(&self) -> Result<Vec<u8>> {
-        match self {
-            TransactionsCollection::Transactions(ref field) => Ok([1, field.to_index()].to_vec()),
+impl Serialize for TransactionsCollection {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let bytes = match self {
+            TransactionsCollection::Transactions(ref field) => {
+                let mut bytes = Vec::with_capacity(2);
+                bytes.push(1);
+                bytes.push(field.to_index());
+                bytes
+            }
             TransactionsCollection::TranasactionReceipts(ref field) => {
-                Ok([2, field.to_index()].to_vec())
+                let mut bytes = Vec::with_capacity(2);
+                bytes.push(2);
+                bytes.push(field.to_index());
+                bytes
+            }
+        };
+
+        serializer.serialize_bytes(&bytes)
+    }
+}
+
+impl<'de> Deserialize<'de> for TransactionsCollection {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct TransactionsCollectionVisitor;
+
+        impl<'de> Visitor<'de> for TransactionsCollectionVisitor {
+            type Value = TransactionsCollection;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("a byte array representing TransactionsCollection")
+            }
+
+            fn visit_byte_buf<E>(self, bytes: Vec<u8>) -> Result<Self::Value, E>
+            where
+                E: de::Error,
+            {
+                if bytes.len() != 2 {
+                    return Err(de::Error::invalid_length(bytes.len(), &self));
+                }
+
+                match bytes[0] {
+                    1 => {
+                        let field =
+                            TransactionField::from_index(bytes[1]).map_err(de::Error::custom)?;
+                        Ok(TransactionsCollection::Transactions(field))
+                    }
+                    2 => {
+                        let field = TransactionReceiptField::from_index(bytes[1])
+                            .map_err(de::Error::custom)?;
+                        Ok(TransactionsCollection::TranasactionReceipts(field))
+                    }
+                    _ => Err(de::Error::custom("Unknown transactions collection")),
+                }
             }
         }
-    }
 
-    fn deserialize(bytes: &[u8]) -> Result<Self> {
-        if bytes.len() != 2 {
-            return Err(anyhow::Error::msg("Invalid transactions collection"));
-        }
-
-        match bytes[0] {
-            1 => Ok(TransactionsCollection::Transactions(
-                TransactionField::from_index(bytes[1])?,
-            )),
-            2 => Ok(TransactionsCollection::TranasactionReceipts(
-                TransactionReceiptField::from_index(bytes[1])?,
-            )),
-            _ => Err(anyhow::Error::msg("Unknown transactions collection")),
-        }
+        deserializer.deserialize_byte_buf(TransactionsCollectionVisitor)
     }
 }
 
