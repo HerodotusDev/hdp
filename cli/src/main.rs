@@ -1,3 +1,5 @@
+#![deny(unused_crate_dependencies)]
+
 use alloy_primitives::U256;
 use anyhow::{bail, Result};
 use hdp_primitives::datalake::{
