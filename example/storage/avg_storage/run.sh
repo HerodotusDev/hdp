@@ -1,1 +1,0 @@
-hdp encode -a -o example/storage/avg_storage/output.json -c example/storage/avg_storage/input.json "avg" -b 5382810 5382839 "storage.0x75CeC1db9dCeb703200EAa6595f66885C962B920.0x0000000000000000000000000000000000000000000000000000000000000002" 1

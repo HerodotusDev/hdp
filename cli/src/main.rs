@@ -1,3 +1,5 @@
+#![deny(unused_crate_dependencies)]
+
 use alloy_primitives::U256;
 use anyhow::{bail, Result};
 use hdp_primitives::datalake::{
@@ -130,19 +132,25 @@ enum DataLakeCommands {
         increment: u64,
     },
 
-    ///  Encode the transactions data lake for test purposes
+    /// Encode the transactions data lake for test purposes
     #[command(arg_required_else_help = true)]
     #[command(short_flag = 't')]
     TransactionsInBlock {
-        /// target block number
+        /// Target block number
         target_block: u64,
         /// Sampled property
         /// Fields from transaction: "chain_id", "gas_price"... etc
         /// Fields from transaction receipt: "cumulative_gas_used".. etc
         sampled_property: String,
+        /// Start index of transactions range
+        start_index: u64,
+        /// End index of transactions range
+        end_index: u64,
         /// Increment number of transactions in the block
-        #[arg(default_value_t = 1)]
         increment: u64,
+        /// Filter out the specific type of Txs
+        #[arg(value_delimiter = ',')]
+        included_types: Vec<u8>,
     },
 }
 
@@ -352,6 +360,21 @@ async fn main() -> Result<()> {
                             .with_default("4952200")
                             .prompt()?
                             .parse()?;
+                            let start_index: u64 = inquire::Text::new("Start index")
+                            .with_help_message(
+                                "What is the start index of transactions in the block? (Enter to set default)",
+                            )
+                            .with_default("0")
+                            .prompt()?
+                            .parse()?;
+                            // TODO: have end index dynamically fetch by block number
+                            let end_index: u64 = inquire::Text::new("End index")
+                            .with_help_message(
+                                "What is the end index of transactions in the block? (Enter to set default)",
+                            )
+                            .with_default("10")
+                            .prompt()?
+                            .parse()?;
                             let increment: u64 = inquire::Text::new("Increment")
                                 .with_help_message(
                                     "How many transactions to skip in the range? (Enter to set default)",
@@ -359,6 +382,15 @@ async fn main() -> Result<()> {
                                 .with_default("1")
                                 .prompt()?
                                 .parse()?;
+                            let included_types: Vec<u8> = inquire::Text::new("Included types")
+                                .with_help_message(
+                                    "What type of transactions to include? (Enter to set default)",
+                                )
+                                .with_default("1,1,1,1")
+                                .prompt()?
+                                .split(',')
+                                .map(|s| s.parse().unwrap())
+                                .collect();
                             let variants = TransactionsCollectionType::variants();
                             let collection_opts: Vec<&str> =
                                 variants.iter().map(AsRef::as_ref).collect();
@@ -395,7 +427,10 @@ async fn main() -> Result<()> {
                             let transactions_datalake = TransactionsInBlockDatalake::new(
                                 target_block,
                                 sampled_property,
+                                start_index,
+                                end_index,
                                 increment,
+                                included_types.as_slice(),
                             )?;
                             DatalakeEnvelope::Transactions(transactions_datalake)
                         }
@@ -511,12 +546,18 @@ async fn main() -> Result<()> {
                 DataLakeCommands::TransactionsInBlock {
                     target_block,
                     sampled_property,
+                    start_index,
+                    end_index,
                     increment,
+                    included_types,
                 } => {
                     let transactions_datalake = TransactionsInBlockDatalake::new(
                         target_block,
                         sampled_property,
+                        start_index,
+                        end_index,
                         increment,
+                        included_types.as_slice(),
                     )?;
                     DatalakeEnvelope::Transactions(transactions_datalake)
                 }

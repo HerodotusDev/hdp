@@ -1,1 +1,0 @@
-hdp encode -a -o example/header/sum_timestamp/output.json -c example/header/sum_timestamp/input.json "sum" -b 4952200 4952229 "header.timestamp" 1

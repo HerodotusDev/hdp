@@ -1,1 +1,0 @@
-hdp encode -a -o example/header/avg_number/output.json -c example/header/avg_number/input.json "avg" -b 4952200 4952229 "header.number" 1

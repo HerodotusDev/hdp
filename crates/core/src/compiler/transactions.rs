@@ -1,15 +1,12 @@
-use alloy_primitives::U256;
+use alloy_primitives::{hex, U256};
 use anyhow::Result;
-use hdp_primitives::{
-    datalake::{
-        output::{Header, HeaderProof, MMRMeta},
-        transactions::{
-            output::{Transaction, TransactionReceipt},
-            TransactionsCollection, TransactionsInBlockDatalake,
-        },
-        DatalakeField,
+use hdp_primitives::datalake::{
+    output::{Header, HeaderProof, MMRMeta},
+    transactions::{
+        output::{Transaction, TransactionReceipt},
+        TransactionsCollection, TransactionsInBlockDatalake,
     },
-    utils::bytes_to_fixed_bytes32,
+    DatalakeField,
 };
 use hdp_provider::evm::AbstractProvider;
 use serde::{Deserialize, Serialize};
@@ -47,14 +44,16 @@ pub async fn compile_tx_datalake(
 
     match datalake.sampled_property {
         TransactionsCollection::Transactions(property) => {
-            let full_tx_and_proof_result = abstract_provider
-                .get_tx_with_proof_from_block(datalake.target_block, datalake.increment)
-                .await?;
-
-            for (block_number, tx_index, rlp_encoded_tx, proof) in full_tx_and_proof_result {
-                let value = property.decode_field_from_rlp(&rlp_encoded_tx);
-                let key_fixed_bytes =
-                    bytes_to_fixed_bytes32(&alloy_rlp::encode(U256::from(tx_index)));
+            for (block_number, tx_index, rlp_encoded_tx, proof, tx_type) in abstract_provider
+                .get_tx_with_proof_from_block(
+                    datalake.target_block,
+                    datalake.start_index,
+                    datalake.end_index,
+                    datalake.increment,
+                )
+                .await?
+            {
+                let key_fixed_bytes = tx_index_to_tx_key(tx_index);
 
                 transactions.push(Transaction {
                     key: key_fixed_bytes.to_string(),
@@ -80,20 +79,25 @@ pub async fn compile_tx_datalake(
                     },
                 });
 
-                aggregation_set.push(value);
+                // depends on datalake.included_types filter the value to be included in the aggregation set
+                if datalake.included_types.is_included(tx_type) {
+                    let value = property.decode_field_from_rlp(&rlp_encoded_tx);
+                    aggregation_set.push(value);
+                }
             }
         }
         TransactionsCollection::TranasactionReceipts(property) => {
-            let full_tx_receipt_and_proof_result = abstract_provider
-                .get_tx_receipt_with_proof_from_block(datalake.target_block, datalake.increment)
-                .await?;
-
-            for (block_number, tx_index, rlp_encoded_tx_receipt, proof) in
-                full_tx_receipt_and_proof_result
+            for (block_number, tx_index, rlp_encoded_tx_receipt, proof, tx_type) in
+                abstract_provider
+                    .get_tx_receipt_with_proof_from_block(
+                        datalake.target_block,
+                        datalake.start_index,
+                        datalake.end_index,
+                        datalake.increment,
+                    )
+                    .await?
             {
-                let value = property.decode_field_from_rlp(&rlp_encoded_tx_receipt);
-                let key_fixed_bytes =
-                    bytes_to_fixed_bytes32(&alloy_rlp::encode(U256::from(tx_index)));
+                let key_fixed_bytes = tx_index_to_tx_key(tx_index);
 
                 transaction_receipts.push(TransactionReceipt {
                     key: key_fixed_bytes.to_string(),
@@ -119,7 +123,11 @@ pub async fn compile_tx_datalake(
                     },
                 });
 
-                aggregation_set.push(value);
+                // depends on datalake.included_types filter the value to be included in the aggregation set
+                if datalake.included_types.is_included(tx_type) {
+                    let value = property.decode_field_from_rlp(&rlp_encoded_tx_receipt);
+                    aggregation_set.push(value);
+                }
             }
         }
     }
@@ -131,4 +139,32 @@ pub async fn compile_tx_datalake(
         transaction_receipts,
         mmr_meta,
     })
+}
+
+/// Convert a transaction index to a transaction key
+fn tx_index_to_tx_key(tx_index: u64) -> String {
+    let binding = alloy_rlp::encode(U256::from(tx_index));
+    format!("0x{}", hex::encode(binding))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_tx_index_to_tx_key() {
+        // no rlp prefix
+        let tx_index = 127u64;
+        let tx_key = tx_index_to_tx_key(tx_index);
+        let expected_tx_key = "0x7f".to_string();
+
+        assert_eq!(tx_key, expected_tx_key);
+
+        // rlpx prefix
+        let tx_index = 303u64;
+        let tx_key = tx_index_to_tx_key(tx_index);
+        let expected_tx_key = "0x82012f".to_string();
+
+        assert_eq!(tx_key, expected_tx_key);
+    }
 }

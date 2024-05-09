@@ -53,6 +53,20 @@ impl TransactionField {
             "MAX_FEE_PER_BLOB_GAS".to_string(),
         ]
     }
+
+    /// This function is for generating random TransactionField for testing purposes.
+    pub fn integer_variants_index(index: u8) -> Self {
+        match index {
+            0 => TransactionField::Nonce,
+            1 => TransactionField::GasPrice,
+            2 => TransactionField::GasLimit,
+            3 => TransactionField::ChainId,
+            4 => TransactionField::MaxFeePerGas,
+            5 => TransactionField::MaxPriorityFeePerGas,
+            6 => TransactionField::MaxFeePerBlobGas,
+            _ => unreachable!(),
+        }
+    }
 }
 
 // Note: This index is use to parse the transaction datalake field from the datalake's sampled property.

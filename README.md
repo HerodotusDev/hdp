@@ -119,9 +119,9 @@ Options:
 
 Integration testing in HDP ensures that the functionality of aggregate functions such as `SUM`, `AVG`, `MIN`, `MAX`, and `COUNT` operates correctly across various numeric fields within the blockchain data structure. These functions are designed specifically for numeric data types, ensuring accurate and reliable computations.
 
-### Testing Environment
+### Integration Test
 
-Our integration tests utilize `make integration` script to verify the correct operation of each function across the supported fields. To execute these tests locally, refer to the [Integration Test Guide](./example/readme.md) for detailed instructions.
+The core soundness of HDP relies on generating the correct input file and running the Cairo program. To ensure this, a full integration test flow is necessary to link the pre-processor and processor versions. For continuous integration tests, please refer to the [hdp-test](https://github.com/HerodotusDev/hdp-test) repository as it contains all the cases of supported features in table below.
 
 ### Supported Aggregate Functions
 
@@ -166,7 +166,7 @@ _Note: Fields marked with "-" are not applicable for the specified aggregate fun
 ### Additional Notes
 
 - Please ensure that the data fields you are applying these functions contain numeric values to avoid computational errors.
-- For details on how these tests are performed or to contribute to the further development of tests, please refer to the [Integration Test Guide](./example/readme.md).
+- For details on how these tests are performed or to contribute to the further development of tests, please refer to the [Integration Test Guide](https://github.com/HerodotusDev/hdp-test).
 
 ## Development
 

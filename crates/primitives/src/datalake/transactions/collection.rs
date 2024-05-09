@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{fmt::Display, str::FromStr};
 
 use anyhow::{bail, Result};
 
@@ -87,6 +87,17 @@ impl FromStr for TransactionsCollection {
                 parts[1].to_uppercase().as_str().parse()?,
             )),
             _ => bail!("Unknown transactions collection"),
+        }
+    }
+}
+
+impl Display for TransactionsCollection {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TransactionsCollection::Transactions(ref field) => write!(f, "TX.{}", field),
+            TransactionsCollection::TranasactionReceipts(ref field) => {
+                write!(f, "TX_RECEIPT.{}", field)
+            }
         }
     }
 }
