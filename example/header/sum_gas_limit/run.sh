@@ -1,1 +1,0 @@
-hdp encode -a -o example/header/sum_gas_limit/output.json -c example/header/sum_gas_limit/input.json "sum" -b 4952200 4952229 "header.gas_limit" 1

@@ -1,1 +1,0 @@
-hdp encode -a -o example/storage/sum_storage/output.json -c example/storage/sum_storage/input.json "sum" -b 5382810 5382839 "storage.0x75CeC1db9dCeb703200EAa6595f66885C962B920.0x0000000000000000000000000000000000000000000000000000000000000002" 1

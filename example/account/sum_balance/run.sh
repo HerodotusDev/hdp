@@ -1,1 +1,0 @@
-hdp encode -a -o example/account/sum_balance/output.json -c example/account/sum_balance/input.json "sum" -b 4952200 4952229 "account.0x7f2c6f930306d3aa736b3a6c6a98f512f74036d4.balance" 1

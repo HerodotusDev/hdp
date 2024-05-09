@@ -1,1 +1,0 @@
-hdp encode -a -o example/header/avg_excess_blob_gas/output.json -c example/header/avg_excess_blob_gas/input.json "avg" -b 5515000 5515029 "header.excess_blob_gas" 1

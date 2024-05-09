@@ -121,7 +121,7 @@ Integration testing in HDP ensures that the functionality of aggregate functions
 
 ### Integration Test
 
-The core soundness of HDP relies on generating the correct input file and running the Cairo program. To ensure this, a full integration test flow is necessary to link the pre-processor and processor versions. We have included some [examples](./example/) in this repository, but for continuous integration tests, please refer to the [hdp-test](https://github.com/HerodotusDev/hdp-test) repository.
+The core soundness of HDP relies on generating the correct input file and running the Cairo program. To ensure this, a full integration test flow is necessary to link the pre-processor and processor versions. For continuous integration tests, please refer to the [hdp-test](https://github.com/HerodotusDev/hdp-test) repository as it contains all the cases of supported features in table below.
 
 ### Supported Aggregate Functions
 

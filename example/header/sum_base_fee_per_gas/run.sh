@@ -1,1 +1,0 @@
-hdp encode -a -o example/header/sum_base_fee_per_gas/output.json -c example/header/sum_base_fee_per_gas/input.json "sum" -b 4952200 4952229 "header.base_fee_per_gas" 1
