@@ -284,9 +284,9 @@ impl AbstractProvider {
             }
         }
 
-        // chunk the target_block_range into 50
+        // chunk the target_block_range into 40
         let target_block_range_chunks: Vec<Vec<u64>> =
-            target_block_range.chunks(50).map(|x| x.to_vec()).collect();
+            target_block_range.chunks(40).map(|x| x.to_vec()).collect();
 
         for one_chunked_block_range in target_block_range_chunks {
             // Prepare and execute futures for missing blocks
@@ -335,6 +335,9 @@ impl AbstractProvider {
 
             // Execute fetch operations in parallel
             join_all(fetch_futures).await;
+
+            // wait for 0.1s
+            tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
         }
 
         // Construct the final result vector from blocks_map
@@ -436,9 +439,9 @@ impl AbstractProvider {
             }
         }
 
-        // chunk the target_block_range into 50
+        // chunk the target_block_range into 40
         let target_block_range_chunks: Vec<Vec<u64>> =
-            target_block_range.chunks(50).map(|x| x.to_vec()).collect();
+            target_block_range.chunks(40).map(|x| x.to_vec()).collect();
 
         for one_chunk_block_range in target_block_range_chunks {
             // Prepare and execute futures for missing blocks
@@ -503,6 +506,9 @@ impl AbstractProvider {
 
             // Execute fetch operations in parallel
             join_all(fetch_futures).await;
+
+            // wait for 0.1s
+            tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
         }
 
         // Construct the final result vector from blocks_map
