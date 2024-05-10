@@ -337,7 +337,7 @@ impl AbstractProvider {
             join_all(fetch_futures).await;
 
             // wait for 0.1s
-            tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+            tokio::time::sleep(tokio::time::Duration::from_millis(150)).await;
         }
 
         // Construct the final result vector from blocks_map
@@ -508,7 +508,7 @@ impl AbstractProvider {
             join_all(fetch_futures).await;
 
             // wait for 0.1s
-            tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+            tokio::time::sleep(tokio::time::Duration::from_millis(150)).await;
         }
 
         // Construct the final result vector from blocks_map
