@@ -4,7 +4,7 @@ use core::panic;
 use eth_trie_proofs::{tx_receipt_trie::TxReceiptsMptHandler, tx_trie::TxsMptHandler};
 use futures::future::join_all;
 use std::{collections::HashMap, sync::Arc, time::Instant};
-use tokio::sync::RwLock;
+use tokio::sync::{mpsc, RwLock};
 use tracing::{error, info};
 
 use hdp_primitives::{
@@ -267,98 +267,28 @@ impl AbstractProvider {
         increment: u64,
         address: String,
     ) -> Result<HashMap<u64, (String, Vec<String>)>> {
+        type AccountWithProof = (u64, String, Vec<String>);
         let start_fetch = Instant::now();
         //? A map of block numbers to a boolean indicating whether the block was fetched.
-        // This contains rlp encoded account and account proof
-        let blocks_map = Arc::new(RwLock::new(HashMap::new()));
 
         let target_block_range: Vec<u64> = (block_range_start..=block_range_end)
             .step_by(increment as usize)
             .collect();
 
-        for block_number in &target_block_range {
-            let account = self.memory.get_account(*block_number, &address);
-            if let Some(account) = account {
-                let mut blocks_map_write = blocks_map.write().await;
-                blocks_map_write.insert(*block_number, (true, account.0, account.1));
-            }
-        }
+        let (rpc_sender, mut rx) = mpsc::channel::<AccountWithProof>(32);
 
-        // chunk the target_block_range into 40
-        let target_block_range_chunks: Vec<Vec<u64>> =
-            target_block_range.chunks(40).map(|x| x.to_vec()).collect();
-
-        for one_chunked_block_range in target_block_range_chunks {
-            // Prepare and execute futures for missing blocks
-            let fetch_futures: Vec<_> = one_chunked_block_range
-                .clone()
-                .into_iter()
-                .map(|block_number| {
-                    let blocks_map_clone = blocks_map.clone();
-                    let rpc_clone = self.rpc_provider.clone(); // Assume self.rpc can be cloned or is wrapped in Arc
-                    let address_clone = address.clone();
-                    async move {
-                        let should_fetch = {
-                            let read_guard = blocks_map_clone.read().await;
-                            !read_guard.contains_key(&block_number)
-                        };
-                        if should_fetch {
-                            match rpc_clone
-                                .get_proof(block_number, &address_clone, None)
-                                .await
-                            {
-                                Ok(account_from_rpc) => {
-                                    let mut write_guard = blocks_map_clone.write().await;
-                                    let retrieved_account = Account::from(&account_from_rpc);
-                                    let rlp_encoded_account = retrieved_account.rlp_encode();
-                                    let account_proof = account_from_rpc.account_proof;
-                                    write_guard.insert(
-                                        block_number,
-                                        (true, rlp_encoded_account, account_proof),
-                                    );
-                                    // Assuming conversion to RlpEncodedValue is done here
-                                }
-                                Err(e) => {
-                                    error!(
-                                        "Failed to fetch account in block {}: {}",
-                                        block_number, e
-                                    );
-                                    bail!(e);
-                                    // Optionally handle errors by inserting a placeholder or error indicator
-                                }
-                            }
-                        }
-                        Ok(())
-                    }
-                })
-                .collect();
-
-            // Execute fetch operations in parallel
-            join_all(fetch_futures).await;
-
-            // wait for 0.1s
-            tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
-        }
-
-        // Construct the final result vector from blocks_map
-        let blocks_map_read = blocks_map.read().await;
-        let duration = start_fetch.elapsed();
-        info!("Time taken (Account Fetch): {:?}", duration);
+        self.rpc_provider
+            .get_account_proofs(rpc_sender, target_block_range, &address)
+            .await;
 
         let mut result = HashMap::new();
 
-        for block in &target_block_range {
-            if !blocks_map_read.contains_key(block) {
-                bail!("Failed to fetch account in block {}", block);
-            }
-            result.insert(
-                *block,
-                blocks_map_read
-                    .get(block)
-                    .map(|(_, b, c)| (b.clone(), c.clone()))
-                    .unwrap(),
-            );
+        while let Some(block) = rx.recv().await {
+            result.insert(block.0, (block.1.clone(), block.2.clone()));
         }
+
+        let duration = start_fetch.elapsed();
+        info!("Time taken (Account Fetch): {:?}", duration);
 
         Ok(result)
     }
