@@ -9,7 +9,7 @@ use hdp_primitives::{block::header::Header, datalake::output::MMRMeta};
 
 use self::{
     memory::{InMemoryProvider, RlpEncodedValue, StoredHeader, StoredHeaders},
-    rpc::RpcProvider,
+    rpc::{FetchedAccountProof, FetchedStorageProof, RpcProvider},
 };
 
 pub(crate) mod memory;
@@ -234,15 +234,14 @@ impl AbstractProvider {
         block_range_end: u64,
         increment: u64,
         address: String,
-    ) -> Result<HashMap<u64, (String, Vec<String>)>> {
-        type AccountWithProof = (u64, String, Vec<String>);
+    ) -> Result<HashMap<u64, FetchedAccountProof>> {
         let start_fetch = Instant::now();
 
         let target_block_range: Vec<u64> = (block_range_start..=block_range_end)
             .step_by(increment as usize)
             .collect();
 
-        let (rpc_sender, mut rx) = mpsc::channel::<AccountWithProof>(32);
+        let (rpc_sender, mut rx) = mpsc::channel::<FetchedAccountProof>(32);
 
         self.rpc_provider
             .get_account_proofs(rpc_sender, target_block_range, &address)
@@ -250,8 +249,8 @@ impl AbstractProvider {
 
         let mut result = HashMap::new();
 
-        while let Some(block) = rx.recv().await {
-            result.insert(block.0, (block.1.clone(), block.2.clone()));
+        while let Some(proof) = rx.recv().await {
+            result.insert(proof.block_number, proof);
         }
 
         let duration = start_fetch.elapsed();
@@ -269,31 +268,22 @@ impl AbstractProvider {
         increment: u64,
         address: String,
         slot: String,
-    ) -> Result<HashMap<u64, (String, Vec<String>, String, Vec<String>)>> {
-        type StorageWithProof = (u64, String, Vec<String>, String, Vec<String>);
+    ) -> Result<HashMap<u64, FetchedStorageProof>> {
         let start_fetch = Instant::now();
         //? A map of block numbers to a boolean indicating whether the block was fetched.
         let target_block_range: Vec<u64> = (block_range_start..=block_range_end)
             .step_by(increment as usize)
             .collect();
 
-        let (rpc_sender, mut rx) = mpsc::channel::<StorageWithProof>(32);
+        let (rpc_sender, mut rx) = mpsc::channel::<FetchedStorageProof>(32);
         self.rpc_provider
             .get_storage_proofs(rpc_sender, target_block_range, &address, slot)
             .await;
 
         let mut result = HashMap::new();
 
-        while let Some(block) = rx.recv().await {
-            result.insert(
-                block.0,
-                (
-                    block.1.clone(),
-                    block.2.clone(),
-                    block.3.clone(),
-                    block.4.clone(),
-                ),
-            );
+        while let Some(proof) = rx.recv().await {
+            result.insert(proof.block_number, proof);
         }
         let duration = start_fetch.elapsed();
         info!("Time taken (Storage Fetch): {:?}", duration);

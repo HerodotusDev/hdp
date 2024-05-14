@@ -18,6 +18,21 @@ use hdp_primitives::block::{
 use tokio::sync::{mpsc::Sender, RwLock};
 
 #[derive(Debug, Clone)]
+pub struct FetchedAccountProof {
+    pub block_number: u64,
+    pub encoded_account: String,
+    pub account_proof: Vec<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct FetchedStorageProof {
+    pub block_number: u64,
+    pub account_proof: Vec<String>,
+    pub storage_value: String,
+    pub storage_proof: Vec<String>,
+}
+
+#[derive(Debug, Clone)]
 pub struct RpcProvider {
     client: Client,
     pub url: &'static str,
@@ -75,7 +90,7 @@ impl RpcProvider {
 
     pub async fn get_account_proofs(
         &self,
-        rpc_sender: Sender<(u64, String, Vec<String>)>,
+        rpc_sender: Sender<FetchedAccountProof>,
         block_numbers: Vec<u64>,
         address: &str,
     ) {
@@ -113,20 +128,22 @@ impl RpcProvider {
                             match account_from_rpc {
                                 Ok(account_from_rpc) => {
                                     let mut blocks_identifier = fetched_blocks_clone.write().await;
-                                    let retrieved_account = Account::from(&account_from_rpc);
-                                    let rlp_encoded_account = retrieved_account.rlp_encode();
+                                    let account = Account::from(&account_from_rpc);
+                                    let encoded_account = account.rlp_encode();
                                     let account_proof = account_from_rpc.account_proof;
-                                    rpc_sender
-                                        .send((*block_number, rlp_encoded_account, account_proof))
-                                        .await
-                                        .unwrap();
+                                    let mpt_proof = FetchedAccountProof {
+                                        block_number: *block_number,
+                                        encoded_account,
+                                        account_proof,
+                                    };
+                                    rpc_sender.send(mpt_proof).await.unwrap();
                                     blocks_identifier.insert(*block_number);
                                 }
-                                Err(_) => {
-                                    // println!(
-                                    //     "Failed to fetch block number: {}, error: {}",
-                                    //     block_number, e
-                                    // );
+                                Err(e) => {
+                                    println!(
+                                        "Failed to fetch block number: {}, error: {}",
+                                        block_number, e
+                                    );
                                 }
                             }
                         }
@@ -140,7 +157,7 @@ impl RpcProvider {
 
     pub async fn get_storage_proofs(
         &self,
-        rpc_sender: Sender<(u64, String, Vec<String>, String, Vec<String>)>,
+        rpc_sender: Sender<FetchedStorageProof>,
         block_numbers: Vec<u64>,
         address: &str,
         slot: String,
@@ -182,23 +199,18 @@ impl RpcProvider {
                             match account_from_rpc {
                                 Ok(account_from_rpc) => {
                                     let mut blocks_identifier = fetched_blocks_clone.write().await;
-                                    let retrieved_account = Account::from(&account_from_rpc);
                                     let storage = &account_from_rpc.storage_proof[0];
-                                    let rlp_encoded = retrieved_account.rlp_encode();
                                     let storage_value = storage.value.clone();
                                     let storage_proof =
                                         account_from_rpc.storage_proof[0].proof.clone();
                                     let account_proof = account_from_rpc.account_proof;
-                                    rpc_sender
-                                        .send((
-                                            *block_number,
-                                            rlp_encoded,
-                                            account_proof,
-                                            storage_value,
-                                            storage_proof,
-                                        ))
-                                        .await
-                                        .unwrap();
+                                    let mpt_proof = FetchedStorageProof {
+                                        block_number: *block_number,
+                                        account_proof,
+                                        storage_value,
+                                        storage_proof,
+                                    };
+                                    rpc_sender.send(mpt_proof).await.unwrap();
                                     blocks_identifier.insert(*block_number);
                                 }
                                 Err(_) => {
