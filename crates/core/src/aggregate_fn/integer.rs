@@ -159,6 +159,11 @@ pub fn count(values: &[U256], ctx: &FunctionContext) -> Result<String> {
     Ok(condition_satisfiability_count.to_string())
 }
 
+pub fn simple_linear_regression(_values: &[U256]) -> Result<String> {
+    // TODO: handle custom compute module
+    Ok("0".to_string())
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Operator {
     Equal,

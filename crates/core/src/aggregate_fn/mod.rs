@@ -12,13 +12,12 @@ pub mod string;
 ///
 /// ### Defined
 /// - AVG - Returns the average of the values
-/// - BLOOM - Bloom filter
-/// - MAX - Find the maximum value
-/// - MIN - Find the minimum value
-/// - MERKLE - Return the merkle root of the values
-/// - STD - Standard deviation
 /// - SUM - Sum of values
+/// - MIN - Find the minimum value
+/// - MAX - Find the maximum value
 /// - COUNT - Count number of values that satisfy a condition
+/// - MERKLE - Return the merkle root of the values
+/// - SLR - Simple Linear Regression
 #[derive(Debug, PartialEq, Eq)]
 pub enum AggregationFunction {
     AVG,
@@ -27,6 +26,7 @@ pub enum AggregationFunction {
     MAX,
     COUNT,
     MERKLE,
+    SLR,
 }
 
 /// Get [`AggregationFunction`] from function id
@@ -41,6 +41,7 @@ impl FromStr for AggregationFunction {
             "MAX" => Ok(Self::MAX),
             "COUNT" => Ok(Self::COUNT),
             "MERKLE" => Ok(Self::MERKLE),
+            "SLR" => Ok(Self::SLR),
             _ => bail!("Unknown aggregation function"),
         }
     }
@@ -55,6 +56,7 @@ impl std::fmt::Display for AggregationFunction {
             AggregationFunction::MAX => write!(f, "max"),
             AggregationFunction::COUNT => write!(f, "count"),
             AggregationFunction::MERKLE => write!(f, "merkle"),
+            AggregationFunction::SLR => write!(f, "slr"),
         }
     }
 }
@@ -106,6 +108,7 @@ impl AggregationFunction {
             AggregationFunction::MAX => 3,
             AggregationFunction::COUNT => 4,
             AggregationFunction::MERKLE => 5,
+            AggregationFunction::SLR => 6,
         }
     }
 
@@ -117,6 +120,7 @@ impl AggregationFunction {
             3 => Ok(AggregationFunction::MAX),
             4 => Ok(AggregationFunction::COUNT),
             5 => Ok(AggregationFunction::MERKLE),
+            6 => Ok(AggregationFunction::SLR),
             _ => bail!("Unknown aggregation function index"),
         }
     }
@@ -137,6 +141,9 @@ impl AggregationFunction {
             }
             // Aggregation functions for string values
             AggregationFunction::MERKLE => string::merkleize(values),
+            AggregationFunction::SLR => {
+                integer::simple_linear_regression(&parse_int_value(values).unwrap())
+            }
         }
     }
 }

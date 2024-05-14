@@ -442,7 +442,7 @@ async fn main() -> Result<()> {
                 }
             };
 
-            let task_opts: Vec<&str> = vec!["AVG", "SUM", "MIN", "MAX", "COUNT"];
+            let task_opts: Vec<&str> = vec!["AVG", "SUM", "MIN", "MAX", "COUNT", "SLR"];
 
             let aggregate_fn_id = Select::new("Select the aggregation function", task_opts)
                 .with_help_message(
