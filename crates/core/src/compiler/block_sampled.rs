@@ -80,9 +80,8 @@ pub async fn compile_block_sampled_datalake(
 
             for block in block_range {
                 let fetched_block = full_header_and_proof_result.0.get(&block).unwrap().clone();
-                let acc = accounts_and_proofs_result.get(&block).unwrap().clone();
-                // encoded_account = acc.0.clone();
-                let value = property.decode_field_from_rlp(&acc.0);
+                let account_proof = accounts_and_proofs_result.get(&block).unwrap().clone();
+                let value = property.decode_field_from_rlp(&account_proof.encoded_account);
 
                 headers.push(Header {
                     rlp: fetched_block.0,
@@ -94,7 +93,7 @@ pub async fn compile_block_sampled_datalake(
 
                 let account_proof = MPTProof {
                     block_number: block,
-                    proof: acc.1,
+                    proof: account_proof.account_proof,
                 };
 
                 account_proofs.push(account_proof);
@@ -124,7 +123,7 @@ pub async fn compile_block_sampled_datalake(
 
             for i in block_range {
                 let fetched_block = full_header_and_proof_result.0.get(&i).unwrap().clone();
-                let acc_and_storage = storages_and_proofs_result.get(&i).unwrap().clone();
+                let storage_proof = storages_and_proofs_result.get(&i).unwrap().clone();
 
                 headers.push(Header {
                     rlp: fetched_block.0,
@@ -136,15 +135,15 @@ pub async fn compile_block_sampled_datalake(
 
                 account_proofs.push(MPTProof {
                     block_number: i,
-                    proof: acc_and_storage.1,
+                    proof: storage_proof.account_proof,
                 });
 
                 storage_proofs.push(MPTProof {
                     block_number: i,
-                    proof: acc_and_storage.3,
+                    proof: storage_proof.storage_proof,
                 });
 
-                aggregation_set.push(acc_and_storage.2);
+                aggregation_set.push(storage_proof.storage_value);
             }
 
             let storage_key = keccak256(slot).to_string();

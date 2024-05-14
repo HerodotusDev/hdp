@@ -1,15 +1,36 @@
-use std::{collections::HashMap, vec};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+    vec,
+};
 
 use anyhow::{anyhow, bail, Result};
+use futures::future::join_all;
 use reqwest::{header, Client};
 use serde_json::{from_value, json, Value};
 
 use hdp_primitives::block::{
-    account::AccountFromRpc,
+    account::{Account, AccountFromRpc},
     header::{
         BlockHeaderFromRpc, MMRFromNewIndexer, MMRMetaFromNewIndexer, MMRProofFromNewIndexer,
     },
 };
+use tokio::sync::{mpsc::Sender, RwLock};
+
+#[derive(Debug, Clone)]
+pub struct FetchedAccountProof {
+    pub block_number: u64,
+    pub encoded_account: String,
+    pub account_proof: Vec<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct FetchedStorageProof {
+    pub block_number: u64,
+    pub account_proof: Vec<String>,
+    pub storage_value: String,
+    pub storage_proof: Vec<String>,
+}
 
 #[derive(Debug, Clone)]
 pub struct RpcProvider {
@@ -67,7 +88,148 @@ impl RpcProvider {
         Ok(block_header_from_rpc)
     }
 
-    pub async fn get_proof(
+    pub async fn get_account_proofs(
+        &self,
+        rpc_sender: Sender<FetchedAccountProof>,
+        block_numbers: Vec<u64>,
+        address: &str,
+    ) {
+        let url = self.url;
+        let address = address.to_string();
+
+        tokio::spawn(async move {
+            let mut try_count = 0;
+            let chunk_size = 40;
+            let blocks_map = Arc::new(RwLock::new(HashSet::<u64>::new()));
+
+            while blocks_map.read().await.len() < block_numbers.len() {
+                try_count += 1;
+                if try_count > 50 {
+                    panic!("❗️❗️❗️ Too many retries, failed to fetch all blocks")
+                }
+                let fetched_blocks_clone = blocks_map.read().await.clone();
+                let blocks_to_fetch: Vec<u64> = block_numbers
+                    .iter()
+                    .filter(|block_number| !fetched_blocks_clone.contains(*block_number))
+                    .take(chunk_size)
+                    .cloned()
+                    .collect();
+
+                let fetch_futures = blocks_to_fetch
+                    .iter()
+                    .map(|block_number| {
+                        let fetched_blocks_clone = blocks_map.clone();
+                        let rpc_sender = rpc_sender.clone();
+                        let address = address.clone();
+                        async move {
+                            let account_from_rpc = RpcProvider::new(url, 1)
+                                .get_proof(*block_number, &address, None)
+                                .await;
+                            match account_from_rpc {
+                                Ok(account_from_rpc) => {
+                                    let mut blocks_identifier = fetched_blocks_clone.write().await;
+                                    let account = Account::from(&account_from_rpc);
+                                    let encoded_account = account.rlp_encode();
+                                    let account_proof = account_from_rpc.account_proof;
+                                    let mpt_proof = FetchedAccountProof {
+                                        block_number: *block_number,
+                                        encoded_account,
+                                        account_proof,
+                                    };
+                                    rpc_sender.send(mpt_proof).await.unwrap();
+                                    blocks_identifier.insert(*block_number);
+                                }
+                                Err(_) => {
+                                    // println!(
+                                    //     "Failed to fetch block number: {}, error: {}",
+                                    //     block_number, e
+                                    // );
+                                }
+                            }
+                        }
+                    })
+                    .collect::<Vec<_>>();
+
+                join_all(fetch_futures).await;
+            }
+        });
+    }
+
+    pub async fn get_storage_proofs(
+        &self,
+        rpc_sender: Sender<FetchedStorageProof>,
+        block_numbers: Vec<u64>,
+        address: &str,
+        slot: String,
+    ) {
+        let url = self.url;
+        let address = address.to_string();
+
+        tokio::spawn(async move {
+            let mut try_count = 0;
+            let chunk_size = 40;
+            let blocks_map = Arc::new(RwLock::new(HashSet::<u64>::new()));
+
+            while blocks_map.read().await.len() < block_numbers.len() {
+                try_count += 1;
+                if try_count > 50 {
+                    panic!("❗️❗️❗️ Too many retries, failed to fetch all blocks")
+                }
+                let fetched_blocks_clone = blocks_map.read().await.clone();
+                let blocks_to_fetch: Vec<u64> = block_numbers
+                    .iter()
+                    .filter(|block_number| !fetched_blocks_clone.contains(*block_number))
+                    .take(chunk_size)
+                    .cloned()
+                    .collect();
+
+                // println!("Fetching blocks: {:?}", blocks_to_fetch);
+
+                let fetch_futures = blocks_to_fetch
+                    .iter()
+                    .map(|block_number| {
+                        let fetched_blocks_clone = blocks_map.clone();
+                        let rpc_sender = rpc_sender.clone();
+                        let address = address.clone();
+                        let slot = slot.clone();
+                        async move {
+                            let account_from_rpc = RpcProvider::new(url, 1)
+                                .get_proof(*block_number, &address, Some(vec![slot.clone()]))
+                                .await;
+                            match account_from_rpc {
+                                Ok(account_from_rpc) => {
+                                    let mut blocks_identifier = fetched_blocks_clone.write().await;
+                                    let storage = &account_from_rpc.storage_proof[0];
+                                    let storage_value = storage.value.clone();
+                                    let storage_proof =
+                                        account_from_rpc.storage_proof[0].proof.clone();
+                                    let account_proof = account_from_rpc.account_proof;
+                                    let mpt_proof = FetchedStorageProof {
+                                        block_number: *block_number,
+                                        account_proof,
+                                        storage_value,
+                                        storage_proof,
+                                    };
+                                    rpc_sender.send(mpt_proof).await.unwrap();
+                                    blocks_identifier.insert(*block_number);
+                                }
+                                Err(_) => {
+                                    // println!(
+                                    //     "Failed to fetch block number: {}, error: {}",
+                                    //     block_number, e
+                                    // );
+                                }
+                            }
+                        }
+                    })
+                    .collect::<Vec<_>>();
+
+                join_all(fetch_futures).await;
+            }
+        });
+    }
+
+    async fn get_proof(
         &self,
         block_number: u64,
         address: &str,
