@@ -139,11 +139,11 @@ impl RpcProvider {
                                     rpc_sender.send(mpt_proof).await.unwrap();
                                     blocks_identifier.insert(*block_number);
                                 }
-                                Err(e) => {
-                                    println!(
-                                        "Failed to fetch block number: {}, error: {}",
-                                        block_number, e
-                                    );
+                                Err(_) => {
+                                    // println!(
+                                    //     "Failed to fetch block number: {}, error: {}",
+                                    //     block_number, e
+                                    // );
                                 }
                             }
                         }
