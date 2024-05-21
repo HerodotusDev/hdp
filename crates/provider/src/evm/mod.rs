@@ -35,11 +35,26 @@ pub struct AbstractProvider {
 }
 
 impl AbstractProvider {
-    pub fn new(rpc_url: &'static str, chain_id: u64) -> Self {
+    pub fn new(
+        rpc_url: &'static str,
+        chain_id: u64,
+        rpc_account_chunk_size: u64,
+        rpc_storage_chunk_size: u64,
+    ) -> Self {
         Self {
             memory: InMemoryProvider::new(),
-            rpc_provider: RpcProvider::new(rpc_url, chain_id),
-            indexer: RpcProvider::new(HERODOTUS_RS_INDEXER_URL, chain_id),
+            rpc_provider: RpcProvider::new(
+                rpc_url,
+                chain_id,
+                rpc_account_chunk_size,
+                rpc_storage_chunk_size,
+            ),
+            indexer: RpcProvider::new(
+                HERODOTUS_RS_INDEXER_URL,
+                chain_id,
+                rpc_account_chunk_size,
+                rpc_storage_chunk_size,
+            ),
         }
     }
 
@@ -382,7 +397,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_provider_get_rlp_header() {
-        let mut provider = AbstractProvider::new(SEPOLIA_RPC_URL, 11155111);
+        let mut provider = AbstractProvider::new(SEPOLIA_RPC_URL, 11155111, 40, 40);
         let rlp_header = provider.get_rlp_header(0).await;
         let block_hash = rlp_string_to_block_hash(&rlp_header);
         assert_eq!(
@@ -405,7 +420,7 @@ mod tests {
 
     #[tokio::test]
     async fn get_block_range_from_nonce_range_non_constant() {
-        let provider = AbstractProvider::new(SEPOLIA_RPC_URL, 11155111);
+        let provider = AbstractProvider::new(SEPOLIA_RPC_URL, 11155111, 40, 40);
         let block_range = provider
             .get_tx_with_proof_from_block(5530433, 10, 100, 1)
             .await

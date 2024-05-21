@@ -37,14 +37,23 @@ pub struct RpcProvider {
     client: Client,
     pub url: &'static str,
     chain_id: u64,
+    account_chunk_size: u64,
+    storage_chunk_size: u64,
 }
 
 impl RpcProvider {
-    pub fn new(rpc_url: &'static str, chain_id: u64) -> Self {
+    pub fn new(
+        rpc_url: &'static str,
+        chain_id: u64,
+        account_chunk_size: u64,
+        storage_chunk_size: u64,
+    ) -> Self {
         Self {
             client: Client::new(),
             url: rpc_url,
             chain_id,
+            account_chunk_size,
+            storage_chunk_size,
         }
     }
 }
@@ -96,10 +105,10 @@ impl RpcProvider {
     ) {
         let url = self.url;
         let address = address.to_string();
+        let chunk_size = self.account_chunk_size;
 
         tokio::spawn(async move {
             let mut try_count = 0;
-            let chunk_size = 40;
             let blocks_map = Arc::new(RwLock::new(HashSet::<u64>::new()));
 
             while blocks_map.read().await.len() < block_numbers.len() {
@@ -111,7 +120,7 @@ impl RpcProvider {
                 let blocks_to_fetch: Vec<u64> = block_numbers
                     .iter()
                     .filter(|block_number| !fetched_blocks_clone.contains(*block_number))
-                    .take(chunk_size)
+                    .take(chunk_size as usize)
                     .cloned()
                     .collect();
 
@@ -122,7 +131,7 @@ impl RpcProvider {
                         let rpc_sender = rpc_sender.clone();
                         let address = address.clone();
                         async move {
-                            let account_from_rpc = RpcProvider::new(url, 1)
+                            let account_from_rpc = RpcProvider::new(url, 115511, 40, 40)
                                 .get_proof(*block_number, &address, None)
                                 .await;
                             match account_from_rpc {
@@ -164,10 +173,10 @@ impl RpcProvider {
     ) {
         let url = self.url;
         let address = address.to_string();
+        let chunk_size = self.storage_chunk_size;
 
         tokio::spawn(async move {
             let mut try_count = 0;
-            let chunk_size = 40;
             let blocks_map = Arc::new(RwLock::new(HashSet::<u64>::new()));
 
             while blocks_map.read().await.len() < block_numbers.len() {
@@ -179,7 +188,7 @@ impl RpcProvider {
                 let blocks_to_fetch: Vec<u64> = block_numbers
                     .iter()
                     .filter(|block_number| !fetched_blocks_clone.contains(*block_number))
-                    .take(chunk_size)
+                    .take(chunk_size as usize)
                     .cloned()
                     .collect();
 
@@ -193,7 +202,7 @@ impl RpcProvider {
                         let address = address.clone();
                         let slot = slot.clone();
                         async move {
-                            let account_from_rpc = RpcProvider::new(url, 1)
+                            let account_from_rpc = RpcProvider::new(url, 1, 40, 40)
                                 .get_proof(*block_number, &address, Some(vec![slot.clone()]))
                                 .await;
                             match account_from_rpc {
@@ -392,7 +401,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_sepolia_sequencial_headers_and_mmr_from_indexer() {
-        let rpc_provider = RpcProvider::new(HERODOTUS_RS_INDEXER_URL, 11155111);
+        let rpc_provider = RpcProvider::new(HERODOTUS_RS_INDEXER_URL, 11155111, 40, 40);
 
         let block_header = rpc_provider
             .get_sequencial_headers_and_mmr_from_indexer(4952200, 4952229)
@@ -412,7 +421,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_mainnet_sequencial_headers_and_mmr_from_indexer() {
-        let rpc_provider = RpcProvider::new(HERODOTUS_RS_INDEXER_URL, 1);
+        let rpc_provider = RpcProvider::new(HERODOTUS_RS_INDEXER_URL, 1, 40, 40);
 
         let block_header = rpc_provider
             .get_sequencial_headers_and_mmr_from_indexer(4952200, 4952229)
@@ -438,7 +447,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_block_by_number() {
-        let rpc_provider = RpcProvider::new(SEPOLIA_RPC_URL, 11155111);
+        let rpc_provider = RpcProvider::new(SEPOLIA_RPC_URL, 11155111, 40, 40);
 
         let block = rpc_provider.get_block_by_number(0).await.unwrap();
         let block_header = Header::from(&block);
@@ -455,7 +464,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_rpc_get_proof() {
-        let rpc_provider = RpcProvider::new(SEPOLIA_RPC_URL, 11155111);
+        let rpc_provider = RpcProvider::new(SEPOLIA_RPC_URL, 11155111, 40, 40);
 
         let account_from_rpc = rpc_provider
             .get_proof(4952229, SEPOLIA_TARGET_ADDRESS, None)
