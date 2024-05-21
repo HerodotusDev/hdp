@@ -204,12 +204,7 @@ async fn handle_run(
     cairo_input: Option<String>,
 ) -> Result<()> {
     let config = Config::init(rpc_url, datalakes, tasks, chain_id).await;
-    let provider = AbstractProvider::new(
-        &config.rpc_url,
-        config.chain_id,
-        config.rpc_account_chunk_size,
-        config.rpc_storage_chunk_size,
-    );
+    let provider = AbstractProvider::new(&config.rpc_url, config.chain_id, config.rpc_chunk_size);
 
     let decoded_result =
         handle_decode_multiple(config.datalakes.clone(), config.tasks.clone()).await?;

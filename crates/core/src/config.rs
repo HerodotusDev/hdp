@@ -6,8 +6,7 @@ pub static CONFIG: OnceCell<Config> = OnceCell::const_new();
 pub struct Config {
     pub chain_id: u64,
     pub rpc_url: String,
-    pub rpc_account_chunk_size: u64,
-    pub rpc_storage_chunk_size: u64,
+    pub rpc_chunk_size: u64,
     pub datalakes: String,
     pub tasks: String,
 }
@@ -22,11 +21,7 @@ impl Config {
         let chain_id =
             cli_chain_id.unwrap_or_else(|| env::var("CHAIN_ID").unwrap().parse().unwrap());
         let rpc_url = cli_rpc_url.unwrap_or_else(|| env::var("RPC_URL").unwrap());
-        let rpc_account_chunk_size = env::var("RPC_ACCOUNT_CHUNK_SIZE")
-            .unwrap_or_else(|_| "40".to_string())
-            .parse()
-            .unwrap();
-        let rpc_storage_chunk_size = env::var("RPC_STORAGE_CHUNK_SIZE")
+        let rpc_chunk_size = env::var("RPC_CHUNK_SIZE")
             .unwrap_or_else(|_| "40".to_string())
             .parse()
             .unwrap();
@@ -38,8 +33,7 @@ impl Config {
                 Config {
                     chain_id,
                     rpc_url,
-                    rpc_account_chunk_size,
-                    rpc_storage_chunk_size,
+                    rpc_chunk_size,
                     datalakes,
                     tasks,
                 }
