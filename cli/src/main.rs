@@ -107,12 +107,6 @@ enum Commands {
         #[arg(short, long)]
         cairo_input: Option<String>,
     },
-    /// Return the compiled cairo file that works with integration test
-    CompiledCairo {
-        /// Path to save the compiled cairo json file
-        #[arg(short, long)]
-        output_path: String,
-    },
 }
 
 #[derive(Subcommand, Clone, Debug, PartialEq, Eq)]
@@ -608,11 +602,6 @@ async fn main() -> Result<()> {
                 cairo_input,
             )
             .await?
-        }
-        Commands::CompiledCairo { output_path } => {
-            // save the compiled cairo file to the output path
-            let compiled_cairo = include_str!("../../compiled_cairo/hdp.json");
-            std::fs::write(output_path, compiled_cairo)?;
         }
     }
     let duration_run = start_run.elapsed();
