@@ -159,7 +159,7 @@ impl EvaluationResult {
         }
 
         let processed_result = ProcessedResult {
-            results_root: result_merkle_root.to_string(),
+            results_root: Some(result_merkle_root.to_string()),
             tasks_root: task_merkle_root.to_string(),
             headers: flattened_headers.into_iter().collect(),
             accounts: flattened_accounts.into_iter().collect(),

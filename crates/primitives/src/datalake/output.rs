@@ -187,7 +187,7 @@ pub struct MMRMeta {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ProcessedResult {
     // U256 type
-    pub results_root: String,
+    pub results_root: Option<String>,
     // U256 type
     pub tasks_root: String,
     pub headers: Vec<Header>,
@@ -231,9 +231,13 @@ impl ProcessedResult {
             .iter()
             .map(|task| task.to_cairo_format())
             .collect();
+        let results_root = self
+            .results_root
+            .as_ref()
+            .map(|root| split_big_endian_hex_into_parts(root));
 
         ProcessedResultFormatted {
-            results_root: split_big_endian_hex_into_parts(&self.results_root),
+            results_root,
             tasks_root: split_big_endian_hex_into_parts(&self.tasks_root),
             headers,
             mmr: self.mmr.clone(),
@@ -248,7 +252,7 @@ impl ProcessedResult {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ProcessedResultFormatted {
-    pub results_root: Uint256,
+    pub results_root: Option<Uint256>,
     pub tasks_root: Uint256,
     pub headers: Vec<HeaderFormatted>,
     pub mmr: MMRMeta,
