@@ -122,11 +122,14 @@ pub struct Task {
     /// computational task commitment
     pub task_commitment: String,
     /// raw evaluation result of target compiled task
-    pub compiled_result: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub compiled_result: Option<String>,
     /// results merkle tree's entry value
-    pub result_commitment: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub result_commitment: Option<String>,
     pub task_proof: Vec<FixedBytes<32>>,
-    pub result_proof: Vec<FixedBytes<32>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub result_proof: Option<Vec<FixedBytes<32>>>,
     /// encoded datalake
     pub encoded_datalake: String,
     // ex. dynamic datalake / block sampled datalake
@@ -187,6 +190,7 @@ pub struct MMRMeta {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ProcessedResult {
     // U256 type
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub results_root: Option<String>,
     // U256 type
     pub tasks_root: String,
@@ -252,6 +256,7 @@ impl ProcessedResult {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ProcessedResultFormatted {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub results_root: Option<Uint256>,
     pub tasks_root: Uint256,
     pub headers: Vec<HeaderFormatted>,

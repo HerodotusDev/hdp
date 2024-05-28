@@ -146,6 +146,18 @@ impl AggregationFunction {
             }
         }
     }
+
+    // Check if the function is pre-processable
+    pub fn is_pre_processable(&self) -> bool {
+        match self {
+            AggregationFunction::AVG
+            | AggregationFunction::SUM
+            | AggregationFunction::MIN
+            | AggregationFunction::MAX
+            | AggregationFunction::COUNT => true,
+            AggregationFunction::SLR | AggregationFunction::MERKLE => false,
+        }
+    }
 }
 
 // Remove the "0x" prefix if exist, so that integer functions can parse integer values
