@@ -9,7 +9,7 @@ use hdp_primitives::{block::header::Header, datalake::output::MMRMeta};
 
 use self::{
     memory::{InMemoryProvider, RlpEncodedValue, StoredHeader, StoredHeaders},
-    rpc::{FetchedAccountProof, FetchedStorageProof, RpcProvider},
+    rpc::{FetchedAccountProof, FetchedStorageProof, HeaderProvider, TrieProofProvider},
 };
 
 pub(crate) mod memory;
@@ -23,23 +23,22 @@ const HERODOTUS_RS_INDEXER_URL: &str = "https://rs-indexer.api.herodotus.cloud/a
 ///
 /// TODO: Optimization idea, Lock only rpc provider and keep the memory provider unlocked
 /// but handle requests so that it would not make duplicate requests
-#[derive(Clone)]
 pub struct AbstractProvider {
     /// [`InMemoryProvider`] is used to fetch data from memory.
     // TODO: It's not using for now
     memory: InMemoryProvider,
     /// Fetch data from the RPC
-    rpc_provider: RpcProvider,
+    trie_proof_provider: TrieProofProvider,
     /// Fetch block headers and MMR data from the Herodotus indexer.
-    indexer: RpcProvider,
+    header_provider: HeaderProvider,
 }
 
 impl AbstractProvider {
-    pub fn new(rpc_url: &'static str, chain_id: u64) -> Self {
+    pub fn new(rpc_url: &'static str, chain_id: u64, rpc_chunk_size: u64) -> Self {
         Self {
             memory: InMemoryProvider::new(),
-            rpc_provider: RpcProvider::new(rpc_url, chain_id),
-            indexer: RpcProvider::new(HERODOTUS_RS_INDEXER_URL, chain_id),
+            trie_proof_provider: TrieProofProvider::new(rpc_url, rpc_chunk_size),
+            header_provider: HeaderProvider::new(HERODOTUS_RS_INDEXER_URL, chain_id),
         }
     }
 
@@ -56,7 +55,7 @@ impl AbstractProvider {
         let start_fetch = Instant::now();
 
         let mmr_data = self
-            .indexer
+            .header_provider
             .get_sequencial_headers_and_mmr_from_indexer(start_block, end_block)
             .await;
 
@@ -213,7 +212,7 @@ impl AbstractProvider {
             Some(header) => header,
             None => {
                 let header_rpc = self
-                    .rpc_provider
+                    .trie_proof_provider
                     .get_block_by_number(block_number)
                     .await
                     .unwrap();
@@ -243,7 +242,7 @@ impl AbstractProvider {
 
         let (rpc_sender, mut rx) = mpsc::channel::<FetchedAccountProof>(32);
 
-        self.rpc_provider
+        self.trie_proof_provider
             .get_account_proofs(rpc_sender, target_block_range, &address)
             .await;
 
@@ -276,7 +275,7 @@ impl AbstractProvider {
             .collect();
 
         let (rpc_sender, mut rx) = mpsc::channel::<FetchedStorageProof>(32);
-        self.rpc_provider
+        self.trie_proof_provider
             .get_storage_proofs(rpc_sender, target_block_range, &address, slot)
             .await;
 
@@ -301,7 +300,7 @@ impl AbstractProvider {
         incremental: u64,
     ) -> Result<Vec<(u64, u64, String, Vec<String>, u8)>> {
         let mut tx_with_proof = vec![];
-        let mut txs_mpt_handler = TxsMptHandler::new(self.rpc_provider.url).unwrap();
+        let mut txs_mpt_handler = TxsMptHandler::new(self.trie_proof_provider.url).unwrap();
         txs_mpt_handler
             .build_tx_tree_from_block(target_block)
             .await
@@ -335,7 +334,8 @@ impl AbstractProvider {
         incremental: u64,
     ) -> Result<Vec<(u64, u64, String, Vec<String>, u8)>> {
         let mut tx_receipt_with_proof = vec![];
-        let mut tx_reciepts_mpt_handler = TxReceiptsMptHandler::new(self.rpc_provider.url).unwrap();
+        let mut tx_reciepts_mpt_handler =
+            TxReceiptsMptHandler::new(self.trie_proof_provider.url).unwrap();
 
         tx_reciepts_mpt_handler
             .build_tx_receipts_tree_from_block(target_block)
@@ -382,7 +382,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_provider_get_rlp_header() {
-        let mut provider = AbstractProvider::new(SEPOLIA_RPC_URL, 11155111);
+        let mut provider = AbstractProvider::new(SEPOLIA_RPC_URL, 11155111, 40);
         let rlp_header = provider.get_rlp_header(0).await;
         let block_hash = rlp_string_to_block_hash(&rlp_header);
         assert_eq!(
@@ -405,7 +405,7 @@ mod tests {
 
     #[tokio::test]
     async fn get_block_range_from_nonce_range_non_constant() {
-        let provider = AbstractProvider::new(SEPOLIA_RPC_URL, 11155111);
+        let provider = AbstractProvider::new(SEPOLIA_RPC_URL, 11155111, 40);
         let block_range = provider
             .get_tx_with_proof_from_block(5530433, 10, 100, 1)
             .await

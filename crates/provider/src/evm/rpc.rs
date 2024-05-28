@@ -16,6 +16,7 @@ use hdp_primitives::block::{
     },
 };
 use tokio::sync::{mpsc::Sender, RwLock};
+use tracing::debug;
 
 #[derive(Debug, Clone)]
 pub struct FetchedAccountProof {
@@ -32,14 +33,13 @@ pub struct FetchedStorageProof {
     pub storage_proof: Vec<String>,
 }
 
-#[derive(Debug, Clone)]
-pub struct RpcProvider {
+pub struct HeaderProvider {
     client: Client,
     pub url: &'static str,
     chain_id: u64,
 }
 
-impl RpcProvider {
+impl HeaderProvider {
     pub fn new(rpc_url: &'static str, chain_id: u64) -> Self {
         Self {
             client: Client::new(),
@@ -47,9 +47,100 @@ impl RpcProvider {
             chain_id,
         }
     }
+
+    // TODO: result should not chunked
+    pub async fn get_sequencial_headers_and_mmr_from_indexer(
+        &self,
+        from_block: u64,
+        to_block: u64,
+    ) -> Result<(MMRMetaFromNewIndexer, HashMap<u64, MMRProofFromNewIndexer>)> {
+        let query_params = vec![
+            ("deployed_on_chain".to_string(), self.chain_id.to_string()),
+            ("accumulates_chain".to_string(), self.chain_id.to_string()),
+            ("hashing_function".to_string(), "poseidon".to_string()),
+            ("contract_type".to_string(), "AGGREGATOR".to_string()),
+            (
+                "from_block_number_inclusive".to_string(),
+                from_block.to_string(),
+            ),
+            (
+                "to_block_number_inclusive".to_string(),
+                to_block.to_string(),
+            ),
+            ("is_meta_included".to_string(), "true".to_string()),
+            ("is_whole_tree".to_string(), "true".to_string()),
+            ("is_rlp_included".to_string(), "true".to_string()),
+            ("is_pure_rlp".to_string(), "true".to_string()),
+        ];
+
+        let url = format!("{}/proofs", &self.url);
+
+        let response = self
+            .client
+            .get(url)
+            .header(header::CONTENT_TYPE, "application/json")
+            .query(&query_params)
+            .send()
+            .await
+            .map_err(|e| anyhow!("Failed to send request: {}", e))?;
+
+        // Check if the response status is success
+        if !response.status().is_success() {
+            bail!(
+                "rs-indexer request failed with status: {}",
+                response.status()
+            );
+        }
+
+        // Parse the response body as JSON
+        let rpc_response: Value = response
+            .json()
+            .await
+            .map_err(|e| anyhow!("Failed to parse response: {}", e))?;
+
+        let mmr_from_indexer: MMRFromNewIndexer = from_value(rpc_response)?;
+
+        if mmr_from_indexer.data.is_empty() {
+            bail!(
+                "No MMR data found for block numbers: {} - {}",
+                from_block,
+                to_block
+            );
+        } else if mmr_from_indexer.data.len() > 1 {
+            bail!(
+                "More than one MMR data found for block numbers: {} - {}",
+                from_block,
+                to_block
+            );
+        } else {
+            // As we are requesting for one tree, we expect only one tree to be returned
+            // sort the proofs by block number
+            // TODO: This sorting should be done in the indexer side
+            let mut mmr_from_indexer_map: HashMap<u64, MMRProofFromNewIndexer> = HashMap::new();
+            for proof in &mmr_from_indexer.data[0].proofs {
+                mmr_from_indexer_map.insert(proof.block_number, proof.clone());
+            }
+
+            Ok((mmr_from_indexer.data[0].meta.clone(), mmr_from_indexer_map))
+        }
+    }
 }
 
-impl RpcProvider {
+pub struct TrieProofProvider {
+    client: Client,
+    pub url: &'static str,
+    chunk_size: u64,
+}
+
+impl TrieProofProvider {
+    pub fn new(rpc_url: &'static str, chunk_size: u64) -> Self {
+        Self {
+            client: Client::new(),
+            url: rpc_url,
+            chunk_size,
+        }
+    }
+
     pub async fn get_block_by_number(&self, block_number: u64) -> Result<BlockHeaderFromRpc> {
         let rpc_request: Value = json!({
             "jsonrpc": "2.0",
@@ -96,10 +187,15 @@ impl RpcProvider {
     ) {
         let url = self.url;
         let address = address.to_string();
+        let chunk_size = self.chunk_size;
+
+        debug!(
+            "Fetching account proofs for {} chunk size: {}",
+            address, chunk_size
+        );
 
         tokio::spawn(async move {
             let mut try_count = 0;
-            let chunk_size = 40;
             let blocks_map = Arc::new(RwLock::new(HashSet::<u64>::new()));
 
             while blocks_map.read().await.len() < block_numbers.len() {
@@ -111,7 +207,7 @@ impl RpcProvider {
                 let blocks_to_fetch: Vec<u64> = block_numbers
                     .iter()
                     .filter(|block_number| !fetched_blocks_clone.contains(*block_number))
-                    .take(chunk_size)
+                    .take(chunk_size as usize)
                     .cloned()
                     .collect();
 
@@ -122,7 +218,7 @@ impl RpcProvider {
                         let rpc_sender = rpc_sender.clone();
                         let address = address.clone();
                         async move {
-                            let account_from_rpc = RpcProvider::new(url, 1)
+                            let account_from_rpc = TrieProofProvider::new(url, chunk_size)
                                 .get_proof(*block_number, &address, None)
                                 .await;
                             match account_from_rpc {
@@ -164,10 +260,10 @@ impl RpcProvider {
     ) {
         let url = self.url;
         let address = address.to_string();
+        let chunk_size = self.chunk_size;
 
         tokio::spawn(async move {
             let mut try_count = 0;
-            let chunk_size = 40;
             let blocks_map = Arc::new(RwLock::new(HashSet::<u64>::new()));
 
             while blocks_map.read().await.len() < block_numbers.len() {
@@ -179,7 +275,7 @@ impl RpcProvider {
                 let blocks_to_fetch: Vec<u64> = block_numbers
                     .iter()
                     .filter(|block_number| !fetched_blocks_clone.contains(*block_number))
-                    .take(chunk_size)
+                    .take(chunk_size as usize)
                     .cloned()
                     .collect();
 
@@ -193,7 +289,7 @@ impl RpcProvider {
                         let address = address.clone();
                         let slot = slot.clone();
                         async move {
-                            let account_from_rpc = RpcProvider::new(url, 1)
+                            let account_from_rpc = TrieProofProvider::new(url, chunk_size)
                                 .get_proof(*block_number, &address, Some(vec![slot.clone()]))
                                 .await;
                             match account_from_rpc {
@@ -300,83 +396,6 @@ impl RpcProvider {
 
         Ok(account_from_rpc)
     }
-
-    // TODO: result should not chunked
-    pub async fn get_sequencial_headers_and_mmr_from_indexer(
-        &self,
-        from_block: u64,
-        to_block: u64,
-    ) -> Result<(MMRMetaFromNewIndexer, HashMap<u64, MMRProofFromNewIndexer>)> {
-        let query_params = vec![
-            ("deployed_on_chain".to_string(), self.chain_id.to_string()),
-            ("accumulates_chain".to_string(), self.chain_id.to_string()),
-            ("hashing_function".to_string(), "poseidon".to_string()),
-            ("contract_type".to_string(), "AGGREGATOR".to_string()),
-            (
-                "from_block_number_inclusive".to_string(),
-                from_block.to_string(),
-            ),
-            (
-                "to_block_number_inclusive".to_string(),
-                to_block.to_string(),
-            ),
-            ("is_meta_included".to_string(), "true".to_string()),
-            ("is_whole_tree".to_string(), "true".to_string()),
-            ("is_rlp_included".to_string(), "true".to_string()),
-            ("is_pure_rlp".to_string(), "true".to_string()),
-        ];
-
-        let url = format!("{}/proofs", &self.url);
-
-        let response = self
-            .client
-            .get(url)
-            .header(header::CONTENT_TYPE, "application/json")
-            .query(&query_params)
-            .send()
-            .await
-            .map_err(|e| anyhow!("Failed to send request: {}", e))?;
-
-        // Check if the response status is success
-        if !response.status().is_success() {
-            bail!(
-                "rs-indexer request failed with status: {}",
-                response.status()
-            );
-        }
-
-        // Parse the response body as JSON
-        let rpc_response: Value = response
-            .json()
-            .await
-            .map_err(|e| anyhow!("Failed to parse response: {}", e))?;
-
-        let mmr_from_indexer: MMRFromNewIndexer = from_value(rpc_response)?;
-
-        if mmr_from_indexer.data.is_empty() {
-            bail!(
-                "No MMR data found for block numbers: {} - {}",
-                from_block,
-                to_block
-            );
-        } else if mmr_from_indexer.data.len() > 1 {
-            bail!(
-                "More than one MMR data found for block numbers: {} - {}",
-                from_block,
-                to_block
-            );
-        } else {
-            // As we are requesting for one tree, we expect only one tree to be returned
-            // sort the proofs by block number
-            // TODO: This sorting should be done in the indexer side
-            let mut mmr_from_indexer_map: HashMap<u64, MMRProofFromNewIndexer> = HashMap::new();
-            for proof in &mmr_from_indexer.data[0].proofs {
-                mmr_from_indexer_map.insert(proof.block_number, proof.clone());
-            }
-
-            Ok((mmr_from_indexer.data[0].meta.clone(), mmr_from_indexer_map))
-        }
-    }
 }
 
 #[cfg(test)]
@@ -392,7 +411,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_sepolia_sequencial_headers_and_mmr_from_indexer() {
-        let rpc_provider = RpcProvider::new(HERODOTUS_RS_INDEXER_URL, 11155111);
+        let rpc_provider = HeaderProvider::new(HERODOTUS_RS_INDEXER_URL, 11155111);
 
         let block_header = rpc_provider
             .get_sequencial_headers_and_mmr_from_indexer(4952200, 4952229)
@@ -412,7 +431,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_mainnet_sequencial_headers_and_mmr_from_indexer() {
-        let rpc_provider = RpcProvider::new(HERODOTUS_RS_INDEXER_URL, 1);
+        let rpc_provider = HeaderProvider::new(HERODOTUS_RS_INDEXER_URL, 1);
 
         let block_header = rpc_provider
             .get_sequencial_headers_and_mmr_from_indexer(4952200, 4952229)
@@ -438,7 +457,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_block_by_number() {
-        let rpc_provider = RpcProvider::new(SEPOLIA_RPC_URL, 11155111);
+        let rpc_provider = TrieProofProvider::new(SEPOLIA_RPC_URL, 40);
 
         let block = rpc_provider.get_block_by_number(0).await.unwrap();
         let block_header = Header::from(&block);
@@ -455,7 +474,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_rpc_get_proof() {
-        let rpc_provider = RpcProvider::new(SEPOLIA_RPC_URL, 11155111);
+        let rpc_provider = TrieProofProvider::new(SEPOLIA_RPC_URL, 40);
 
         let account_from_rpc = rpc_provider
             .get_proof(4952229, SEPOLIA_TARGET_ADDRESS, None)
