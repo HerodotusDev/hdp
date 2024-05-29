@@ -162,7 +162,11 @@ pub fn count(values: &[U256], ctx: &FunctionContext) -> Result<String> {
     Ok(condition_satisfiability_count.to_string())
 }
 
-pub fn simple_linear_regression(_values: &[U256]) -> Result<String> {
+pub fn simple_linear_regression(values: &[U256]) -> Result<String> {
+    // if value is empty or has only one value, return error
+    if values.is_empty() || values.len() == 1 {
+        bail!("At least 2 values are needed to compute SLR");
+    }
     // TODO: handle custom compute module
     Ok("0".to_string())
 }
