@@ -70,12 +70,13 @@ enum Commands {
         /// The chain id to fetch the data
         chain_id: Option<u64>,
 
-        /// Path to the file to save the output result
-        #[arg(short, long)]
-        output_file: Option<String>,
         /// Path to the file to save the input.json in cairo format
         #[arg(short, long)]
         cairo_input: Option<String>,
+
+        /// Path to the file to save the output result
+        #[arg(short, long, requires("cairo_input"))]
+        output_file: Option<String>,
     },
     /// Decode batch tasks and datalakes
     ///
@@ -101,13 +102,14 @@ enum Commands {
         rpc_url: Option<String>,
         /// The chain id to fetch the data
         chain_id: Option<u64>,
-        /// Path to the file to save the output result
-        #[arg(short, long)]
-        output_file: Option<String>,
 
         /// Path to the file to save the input.json in cairo format
         #[arg(short, long)]
         cairo_input: Option<String>,
+
+        /// Path to the file to save the output result
+        #[arg(short, long, requires("cairo_input"))]
+        output_file: Option<String>,
     },
 }
 
