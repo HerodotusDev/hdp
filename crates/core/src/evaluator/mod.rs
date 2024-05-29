@@ -282,7 +282,8 @@ pub async fn evaluator(
             results.is_pre_processable = false;
         } else {
             // Compute datalake over specified aggregation function
-            let result = aggregation_fn.operation(&datalake_result.get_values(), fn_context)?;
+            let result =
+                aggregation_fn.operation(&datalake_result.get_values(), Some(fn_context))?;
             // Save the datalake results
             results
                 .compiled_results

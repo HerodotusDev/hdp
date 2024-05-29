@@ -66,6 +66,15 @@ pub struct FunctionContext {
     pub value_to_compare: U256,
 }
 
+impl Default for FunctionContext {
+    fn default() -> Self {
+        Self {
+            operator: Operator::None,
+            value_to_compare: U256::ZERO,
+        }
+    }
+}
+
 impl FromStr for FunctionContext {
     type Err = anyhow::Error;
 

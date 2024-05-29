@@ -37,24 +37,18 @@ impl ComputationalTaskWithDatalake {
             8,
         );
 
-        let tuple_value = match &self.task.aggregate_fn_ctx {
-            None => DynSolValue::Tuple(vec![
-                identifier_value,
-                aggregate_fn_id,
-                DynSolValue::Uint(U256::ZERO, 8),
-                DynSolValue::Uint(U256::ZERO, 8),
-            ]),
-            Some(ctx) => {
-                let operator = DynSolValue::Uint(U256::from(Operator::to_index(&ctx.operator)), 8);
-                let value_to_compare = DynSolValue::Uint(ctx.value_to_compare, 32);
-                DynSolValue::Tuple(vec![
-                    identifier_value,
-                    aggregate_fn_id,
-                    operator,
-                    value_to_compare,
-                ])
-            }
-        };
+        let operator = DynSolValue::Uint(
+            U256::from(Operator::to_index(&self.task.aggregate_fn_ctx.operator)),
+            8,
+        );
+        let value_to_compare = DynSolValue::Uint(self.task.aggregate_fn_ctx.value_to_compare, 32);
+
+        let tuple_value = DynSolValue::Tuple(vec![
+            identifier_value,
+            aggregate_fn_id,
+            operator,
+            value_to_compare,
+        ]);
 
         Ok(bytes_to_hex_string(&tuple_value.abi_encode()))
 
@@ -69,14 +63,18 @@ impl ComputationalTaskWithDatalake {
 #[derive(Debug, PartialEq, Eq)]
 pub struct ComputationalTask {
     pub aggregate_fn_id: AggregationFunction,
-    pub aggregate_fn_ctx: Option<FunctionContext>,
+    pub aggregate_fn_ctx: FunctionContext,
 }
 
 impl ComputationalTask {
     pub fn new(aggregate_fn_id: &str, aggregate_fn_ctx: Option<FunctionContext>) -> Self {
+        let aggregate_fn_ctn_parsed = match aggregate_fn_ctx {
+            None => FunctionContext::new(Operator::None, U256::ZERO),
+            Some(ctx) => ctx,
+        };
         Self {
             aggregate_fn_id: AggregationFunction::from_str(aggregate_fn_id).unwrap(),
-            aggregate_fn_ctx,
+            aggregate_fn_ctx: aggregate_fn_ctn_parsed,
         }
     }
 
@@ -87,15 +85,12 @@ impl ComputationalTask {
             8,
         );
 
-        let operator = match &self.aggregate_fn_ctx {
-            None => DynSolValue::Uint(U256::ZERO, 8),
-            Some(ctx) => DynSolValue::Uint(U256::from(Operator::to_index(&ctx.operator)), 8),
-        };
+        let operator = DynSolValue::Uint(
+            U256::from(Operator::to_index(&self.aggregate_fn_ctx.operator)),
+            8,
+        );
 
-        let value_to_compare = match &self.aggregate_fn_ctx {
-            None => DynSolValue::Uint(U256::ZERO, 32),
-            Some(ctx) => DynSolValue::Uint(ctx.value_to_compare, 32),
-        };
+        let value_to_compare = DynSolValue::Uint(self.aggregate_fn_ctx.value_to_compare, 32);
 
         let header_tuple_value =
             DynSolValue::Tuple(vec![aggregate_fn_id, operator, value_to_compare]);
@@ -121,39 +116,30 @@ impl ComputationalTask {
             _ => bail!("Invalid aggregate_fn_id type"),
         };
         // Turn bytes into hex string
-        let aggregate_fn_ctx: Option<FunctionContext> = match value[1].as_uint() {
+        match value[1].as_uint() {
             Some((index, size)) => {
                 if size != 8 {
                     bail!("Invalid operator size");
                 }
-                match Operator::from_index(index.to_string().parse().unwrap())? {
-                    Option::None => match value[2].as_uint() {
-                        Some((value, size)) => {
-                            if size != 256 {
-                                bail!("Invalid value_to_compare size");
-                            }
-                            Some(FunctionContext::new(Operator::None, value))
+                let operator = Operator::from_index(index.to_string().parse().unwrap())?;
+                match value[2].as_uint() {
+                    Some((value, size)) => {
+                        if size != 256 {
+                            bail!("Invalid value_to_compare size");
                         }
-                        None => None,
-                    },
-                    Some(operator) => match value[2].as_uint() {
-                        Some((value, size)) => {
-                            if size != 256 {
-                                bail!("Invalid value_to_compare size");
-                            }
-                            Some(FunctionContext::new(operator, value))
-                        }
-                        None => None,
-                    },
+                        let aggregate_fn_ctx: FunctionContext =
+                            FunctionContext::new(operator, value);
+
+                        Ok(Self {
+                            aggregate_fn_id,
+                            aggregate_fn_ctx,
+                        })
+                    }
+                    None => bail!("Invalid value_to_compare type"),
                 }
             }
-            None => None,
-        };
-
-        Ok(ComputationalTask {
-            aggregate_fn_id,
-            aggregate_fn_ctx,
-        })
+            None => bail!("Invalid operator type"),
+        }
     }
 }
 
@@ -175,10 +161,7 @@ mod tests {
 
         let inner_task = ComputationalTask {
             aggregate_fn_id: AggregationFunction::COUNT,
-            aggregate_fn_ctx: Some(FunctionContext::new(
-                Operator::GreaterThanOrEqual,
-                U256::from(100),
-            )),
+            aggregate_fn_ctx: FunctionContext::new(Operator::GreaterThanOrEqual, U256::from(100)),
         };
 
         let serialized = task.encode().unwrap();
@@ -198,7 +181,7 @@ mod tests {
 
         let inner_task = ComputationalTask {
             aggregate_fn_id: AggregationFunction::AVG,
-            aggregate_fn_ctx: None,
+            aggregate_fn_ctx: FunctionContext::default(),
         };
 
         let serialized = task.encode().unwrap();
@@ -216,7 +199,7 @@ mod tests {
 
         let inner_task = ComputationalTask {
             aggregate_fn_id: AggregationFunction::MIN,
-            aggregate_fn_ctx: None,
+            aggregate_fn_ctx: FunctionContext::default(),
         };
 
         let serialized = task.encode().unwrap();

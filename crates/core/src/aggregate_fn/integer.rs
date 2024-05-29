@@ -236,15 +236,15 @@ impl Operator {
         }
     }
 
-    pub fn from_index(bytes: u8) -> Result<Option<Self>> {
+    pub fn from_index(bytes: u8) -> Result<Self> {
         match bytes {
-            0 => Ok(None),
-            1 => Ok(Some(Operator::Equal)),
-            2 => Ok(Some(Operator::NotEqual)),
-            3 => Ok(Some(Operator::GreaterThan)),
-            4 => Ok(Some(Operator::GreaterThanOrEqual)),
-            5 => Ok(Some(Operator::LessThan)),
-            6 => Ok(Some(Operator::LessThanOrEqual)),
+            0 => Ok(Operator::None),
+            1 => Ok(Operator::Equal),
+            2 => Ok(Operator::NotEqual),
+            3 => Ok(Operator::GreaterThan),
+            4 => Ok(Operator::GreaterThanOrEqual),
+            5 => Ok(Operator::LessThan),
+            6 => Ok(Operator::LessThanOrEqual),
             _ => bail!("Unknown logical operator"),
         }
     }
