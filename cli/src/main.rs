@@ -2,6 +2,7 @@
 
 use alloy_primitives::U256;
 use anyhow::{bail, Result};
+use cairo_runner::CairoRunner;
 use hdp_primitives::datalake::{
     block_sampled::{AccountField, BlockSampledCollectionType, BlockSampledDatalake, HeaderField},
     datalake_type::DatalakeType,
@@ -27,8 +28,9 @@ use hdp_core::{
     task::ComputationalTask,
 };
 
-use hdp_provider::evm::AbstractProvider;
+pub mod cairo_runner;
 
+use hdp_provider::evm::AbstractProvider;
 use tokio::sync::RwLock;
 use tracing::{debug, error, info, Level};
 
@@ -212,14 +214,20 @@ async fn handle_run(
     {
         Ok(res) => {
             debug!("Result: {:#?}", res);
-
-            if let Some(output_file) = output_file {
-                res.save_to_file(&output_file, false)?;
-                info!("Output file saved to: {}", output_file);
-            }
+            let pre_processed_result = res.get_processed_result().unwrap();
             if let Some(cairo_input) = cairo_input {
-                res.save_to_file(&cairo_input, true)?;
+                pre_processed_result.save_to_file(&cairo_input, true)?;
                 info!("Cairo input file saved to: {}", cairo_input);
+
+                if let Some(output_file) = output_file {
+                    let runner = CairoRunner::new(pre_processed_result);
+                    let processed_result = runner
+                        .run("hdp_pie.zip".to_string(), cairo_input.clone())
+                        .unwrap();
+                    processed_result.save_to_file(&output_file, false)?;
+
+                    info!("Output file saved to: {}", output_file);
+                }
             }
 
             Ok(())

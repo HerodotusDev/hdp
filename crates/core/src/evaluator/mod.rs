@@ -2,6 +2,7 @@ use alloy_dyn_abi::DynSolValue;
 use alloy_merkle_tree::standard_binary_tree::StandardMerkleTree;
 use alloy_primitives::{hex::FromHex, FixedBytes, Keccak256, B256, U256};
 use anyhow::{bail, Result};
+use result::ProcessedResult;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{HashMap, HashSet},
@@ -21,11 +22,13 @@ use hdp_primitives::datalake::{
     block_sampled::output::{Account, Storage},
     datalake_type::DatalakeType,
     envelope::DatalakeEnvelope,
-    output::{Header, MMRMeta, ProcessedResult, Task},
+    output::{Header, MMRMeta, Task},
     transactions::output::{Transaction, TransactionReceipt},
 };
 
 use hdp_provider::evm::AbstractProvider;
+
+pub mod result;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct EvaluationResult {
@@ -65,7 +68,7 @@ impl EvaluationResult {
         }
     }
 
-    fn get_processed_result(&self) -> Result<ProcessedResult> {
+    pub fn get_processed_result(&self) -> Result<ProcessedResult> {
         // 1. build merkle tree
         let (tasks_merkle_tree, results_merkle_tree) = self.build_merkle_tree()?;
 
@@ -228,29 +231,9 @@ impl EvaluationResult {
             Ok((tasks_merkle_tree, None))
         }
     }
-
-    pub fn save_to_file(&self, file_path: &str, is_cairo_format: bool) -> Result<()> {
-        let json = if is_cairo_format {
-            self.to_cairo_formatted_json()?
-        } else {
-            self.to_general_json()?
-        };
-        std::fs::write(file_path, json)?;
-        Ok(())
-    }
-
-    fn to_general_json(&self) -> Result<String> {
-        let processed_result = self.get_processed_result()?;
-        Ok(serde_json::to_string(&processed_result)?)
-    }
-
-    fn to_cairo_formatted_json(&self) -> Result<String> {
-        let processed_result = self.get_processed_result()?.to_cairo_format();
-        Ok(serde_json::to_string(&processed_result)?)
-    }
 }
 
-fn evaluation_result_to_result_commitment(
+pub fn evaluation_result_to_result_commitment(
     task_commitment: &str,
     compiled_result: &str,
 ) -> FixedBytes<32> {

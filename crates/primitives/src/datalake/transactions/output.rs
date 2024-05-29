@@ -10,7 +10,7 @@ pub struct Transaction {
 }
 
 impl Transaction {
-    pub(crate) fn to_cairo_format(&self) -> TransactionFormatted {
+    pub fn to_cairo_format(&self) -> TransactionFormatted {
         let key = self.key.clone();
         let proof_chunk_result: Vec<CairoFormattedChunkResult> = self
             .proof
@@ -33,7 +33,7 @@ impl Transaction {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
-pub(crate) struct TransactionFormatted {
+pub struct TransactionFormatted {
     pub key: String,
     pub block_number: u64,
     /// proof_bytes_len is the byte( 8 bit ) length from each proof string
@@ -49,7 +49,7 @@ pub struct TransactionReceipt {
 }
 
 impl TransactionReceipt {
-    pub(crate) fn to_cairo_format(&self) -> TransactionReceiptFormatted {
+    pub fn to_cairo_format(&self) -> TransactionReceiptFormatted {
         let key = self.key.clone();
         let proof_chunk_result: Vec<CairoFormattedChunkResult> = self
             .proof
@@ -72,7 +72,7 @@ impl TransactionReceipt {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
-pub(crate) struct TransactionReceiptFormatted {
+pub struct TransactionReceiptFormatted {
     pub key: String,
     pub block_number: u64,
     /// proof_bytes_len is the byte( 8 bit ) length from each proof string

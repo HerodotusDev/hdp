@@ -6,13 +6,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::utils::bytes_to_hex_string;
 
-use super::{
-    block_sampled::output::{Account, AccountFormatted, Storage, StorageFormatted},
-    transactions::output::{
-        Transaction, TransactionFormatted, TransactionReceipt, TransactionReceiptFormatted,
-    },
-};
-
 //==============================================================================
 // for int type, use uint type
 // for string type, if formatted, use chunk[] to store field elements
@@ -115,6 +108,14 @@ pub fn split_big_endian_hex_into_parts(hex_str: &str) -> Uint256 {
     }
 }
 
+pub fn combine_parts_into_big_endian_hex(uint256: &Uint256) -> String {
+    format!(
+        "0x{}{}",
+        uint256.high.trim_start_matches("0x"),
+        uint256.low.trim_start_matches("0x")
+    )
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub struct Task {
     /// encoded computational task
@@ -187,87 +188,6 @@ pub struct MMRMeta {
     pub peaks: Vec<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct ProcessedResult {
-    // U256 type
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub results_root: Option<String>,
-    // U256 type
-    pub tasks_root: String,
-    pub headers: Vec<Header>,
-    pub mmr: MMRMeta,
-    pub accounts: Vec<Account>,
-    pub storages: Vec<Storage>,
-    pub transactions: Vec<Transaction>,
-    pub transaction_receipts: Vec<TransactionReceipt>,
-    pub tasks: Vec<Task>,
-}
-
-impl ProcessedResult {
-    pub fn to_cairo_format(&self) -> ProcessedResultFormatted {
-        let headers = self
-            .headers
-            .iter()
-            .map(|header| header.to_cairo_format())
-            .collect();
-        let accounts = self
-            .accounts
-            .iter()
-            .map(|account| account.to_cairo_format())
-            .collect();
-        let storages = self
-            .storages
-            .iter()
-            .map(|storage| storage.to_cairo_format())
-            .collect();
-        let transactions = self
-            .transactions
-            .iter()
-            .map(|transaction| transaction.to_cairo_format())
-            .collect();
-        let transaction_receipts = self
-            .transaction_receipts
-            .iter()
-            .map(|receipt| receipt.to_cairo_format())
-            .collect();
-        let tasks = self
-            .tasks
-            .iter()
-            .map(|task| task.to_cairo_format())
-            .collect();
-        let results_root = self
-            .results_root
-            .as_ref()
-            .map(|root| split_big_endian_hex_into_parts(root));
-
-        ProcessedResultFormatted {
-            results_root,
-            tasks_root: split_big_endian_hex_into_parts(&self.tasks_root),
-            headers,
-            mmr: self.mmr.clone(),
-            accounts,
-            storages,
-            transactions,
-            transaction_receipts,
-            tasks,
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct ProcessedResultFormatted {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub results_root: Option<Uint256>,
-    pub tasks_root: Uint256,
-    pub headers: Vec<HeaderFormatted>,
-    pub mmr: MMRMeta,
-    accounts: Vec<AccountFormatted>,
-    storages: Vec<StorageFormatted>,
-    transactions: Vec<TransactionFormatted>,
-    transaction_receipts: Vec<TransactionReceiptFormatted>,
-    pub tasks: Vec<TaskFormatted>,
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -283,6 +203,9 @@ mod tests {
                 low: "0x4fdc7818eea7caedbd316c63a3863562".to_string()
             }
         );
+
+        let combine = combine_parts_into_big_endian_hex(&result);
+        assert_eq!(combine, hex_str);
 
         let hex_str = "0x8ddadb3a246d9988d78871b11dca322a2df53381bfacb9edc42cedfd263b691d";
         let result = split_little_endian_hex_into_parts(hex_str);
