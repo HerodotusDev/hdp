@@ -24,7 +24,7 @@ pub struct TransactionsInBlockDatalake {
     pub target_block: u64,
     // start index of transactions range ( default 0 )
     pub start_index: u64,
-    // start index of transactions range ( default last )
+    // end index of transactions range, not included in the range ( default last )
     pub end_index: u64,
     // increment of transactions
     pub increment: u64,

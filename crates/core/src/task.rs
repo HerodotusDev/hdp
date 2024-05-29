@@ -127,7 +127,15 @@ impl ComputationalTask {
                     bail!("Invalid operator size");
                 }
                 match Operator::from_index(index.to_string().parse().unwrap())? {
-                    Option::None => None,
+                    Option::None => match value[2].as_uint() {
+                        Some((value, size)) => {
+                            if size != 256 {
+                                bail!("Invalid value_to_compare size");
+                            }
+                            Some(FunctionContext::new(Operator::None, value))
+                        }
+                        None => None,
+                    },
                     Some(operator) => match value[2].as_uint() {
                         Some((value, size)) => {
                             if size != 256 {

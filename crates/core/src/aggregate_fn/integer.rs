@@ -153,6 +153,9 @@ pub fn count(values: &[U256], ctx: &FunctionContext) -> Result<String> {
                     condition_satisfiability_count += 1;
                 }
             }
+            Operator::None => {
+                bail!("Count need logical operator");
+            }
         }
     }
 
@@ -166,6 +169,7 @@ pub fn simple_linear_regression(_values: &[U256]) -> Result<String> {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Operator {
+    None,
     Equal,
     NotEqual,
     GreaterThan,
@@ -185,6 +189,7 @@ impl FromStr for Operator {
             "gteq" => Ok(Self::GreaterThanOrEqual),
             "lt" => Ok(Self::LessThan),
             "lteq=" => Ok(Self::LessThanOrEqual),
+            "none" => Ok(Self::None),
             _ => bail!("Unknown logical operator"),
         }
     }
@@ -199,6 +204,7 @@ impl std::fmt::Display for Operator {
             Operator::GreaterThanOrEqual => "gteq",
             Operator::LessThan => "lt",
             Operator::LessThanOrEqual => "lteq",
+            Operator::None => "none",
         };
         write!(f, "{}", operator)
     }
@@ -213,6 +219,7 @@ impl Operator {
             ">=" => Ok(Self::GreaterThanOrEqual),
             "<" => Ok(Self::LessThan),
             "<=" => Ok(Self::LessThanOrEqual),
+            "none" => Ok(Self::None),
             _ => bail!("Unknown logical operator"),
         }
     }
@@ -225,6 +232,7 @@ impl Operator {
             Operator::GreaterThanOrEqual => 4,
             Operator::LessThan => 5,
             Operator::LessThanOrEqual => 6,
+            Operator::None => 0,
         }
     }
 
