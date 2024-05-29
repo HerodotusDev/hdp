@@ -279,6 +279,8 @@ pub async fn evaluator(
         let fn_context = task_with_datalake.task.aggregate_fn_ctx;
 
         if !aggregation_fn.is_pre_processable() {
+            // Compute datalake over specified aggregation function
+            let _ = aggregation_fn.operation(&datalake_result.get_values(), Some(fn_context))?;
             results.is_pre_processable = false;
         } else {
             // Compute datalake over specified aggregation function
