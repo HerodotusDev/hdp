@@ -479,6 +479,16 @@ async fn main() -> Result<()> {
                         U256::from_str(&value_to_compare)?,
                     ))
                 }
+                "SLR" => {
+                    let target_index: String =
+                        inquire::Text::new("Enter the target index to compute SLR")
+                            .with_help_message("We will get y index over provided this x index")
+                            .prompt()?;
+                    Some(FunctionContext::new(
+                        Operator::None,
+                        U256::from_str(&target_index)?,
+                    ))
+                }
                 _ => None,
             };
 
