@@ -77,6 +77,10 @@ enum Commands {
         /// Path to the file to save the output result
         #[arg(short, long, requires("cairo_input"))]
         output_file: Option<String>,
+
+        /// Path to pie file
+        #[arg(short, long, requires("cairo_input"))]
+        pie_file: Option<String>,
     },
     /// Decode batch tasks and datalakes
     ///
@@ -110,6 +114,10 @@ enum Commands {
         /// Path to the file to save the output result
         #[arg(short, long, requires("cairo_input"))]
         output_file: Option<String>,
+
+        /// Path to pie file
+        #[arg(short, long, requires("cairo_input"))]
+        pie_file: Option<String>,
     },
 }
 
@@ -200,6 +208,7 @@ async fn handle_run(
     chain_id: Option<u64>,
     output_file: Option<String>,
     cairo_input: Option<String>,
+    pie_file: Option<String>,
 ) -> Result<()> {
     let config = Config::init(rpc_url, datalakes, tasks, chain_id).await;
     let provider = AbstractProvider::new(&config.rpc_url, config.chain_id, config.rpc_chunk_size);
@@ -223,9 +232,8 @@ async fn handle_run(
 
                 if let Some(output_file) = output_file {
                     let runner = CairoRunner::new(pre_processed_result);
-                    let processed_result = runner
-                        .run("hdp_pie.zip".to_string(), cairo_input.clone())
-                        .unwrap();
+                    let processed_result =
+                        runner.run(pie_file.unwrap(), cairo_input.clone()).unwrap();
                     processed_result.save_to_file(&output_file, false)?;
 
                     info!("Output file saved to: {}", output_file);
@@ -510,6 +518,9 @@ async fn main() -> Result<()> {
                 let cairo_input: String = inquire::Text::new("Enter Cairo input file path:")
                     .with_default("input.json")
                     .prompt()?;
+                let pie_file: String = inquire::Text::new("Enter PIE output file path:")
+                    .with_default("hdp_pie.zip")
+                    .prompt()?;
 
                 handle_run(
                     Some(encoded_result.tasks),
@@ -518,6 +529,7 @@ async fn main() -> Result<()> {
                     chain_id,
                     Some(output_file),
                     Some(cairo_input),
+                    Some(pie_file),
                 )
                 .await?
             }
@@ -528,6 +540,7 @@ async fn main() -> Result<()> {
             chain_id,
             output_file,
             cairo_input,
+            pie_file,
             aggregate_fn_id,
             aggregate_fn_ctx,
             command,
@@ -581,6 +594,7 @@ async fn main() -> Result<()> {
                     chain_id,
                     output_file,
                     cairo_input,
+                    pie_file,
                 )
                 .await?
             }
@@ -602,6 +616,7 @@ async fn main() -> Result<()> {
             chain_id,
             output_file,
             cairo_input,
+            pie_file,
         } => {
             handle_run(
                 tasks,
@@ -610,6 +625,7 @@ async fn main() -> Result<()> {
                 chain_id,
                 output_file,
                 cairo_input,
+                pie_file,
             )
             .await?
         }
