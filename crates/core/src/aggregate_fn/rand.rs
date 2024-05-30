@@ -16,7 +16,7 @@ impl Distribution<AggregationFunction> for Standard {
 impl Distribution<Operator> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Operator {
         let index: u8 = rng.gen_range(1..=6);
-        Operator::from_index(index).unwrap().unwrap()
+        Operator::from_index(index).unwrap()
     }
 }
 

@@ -14,7 +14,7 @@ pub struct Account {
 }
 
 impl Account {
-    pub(crate) fn to_cairo_format(&self) -> AccountFormatted {
+    pub fn to_cairo_format(&self) -> AccountFormatted {
         let address_chunk_result = hex_to_8_byte_chunks_little_endian(&self.address);
         let account_key = &self.account_key;
         let proofs = self
@@ -49,7 +49,7 @@ impl Account {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
-pub(crate) struct AccountFormatted {
+pub struct AccountFormatted {
     pub address: Vec<String>,
     pub account_key: String,
     pub proofs: Vec<MPTProofFormatted>,
@@ -64,7 +64,7 @@ pub struct Storage {
 }
 
 impl Storage {
-    pub(crate) fn to_cairo_format(&self) -> StorageFormatted {
+    pub fn to_cairo_format(&self) -> StorageFormatted {
         let address_chunk_result = hex_to_8_byte_chunks_little_endian(&self.address);
         let slot_chunk_result = hex_to_8_byte_chunks_little_endian(&self.slot);
         let storage_key = self.storage_key.clone();
@@ -104,7 +104,7 @@ impl Storage {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
-pub(crate) struct StorageFormatted {
+pub struct StorageFormatted {
     // chunked address
     pub address: Vec<String>,
     // chunked storage slot
@@ -762,10 +762,10 @@ mod tests {
         let original_task = Task{
             encoded_task: "0x23c69fe8ceb11087e27f0b0a89d8dc0cda85ab933464d49bd21d623526acf8c073756d000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000".to_string(),
             task_commitment: "0x46296bc9cb11408bfa46c5c31a542f12242db2412ee2217b4e8add2bc1927d0b".to_string(),
-            compiled_result: "6776".to_string(),
-            result_commitment: "0x40b44b4fe85644ce1d6f8f5035a5f7e91861d064ed0b4189ebb2eb6ce8985f4d".to_string(),
+            compiled_result: Some("6776".to_string()),
+            result_commitment:Some("0x40b44b4fe85644ce1d6f8f5035a5f7e91861d064ed0b4189ebb2eb6ce8985f4d".to_string()) ,
             task_proof: vec![],
-            result_proof: vec![],
+            result_proof: Some(vec![]),
             encoded_datalake: "0x000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004b902400000000000000000000000000000000000000000000000000000000004b9024000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000016027f2c6f930306d3aa736b3a6c6a98f512f74036d40000000000000000000000".to_string(),
             datalake_type: 0,
             property_type: 2

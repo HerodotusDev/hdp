@@ -153,19 +153,27 @@ pub fn count(values: &[U256], ctx: &FunctionContext) -> Result<String> {
                     condition_satisfiability_count += 1;
                 }
             }
+            Operator::None => {
+                bail!("Count need logical operator");
+            }
         }
     }
 
     Ok(condition_satisfiability_count.to_string())
 }
 
-pub fn simple_linear_regression(_values: &[U256]) -> Result<String> {
+pub fn simple_linear_regression(values: &[U256]) -> Result<String> {
+    // if value is empty or has only one value, return error
+    if values.is_empty() || values.len() == 1 {
+        bail!("At least 2 values are needed to compute SLR");
+    }
     // TODO: handle custom compute module
     Ok("0".to_string())
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Operator {
+    None,
     Equal,
     NotEqual,
     GreaterThan,
@@ -185,6 +193,7 @@ impl FromStr for Operator {
             "gteq" => Ok(Self::GreaterThanOrEqual),
             "lt" => Ok(Self::LessThan),
             "lteq=" => Ok(Self::LessThanOrEqual),
+            "none" => Ok(Self::None),
             _ => bail!("Unknown logical operator"),
         }
     }
@@ -199,6 +208,7 @@ impl std::fmt::Display for Operator {
             Operator::GreaterThanOrEqual => "gteq",
             Operator::LessThan => "lt",
             Operator::LessThanOrEqual => "lteq",
+            Operator::None => "none",
         };
         write!(f, "{}", operator)
     }
@@ -213,6 +223,7 @@ impl Operator {
             ">=" => Ok(Self::GreaterThanOrEqual),
             "<" => Ok(Self::LessThan),
             "<=" => Ok(Self::LessThanOrEqual),
+            "none" => Ok(Self::None),
             _ => bail!("Unknown logical operator"),
         }
     }
@@ -225,18 +236,19 @@ impl Operator {
             Operator::GreaterThanOrEqual => 4,
             Operator::LessThan => 5,
             Operator::LessThanOrEqual => 6,
+            Operator::None => 0,
         }
     }
 
-    pub fn from_index(bytes: u8) -> Result<Option<Self>> {
+    pub fn from_index(bytes: u8) -> Result<Self> {
         match bytes {
-            0 => Ok(None),
-            1 => Ok(Some(Operator::Equal)),
-            2 => Ok(Some(Operator::NotEqual)),
-            3 => Ok(Some(Operator::GreaterThan)),
-            4 => Ok(Some(Operator::GreaterThanOrEqual)),
-            5 => Ok(Some(Operator::LessThan)),
-            6 => Ok(Some(Operator::LessThanOrEqual)),
+            0 => Ok(Operator::None),
+            1 => Ok(Operator::Equal),
+            2 => Ok(Operator::NotEqual),
+            3 => Ok(Operator::GreaterThan),
+            4 => Ok(Operator::GreaterThanOrEqual),
+            5 => Ok(Operator::LessThan),
+            6 => Ok(Operator::LessThanOrEqual),
             _ => bail!("Unknown logical operator"),
         }
     }

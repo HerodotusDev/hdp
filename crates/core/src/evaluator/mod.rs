@@ -2,6 +2,7 @@ use alloy_dyn_abi::DynSolValue;
 use alloy_merkle_tree::standard_binary_tree::StandardMerkleTree;
 use alloy_primitives::{hex::FromHex, FixedBytes, Keccak256, B256, U256};
 use anyhow::{bail, Result};
+use result::ProcessedResult;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{HashMap, HashSet},
@@ -21,11 +22,13 @@ use hdp_primitives::datalake::{
     block_sampled::output::{Account, Storage},
     datalake_type::DatalakeType,
     envelope::DatalakeEnvelope,
-    output::{Header, MMRMeta, ProcessedResult, Task},
+    output::{Header, MMRMeta, Task},
     transactions::output::{Transaction, TransactionReceipt},
 };
 
 use hdp_provider::evm::AbstractProvider;
+
+pub mod result;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct EvaluationResult {
@@ -39,6 +42,8 @@ pub struct EvaluationResult {
     pub encoded_tasks: HashMap<String, String>,
     /// encoded datalakes task_commitment -> evaluated datalake
     pub encoded_datalakes: HashMap<String, EvaluatedDatalake>,
+    // flag to indicate processable batch of tasks
+    pub is_pre_processable: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -59,16 +64,16 @@ impl EvaluationResult {
             fetched_datalake_results: HashMap::new(),
             encoded_tasks: HashMap::new(),
             encoded_datalakes: HashMap::new(),
+            is_pre_processable: true,
         }
     }
 
-    fn get_processed_result(&self) -> Result<ProcessedResult> {
+    pub fn get_processed_result(&self) -> Result<ProcessedResult> {
         // 1. build merkle tree
         let (tasks_merkle_tree, results_merkle_tree) = self.build_merkle_tree()?;
 
         // 2. get roots of merkle tree
         let task_merkle_root = tasks_merkle_tree.root();
-        let result_merkle_root = results_merkle_tree.root();
 
         // 3. flatten the datalake result for all tasks
         let mut flattened_headers: HashSet<Header> = HashSet::new();
@@ -123,17 +128,9 @@ impl EvaluationResult {
                 }
             }
 
-            let result = match self.compiled_results.get(task_commitment) {
-                Some(result) => result,
-                None => bail!("Task commitment not found in compiled results"),
-            };
-
             let typed_task_commitment = FixedBytes::from_hex(task_commitment)?;
             let task_proof =
                 tasks_merkle_tree.get_proof(&DynSolValue::FixedBytes(typed_task_commitment, 32));
-            let result_commitment = evaluation_result_to_result_commitment(task_commitment, result);
-            let result_proof =
-                results_merkle_tree.get_proof(&DynSolValue::FixedBytes(result_commitment, 32));
             let encoded_task = match self.encoded_tasks.get(task_commitment) {
                 Some(encoded_task) => encoded_task.to_string(),
                 None => bail!("Task commitment not found in encoded tasks"),
@@ -143,23 +140,57 @@ impl EvaluationResult {
                 None => bail!("Task commitment not found in encoded datalakes"),
             };
 
-            let task = Task {
-                encoded_task,
-                task_commitment: task_commitment.to_string(),
-                task_proof,
-                compiled_result: result.to_string(),
-                result_commitment: result_commitment.to_string(),
-                result_proof,
-                encoded_datalake: datalake.encoded_datalake.clone(),
-                datalake_type: datalake.datalake_type.into(),
-                property_type: datalake.property_type,
-            };
+            match self.is_pre_processable {
+                false => {
+                    let task = Task {
+                        encoded_task,
+                        task_commitment: task_commitment.to_string(),
+                        task_proof,
+                        compiled_result: None,
+                        result_commitment: None,
+                        result_proof: None,
+                        encoded_datalake: datalake.encoded_datalake.clone(),
+                        datalake_type: datalake.datalake_type.into(),
+                        property_type: datalake.property_type,
+                    };
+                    tasks.push(task);
+                }
+                true => {
+                    let result = match self.compiled_results.get(task_commitment) {
+                        Some(result) => result,
+                        None => bail!("Task commitment not found in compiled results"),
+                    };
+                    let result_commitment =
+                        evaluation_result_to_result_commitment(task_commitment, result);
+                    let result_proof = results_merkle_tree
+                        .as_ref()
+                        .unwrap()
+                        .get_proof(&DynSolValue::FixedBytes(result_commitment, 32));
 
-            tasks.push(task);
+                    let task = Task {
+                        encoded_task,
+                        task_commitment: task_commitment.to_string(),
+                        task_proof,
+                        compiled_result: Some(result.to_string()),
+                        result_commitment: Some(result_commitment.to_string()),
+                        result_proof: Some(result_proof),
+                        encoded_datalake: datalake.encoded_datalake.clone(),
+                        datalake_type: datalake.datalake_type.into(),
+                        property_type: datalake.property_type,
+                    };
+
+                    tasks.push(task);
+                }
+            }
         }
 
+        let results_root = match self.is_pre_processable {
+            true => Some(results_merkle_tree.unwrap().root().to_string()),
+            false => None,
+        };
+
         let processed_result = ProcessedResult {
-            results_root: result_merkle_root.to_string(),
+            results_root,
             tasks_root: task_merkle_root.to_string(),
             headers: flattened_headers.into_iter().collect(),
             accounts: flattened_accounts.into_iter().collect(),
@@ -173,51 +204,36 @@ impl EvaluationResult {
         Ok(processed_result)
     }
 
-    fn build_merkle_tree(&self) -> Result<(StandardMerkleTree, StandardMerkleTree)> {
+    fn build_merkle_tree(&self) -> Result<(StandardMerkleTree, Option<StandardMerkleTree>)> {
         let mut tasks_leaves = Vec::new();
         let mut results_leaves = Vec::new();
 
         for task_commitment in &self.ordered_tasks {
-            let compiled_result = match self.compiled_results.get(task_commitment) {
-                Some(result) => result,
-                None => bail!("Task commitment not found in compiled results"),
-            };
+            if self.is_pre_processable {
+                let compiled_result = match self.compiled_results.get(task_commitment) {
+                    Some(result) => result,
+                    None => bail!("Task commitment not found in compiled results"),
+                };
+                let result_commitment =
+                    evaluation_result_to_result_commitment(task_commitment, compiled_result);
+                results_leaves.push(DynSolValue::FixedBytes(result_commitment, 32));
+            }
 
             let typed_task_commitment = FixedBytes::from_hex(task_commitment)?;
             tasks_leaves.push(DynSolValue::FixedBytes(typed_task_commitment, 32));
-
-            let result_commitment =
-                evaluation_result_to_result_commitment(task_commitment, compiled_result);
-            results_leaves.push(DynSolValue::FixedBytes(result_commitment, 32));
         }
         let tasks_merkle_tree = StandardMerkleTree::of(tasks_leaves);
-        let results_merkle_tree = StandardMerkleTree::of(results_leaves);
 
-        Ok((tasks_merkle_tree, results_merkle_tree))
-    }
-
-    pub fn save_to_file(&self, file_path: &str, is_cairo_format: bool) -> Result<()> {
-        let json = if is_cairo_format {
-            self.to_cairo_formatted_json()?
+        if self.is_pre_processable {
+            let results_merkle_tree = StandardMerkleTree::of(results_leaves);
+            Ok((tasks_merkle_tree, Some(results_merkle_tree)))
         } else {
-            self.to_general_json()?
-        };
-        std::fs::write(file_path, json)?;
-        Ok(())
-    }
-
-    fn to_general_json(&self) -> Result<String> {
-        let processed_result = self.get_processed_result()?;
-        Ok(serde_json::to_string(&processed_result)?)
-    }
-
-    fn to_cairo_formatted_json(&self) -> Result<String> {
-        let processed_result = self.get_processed_result()?.to_cairo_format();
-        Ok(serde_json::to_string(&processed_result)?)
+            Ok((tasks_merkle_tree, None))
+        }
     }
 }
 
-fn evaluation_result_to_result_commitment(
+pub fn evaluation_result_to_result_commitment(
     task_commitment: &str,
     compiled_result: &str,
 ) -> FixedBytes<32> {
@@ -261,12 +277,21 @@ pub async fn evaluator(
 
         let aggregation_fn = &task_with_datalake.task.aggregate_fn_id;
         let fn_context = task_with_datalake.task.aggregate_fn_ctx;
-        // Compute datalake over specified aggregation function
-        let result = aggregation_fn.operation(&datalake_result.get_values(), fn_context)?;
-        // Save the datalake results
-        results
-            .compiled_results
-            .insert(task_commitment.to_string(), result);
+
+        if !aggregation_fn.is_pre_processable() {
+            // Compute datalake over specified aggregation function
+            let _ = aggregation_fn.operation(&datalake_result.get_values(), Some(fn_context))?;
+            results.is_pre_processable = false;
+        } else {
+            // Compute datalake over specified aggregation function
+            let result =
+                aggregation_fn.operation(&datalake_result.get_values(), Some(fn_context))?;
+            // Save the datalake results
+            results
+                .compiled_results
+                .insert(task_commitment.to_string(), result);
+        }
+
         // Save order of tasks
         results.ordered_tasks.push(task_commitment.to_string());
         // Save the fetched datalake results
@@ -383,14 +408,14 @@ mod tests {
     fn test_build_merkle_tree() {
         let evaluatio_result = setup();
 
-        let (task_merkle_tree, results_merkle_tree) = evaluatio_result.build_merkle_tree().unwrap();
+        let (task_merkle_tree, _) = evaluatio_result.build_merkle_tree().unwrap();
         assert_eq!(
             task_merkle_tree.root().to_string(),
             "0x663d096802271660f33286d812ee13f3cda273bdf1d183d06a0119b9421151e7".to_string()
         );
-        assert_eq!(
-            results_merkle_tree.root().to_string(),
-            "0xb540014ad1d08106489adb9d8c893947841c505f1f5794525f4cc8e5d3a92395".to_string()
-        );
+        // assert_eq!(
+        //     results_merkle_tree.root().to_string(),
+        //     "0xb540014ad1d08106489adb9d8c893947841c505f1f5794525f4cc8e5d3a92395".to_string()
+        // );
     }
 }

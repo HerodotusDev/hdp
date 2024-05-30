@@ -2,6 +2,7 @@
 
 use alloy_primitives::U256;
 use anyhow::{bail, Result};
+use cairo_runner::CairoRunner;
 use hdp_primitives::datalake::{
     block_sampled::{AccountField, BlockSampledCollectionType, BlockSampledDatalake, HeaderField},
     datalake_type::DatalakeType,
@@ -27,8 +28,9 @@ use hdp_core::{
     task::ComputationalTask,
 };
 
-use hdp_provider::evm::AbstractProvider;
+pub mod cairo_runner;
 
+use hdp_provider::evm::AbstractProvider;
 use tokio::sync::RwLock;
 use tracing::{debug, error, info, Level};
 
@@ -68,12 +70,17 @@ enum Commands {
         /// The chain id to fetch the data
         chain_id: Option<u64>,
 
-        /// Path to the file to save the output result
-        #[arg(short, long)]
-        output_file: Option<String>,
         /// Path to the file to save the input.json in cairo format
         #[arg(short, long)]
         cairo_input: Option<String>,
+
+        /// Path to the file to save the output result
+        #[arg(short, long, requires("cairo_input"))]
+        output_file: Option<String>,
+
+        /// Path to pie file
+        #[arg(short, long, requires("cairo_input"))]
+        pie_file: Option<String>,
     },
     /// Decode batch tasks and datalakes
     ///
@@ -99,19 +106,18 @@ enum Commands {
         rpc_url: Option<String>,
         /// The chain id to fetch the data
         chain_id: Option<u64>,
-        /// Path to the file to save the output result
-        #[arg(short, long)]
-        output_file: Option<String>,
 
         /// Path to the file to save the input.json in cairo format
         #[arg(short, long)]
         cairo_input: Option<String>,
-    },
-    /// Return the compiled cairo file that works with integration test
-    CompiledCairo {
-        /// Path to save the compiled cairo json file
-        #[arg(short, long)]
-        output_path: String,
+
+        /// Path to the file to save the output result
+        #[arg(short, long, requires("cairo_input"))]
+        output_file: Option<String>,
+
+        /// Path to pie file
+        #[arg(short, long, requires("cairo_input"))]
+        pie_file: Option<String>,
     },
 }
 
@@ -202,6 +208,7 @@ async fn handle_run(
     chain_id: Option<u64>,
     output_file: Option<String>,
     cairo_input: Option<String>,
+    pie_file: Option<String>,
 ) -> Result<()> {
     let config = Config::init(rpc_url, datalakes, tasks, chain_id).await;
     let provider = AbstractProvider::new(&config.rpc_url, config.chain_id, config.rpc_chunk_size);
@@ -218,14 +225,19 @@ async fn handle_run(
     {
         Ok(res) => {
             debug!("Result: {:#?}", res);
-
-            if let Some(output_file) = output_file {
-                res.save_to_file(&output_file, false)?;
-                info!("Output file saved to: {}", output_file);
-            }
+            let pre_processed_result = res.get_processed_result().unwrap();
             if let Some(cairo_input) = cairo_input {
-                res.save_to_file(&cairo_input, true)?;
+                pre_processed_result.save_to_file(&cairo_input, true)?;
                 info!("Cairo input file saved to: {}", cairo_input);
+
+                if let Some(output_file) = output_file {
+                    let runner = CairoRunner::new(pre_processed_result);
+                    let processed_result =
+                        runner.run(pie_file.unwrap(), cairo_input.clone()).unwrap();
+                    processed_result.save_to_file(&output_file, false)?;
+
+                    info!("Output file saved to: {}", output_file);
+                }
             }
 
             Ok(())
@@ -467,6 +479,16 @@ async fn main() -> Result<()> {
                         U256::from_str(&value_to_compare)?,
                     ))
                 }
+                "SLR" => {
+                    let target_index: String =
+                        inquire::Text::new("Enter the target index to compute SLR")
+                            .with_help_message("We will get y index over provided this x index")
+                            .prompt()?;
+                    Some(FunctionContext::new(
+                        Operator::None,
+                        U256::from_str(&target_index)?,
+                    ))
+                }
                 _ => None,
             };
 
@@ -506,6 +528,9 @@ async fn main() -> Result<()> {
                 let cairo_input: String = inquire::Text::new("Enter Cairo input file path:")
                     .with_default("input.json")
                     .prompt()?;
+                let pie_file: String = inquire::Text::new("Enter PIE output file path:")
+                    .with_default("hdp_pie.zip")
+                    .prompt()?;
 
                 handle_run(
                     Some(encoded_result.tasks),
@@ -514,6 +539,7 @@ async fn main() -> Result<()> {
                     chain_id,
                     Some(output_file),
                     Some(cairo_input),
+                    Some(pie_file),
                 )
                 .await?
             }
@@ -524,6 +550,7 @@ async fn main() -> Result<()> {
             chain_id,
             output_file,
             cairo_input,
+            pie_file,
             aggregate_fn_id,
             aggregate_fn_ctx,
             command,
@@ -577,6 +604,7 @@ async fn main() -> Result<()> {
                     chain_id,
                     output_file,
                     cairo_input,
+                    pie_file,
                 )
                 .await?
             }
@@ -598,6 +626,7 @@ async fn main() -> Result<()> {
             chain_id,
             output_file,
             cairo_input,
+            pie_file,
         } => {
             handle_run(
                 tasks,
@@ -606,13 +635,9 @@ async fn main() -> Result<()> {
                 chain_id,
                 output_file,
                 cairo_input,
+                pie_file,
             )
             .await?
-        }
-        Commands::CompiledCairo { output_path } => {
-            // save the compiled cairo file to the output path
-            let compiled_cairo = include_str!("../../compiled_cairo/hdp.json");
-            std::fs::write(output_path, compiled_cairo)?;
         }
     }
     let duration_run = start_run.elapsed();

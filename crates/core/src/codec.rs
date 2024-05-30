@@ -129,7 +129,7 @@ mod tests {
         AccountField, BlockSampledCollection, HeaderField,
     };
 
-    use crate::aggregate_fn::AggregationFunction;
+    use crate::aggregate_fn::{AggregationFunction, FunctionContext};
 
     use super::*;
 
@@ -148,16 +148,28 @@ mod tests {
         let decoded_tasks = tasks_decoder(encoded_tasks).unwrap();
         assert_eq!(decoded_tasks.len(), 4);
         assert_eq!(decoded_tasks[0].aggregate_fn_id, AggregationFunction::AVG);
-        assert_eq!(decoded_tasks[0].aggregate_fn_ctx, None);
+        assert_eq!(
+            decoded_tasks[0].aggregate_fn_ctx,
+            FunctionContext::default()
+        );
 
         assert_eq!(decoded_tasks[1].aggregate_fn_id, AggregationFunction::SUM);
-        assert_eq!(decoded_tasks[1].aggregate_fn_ctx, None);
+        assert_eq!(
+            decoded_tasks[1].aggregate_fn_ctx,
+            FunctionContext::default()
+        );
 
         assert_eq!(decoded_tasks[2].aggregate_fn_id, AggregationFunction::MIN);
-        assert_eq!(decoded_tasks[2].aggregate_fn_ctx, None);
+        assert_eq!(
+            decoded_tasks[2].aggregate_fn_ctx,
+            FunctionContext::default()
+        );
 
         assert_eq!(decoded_tasks[3].aggregate_fn_id, AggregationFunction::MAX);
-        assert_eq!(decoded_tasks[3].aggregate_fn_ctx, None);
+        assert_eq!(
+            decoded_tasks[3].aggregate_fn_ctx,
+            FunctionContext::default()
+        );
     }
 
     #[test]

@@ -66,6 +66,15 @@ pub struct FunctionContext {
     pub value_to_compare: U256,
 }
 
+impl Default for FunctionContext {
+    fn default() -> Self {
+        Self {
+            operator: Operator::None,
+            value_to_compare: U256::ZERO,
+        }
+    }
+}
+
 impl FromStr for FunctionContext {
     type Err = anyhow::Error;
 
@@ -144,6 +153,18 @@ impl AggregationFunction {
             AggregationFunction::SLR => {
                 integer::simple_linear_regression(&parse_int_value(values).unwrap())
             }
+        }
+    }
+
+    // Check if the function is pre-processable
+    pub fn is_pre_processable(&self) -> bool {
+        match self {
+            AggregationFunction::AVG
+            | AggregationFunction::SUM
+            | AggregationFunction::MIN
+            | AggregationFunction::MAX
+            | AggregationFunction::COUNT => true,
+            AggregationFunction::SLR | AggregationFunction::MERKLE => false,
         }
     }
 }
