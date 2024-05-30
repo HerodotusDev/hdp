@@ -109,11 +109,15 @@ pub fn split_big_endian_hex_into_parts(hex_str: &str) -> Uint256 {
 }
 
 pub fn combine_parts_into_big_endian_hex(uint256: &Uint256) -> String {
-    format!(
-        "0x{}{}",
-        uint256.high.trim_start_matches("0x"),
-        uint256.low.trim_start_matches("0x")
-    )
+    // Remove the "0x" prefix if present
+    let high = uint256.high.trim_start_matches("0x");
+    let low = uint256.low.trim_start_matches("0x");
+
+    // Ensure both parts are exactly 32 hex characters long
+    let high_padded = format!("{:0>32}", high);
+    let low_padded = format!("{:0>32}", low);
+
+    format!("0x{}{}", high_padded, low_padded)
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
@@ -133,7 +137,7 @@ pub struct Task {
     pub result_proof: Option<Vec<FixedBytes<32>>>,
     /// encoded datalake
     pub encoded_datalake: String,
-    // ex. dynamic datalake / block sampled datalake
+    // ex. block sampled datalake / transaction datalake
     pub datalake_type: u8,
     // ex. "header", "account", "storage"
     pub property_type: u8,
@@ -191,6 +195,40 @@ pub struct MMRMeta {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_combine_parts_into_big_endian_hex() {
+        let uint256 = Uint256 {
+            high: "0x988c19313bcbfb19fcc4da12e3adb46c".to_string(),
+            low: "0xf6fbdd08af91b1d8df80c6e755159f1".to_string(),
+        };
+        let result = combine_parts_into_big_endian_hex(&uint256);
+        assert_eq!(
+            result,
+            "0x988c19313bcbfb19fcc4da12e3adb46c0f6fbdd08af91b1d8df80c6e755159f1"
+        );
+
+        let uint256 = Uint256 {
+            high: "0x988c19313bcbfb19fcc4da12e3adb46".to_string(),
+            low: "0xf6fbdd08af91b1d8df80c6e755159f1".to_string(),
+        };
+        let result = combine_parts_into_big_endian_hex(&uint256);
+        assert_eq!(
+            result,
+            "0x0988c19313bcbfb19fcc4da12e3adb460f6fbdd08af91b1d8df80c6e755159f1"
+        );
+
+        let uint256 = Uint256 {
+            high: "0x988c19313bcbfb19fcc4da12e3adb4".to_string(),
+            low: "0xf6fbdd08af91b1d8df80c6e755159f1".to_string(),
+        };
+
+        let result = combine_parts_into_big_endian_hex(&uint256);
+        assert_eq!(
+            result,
+            "0x00988c19313bcbfb19fcc4da12e3adb40f6fbdd08af91b1d8df80c6e755159f1"
+        );
+    }
 
     #[test]
     fn test_split_big_endian_hex_into_parts() {
