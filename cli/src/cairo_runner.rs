@@ -3,6 +3,7 @@ use hdp_core::evaluator::evaluation_result_to_result_commitment;
 use hdp_core::evaluator::result::ProcessedResult;
 use std::process::{Command, Stdio};
 use std::{error::Error, fs};
+use tracing::{debug, info};
 
 use anyhow::bail;
 use hdp_primitives::datalake::output::{combine_parts_into_big_endian_hex, Uint256};
@@ -40,7 +41,6 @@ impl CairoRunner {
             return Err("Cairo compilation failed".into());
         }
 
-        println!("cairo pie file path: {}", cairo_pie_file_path);
         let task = Command::new("cairo-run")
             .arg("--program")
             .arg(COMPILED_CAIRO_PATH)
@@ -58,10 +58,10 @@ impl CairoRunner {
         let output_str = String::from_utf8_lossy(&output.stdout);
         let result = self.parse_output(output_str.to_string())?;
         let final_result = self.construct_final_output(result)?;
-        println!("Final result: {:#?}", final_result.tasks);
-        println!("Final result root: {:#?}", final_result.results_root);
-        // if success, print success
-        println!("Cairo program ran successfully");
+        debug!("Final result: {:#?}", final_result.tasks);
+        debug!("Final result root: {:#?}", final_result.results_root);
+
+        info!("Cairo pie file saved in : {}", cairo_pie_file_path);
 
         Ok(final_result)
     }
