@@ -42,6 +42,7 @@ impl AbstractProvider {
         }
     }
 
+    /// This is the public entry point of provider.  
     pub async fn get_fetch_points(&self, fetch_points: Vec<String>) -> Vec<String> {
         todo!("Fetch proofs from provider by using fetch points");
     }
