@@ -3,13 +3,18 @@
 use alloy_primitives::U256;
 use anyhow::{bail, Result};
 use cairo_runner::CairoRunner;
-use hdp_primitives::datalake::{
-    block_sampled::{AccountField, BlockSampledCollectionType, BlockSampledDatalake, HeaderField},
-    datalake_type::DatalakeType,
-    envelope::DatalakeEnvelope,
-    transactions::{
-        TransactionField, TransactionReceiptField, TransactionsCollectionType,
-        TransactionsInBlockDatalake,
+use hdp_primitives::{
+    aggregate_fn::{integer::Operator, FunctionContext},
+    datalake::{
+        block_sampled::{
+            AccountField, BlockSampledCollectionType, BlockSampledDatalake, HeaderField,
+        },
+        datalake_type::DatalakeType,
+        envelope::DatalakeEnvelope,
+        transactions::{
+            TransactionField, TransactionReceiptField, TransactionsCollectionType,
+            TransactionsInBlockDatalake,
+        },
     },
 };
 use inquire::{error::InquireError, Select};
@@ -18,7 +23,6 @@ use tracing_subscriber::FmtSubscriber;
 
 use clap::{Parser, Subcommand};
 use hdp_core::{
-    aggregate_fn::{integer::Operator, FunctionContext},
     codec::{
         datalake_decoder, datalakes_decoder, datalakes_encoder, task_decoder, tasks_decoder,
         tasks_encoder,

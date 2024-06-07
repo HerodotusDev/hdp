@@ -125,11 +125,10 @@ mod tests {
     use std::str::FromStr;
 
     use alloy_primitives::Address;
-    use hdp_primitives::datalake::block_sampled::{
-        AccountField, BlockSampledCollection, HeaderField,
+    use hdp_primitives::{
+        aggregate_fn::{AggregationFunction, FunctionContext},
+        datalake::block_sampled::{AccountField, BlockSampledCollection, HeaderField},
     };
-
-    use crate::aggregate_fn::{AggregationFunction, FunctionContext};
 
     use super::*;
 
