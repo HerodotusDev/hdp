@@ -1,6 +1,12 @@
 [workspace]
 resolver = "2"
-members = ["cli", "crates/core", "crates/provider", "crates/primitives"]
+members = [
+    "cli",
+    "crates/core",
+    "crates/provider",
+    "crates/primitives",
+    "crates/compiler",
+]
 
 [workspace.package]
 version = "0.2.0"
@@ -13,6 +19,7 @@ repository = "https://github.com/HerodotusDev/hdp"
 hdp-core = { version = "0.2.0", path = "crates/core" }
 hdp-primitives = { version = "0.2.0", path = "crates/primitives" }
 hdp-provider = { version = "0.2.0", path = "crates/provider" }
+hdp-compiler = { version = "0.2.0", path = "crates/compiler" }
 tokio = { version = "1", features = ["full"] }
 alloy-dyn-abi = "0.6.2"
 alloy-primitives = { version = "0.6.2", feature = ["rlp"] }

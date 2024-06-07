@@ -11,10 +11,9 @@ use std::{
 };
 use tokio::sync::RwLock;
 
-use crate::{
-    compiler::{CompiledDatalakeEnvelope, DatalakeCompiler},
-    task::ComputationalTaskWithDatalake,
-};
+use hdp_compiler::{CompiledDatalakeEnvelope, DatalakeCompiler};
+
+use crate::task::ComputationalTaskWithDatalake;
 
 use super::task::ComputationalTask;
 
@@ -319,7 +318,7 @@ pub async fn evaluator(
 #[cfg(test)]
 mod tests {
 
-    use crate::compiler::block_sampled::CompiledBlockSampledDatalake;
+    use hdp_compiler::block_sampled::CompiledBlockSampledDatalake;
 
     use super::*;
     use hdp_primitives::datalake::output::*;
