@@ -4,9 +4,12 @@ use alloy_dyn_abi::{DynSolType, DynSolValue};
 use alloy_primitives::{hex::FromHex, keccak256, FixedBytes, U256};
 use anyhow::{bail, Result};
 
-use hdp_primitives::{datalake::envelope::DatalakeEnvelope, utils::bytes_to_hex_string};
-
-use crate::aggregate_fn::{integer::Operator, AggregationFunction, FunctionContext};
+use hdp_primitives::aggregate_fn::integer::Operator;
+use hdp_primitives::aggregate_fn::FunctionContext;
+use hdp_primitives::{
+    aggregate_fn::AggregationFunction, datalake::envelope::DatalakeEnvelope,
+    utils::bytes_to_hex_string,
+};
 
 #[derive(Debug)]
 pub struct ComputationalTaskWithDatalake {
