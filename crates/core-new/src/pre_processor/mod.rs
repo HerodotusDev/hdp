@@ -1,7 +1,10 @@
 use std::vec;
 
-use crate::{cairo_runner::pre_run::PreRunner, input_generator::r#type::PreProcessorInput};
+use crate::cairo_runner::pre_run::PreRunner;
+use crate::pre_processor::input::PreProcessorInput;
 use anyhow::Result;
+
+pub mod input;
 
 pub struct PreProcessResult {
     /// Fetch points are the values that are required to run the module
@@ -35,12 +38,12 @@ impl PreProcessor {
     /// Then it will run the preprocessor and return the result, fetch points
     /// Fetch points are the values that are required to run the module
     pub fn process(&self, module_hash: String, module_input: Vec<u8>) -> Result<PreProcessResult> {
-        let input = self.generate_input(module_hash, module_input);
+        let input = self.generate_input(module_hash.clone(), module_input);
         let input_bytes = input.to_bytes();
         let points = self.pre_runner.run(input_bytes.to_vec())?;
         Ok(PreProcessResult {
             fetch_points: points,
-            module_hash: input.module_hash.to_string(),
+            module_hash,
         })
     }
 
