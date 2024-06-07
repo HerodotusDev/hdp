@@ -20,6 +20,12 @@ pub struct RunResult {
 
 pub struct Runner {}
 
+impl Default for Runner {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Runner {
     pub fn new() -> Self {
         Self {}

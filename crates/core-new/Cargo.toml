@@ -14,3 +14,4 @@ anyhow.workspace = true
 tracing.workspace = true
 tempfile.workspace = true
 regex.workspace = true
+starknet-crypto.workspace = true
