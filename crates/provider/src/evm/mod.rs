@@ -42,6 +42,10 @@ impl AbstractProvider {
         }
     }
 
+    pub async fn get_fetch_points(&self, fetch_points: Vec<String>) -> Vec<String> {
+        todo!("Fetch proofs from provider by using fetch points");
+    }
+
     // TODO: wip
     pub async fn get_sequencial_full_header_with_proof(
         &self,
