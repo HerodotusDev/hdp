@@ -1,3 +1,11 @@
+use r#type::PreProcessorInput;
+
+pub mod r#type;
+/*
+    InputGenerator is responsible for generating the input file for the runner.
+    All runner requires input.json file to run target cairo program.
+    This struct is responsible for generating the input struct, which able to converted to json.
+*/
 pub struct InputGenerator {}
 
 impl InputGenerator {
@@ -5,12 +13,7 @@ impl InputGenerator {
         Self {}
     }
 
-    pub fn pre_run_input(&self) {
-        // generate input file from fetch points
-        // 1. fetch proofs from provider by using fetch points
-
-        // 2. generate input struct with proofs and module bytes
-
-        // 3. pass the input file to the runner
+    pub fn pre_run_input(&self) -> PreProcessorInput {
+        todo!("Generate input for pre-runner")
     }
 }
