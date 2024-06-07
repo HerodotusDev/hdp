@@ -8,17 +8,18 @@ use crate::module::Module;
 pub struct ProcessorInput {
     /// Detail sierra code of the module.
     /// This will be loaded to bootloader.
+    // TODO: potentially we can merge multiple modules into one file
     module_bytes: Vec<u8>,
-    module: Module,
+    modules: Vec<Module>,
     /// Fetched proofs per each fetch point.
     proofs: Vec<String>,
 }
 
 impl ProcessorInput {
-    pub fn new(module_bytes: Vec<u8>, module: Module, proofs: Vec<String>) -> Self {
+    pub fn new(module_bytes: Vec<u8>, modules: Vec<Module>, proofs: Vec<String>) -> Self {
         Self {
             module_bytes,
-            module,
+            modules,
             proofs,
         }
     }
