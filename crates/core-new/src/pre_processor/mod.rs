@@ -45,9 +45,10 @@ where
     pub async fn process(&self, module: Module) -> Result<PreProcessResult<T>> {
         // 1. generate input data required for preprocessor
         let input = self.generate_input(module).await?;
-        let input_bytes = input.to_bytes();
+        let input_string = serde_json::to_string_pretty(&input.get_module_casm())
+            .expect("Failed to serialize module_casm");
         // 2. run the preprocessor and get the fetch points
-        let keys = self.pre_runner.run(input_bytes.to_vec())?;
+        let keys = self.pre_runner.run(input_string)?;
         Ok(PreProcessResult {
             fetch_keys: keys,
             module: input.get_module(),

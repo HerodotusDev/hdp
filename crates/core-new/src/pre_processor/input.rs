@@ -1,4 +1,4 @@
-use cairo_lang_sierra_to_casm::compiler::CairoProgram;
+use cairo_lang_starknet_classes::casm_contract_class::CasmContractClass;
 
 use crate::module::Module;
 
@@ -9,25 +9,20 @@ use crate::module::Module;
 
 pub struct PreProcessorInput {
     module: Module,
-    /// Detail sierra code of the module.
+    /// Detail casm code of the module.
     /// This will be loaded to bootloader.
-    module_casm: CairoProgram,
+    module_casm: CasmContractClass,
 }
 
 impl PreProcessorInput {
-    pub fn new(module: Module, module_casm: CairoProgram) -> Self {
+    pub fn new(module: Module, module_casm: CasmContractClass) -> Self {
         Self {
             module,
             module_casm,
         }
     }
 
-    /// Turn into bytes type so to write to file.
-    pub fn to_bytes(&self) -> Vec<u8> {
-        todo!("Convert PreProcessorInput to json")
-    }
-
-    pub fn get_module_casm(&self) -> CairoProgram {
+    pub fn get_module_casm(&self) -> CasmContractClass {
         self.module_casm.clone()
     }
 

@@ -1,6 +1,6 @@
 use anyhow::Result;
 use hdp_provider::key::FetchKey;
-use std::io::Write;
+use std::fs;
 use std::path::Path;
 use std::process::{Command, Stdio};
 use tempfile::NamedTempFile;
@@ -51,13 +51,13 @@ where
     }
 
     /// Pre run to return requested values
-    pub fn run(&self, input_bytes: Vec<u8>) -> Result<Vec<T>> {
-        if input_bytes.is_empty() {
+    pub fn run(&self, input_string: String) -> Result<Vec<T>> {
+        if input_string.is_empty() {
             bail!("Input file is empty");
         }
-        let mut input_file = NamedTempFile::new()?;
-        input_file.write_all(&input_bytes)?;
+        let input_file = NamedTempFile::new()?;
         let input_file_path = input_file.path();
+        fs::write(input_file_path, input_string).expect("Failed to write input file");
         let output = self._run(input_file_path)?;
 
         // parse output to return dry run result

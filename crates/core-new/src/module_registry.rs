@@ -2,13 +2,13 @@
 //! It fetch contract class from the StarkNet network and compile it to the casm.
 
 use anyhow::{bail, Result};
-use cairo_lang_sierra::program::Program;
-use cairo_lang_sierra_to_casm::compiler::{self, CairoProgram};
-use serde_json::{json, Value};
+use cairo_lang_starknet_classes::casm_contract_class::CasmContractClass;
 use starknet::{
     core::types::{BlockId, BlockTag, ContractClass, FieldElement},
     providers::{jsonrpc::HttpTransport, JsonRpcClient, Provider, Url},
 };
+
+use crate::conversion::flattened_sierra_to_compiled_class;
 
 pub struct ModuleRegistry {
     provider: JsonRpcClient<HttpTransport>,
@@ -20,7 +20,7 @@ impl ModuleRegistry {
         Self { provider }
     }
 
-    pub async fn get_module(&self, contract_address: FieldElement) -> Result<CairoProgram> {
+    pub async fn get_module(&self, contract_address: FieldElement) -> Result<CasmContractClass> {
         let contract_class = self
             ._starknet_get_class(BlockId::Tag(BlockTag::Latest), contract_address)
             .await?;
@@ -28,8 +28,7 @@ impl ModuleRegistry {
             ContractClass::Sierra(sierra) => sierra,
             _ => bail!("cairo1 module should have sierra as class"),
         };
-        // TODO: sierra to casm
-        todo!()
+        flattened_sierra_to_compiled_class(&sierra)
     }
 
     async fn _starknet_get_class(

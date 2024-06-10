@@ -6,6 +6,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use cairo_lang_sierra_to_casm::compiler::CairoProgram;
+use cairo_lang_starknet_classes::casm_contract_class::CasmContractClass;
 use futures::future::join_all;
 use hdp_provider::key::FetchKey;
 use input::ProcessorInput;
@@ -70,7 +71,7 @@ where
     async fn _process_modules_in_parallel(
         &self,
         module_hashes: Vec<FieldElement>,
-    ) -> Result<Vec<CairoProgram>> {
+    ) -> Result<Vec<CasmContractClass>> {
         let registry = Arc::clone(&self.module_registry);
         // Map each module to an asynchronous task
         let module_futures: Vec<_> = module_hashes
