@@ -48,7 +48,7 @@ impl PreProcessor {
             serde_json::to_string_pretty(&input).expect("Failed to serialize module_casm");
 
         // //save into file
-        // fs::write("input.json", input_string.clone()).expect("Unable to write file");
+        fs::write("input.json", input_string.clone()).expect("Unable to write file");
         // 2. run the preprocessor and get the fetch points
         let keys = self.pre_runner.run(input_string)?;
         Ok(PreProcessResult {
@@ -64,5 +64,21 @@ impl PreProcessor {
 
         // TODO: generate input data and make it ready to seialize as bytes
         Ok(PreProcessorInput::new(module, module_casm))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use starknet::macros::felt;
+
+    use super::*;
+    use crate::module::{Module, ModuleTag};
+
+    #[tokio::test]
+    async fn test_pre_processor() {
+        let url = "https://starknet-sepolia.g.alchemy.com/v2/lINonYKIlp4NH9ZI6wvqJ4HeZj7T4Wm6";
+        let pre_processor = PreProcessor::new(url);
+        let module = Module::from_tag(ModuleTag::TEST, vec![felt!("1"), felt!("2")]);
+        let res = pre_processor.process(module).await.unwrap();
     }
 }
