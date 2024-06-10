@@ -1,5 +1,5 @@
 use anyhow::Result;
-use hdp_provider::key::FetchKey;
+use hdp_provider::key::FetchKeyEnvelope;
 use std::fs;
 use std::path::Path;
 use std::process::{Command, Stdio};
@@ -10,27 +10,17 @@ use regex::Regex;
 
 const PRE_RUN_CAIRO_PROGRAM: &str = "build/compiled_cairo/hdp.json";
 
-pub struct PreRunner<T> {
-    _phantom: std::marker::PhantomData<T>,
-}
+pub struct PreRunner {}
 
-impl<T: FetchKey> Default for PreRunner<T>
-where
-    <T as std::str::FromStr>::Err: std::fmt::Debug,
-{
+impl Default for PreRunner {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<T: FetchKey> PreRunner<T>
-where
-    <T as std::str::FromStr>::Err: std::fmt::Debug,
-{
+impl PreRunner {
     pub fn new() -> Self {
-        Self {
-            _phantom: std::marker::PhantomData,
-        }
+        Self {}
     }
 
     fn _run(&self, input_file_path: &Path) -> Result<String> {
@@ -51,7 +41,7 @@ where
     }
 
     /// Pre run to return requested values
-    pub fn run(&self, input_string: String) -> Result<Vec<T>> {
+    pub fn run(&self, input_string: String) -> Result<Vec<FetchKeyEnvelope>> {
         if input_string.is_empty() {
             bail!("Input file is empty");
         }
@@ -66,12 +56,12 @@ where
     }
 
     /// Parse the output of the dry run command
-    fn parse_run(&self, output: String) -> Result<Vec<T>> {
+    fn parse_run(&self, output: String) -> Result<Vec<FetchKeyEnvelope>> {
         let task_result_re = Regex::new(r"Task Result\((\d+)\): (\S+)").unwrap();
         let mut task_results = vec![];
         for caps in task_result_re.captures_iter(&output) {
             let _ = &caps[1];
-            let value: T = caps[2]
+            let value: FetchKeyEnvelope = caps[2]
                 .parse()
                 .expect("Failed to parse Fetch Key from output");
             // from_str is implemented for FetchKey

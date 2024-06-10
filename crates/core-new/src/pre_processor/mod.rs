@@ -8,28 +8,25 @@ use crate::module::Module;
 use crate::module_registry::ModuleRegistry;
 use crate::pre_processor::input::PreProcessorInput;
 use anyhow::Result;
-use hdp_provider::key::FetchKey;
+use hdp_provider::key::FetchKeyEnvelope;
 use starknet::providers::Url;
 
 pub mod input;
 
-pub struct PreProcessResult<T: FetchKey> {
+pub struct PreProcessResult {
     /// Fetch points are the values that are required to run the module
-    pub fetch_keys: Vec<T>,
+    pub fetch_keys: Vec<FetchKeyEnvelope>,
     /// Module hash is the hash of the module that is being processed
     module: Module,
 }
 
-pub struct PreProcessor<T> {
-    pre_runner: PreRunner<T>,
+pub struct PreProcessor {
+    pre_runner: PreRunner,
     /// Registery provider
     module_registry: ModuleRegistry,
 }
 
-impl<T: FetchKey> PreProcessor<T>
-where
-    <T as std::str::FromStr>::Err: std::fmt::Debug,
-{
+impl PreProcessor {
     pub fn new(url: &str) -> Self {
         let url = Url::parse(url).expect("Invalid url");
         let module_registry = ModuleRegistry::new(url);
@@ -44,7 +41,7 @@ where
     /// First it will generate input structure for preprocessor that need to pass to runner
     /// Then it will run the preprocessor and return the result, fetch points
     /// Fetch points are the values that are required to run the module
-    pub async fn process(&self, module: Module) -> Result<PreProcessResult<T>> {
+    pub async fn process(&self, module: Module) -> Result<PreProcessResult> {
         // 1. generate input data required for preprocessor
         let input = self.generate_input(module).await?;
         let input_string =

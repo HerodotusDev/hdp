@@ -5,10 +5,9 @@
 use std::sync::Arc;
 
 use anyhow::Result;
-use cairo_lang_sierra_to_casm::compiler::CairoProgram;
 use cairo_lang_starknet_classes::casm_contract_class::CasmContractClass;
 use futures::future::join_all;
-use hdp_provider::key::FetchKey;
+use hdp_provider::key::FetchKeyEnvelope;
 use input::ProcessorInput;
 use starknet::{core::types::FieldElement, providers::Url};
 use tokio::task;
@@ -21,29 +20,28 @@ use crate::{
 
 pub mod input;
 
-pub struct Processor<T> {
-    _phantom: std::marker::PhantomData<T>,
+pub struct Processor {
     runner: Runner,
     /// Registery provider
     module_registry: Arc<ModuleRegistry>,
 }
 
-impl<T: FetchKey> Processor<T>
-where
-    <T as std::str::FromStr>::Err: std::fmt::Debug,
-{
+impl Processor {
     pub fn new(url: &str) -> Self {
         let url = Url::parse(url).expect("Invalid url");
         let module_registry = ModuleRegistry::new(url);
         let runner = Runner::new();
         Self {
-            _phantom: std::marker::PhantomData,
             runner,
             module_registry: Arc::new(module_registry),
         }
     }
 
-    pub async fn process(&self, modules: Vec<Module>, fetch_keys: Vec<T>) -> Result<RunResult> {
+    pub async fn process(
+        &self,
+        modules: Vec<Module>,
+        fetch_keys: Vec<FetchKeyEnvelope>,
+    ) -> Result<RunResult> {
         // generate input file from fetch points
         // 1. fetch proofs from provider by using fetch points
         let proofs = vec![];

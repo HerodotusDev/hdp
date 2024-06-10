@@ -40,53 +40,12 @@ pub struct HeaderProviderKey {
     pub block_number: BlockNumber,
 }
 
-// TODO: Temporary implemented from string approach, but need to sync with how bootloader will emit the keys.
-impl FromStr for HeaderProviderKey {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let parts: Vec<&str> = s.split('_').collect();
-        if parts.len() != 2 {
-            anyhow::bail!("Invalid header provider key: {}", s);
-        }
-
-        let chain_id = parts[0].parse()?;
-        let block_number = parts[1].parse()?;
-
-        Ok(HeaderProviderKey {
-            chain_id,
-            block_number,
-        })
-    }
-}
-
 /// Key for fetching account from provider.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AccountProviderKey {
     pub chain_id: ChainId,
     pub block_number: BlockNumber,
     pub address: Address,
-}
-
-impl FromStr for AccountProviderKey {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let parts: Vec<&str> = s.split('_').collect();
-        if parts.len() != 3 {
-            anyhow::bail!("Invalid account provider key: {}", s);
-        }
-
-        let chain_id = parts[0].parse()?;
-        let block_number = parts[1].parse()?;
-        let address = parts[2].parse()?;
-
-        Ok(AccountProviderKey {
-            chain_id,
-            block_number,
-            address,
-        })
-    }
 }
 
 /// Key for fetching storage value from provider.
@@ -98,31 +57,49 @@ pub struct StorageProviderKey {
     pub key: StorageKey,
 }
 
-impl FromStr for StorageProviderKey {
+// TODO: Temporary implemented from string approach, but need to sync with how bootloader will emit the keys
+pub enum FetchKeyEnvelope {
+    Header(HeaderProviderKey),
+    Account(AccountProviderKey),
+    Storage(StorageProviderKey),
+}
+
+impl FromStr for FetchKeyEnvelope {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let parts: Vec<&str> = s.split('_').collect();
-        if parts.len() != 4 {
-            anyhow::bail!("Invalid storage provider key: {}", s);
+        if parts.len() < 2 {
+            anyhow::bail!("Invalid fetch key envelope: {}", s);
         }
 
         let chain_id = parts[0].parse()?;
         let block_number = parts[1].parse()?;
-        let address = parts[2].parse()?;
-        let key = parts[3].parse()?;
 
-        Ok(StorageProviderKey {
-            chain_id,
-            block_number,
-            address,
-            key,
-        })
+        match parts.len() {
+            2 => Ok(FetchKeyEnvelope::Header(HeaderProviderKey {
+                chain_id,
+                block_number,
+            })),
+            3 => {
+                let address = parts[2].parse()?;
+                Ok(FetchKeyEnvelope::Account(AccountProviderKey {
+                    chain_id,
+                    block_number,
+                    address,
+                }))
+            }
+            4 => {
+                let address = parts[2].parse()?;
+                let key = parts[3].parse()?;
+                Ok(FetchKeyEnvelope::Storage(StorageProviderKey {
+                    chain_id,
+                    block_number,
+                    address,
+                    key,
+                }))
+            }
+            _ => anyhow::bail!("Invalid fetch key envelope: {}", s),
+        }
     }
 }
-
-pub trait FetchKey: std::fmt::Debug + std::hash::Hash + Clone + FromStr {}
-
-impl FetchKey for HeaderProviderKey {}
-impl FetchKey for AccountProviderKey {}
-impl FetchKey for StorageProviderKey {}
