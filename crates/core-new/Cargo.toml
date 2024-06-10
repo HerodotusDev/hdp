@@ -10,6 +10,7 @@ repository.workspace = true
 
 [dependencies]
 hdp-primitives.workspace = true
+hdp-provider.workspace = true
 anyhow.workspace = true
 tracing.workspace = true
 tempfile.workspace = true
