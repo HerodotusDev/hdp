@@ -59,22 +59,22 @@ where
         proofs: Vec<String>,
         modules: Vec<Module>,
     ) -> Result<ProcessorInput> {
-        let module_hashes: Vec<FieldElement> = modules
+        let class_hashes: Vec<FieldElement> = modules
             .iter()
-            .map(|module| module.get_module_hash())
+            .map(|module| module.get_class_hash())
             .collect();
-        let modules_casm = self._process_modules_in_parallel(module_hashes).await?;
+        let modules_casm = self._process_modules_in_parallel(class_hashes).await?;
 
         Ok(ProcessorInput::new(modules_casm, modules, proofs))
     }
 
     async fn _process_modules_in_parallel(
         &self,
-        module_hashes: Vec<FieldElement>,
+        class_hashes: Vec<FieldElement>,
     ) -> Result<Vec<CasmContractClass>> {
         let registry = Arc::clone(&self.module_registry);
         // Map each module to an asynchronous task
-        let module_futures: Vec<_> = module_hashes
+        let module_futures: Vec<_> = class_hashes
             .into_iter()
             .map(|hash| {
                 let module_registry = Arc::clone(&registry);

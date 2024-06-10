@@ -57,8 +57,8 @@ where
 
     /// Generate input structure for preprocessor that need to pass to runner
     pub async fn generate_input(&self, module: Module) -> Result<PreProcessorInput> {
-        let module_hash = module.get_module_hash();
-        let module_casm = self.module_registry.get_module(module_hash).await?;
+        let class_hash = module.get_class_hash();
+        let module_casm = self.module_registry.get_module(class_hash).await?;
 
         // TODO: generate input data and make it ready to seialize as bytes
         Ok(PreProcessorInput::new(module, module_casm))
