@@ -76,7 +76,7 @@ impl Processor {
             .into_iter()
             .map(|hash| {
                 let module_registry = Arc::clone(&registry);
-                task::spawn(async move { module_registry.get_module(hash).await })
+                task::spawn(async move { module_registry.get_module_class(hash).await })
             })
             .collect();
 

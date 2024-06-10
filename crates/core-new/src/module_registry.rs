@@ -20,7 +20,7 @@ impl ModuleRegistry {
         Self { provider }
     }
 
-    pub async fn get_module(&self, class_hash: FieldElement) -> Result<CasmContractClass> {
+    pub async fn get_module_class(&self, class_hash: FieldElement) -> Result<CasmContractClass> {
         let contract_class = self
             ._starknet_get_class(BlockId::Tag(BlockTag::Latest), class_hash)
             .await?;
@@ -64,7 +64,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_module() {
         let (module_registry, class_hash) = init();
-        let casm_from_rpc = module_registry.get_module(class_hash).await.unwrap();
+        let casm_from_rpc = module_registry.get_module_class(class_hash).await.unwrap();
 
         assert_eq!(casm_from_rpc, TEST_CONTRACT_CASM.clone());
     }

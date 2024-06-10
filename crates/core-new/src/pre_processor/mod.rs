@@ -45,7 +45,7 @@ impl PreProcessor {
         // 1. generate input data required for preprocessor
         let input = self.generate_input(module).await?;
         let input_string =
-            serde_json::to_string_pretty(&input).expect("Failed to serialize module_casm");
+            serde_json::to_string_pretty(&input).expect("Failed to serialize module class");
 
         // //save into file
         fs::write("input.json", input_string.clone()).expect("Unable to write file");
@@ -60,10 +60,10 @@ impl PreProcessor {
     /// Generate input structure for preprocessor that need to pass to runner
     pub async fn generate_input(&self, module: Module) -> Result<PreProcessorInput> {
         let class_hash = module.get_class_hash();
-        let module_casm = self.module_registry.get_module(class_hash).await?;
+        let module_class = self.module_registry.get_module_class(class_hash).await?;
 
         // TODO: generate input data and make it ready to seialize as bytes
-        Ok(PreProcessorInput::new(module, module_casm))
+        Ok(PreProcessorInput::new(module, module_class))
     }
 }
 

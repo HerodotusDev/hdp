@@ -8,19 +8,19 @@ pub struct PreProcessorInput {
     module: Module,
     /// Detail casm code of the module.
     /// This will be loaded to bootloader.
-    module_casm: CasmContractClass,
+    module_class: CasmContractClass,
 }
 
 impl PreProcessorInput {
-    pub fn new(module: Module, module_casm: CasmContractClass) -> Self {
+    pub fn new(module: Module, module_class: CasmContractClass) -> Self {
         Self {
             module,
-            module_casm,
+            module_class,
         }
     }
 
-    pub fn get_module_casm(&self) -> CasmContractClass {
-        self.module_casm.clone()
+    pub fn get_module_class(&self) -> CasmContractClass {
+        self.module_class.clone()
     }
 
     pub fn get_module(&self) -> Module {
