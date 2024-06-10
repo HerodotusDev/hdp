@@ -1059,6 +1059,7 @@ dependencies = [
  "futures",
  "hdp-primitives",
  "hdp-provider",
+ "lazy_static",
  "regex",
  "serde_json",
  "starknet",

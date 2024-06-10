@@ -38,6 +38,7 @@ starknet = "0.10.0"
 cairo-lang-sierra-to-casm = "2.6.3"
 cairo-lang-starknet-classes = "2.6.3"
 futures = "0.3.30"
+lazy_static = "1.4.0"
 
 # TODO: ideally should published
 eth-trie-proofs = { git = "https://github.com/HerodotusDev/eth-trie-proofs.git", branch = "main" }

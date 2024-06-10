@@ -6,19 +6,16 @@ use starknet::core::types::FlattenedSierraClass;
 
 /// Convert the given [FlattenedSierraClass] into [CasmContractClass].
 pub fn flattened_sierra_to_compiled_class(
-    contract_class: &FlattenedSierraClass,
+    sierra: &FlattenedSierraClass,
 ) -> Result<CasmContractClass> {
-    let class_hash = contract_class.class_hash();
-    let class = rpc_to_cairo_contract_class(contract_class)?;
-    let program = class.extract_sierra_program()?;
-    let entry_points_by_type = class.entry_points_by_type.clone();
+    let class = rpc_to_cairo_contract_class(sierra)?;
     let casm = CasmContractClass::from_contract_class(class, true, usize::MAX)?;
     Ok(casm)
 }
 
 /// Converts RPC [FlattenedSierraClass] type to Cairo's [ContractClass] type.
-fn rpc_to_cairo_contract_class(contract_class: &FlattenedSierraClass) -> Result<ContractClass> {
-    let value = serde_json::to_value(contract_class)?;
+fn rpc_to_cairo_contract_class(sierra: &FlattenedSierraClass) -> Result<ContractClass> {
+    let value = serde_json::to_value(sierra)?;
 
     Ok(ContractClass {
         abi: serde_json::from_value(value["abi"].clone()).ok(),
