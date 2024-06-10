@@ -1,14 +1,13 @@
-use starknet_crypto::FieldElement;
+//! Module is the unit of pre-processing.
+//! It contains the hash and the input.
+//! This is request interface for the preprocessor.
 
-/*
-    Module is the unit of pre-processing.
-    It contains the hash and the input.
-    This is request interface for the preprocessor.
-*/
+use starknet::core::types::FieldElement;
 
 #[derive(Clone)]
 pub struct Module {
     /// Requested module hash identifier.
+    /// This is contract address of the module.
     hash: FieldElement,
     /// The input of the module.
     input: Vec<FieldElement>,
