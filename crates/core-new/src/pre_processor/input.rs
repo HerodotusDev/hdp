@@ -1,3 +1,5 @@
+use cairo_lang_sierra_to_casm::compiler::CairoProgram;
+
 use crate::module::Module;
 
 /*
@@ -9,14 +11,14 @@ pub struct PreProcessorInput {
     module: Module,
     /// Detail sierra code of the module.
     /// This will be loaded to bootloader.
-    module_bytes: Vec<u8>,
+    module_casm: CairoProgram,
 }
 
 impl PreProcessorInput {
-    pub fn new(module: Module, module_bytes: Vec<u8>) -> Self {
+    pub fn new(module: Module, module_casm: CairoProgram) -> Self {
         Self {
             module,
-            module_bytes,
+            module_casm,
         }
     }
 
@@ -25,8 +27,8 @@ impl PreProcessorInput {
         todo!("Convert PreProcessorInput to json")
     }
 
-    pub fn get_module_bytes(&self) -> Vec<u8> {
-        self.module_bytes.clone()
+    pub fn get_module_casm(&self) -> CairoProgram {
+        self.module_casm.clone()
     }
 
     pub fn get_module(&self) -> Module {

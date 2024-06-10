@@ -19,3 +19,5 @@ starknet.workspace = true
 serde_json.workspace = true
 cairo-lang-sierra-to-casm.workspace = true
 cairo-lang-sierra.workspace = true
+tokio.workspace = true
+futures.workspace = true

@@ -1031,12 +1031,14 @@ dependencies = [
  "anyhow",
  "cairo-lang-sierra",
  "cairo-lang-sierra-to-casm",
+ "futures",
  "hdp-primitives",
  "hdp-provider",
  "regex",
  "serde_json",
  "starknet",
  "tempfile",
+ "tokio",
  "tracing",
 ]
 
