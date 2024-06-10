@@ -1,4 +1,9 @@
+//! Processor is reponsible for running the module.
+//! This run is sound execution of the module.
+//! This will be most abstract layer of the processor.
+
 use anyhow::Result;
+use hdp_provider::key::FetchKey;
 use input::ProcessorInput;
 
 use crate::{
@@ -8,28 +13,33 @@ use crate::{
 
 pub mod input;
 
-/*
-    Processor is reponsible for running the module.
-    This run is sound execution of the module.
-    This will be most abstract layer of the processor.
-*/
-pub struct Processor {
+pub struct Processor<T> {
+    _phantom: std::marker::PhantomData<T>,
     runner: Runner,
 }
 
-impl Default for Processor {
+impl<T: FetchKey> Default for Processor<T>
+where
+    <T as std::str::FromStr>::Err: std::fmt::Debug,
+{
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl Processor {
+impl<T: FetchKey> Processor<T>
+where
+    <T as std::str::FromStr>::Err: std::fmt::Debug,
+{
     pub fn new() -> Self {
         let runner = Runner::new();
-        Self { runner }
+        Self {
+            _phantom: std::marker::PhantomData,
+            runner,
+        }
     }
 
-    pub fn process(&self, modules: Vec<Module>, fetch_points: Vec<String>) -> Result<RunResult> {
+    pub fn process(&self, modules: Vec<Module>, fetch_keys: Vec<T>) -> Result<RunResult> {
         // generate input file from fetch points
         // 1. fetch proofs from provider by using fetch points
         let proofs = vec![];
