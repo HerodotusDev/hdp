@@ -1,35 +1,39 @@
-use std::vec;
+//!  Preprocessor is reponsible for identifying the required values.
+//!  This will be most abstract layer of the preprocessor.
 
 use crate::cairo_runner::pre_run::PreRunner;
 use crate::module::Module;
 use crate::pre_processor::input::PreProcessorInput;
 use anyhow::Result;
+use hdp_provider::key::FetchKey;
+use std::vec;
 
 pub mod input;
 
-pub struct PreProcessResult {
+pub struct PreProcessResult<T: FetchKey> {
     /// Fetch points are the values that are required to run the module
-    // TODO: fetch point design should sync with memoizer key-lookup design
-    pub fetch_points: Vec<String>,
+    pub fetch_keys: Vec<T>,
     /// Module hash is the hash of the module that is being processed
     module: Module,
 }
 
-/*
-  Preprocessor is reponsible for identifying the required values.
-  This will be most abstract layer of the preprocessor.
-*/
-pub struct PreProcessor {
-    pre_runner: PreRunner,
+pub struct PreProcessor<T> {
+    pre_runner: PreRunner<T>,
 }
 
-impl Default for PreProcessor {
+impl<T: FetchKey> Default for PreProcessor<T>
+where
+    <T as std::str::FromStr>::Err: std::fmt::Debug,
+{
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl PreProcessor {
+impl<T: FetchKey> PreProcessor<T>
+where
+    <T as std::str::FromStr>::Err: std::fmt::Debug,
+{
     pub fn new() -> Self {
         let pre_runner = PreRunner::new();
         Self { pre_runner }
@@ -39,14 +43,14 @@ impl PreProcessor {
     /// First it will generate input structure for preprocessor that need to pass to runner
     /// Then it will run the preprocessor and return the result, fetch points
     /// Fetch points are the values that are required to run the module
-    pub fn process(&self, module: Module) -> Result<PreProcessResult> {
+    pub fn process(&self, module: Module) -> Result<PreProcessResult<T>> {
         // 1. generate input data required for preprocessor
         let input = self.generate_input(module);
         let input_bytes = input.to_bytes();
         // 2. run the preprocessor and get the fetch points
         let points = self.pre_runner.run(input_bytes.to_vec())?;
         Ok(PreProcessResult {
-            fetch_points: points,
+            fetch_keys: points,
             module: input.get_module(),
         })
     }
