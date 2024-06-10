@@ -3,7 +3,7 @@
 
 use anyhow::{bail, Result};
 use cairo_lang_sierra::program::Program;
-use cairo_lang_sierra_to_casm::compiler;
+use cairo_lang_sierra_to_casm::compiler::{self, CairoProgram};
 use serde_json::{json, Value};
 use starknet::{
     core::types::{BlockId, BlockTag, ContractClass, FieldElement},
@@ -20,7 +20,7 @@ impl ModuleRegistry {
         Self { provider }
     }
 
-    pub async fn get_module(&self, contract_address: FieldElement) -> Result<Vec<u8>> {
+    pub async fn get_module(&self, contract_address: FieldElement) -> Result<CairoProgram> {
         let contract_class = self
             ._starknet_get_class(BlockId::Tag(BlockTag::Latest), contract_address)
             .await?;

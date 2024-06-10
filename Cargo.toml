@@ -37,6 +37,7 @@ regex = "1"
 starknet = "0.10.0"
 cairo-lang-sierra-to-casm = "=2.5.4"
 cairo-lang-sierra = "=2.5.4"
+futures = "0.3.30"
 
 # TODO: ideally should published
 eth-trie-proofs = { git = "https://github.com/HerodotusDev/eth-trie-proofs.git", branch = "main" }
