@@ -1,6 +1,8 @@
 //!  Preprocessor is reponsible for identifying the required values.
 //!  This will be most abstract layer of the preprocessor.
 
+use std::fs;
+
 use crate::cairo_runner::pre_run::PreRunner;
 use crate::module::Module;
 use crate::module_registry::ModuleRegistry;
@@ -45,8 +47,11 @@ where
     pub async fn process(&self, module: Module) -> Result<PreProcessResult<T>> {
         // 1. generate input data required for preprocessor
         let input = self.generate_input(module).await?;
-        let input_string = serde_json::to_string_pretty(&input.get_module_casm())
-            .expect("Failed to serialize module_casm");
+        let input_string =
+            serde_json::to_string_pretty(&input).expect("Failed to serialize module_casm");
+
+        // //save into file
+        // fs::write("input.json", input_string.clone()).expect("Unable to write file");
         // 2. run the preprocessor and get the fetch points
         let keys = self.pre_runner.run(input_string)?;
         Ok(PreProcessResult {

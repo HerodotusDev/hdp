@@ -2,9 +2,10 @@
 //! It contains the hash and the input.
 //! This is request interface for the preprocessor.
 
+use serde::Serialize;
 use starknet::core::types::FieldElement;
 
-#[derive(Clone)]
+#[derive(Clone, Serialize)]
 pub struct Module {
     /// Requested module hash identifier.
     /// This is contract address of the module.

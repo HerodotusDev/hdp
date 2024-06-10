@@ -1061,6 +1061,7 @@ dependencies = [
  "hdp-provider",
  "lazy_static",
  "regex",
+ "serde",
  "serde_json",
  "starknet",
  "tempfile",

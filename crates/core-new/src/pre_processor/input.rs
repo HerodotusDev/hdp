@@ -1,7 +1,9 @@
 use cairo_lang_starknet_classes::casm_contract_class::CasmContractClass;
+use serde::Serialize;
 
 use crate::module::Module;
 
+#[derive(Serialize)]
 pub struct PreProcessorInput {
     module: Module,
     /// Detail casm code of the module.
