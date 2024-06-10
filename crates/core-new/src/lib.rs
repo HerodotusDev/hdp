@@ -2,5 +2,6 @@
 
 pub mod cairo_runner;
 pub mod module;
+pub mod module_registry;
 pub mod pre_processor;
 pub mod processor;
