@@ -1,32 +1,26 @@
 use anyhow::Result;
 use hdp_provider::key::FetchKeyEnvelope;
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use tempfile::NamedTempFile;
 
 use anyhow::bail;
 use regex::Regex;
 
-const PRE_RUN_CAIRO_PROGRAM: &str = "build/compiled_cairo/hdp.json";
-
-pub struct PreRunner {}
-
-impl Default for PreRunner {
-    fn default() -> Self {
-        Self::new()
-    }
+pub struct PreRunner {
+    program_path: PathBuf,
 }
 
 impl PreRunner {
-    pub fn new() -> Self {
-        Self {}
+    pub fn new(program_path: PathBuf) -> Self {
+        Self { program_path }
     }
 
     fn _run(&self, input_file_path: &Path) -> Result<String> {
         let task = Command::new("cairo-run")
             .arg("--program")
-            .arg(PRE_RUN_CAIRO_PROGRAM)
+            .arg(&self.program_path)
             .arg("--layout")
             .arg("starknet_with_keccak")
             .arg("--program_input")

@@ -1,7 +1,7 @@
 //!  Preprocessor is reponsible for identifying the required values.
 //!  This will be most abstract layer of the preprocessor.
 
-use std::fs;
+use std::path::PathBuf;
 
 use crate::cairo_runner::pre_run::PreRunner;
 use crate::module::Module;
@@ -13,6 +13,19 @@ use starknet::providers::Url;
 
 pub mod input;
 
+pub struct PreProcessor {
+    pre_runner: PreRunner,
+    /// Registery provider
+    module_registry: ModuleRegistry,
+}
+
+pub struct PreProcessorConfig {
+    // rpc url to fetch the module class from starknet
+    pub module_registry_rpc_url: Url,
+    // pre-run program path
+    pub program_path: PathBuf,
+}
+
 pub struct PreProcessResult {
     /// Fetch points are the values that are required to run the module
     pub fetch_keys: Vec<FetchKeyEnvelope>,
@@ -20,17 +33,12 @@ pub struct PreProcessResult {
     pub module: Module,
 }
 
-pub struct PreProcessor {
-    pre_runner: PreRunner,
-    /// Registery provider
-    module_registry: ModuleRegistry,
-}
-
 impl PreProcessor {
-    pub fn new(url: &str) -> Self {
-        let url = Url::parse(url).expect("Invalid url");
-        let module_registry = ModuleRegistry::new(url);
-        let pre_runner = PreRunner::new();
+    pub fn new_with_config(config: PreProcessorConfig) -> Self {
+        let rpc_url = config.module_registry_rpc_url;
+        let program_path = config.program_path;
+        let module_registry = ModuleRegistry::new(rpc_url);
+        let pre_runner = PreRunner::new(program_path);
         Self {
             pre_runner,
             module_registry,
@@ -74,8 +82,13 @@ mod tests {
 
     #[tokio::test]
     async fn test_pre_processor() {
-        let url = "https://starknet-sepolia.g.alchemy.com/v2/lINonYKIlp4NH9ZI6wvqJ4HeZj7T4Wm6";
-        let pre_processor = PreProcessor::new(url);
+        let url: &str =
+            "https://starknet-sepolia.g.alchemy.com/v2/lINonYKIlp4NH9ZI6wvqJ4HeZj7T4Wm6";
+        let program_path = "../../build/compiled_cairo/hdp.json";
+        let pre_processor = PreProcessor::new_with_config(PreProcessorConfig {
+            module_registry_rpc_url: url.parse().unwrap(),
+            program_path: PathBuf::from(program_path),
+        });
         let module = Module::from_tag(ModuleTag::TEST, vec![felt!("1"), felt!("2")]);
         let res = pre_processor.process(module.clone()).await.unwrap();
         assert_eq!(module, res.module)
