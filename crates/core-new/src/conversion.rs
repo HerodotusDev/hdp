@@ -5,6 +5,7 @@ use cairo_lang_starknet_classes::{
 use starknet::core::types::FlattenedSierraClass;
 
 /// Convert the given [FlattenedSierraClass] into [CasmContractClass].
+/// Taken from https://github.com/dojoengine/dojo/blob/920500986855fdaf203471ac11900b15dcf6035f/crates/katana/primitives/src/conversion/rpc.rs#L140
 pub fn flattened_sierra_to_compiled_class(
     sierra: &FlattenedSierraClass,
 ) -> Result<CasmContractClass> {
@@ -14,6 +15,7 @@ pub fn flattened_sierra_to_compiled_class(
 }
 
 /// Converts RPC [FlattenedSierraClass] type to Cairo's [ContractClass] type.
+/// Taken from https://github.com/dojoengine/dojo/blob/920500986855fdaf203471ac11900b15dcf6035f/crates/katana/primitives/src/conversion/rpc.rs#L187
 fn rpc_to_cairo_contract_class(sierra: &FlattenedSierraClass) -> Result<ContractClass> {
     let value = serde_json::to_value(sierra)?;
 
