@@ -5,9 +5,9 @@
 use std::sync::Arc;
 
 use anyhow::Result;
-use cairo_lang_sierra_to_casm::compiler::CairoProgram;
+use cairo_lang_starknet_classes::casm_contract_class::CasmContractClass;
 use futures::future::join_all;
-use hdp_provider::key::FetchKey;
+use hdp_provider::key::FetchKeyEnvelope;
 use input::ProcessorInput;
 use starknet::{core::types::FieldElement, providers::Url};
 use tokio::task;
@@ -20,29 +20,28 @@ use crate::{
 
 pub mod input;
 
-pub struct Processor<T> {
-    _phantom: std::marker::PhantomData<T>,
+pub struct Processor {
     runner: Runner,
     /// Registery provider
     module_registry: Arc<ModuleRegistry>,
 }
 
-impl<T: FetchKey> Processor<T>
-where
-    <T as std::str::FromStr>::Err: std::fmt::Debug,
-{
+impl Processor {
     pub fn new(url: &str) -> Self {
         let url = Url::parse(url).expect("Invalid url");
         let module_registry = ModuleRegistry::new(url);
         let runner = Runner::new();
         Self {
-            _phantom: std::marker::PhantomData,
             runner,
             module_registry: Arc::new(module_registry),
         }
     }
 
-    pub async fn process(&self, modules: Vec<Module>, fetch_keys: Vec<T>) -> Result<RunResult> {
+    pub async fn process(
+        &self,
+        modules: Vec<Module>,
+        fetch_keys: Vec<FetchKeyEnvelope>,
+    ) -> Result<RunResult> {
         // generate input file from fetch points
         // 1. fetch proofs from provider by using fetch points
         let proofs = vec![];
@@ -58,26 +57,26 @@ where
         proofs: Vec<String>,
         modules: Vec<Module>,
     ) -> Result<ProcessorInput> {
-        let module_hashes: Vec<FieldElement> = modules
+        let class_hashes: Vec<FieldElement> = modules
             .iter()
-            .map(|module| module.get_module_hash())
+            .map(|module| module.get_class_hash())
             .collect();
-        let modules_casm = self._process_modules_in_parallel(module_hashes).await?;
+        let modules_casm = self._process_modules_in_parallel(class_hashes).await?;
 
         Ok(ProcessorInput::new(modules_casm, modules, proofs))
     }
 
     async fn _process_modules_in_parallel(
         &self,
-        module_hashes: Vec<FieldElement>,
-    ) -> Result<Vec<CairoProgram>> {
+        class_hashes: Vec<FieldElement>,
+    ) -> Result<Vec<CasmContractClass>> {
         let registry = Arc::clone(&self.module_registry);
         // Map each module to an asynchronous task
-        let module_futures: Vec<_> = module_hashes
+        let module_futures: Vec<_> = class_hashes
             .into_iter()
             .map(|hash| {
                 let module_registry = Arc::clone(&registry);
-                task::spawn(async move { module_registry.get_module(hash).await })
+                task::spawn(async move { module_registry.get_module_class(hash).await })
             })
             .collect();
 
