@@ -1,4 +1,4 @@
-use cairo_lang_sierra_to_casm::compiler::CairoProgram;
+use cairo_lang_starknet_classes::casm_contract_class::CasmContractClass;
 
 use crate::module::Module;
 
@@ -10,16 +10,20 @@ pub struct ProcessorInput {
     /// Detail sierra code of the module.
     /// This will be loaded to bootloader.
     // TODO: potentially we can merge multiple modules into one file
-    modules_casm: Vec<CairoProgram>,
+    modules_class: Vec<CasmContractClass>,
     modules: Vec<Module>,
     /// Fetched proofs per each fetch point.
     proofs: Vec<String>,
 }
 
 impl ProcessorInput {
-    pub fn new(modules_casm: Vec<CairoProgram>, modules: Vec<Module>, proofs: Vec<String>) -> Self {
+    pub fn new(
+        modules_class: Vec<CasmContractClass>,
+        modules: Vec<Module>,
+        proofs: Vec<String>,
+    ) -> Self {
         Self {
-            modules_casm,
+            modules_class,
             modules,
             proofs,
         }

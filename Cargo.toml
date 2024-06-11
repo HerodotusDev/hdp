@@ -12,7 +12,6 @@ members = [
 [workspace.package]
 version = "0.2.0"
 edition = "2021"
-license = "GPL-3.0"
 license-file = "LICENSE"
 repository = "https://github.com/HerodotusDev/hdp"
 
@@ -29,15 +28,17 @@ alloy-merkle-tree = { version = "0.5.0" }
 alloy-rlp = { version = "0.3.4", features = ["derive"] }
 anyhow = "1.0.79"
 serde = { version = "1.0", features = ["derive"] }
+serde_with = "2.3.2"
 serde_json = "1.0"
 tracing = "0.1"
 reqwest = { version = "0.11", features = ["json"] }
 rand = "0.8.4"
 regex = "1"
 starknet = "0.10.0"
-cairo-lang-sierra-to-casm = "=2.5.4"
-cairo-lang-sierra = "=2.5.4"
+starknet-crypto = "0.6.1"
+cairo-lang-starknet-classes = "2.6.3"
 futures = "0.3.30"
+lazy_static = "1.4.0"
 
 # TODO: ideally should published
 eth-trie-proofs = { git = "https://github.com/HerodotusDev/eth-trie-proofs.git", branch = "main" }
