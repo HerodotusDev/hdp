@@ -2,7 +2,7 @@
 name = "hdp-cli"
 version = "0.2.0"
 edition = "2021"
-license = "GPL-3.0"
+license-file = "LICENSE"
 description = "Interact Herodotus Data Processor via CLI"
 authors = ["Pia <pia@herodotus.dev>"]
 homepage = "https://herodotus.dev/"
