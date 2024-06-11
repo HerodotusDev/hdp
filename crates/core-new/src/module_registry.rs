@@ -4,9 +4,10 @@
 use anyhow::{bail, Result};
 use cairo_lang_starknet_classes::casm_contract_class::CasmContractClass;
 use starknet::{
-    core::types::{BlockId, BlockTag, ContractClass, FieldElement},
+    core::types::{BlockId, BlockTag, ContractClass},
     providers::{jsonrpc::HttpTransport, JsonRpcClient, Provider, Url},
 };
+use starknet_crypto::FieldElement;
 
 use crate::conversion::flattened_sierra_to_compiled_class;
 

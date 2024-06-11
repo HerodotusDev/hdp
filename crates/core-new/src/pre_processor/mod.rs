@@ -17,7 +17,7 @@ pub struct PreProcessResult {
     /// Fetch points are the values that are required to run the module
     pub fetch_keys: Vec<FetchKeyEnvelope>,
     /// Module hash is the hash of the module that is being processed
-    module: Module,
+    pub module: Module,
 }
 
 pub struct PreProcessor {
@@ -48,7 +48,7 @@ impl PreProcessor {
             serde_json::to_string_pretty(&input).expect("Failed to serialize module class");
 
         // //save into file
-        fs::write("input.json", input_string.clone()).expect("Unable to write file");
+        // fs::write("input.json", input_string.clone()).expect("Unable to write file");
         // 2. run the preprocessor and get the fetch points
         let keys = self.pre_runner.run(input_string)?;
         Ok(PreProcessResult {
@@ -61,8 +61,6 @@ impl PreProcessor {
     pub async fn generate_input(&self, module: Module) -> Result<PreProcessorInput> {
         let class_hash = module.get_class_hash();
         let module_class = self.module_registry.get_module_class(class_hash).await?;
-
-        // TODO: generate input data and make it ready to seialize as bytes
         Ok(PreProcessorInput::new(module, module_class))
     }
 }
@@ -79,6 +77,8 @@ mod tests {
         let url = "https://starknet-sepolia.g.alchemy.com/v2/lINonYKIlp4NH9ZI6wvqJ4HeZj7T4Wm6";
         let pre_processor = PreProcessor::new(url);
         let module = Module::from_tag(ModuleTag::TEST, vec![felt!("1"), felt!("2")]);
-        let res = pre_processor.process(module).await.unwrap();
+        let res = pre_processor.process(module.clone()).await.unwrap();
+        assert_eq!(module, res.module)
+        // TODO: check fetch point
     }
 }
