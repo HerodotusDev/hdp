@@ -4,6 +4,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use tempfile::NamedTempFile;
+use tracing::info;
 
 use anyhow::bail;
 use regex::Regex;
@@ -42,10 +43,12 @@ impl PreRunner {
         let input_file = NamedTempFile::new()?;
         let input_file_path = input_file.path();
         fs::write(input_file_path, input_string).expect("Failed to write input file");
+        info!("Running pre-runner on cairo-vm...");
         let output = self._run(input_file_path)?;
 
         // parse output to return dry run result
         let dry_run_result = self.parse_run(output)?;
+        info!("Pre-runner executed successfully");
         Ok(dry_run_result)
     }
 

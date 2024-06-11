@@ -10,6 +10,7 @@ use crate::pre_processor::input::PreProcessorInput;
 use anyhow::Result;
 use hdp_provider::key::FetchKeyEnvelope;
 use starknet::providers::Url;
+use tracing::info;
 
 pub mod input;
 
@@ -51,6 +52,7 @@ impl PreProcessor {
     /// Fetch points are the values that are required to run the module
     pub async fn process(&self, module: Module) -> Result<PreProcessResult> {
         // 1. generate input data required for preprocessor
+        info!("Generating input data for preprocessor...");
         let input = self.generate_input(module).await?;
         let input_string =
             serde_json::to_string_pretty(&input).expect("Failed to serialize module class");
@@ -58,7 +60,9 @@ impl PreProcessor {
         // //save into file
         // fs::write("input.json", input_string.clone()).expect("Unable to write file");
         // 2. run the preprocessor and get the fetch points
+        info!("Running preprocessor...");
         let keys = self.pre_runner.run(input_string)?;
+        info!("Preprocessor completed successfully");
         Ok(PreProcessResult {
             fetch_keys: keys,
             module: input.get_module(),

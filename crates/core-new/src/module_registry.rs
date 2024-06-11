@@ -8,6 +8,7 @@ use starknet::{
     providers::{jsonrpc::HttpTransport, JsonRpcClient, Provider, Url},
 };
 use starknet_crypto::FieldElement;
+use tracing::info;
 
 use crate::conversion::flattened_sierra_to_compiled_class;
 
@@ -22,9 +23,14 @@ impl ModuleRegistry {
     }
 
     pub async fn get_module_class(&self, class_hash: FieldElement) -> Result<CasmContractClass> {
+        info!(
+            "Fetching contract class from module registry... Class hash: {}",
+            class_hash
+        );
         let contract_class = self
             ._starknet_get_class(BlockId::Tag(BlockTag::Latest), class_hash)
             .await?;
+        info!("Contract class fetched successfully");
         let sierra = match contract_class {
             ContractClass::Sierra(sierra) => sierra,
             _ => bail!("cairo1 module should have sierra as class"),
