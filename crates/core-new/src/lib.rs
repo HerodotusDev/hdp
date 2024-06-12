@@ -1,6 +1,7 @@
 #![deny(unused_crate_dependencies)]
 
 pub mod cairo_runner;
+pub mod compiler;
 pub mod constant;
 pub mod conversion;
 pub mod module;

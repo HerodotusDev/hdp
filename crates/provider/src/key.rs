@@ -40,12 +40,31 @@ pub struct HeaderProviderKey {
     pub block_number: BlockNumber,
 }
 
+impl HeaderProviderKey {
+    pub fn new(chain_id: ChainId, block_number: BlockNumber) -> Self {
+        Self {
+            chain_id,
+            block_number,
+        }
+    }
+}
+
 /// Key for fetching account from provider.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AccountProviderKey {
     pub chain_id: ChainId,
     pub block_number: BlockNumber,
     pub address: Address,
+}
+
+impl AccountProviderKey {
+    pub fn new(chain_id: ChainId, block_number: BlockNumber, address: Address) -> Self {
+        Self {
+            chain_id,
+            block_number,
+            address,
+        }
+    }
 }
 
 /// Key for fetching storage value from provider.
@@ -57,7 +76,24 @@ pub struct StorageProviderKey {
     pub key: StorageKey,
 }
 
+impl StorageProviderKey {
+    pub fn new(
+        chain_id: ChainId,
+        block_number: BlockNumber,
+        address: Address,
+        key: StorageKey,
+    ) -> Self {
+        Self {
+            chain_id,
+            block_number,
+            address,
+            key,
+        }
+    }
+}
+
 // TODO: Temporary implemented from string approach, but need to sync with how bootloader will emit the keys
+#[derive(Hash, PartialEq, Eq)]
 pub enum FetchKeyEnvelope {
     Header(HeaderProviderKey),
     Account(AccountProviderKey),
