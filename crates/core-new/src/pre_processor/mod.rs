@@ -3,14 +3,19 @@
 
 use std::fs;
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use crate::cairo_runner::pre_run::PreRunner;
 use crate::module::Module;
 use crate::module_registry::ModuleRegistry;
 use crate::pre_processor::input::PreProcessorInput;
-use anyhow::Result;
+use anyhow::{Ok, Result};
+use futures::future::join_all;
 use hdp_provider::key::FetchKeyEnvelope;
+use input::InputModule;
 use starknet::providers::Url;
+use tempfile::NamedTempFile;
+use tokio::task;
 use tracing::info;
 
 pub mod input;
@@ -18,7 +23,7 @@ pub mod input;
 pub struct PreProcessor {
     pre_runner: PreRunner,
     /// Registery provider
-    module_registry: ModuleRegistry,
+    module_registry: Arc<ModuleRegistry>,
 }
 
 pub struct PreProcessorConfig {
@@ -32,7 +37,7 @@ pub struct PreProcessResult {
     /// Fetch points are the values that are required to run the module
     pub fetch_keys: Vec<FetchKeyEnvelope>,
     /// Module hash is the hash of the module that is being processed
-    pub module: Module,
+    pub modules: Vec<Module>,
 }
 
 impl PreProcessor {
@@ -43,7 +48,7 @@ impl PreProcessor {
         let pre_runner = PreRunner::new(program_path);
         Self {
             pre_runner,
-            module_registry,
+            module_registry: Arc::new(module_registry),
         }
     }
 
@@ -51,10 +56,14 @@ impl PreProcessor {
     /// First it will generate input structure for preprocessor that need to pass to runner
     /// Then it will run the preprocessor and return the result, fetch points
     /// Fetch points are the values that are required to run the module
-    pub async fn process(&self, module: Module) -> Result<PreProcessResult> {
+    pub async fn process(&self, modules: Vec<Module>) -> Result<PreProcessResult> {
         // 1. generate input data required for preprocessor
         info!("Generating input data for preprocessor...");
-        let input = self.generate_input(module.clone()).await?;
+        // generate temp file
+        let identified_keys_file = NamedTempFile::new().unwrap().path().to_path_buf();
+        let input = self
+            .generate_input(modules.clone(), identified_keys_file)
+            .await?;
         let input_string =
             serde_json::to_string_pretty(&input).expect("Failed to serialize module class");
 
@@ -66,15 +75,49 @@ impl PreProcessor {
         info!("Preprocessor completed successfully");
         Ok(PreProcessResult {
             fetch_keys: keys,
-            module,
+            modules,
         })
     }
 
     /// Generate input structure for preprocessor that need to pass to runner
-    pub async fn generate_input(&self, module: Module) -> Result<PreProcessorInput> {
-        let class_hash = module.get_class_hash();
-        let module_class = self.module_registry.get_module_class(class_hash).await?;
-        Ok(PreProcessorInput::new(module, module_class))
+    pub async fn generate_input(
+        &self,
+        modules: Vec<Module>,
+        identified_keys_file: PathBuf,
+    ) -> Result<PreProcessorInput> {
+        let registry = Arc::clone(&self.module_registry);
+        // Map each module to an asynchronous task
+        let module_futures: Vec<_> = modules
+            .into_iter()
+            .map(|module| {
+                let module_registry = Arc::clone(&registry);
+                task::spawn(async move {
+                    // create input_module
+                    let module_hash = module.class_hash;
+                    let inputs = module.inputs;
+                    let module_class = module_registry.get_module_class(module_hash).await.unwrap();
+                    Ok(InputModule {
+                        inputs,
+                        module_class,
+                    })
+                })
+            })
+            .collect();
+
+        // Join all tasks and collect their results
+        let results: Vec<_> = join_all(module_futures).await;
+
+        // Collect results, filter out any errors
+        let mut collected_results = Vec::new();
+        for result in results {
+            let input_module = result??;
+            collected_results.push(input_module);
+        }
+
+        Ok(PreProcessorInput {
+            identified_keys_file,
+            modules: collected_results,
+        })
     }
 }
 
@@ -95,8 +138,13 @@ mod tests {
             program_path: PathBuf::from(program_path),
         });
         let module = Module::from_tag(ModuleTag::TEST, vec![felt!("1"), felt!("2")]);
-        let res = pre_processor.process(module.clone()).await.unwrap();
-        assert_eq!(module, res.module)
+        let module2 = Module::from_tag(ModuleTag::TEST, vec![felt!("1"), felt!("2")]);
+        let res = pre_processor
+            .process(vec![module.clone(), module2.clone()])
+            .await
+            .unwrap();
+        assert_eq!(module, res.modules[0]);
+        assert_eq!(module2, res.modules[1]);
         // TODO: check fetch point
     }
 }
