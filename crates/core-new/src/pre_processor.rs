@@ -5,20 +5,19 @@ use std::fs;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use crate::cairo_runner::pre_run::PreRunner;
+use crate::cairo_runner::input::pre_run::PreProcessorInput;
+use crate::cairo_runner::{input::pre_run::InputModule, pre_run::PreRunner};
 use crate::module::Module;
 use crate::module_registry::ModuleRegistry;
-use crate::pre_processor::input::PreProcessorInput;
+
 use anyhow::{Ok, Result};
 use futures::future::join_all;
 use hdp_provider::key::FetchKeyEnvelope;
-use input::InputModule;
+
 use starknet::providers::Url;
 use tempfile::NamedTempFile;
 use tokio::task;
 use tracing::info;
-
-pub mod input;
 
 pub struct PreProcessor {
     pre_runner: PreRunner,

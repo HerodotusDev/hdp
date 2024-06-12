@@ -8,17 +8,17 @@ use anyhow::Result;
 use cairo_lang_starknet_classes::casm_contract_class::CasmContractClass;
 use futures::future::join_all;
 use hdp_provider::key::FetchKeyEnvelope;
-use input::ProcessorInput;
 use starknet::{core::types::FieldElement, providers::Url};
 use tokio::task;
 
 use crate::{
-    cairo_runner::run::{RunResult, Runner},
+    cairo_runner::{
+        input::run::ProcessorInput,
+        run::{RunResult, Runner},
+    },
     module::Module,
     module_registry::ModuleRegistry,
 };
-
-pub mod input;
 
 pub struct Processor {
     runner: Runner,
