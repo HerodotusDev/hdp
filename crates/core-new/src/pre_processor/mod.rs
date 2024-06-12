@@ -1,6 +1,7 @@
 //!  Preprocessor is reponsible for identifying the required values.
 //!  This will be most abstract layer of the preprocessor.
 
+use std::fs;
 use std::path::PathBuf;
 
 use crate::cairo_runner::pre_run::PreRunner;
@@ -53,19 +54,19 @@ impl PreProcessor {
     pub async fn process(&self, module: Module) -> Result<PreProcessResult> {
         // 1. generate input data required for preprocessor
         info!("Generating input data for preprocessor...");
-        let input = self.generate_input(module).await?;
+        let input = self.generate_input(module.clone()).await?;
         let input_string =
             serde_json::to_string_pretty(&input).expect("Failed to serialize module class");
 
         // //save into file
-        // fs::write("input.json", input_string.clone()).expect("Unable to write file");
+        fs::write("input.json", input_string.clone()).expect("Unable to write file");
         // 2. run the preprocessor and get the fetch points
         info!("Running preprocessor...");
         let keys = self.pre_runner.run(input_string)?;
         info!("Preprocessor completed successfully");
         Ok(PreProcessResult {
             fetch_keys: keys,
-            module: input.get_module(),
+            module,
         })
     }
 

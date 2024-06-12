@@ -3,17 +3,11 @@
 //! This is request interface for the preprocessor.
 
 use serde::Serialize;
-use serde_with::serde_as;
-
-use starknet::core::serde::unsigned_field_element::UfeHex;
 use starknet_crypto::FieldElement;
 
-#[serde_as]
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 pub struct Module {
-    #[serde_as(as = "UfeHex")]
     pub class_hash: FieldElement,
-    #[serde_as(as = "Vec<UfeHex>")]
     pub inputs: Vec<FieldElement>,
 }
 

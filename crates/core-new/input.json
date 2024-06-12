@@ -1,11 +1,8 @@
 {
-  "module": {
-    "class_hash": "0x54af96825d987ca89cf320f7c5a8031017815d884cff1592e8ff6da309f3ca6",
-    "inputs": [
-      "0x1",
-      "0x2"
-    ]
-  },
+  "inputs": [
+    "0x1",
+    "0x2"
+  ],
   "module_class": {
     "prime": "0x800000000000011000000000000000000000000000000000000000000000001",
     "compiler_version": "2.6.3",
