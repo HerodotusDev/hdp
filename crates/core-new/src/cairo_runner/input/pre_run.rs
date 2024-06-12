@@ -7,7 +7,7 @@ use std::path::PathBuf;
 
 #[serde_as]
 #[derive(Serialize)]
-pub struct PreProcessorInput {
+pub struct PreRunnerInput {
     pub identified_keys_file: PathBuf,
     pub modules: Vec<InputModule>,
 }
@@ -22,7 +22,7 @@ pub struct InputModule {
     pub module_class: CasmContractClass,
 }
 
-impl PreProcessorInput {
+impl PreRunnerInput {
     pub fn new(identified_keys_file: PathBuf) -> Self {
         Self {
             identified_keys_file,

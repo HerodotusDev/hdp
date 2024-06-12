@@ -13,7 +13,7 @@ use tokio::task;
 
 use crate::{
     cairo_runner::{
-        input::run::ProcessorInput,
+        input::run::RunnerInput,
         run::{RunResult, Runner},
     },
     module::Module,
@@ -56,14 +56,14 @@ impl Processor {
         &self,
         proofs: Vec<String>,
         modules: Vec<Module>,
-    ) -> Result<ProcessorInput> {
+    ) -> Result<RunnerInput> {
         let class_hashes: Vec<FieldElement> = modules
             .iter()
             .map(|module| module.get_class_hash())
             .collect();
         let modules_casm = self._process_modules_in_parallel(class_hashes).await?;
 
-        Ok(ProcessorInput::new(modules_casm, modules, proofs))
+        Ok(RunnerInput::new(modules_casm, modules, proofs))
     }
 
     async fn _process_modules_in_parallel(
