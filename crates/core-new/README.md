@@ -1,3 +1,3 @@
 # Data Processor Core
 
-![](.github/core.png)
+![](../../.github/core.png)
