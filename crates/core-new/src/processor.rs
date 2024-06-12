@@ -37,6 +37,7 @@ impl Processor {
         }
     }
 
+    // TODO: get classes directly when processing modules
     pub async fn process(
         &self,
         modules: Vec<Module>,

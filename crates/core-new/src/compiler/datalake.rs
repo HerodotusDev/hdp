@@ -2,14 +2,12 @@
 //! The datalake compiler is responsible for compiling the datalake into a set of fetch keys.
 //! The fetch keys are used to fetch the data from the provider.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 use hdp_primitives::datalake::{block_sampled::BlockSampledCollection, envelope::DatalakeEnvelope};
 use hdp_provider::key::{
     AccountProviderKey, FetchKeyEnvelope, HeaderProviderKey, StorageProviderKey,
 };
-
-use super::CompilerResult;
 
 pub struct DatalakeCompiler {}
 
@@ -19,8 +17,11 @@ impl DatalakeCompiler {
     }
 
     // TODO: chain_id
-    pub fn compile(&self, datalakes: Vec<DatalakeEnvelope>, chain_id: u64) -> CompilerResult {
-        let mut chain_map: CompilerResult = HashMap::new();
+    pub fn compile(
+        &self,
+        datalakes: Vec<DatalakeEnvelope>,
+        chain_id: u64,
+    ) -> HashSet<FetchKeyEnvelope> {
         let mut fetch_set: HashSet<FetchKeyEnvelope> = HashSet::new();
         for datalake in datalakes {
             match datalake {
@@ -68,8 +69,6 @@ impl DatalakeCompiler {
             }
             println!("Compiling datalake...")
         }
-
-        chain_map.insert(chain_id, fetch_set);
-        chain_map
+        fetch_set
     }
 }

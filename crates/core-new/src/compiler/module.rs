@@ -1,6 +1,7 @@
 //!  Preprocessor is reponsible for identifying the required values.
 //!  This will be most abstract layer of the preprocessor.
 
+use std::collections::HashSet;
 use std::fs;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -18,8 +19,6 @@ use starknet::providers::Url;
 use tempfile::NamedTempFile;
 use tokio::task;
 use tracing::info;
-
-use super::CompilerResult;
 
 pub struct ModuleCompiler {
     pre_runner: PreRunner,
@@ -57,7 +56,7 @@ impl ModuleCompiler {
     /// First it will generate input structure for preprocessor that need to pass to runner
     /// Then it will run the preprocessor and return the result, fetch points
     /// Fetch points are the values that are required to run the module
-    pub async fn compile(&self, modules: Vec<Module>) -> Result<Vec<FetchKeyEnvelope>> {
+    pub async fn compile(&self, modules: Vec<Module>) -> Result<HashSet<FetchKeyEnvelope>> {
         // 1. generate input data required for preprocessor
         info!("Generating input data for preprocessor...");
         // generate temp file
@@ -73,7 +72,10 @@ impl ModuleCompiler {
         // 2. run the preprocessor and get the fetch points
         info!("Running preprocessor...");
         info!("Preprocessor completed successfully");
-        Ok(self.pre_runner.run(input_string)?)
+        // hashset from vector
+        let keys: HashSet<FetchKeyEnvelope> =
+            self.pre_runner.run(input_string)?.into_iter().collect();
+        Ok(keys)
     }
 
     /// Generate input structure for preprocessor that need to pass to runner
