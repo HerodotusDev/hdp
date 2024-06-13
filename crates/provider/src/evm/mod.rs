@@ -50,6 +50,12 @@ pub struct AbstractProvider {
     header_provider: HeaderProvider,
 }
 
+pub struct AbstractProviderConfig {
+    pub rpc_url: &'static str,
+    pub chain_id: u64,
+    pub rpc_chunk_size: u64,
+}
+
 /// Provider should fetch all the proofs and rlp values from given keys.
 pub struct AbstractProviderResult {
     pub mmr_meta: MMRMeta,
@@ -61,11 +67,11 @@ pub struct AbstractProviderResult {
 }
 
 impl AbstractProvider {
-    pub fn new(rpc_url: &'static str, chain_id: u64, rpc_chunk_size: u64) -> Self {
+    pub fn new(config: AbstractProviderConfig) -> Self {
         Self {
             memory: InMemoryProvider::new(),
-            trie_proof_provider: TrieProofProvider::new(rpc_url, rpc_chunk_size),
-            header_provider: HeaderProvider::new(HERODOTUS_RS_INDEXER_URL, chain_id),
+            trie_proof_provider: TrieProofProvider::new(config.rpc_url, config.rpc_chunk_size),
+            header_provider: HeaderProvider::new(HERODOTUS_RS_INDEXER_URL, config.chain_id),
         }
     }
 
@@ -600,7 +606,12 @@ mod tests {
 
     #[tokio::test]
     async fn test_provider_get_rlp_header() {
-        let mut provider = AbstractProvider::new(SEPOLIA_RPC_URL, 11155111, 40);
+        let config = AbstractProviderConfig {
+            rpc_url: SEPOLIA_RPC_URL,
+            chain_id: 11155111,
+            rpc_chunk_size: 40,
+        };
+        let mut provider = AbstractProvider::new(config);
         let rlp_header = provider.get_rlp_header(0).await;
         let block_hash = rlp_string_to_block_hash(&rlp_header);
         assert_eq!(
@@ -623,7 +634,12 @@ mod tests {
 
     #[tokio::test]
     async fn get_block_range_from_nonce_range_non_constant() {
-        let provider = AbstractProvider::new(SEPOLIA_RPC_URL, 11155111, 40);
+        let config = AbstractProviderConfig {
+            rpc_url: SEPOLIA_RPC_URL,
+            chain_id: 11155111,
+            rpc_chunk_size: 40,
+        };
+        let provider = AbstractProvider::new(config);
         let block_range = provider
             .get_tx_with_proof_from_block(5530433, 10, 100, 1)
             .await

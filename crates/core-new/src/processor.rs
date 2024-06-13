@@ -7,7 +7,7 @@ use std::{collections::HashSet, sync::Arc};
 use anyhow::{Ok, Result};
 use futures::future::join_all;
 use hdp_provider::{
-    evm::{AbstractProvider, AbstractProviderResult},
+    evm::{AbstractProvider, AbstractProviderConfig, AbstractProviderResult},
     key::FetchKeyEnvelope,
 };
 use starknet::providers::Url;
@@ -47,7 +47,12 @@ impl Processor {
     ) -> Result<RunResult> {
         // generate input file from fetch points
         // 1. fetch proofs from provider by using fetch points
-        let provider = AbstractProvider::new("", 1, 1);
+        let config = AbstractProviderConfig {
+            rpc_url: "http://localhost:8080",
+            chain_id: 1,
+            rpc_chunk_size: 1,
+        };
+        let provider = AbstractProvider::new(config);
         let proofs = provider.fetch_proofs_from_keys(fetch_keys).await?;
         // 2. generate input struct with proofs and module bytes
         let input = self.generate_input(proofs, modules).await?;

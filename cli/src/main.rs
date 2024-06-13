@@ -34,7 +34,7 @@ use hdp_core::{
 
 pub mod cairo_runner;
 
-use hdp_provider::evm::AbstractProvider;
+use hdp_provider::evm::{AbstractProvider, AbstractProviderConfig};
 use tokio::sync::RwLock;
 use tracing::{debug, error, info, Level};
 
@@ -215,7 +215,12 @@ async fn handle_run(
     pie_file: Option<String>,
 ) -> Result<()> {
     let config = Config::init(rpc_url, datalakes, tasks, chain_id).await;
-    let provider = AbstractProvider::new(&config.rpc_url, config.chain_id, config.rpc_chunk_size);
+    let provider_config = AbstractProviderConfig {
+        rpc_url: &config.rpc_url,
+        chain_id: config.chain_id,
+        rpc_chunk_size: config.rpc_chunk_size,
+    };
+    let provider = AbstractProvider::new(provider_config);
 
     let decoded_result =
         handle_decode_multiple(config.datalakes.clone(), config.tasks.clone()).await?;
