@@ -1,6 +1,7 @@
 use alloy_primitives::{keccak256, Bytes};
 use anyhow::Result;
 use eth_trie_proofs::{tx_receipt_trie::TxReceiptsMptHandler, tx_trie::TxsMptHandler};
+use rpc::{FetchedTransactionProof, FetchedTransactionReceiptProof};
 use std::{
     collections::{HashMap, HashSet},
     time::Instant,
@@ -26,7 +27,7 @@ use crate::key::{
 
 use self::{
     memory::{InMemoryProvider, RlpEncodedValue, StoredHeader, StoredHeaders},
-    rpc::{FetchedAccountProof, FetchedStorageProof, HeaderProvider, TrieProofProvider},
+    rpc::{FetchedAccountProof, FetchedStorageAccountProof, HeaderProvider, TrieProofProvider},
 };
 
 pub(crate) mod memory;
@@ -240,7 +241,7 @@ impl AbstractProvider {
         // loop through each address and fetch storages
         let mut storages = vec![];
         for ((address, slot), block_range) in address_slot_to_block_range {
-            let (rpc_sender, mut rx) = mpsc::channel::<FetchedStorageProof>(32);
+            let (rpc_sender, mut rx) = mpsc::channel::<FetchedStorageAccountProof>(32);
 
             self.trie_proof_provider
                 .get_storage_proofs(rpc_sender, block_range, &address, slot.clone())
@@ -477,14 +478,14 @@ impl AbstractProvider {
         increment: u64,
         address: String,
         slot: String,
-    ) -> Result<HashMap<u64, FetchedStorageProof>> {
+    ) -> Result<HashMap<u64, FetchedStorageAccountProof>> {
         let start_fetch = Instant::now();
         //? A map of block numbers to a boolean indicating whether the block was fetched.
         let target_block_range: Vec<u64> = (block_range_start..=block_range_end)
             .step_by(increment as usize)
             .collect();
 
-        let (rpc_sender, mut rx) = mpsc::channel::<FetchedStorageProof>(32);
+        let (rpc_sender, mut rx) = mpsc::channel::<FetchedStorageAccountProof>(32);
         self.trie_proof_provider
             .get_storage_proofs(rpc_sender, target_block_range, &address, slot)
             .await;
@@ -508,7 +509,7 @@ impl AbstractProvider {
         start_index: u64,
         end_index: u64,
         incremental: u64,
-    ) -> Result<Vec<(u64, u64, String, Vec<String>, u8)>> {
+    ) -> Result<Vec<FetchedTransactionProof>> {
         let mut tx_with_proof = vec![];
         let mut txs_mpt_handler = TxsMptHandler::new(self.trie_proof_provider.url).unwrap();
         txs_mpt_handler
@@ -528,7 +529,14 @@ impl AbstractProvider {
             let consensus_tx = txs[tx_index as usize].clone();
             let rlp = Bytes::from(consensus_tx.rlp_encode()).to_string();
             let tx_type = consensus_tx.0.tx_type() as u8;
-            tx_with_proof.push((target_block, tx_index, rlp, proof, tx_type));
+            let fetched_result = FetchedTransactionProof {
+                block_number: target_block,
+                tx_index,
+                encoded_transaction: rlp,
+                transaction_proof: proof,
+                tx_type,
+            };
+            tx_with_proof.push(fetched_result);
         }
 
         Ok(tx_with_proof)
@@ -542,7 +550,7 @@ impl AbstractProvider {
         start_index: u64,
         end_index: u64,
         incremental: u64,
-    ) -> Result<Vec<(u64, u64, String, Vec<String>, u8)>> {
+    ) -> Result<Vec<FetchedTransactionReceiptProof>> {
         let mut tx_receipt_with_proof = vec![];
         let mut tx_reciepts_mpt_handler =
             TxReceiptsMptHandler::new(self.trie_proof_provider.url).unwrap();
@@ -564,13 +572,13 @@ impl AbstractProvider {
             let consensus_tx_receipt = tx_receipts[tx_receipt_index as usize].clone();
             let rlp = Bytes::from(consensus_tx_receipt.rlp_encode()).to_string();
             let tx_receipt_type = consensus_tx_receipt.0.tx_type() as u8;
-            tx_receipt_with_proof.push((
-                target_block,
-                tx_receipt_index,
-                rlp,
-                proof,
-                tx_receipt_type,
-            ));
+            tx_receipt_with_proof.push(FetchedTransactionReceiptProof {
+                block_number: target_block,
+                tx_index: tx_receipt_index,
+                encoded_receipt: rlp,
+                receipt_proof: proof,
+                tx_type: tx_receipt_type,
+            });
         }
 
         Ok(tx_receipt_with_proof)
@@ -622,7 +630,7 @@ mod tests {
             .unwrap();
 
         assert_eq!(block_range.len(), 90);
-        assert_eq!(block_range[0].2,"0xf873830beeeb84faa6fd50830148209447b854ad2ddb01cfee0b07f4e2da0ac50277b1168806f05b59d3b20000808401546d72a06af2b103dfb7bccc757d575bc11c38f2ecd1a22ca2fcf95a602119582c607927a047329735997e3357dfd7d63eda024d35f7012855aa12ba210f9ed311a517b5e6");
+        assert_eq!(block_range[0].encoded_transaction,"0xf873830beeeb84faa6fd50830148209447b854ad2ddb01cfee0b07f4e2da0ac50277b1168806f05b59d3b20000808401546d72a06af2b103dfb7bccc757d575bc11c38f2ecd1a22ca2fcf95a602119582c607927a047329735997e3357dfd7d63eda024d35f7012855aa12ba210f9ed311a517b5e6");
 
         let block_range = provider
             .get_tx_with_proof_from_block(5530433, 10, 100, 3)
