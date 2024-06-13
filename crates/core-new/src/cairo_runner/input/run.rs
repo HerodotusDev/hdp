@@ -11,18 +11,18 @@ use starknet_crypto::FieldElement;
 */
 
 pub struct RunnerInput {
-    /// Batched tasks root
+    /// Batched tasks root of all tasks.
     pub task_root: String,
     /// if every tasks are pre computable, this can be Some
     pub result_root: Option<String>,
     /// Detail sierra code of the module.
     /// This will be loaded to bootloader.
-    /// compatible with v2
+    /// tasks compatible with v2
     pub modules: Vec<InputModule>,
     /// Fetched proofs per each fetch point.
     pub proofs: AbstractProviderResult,
-    /// compatible with v1
-    pub tasks: Vec<Task>,
+    /// tasks compatible with v1
+    pub datalakes: Vec<Task>,
 }
 
 #[serde_as]
@@ -33,24 +33,23 @@ pub struct InputModule {
     /// Detail class code of the module.
     /// This will be loaded to bootloader.
     pub module_class: CasmContractClass,
+    /// inclusion proof of the batch
+    pub task_proof: Vec<String>,
 }
 
 impl RunnerInput {
-    pub fn new(proofs: AbstractProviderResult, tasks: Vec<Task>) -> Self {
+    pub fn new(proofs: AbstractProviderResult, datalakes: Vec<Task>) -> Self {
         Self {
             task_root: "".to_string(),
             result_root: None,
             modules: vec![],
             proofs,
-            tasks,
+            datalakes,
         }
     }
 
     pub fn add_module(&mut self, inputs: Vec<FieldElement>, module_class: CasmContractClass) {
-        self.modules.push(InputModule {
-            inputs,
-            module_class,
-        });
+        todo!("Add module to RunnerInput")
     }
 
     // TODO: Somehow need to make `Vec<CairoProgram>`, `Vec<Module>`, Vec<Proof> to input data format

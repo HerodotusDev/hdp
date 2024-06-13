@@ -75,6 +75,7 @@ impl Processor {
                     Ok(InputModule {
                         inputs,
                         module_class,
+                        task_proof: vec![],
                     })
                 })
             })
@@ -95,7 +96,7 @@ impl Processor {
             result_root: None,
             modules: collected_results,
             proofs,
-            tasks: vec![],
+            datalakes: vec![],
         })
     }
 }
