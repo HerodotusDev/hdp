@@ -1,4 +1,5 @@
 use cairo_lang_starknet_classes::casm_contract_class::CasmContractClass;
+use hdp_provider::evm::AbstractProviderResult;
 
 use crate::module::Module;
 
@@ -13,14 +14,14 @@ pub struct RunnerInput {
     modules_class: Vec<CasmContractClass>,
     modules: Vec<Module>,
     /// Fetched proofs per each fetch point.
-    proofs: Vec<String>,
+    proofs: AbstractProviderResult,
 }
 
 impl RunnerInput {
     pub fn new(
         modules_class: Vec<CasmContractClass>,
         modules: Vec<Module>,
-        proofs: Vec<String>,
+        proofs: AbstractProviderResult,
     ) -> Self {
         Self {
             modules_class,

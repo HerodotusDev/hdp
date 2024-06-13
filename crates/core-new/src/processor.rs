@@ -2,12 +2,15 @@
 //! This run is sound execution of the module.
 //! This will be most abstract layer of the processor.
 
-use std::sync::Arc;
+use std::{collections::HashSet, sync::Arc};
 
 use anyhow::Result;
 use cairo_lang_starknet_classes::casm_contract_class::CasmContractClass;
 use futures::future::join_all;
-use hdp_provider::key::FetchKeyEnvelope;
+use hdp_provider::{
+    evm::{AbstractProvider, AbstractProviderResult},
+    key::FetchKeyEnvelope,
+};
 use starknet::{core::types::FieldElement, providers::Url};
 use tokio::task;
 
@@ -41,11 +44,12 @@ impl Processor {
     pub async fn process(
         &self,
         modules: Vec<Module>,
-        fetch_keys: Vec<FetchKeyEnvelope>,
+        fetch_keys: HashSet<FetchKeyEnvelope>,
     ) -> Result<RunResult> {
         // generate input file from fetch points
         // 1. fetch proofs from provider by using fetch points
-        let proofs = vec![];
+        let provider = AbstractProvider::new("", 1, 1);
+        let proofs = provider.fetch_proofs_from_keys(fetch_keys).await?;
         // 2. generate input struct with proofs and module bytes
         let input = self.generate_input(proofs, modules).await?;
         // 3. pass the input file to the runner
@@ -55,7 +59,7 @@ impl Processor {
 
     pub async fn generate_input(
         &self,
-        proofs: Vec<String>,
+        proofs: AbstractProviderResult,
         modules: Vec<Module>,
     ) -> Result<RunnerInput> {
         let class_hashes: Vec<FieldElement> = modules
