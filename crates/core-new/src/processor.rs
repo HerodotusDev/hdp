@@ -4,19 +4,18 @@
 
 use std::{collections::HashSet, sync::Arc};
 
-use anyhow::Result;
-use cairo_lang_starknet_classes::casm_contract_class::CasmContractClass;
+use anyhow::{Ok, Result};
 use futures::future::join_all;
 use hdp_provider::{
     evm::{AbstractProvider, AbstractProviderResult},
     key::FetchKeyEnvelope,
 };
-use starknet::{core::types::FieldElement, providers::Url};
+use starknet::providers::Url;
 use tokio::task;
 
 use crate::{
     cairo_runner::{
-        input::run::RunnerInput,
+        input::run::{InputModule, RunnerInput},
         run::{RunResult, Runner},
     },
     module::Module,
@@ -62,26 +61,22 @@ impl Processor {
         proofs: AbstractProviderResult,
         modules: Vec<Module>,
     ) -> Result<RunnerInput> {
-        let class_hashes: Vec<FieldElement> = modules
-            .iter()
-            .map(|module| module.get_class_hash())
-            .collect();
-        let modules_casm = self._process_modules_in_parallel(class_hashes).await?;
-
-        Ok(RunnerInput::new(modules_casm, modules, proofs))
-    }
-
-    async fn _process_modules_in_parallel(
-        &self,
-        class_hashes: Vec<FieldElement>,
-    ) -> Result<Vec<CasmContractClass>> {
-        let registry = Arc::clone(&self.module_registry);
+        let registry: Arc<ModuleRegistry> = Arc::clone(&self.module_registry);
         // Map each module to an asynchronous task
-        let module_futures: Vec<_> = class_hashes
+        let module_futures: Vec<_> = modules
             .into_iter()
-            .map(|hash| {
+            .map(|module| {
                 let module_registry = Arc::clone(&registry);
-                task::spawn(async move { module_registry.get_module_class(hash).await })
+                task::spawn(async move {
+                    // create input_module
+                    let module_hash = module.class_hash;
+                    let inputs = module.inputs;
+                    let module_class = module_registry.get_module_class(module_hash).await.unwrap();
+                    Ok(InputModule {
+                        inputs,
+                        module_class,
+                    })
+                })
             })
             .collect();
 
@@ -91,13 +86,16 @@ impl Processor {
         // Collect results, filter out any errors
         let mut collected_results = Vec::new();
         for result in results {
-            match result {
-                Ok(Ok(data)) => collected_results.push(data),
-                Ok(Err(e)) => eprintln!("Error processing module: {}", e), // Handle each module's error
-                Err(e) => eprintln!("Task failed: {:?}", e), // Handle the task failure
-            }
+            let input_module = result??;
+            collected_results.push(input_module);
         }
 
-        Ok(collected_results)
+        Ok(RunnerInput {
+            task_root: "".to_string(),
+            result_root: None,
+            modules: collected_results,
+            proofs,
+            tasks: vec![],
+        })
     }
 }
