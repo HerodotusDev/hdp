@@ -27,6 +27,7 @@ impl DatalakeCompiler {
     }
 
     // TODO: depends on the requested field, need to decide whether if this fetch key is able to included or not
+    // TODO2: we don't need account key if there is same storage key exists
     pub fn compile(
         &self,
         datalakes: Vec<DatalakeEnvelope>,

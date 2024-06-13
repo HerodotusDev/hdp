@@ -49,6 +49,7 @@ pub struct AbstractProvider {
     header_provider: HeaderProvider,
 }
 
+/// Provider should fetch all the proofs and rlp values from given keys.
 pub struct AbstractProviderResult {
     pub mmr_meta: MMRMeta,
     pub headers: Vec<Header>,
