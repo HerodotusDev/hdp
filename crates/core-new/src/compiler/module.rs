@@ -7,8 +7,8 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use crate::cairo_runner::input::pre_run::PreRunnerInput;
-use crate::cairo_runner::{input::pre_run::InputModule, pre_run::PreRunner};
-use crate::module::Module;
+use crate::cairo_runner::pre_run::PreRunner;
+use crate::module::{Module, ModuleWithClass};
 use crate::module_registry::ModuleRegistry;
 
 use anyhow::{Ok, Result};
@@ -56,13 +56,20 @@ impl ModuleCompiler {
     /// First it will generate input structure for preprocessor that need to pass to runner
     /// Then it will run the preprocessor and return the result, fetch points
     /// Fetch points are the values that are required to run the module
-    pub async fn compile(&self, modules: Vec<Module>) -> Result<HashSet<FetchKeyEnvelope>> {
+    pub async fn compile(
+        &self,
+        modules: Vec<Module>,
+    ) -> Result<(HashSet<FetchKeyEnvelope>, Vec<ModuleWithClass>)> {
         // 1. generate input data required for preprocessor
         info!("Generating input data for preprocessor...");
+
+        // fetch module class
+        let modules_with_class = self.fetch_modules_class(modules).await?;
+
         // generate temp file
         let identified_keys_file = NamedTempFile::new().unwrap().path().to_path_buf();
         let input = self
-            .generate_input(modules.clone(), identified_keys_file)
+            .generate_input(modules_with_class.clone(), identified_keys_file)
             .await?;
         let input_string =
             serde_json::to_string_pretty(&input).expect("Failed to serialize module class");
@@ -75,15 +82,10 @@ impl ModuleCompiler {
         // hashset from vector
         let keys: HashSet<FetchKeyEnvelope> =
             self.pre_runner.run(input_string)?.into_iter().collect();
-        Ok(keys)
+        Ok((keys, modules_with_class))
     }
 
-    /// Generate input structure for preprocessor that need to pass to runner
-    pub async fn generate_input(
-        &self,
-        modules: Vec<Module>,
-        identified_keys_file: PathBuf,
-    ) -> Result<PreRunnerInput> {
+    async fn fetch_modules_class(&self, modules: Vec<Module>) -> Result<Vec<ModuleWithClass>> {
         let registry: Arc<ModuleRegistry> = Arc::clone(&self.module_registry);
         // Map each module to an asynchronous task
         let module_futures: Vec<_> = modules
@@ -93,10 +95,9 @@ impl ModuleCompiler {
                 task::spawn(async move {
                     // create input_module
                     let module_hash = module.class_hash;
-                    let inputs = module.inputs;
                     let module_class = module_registry.get_module_class(module_hash).await.unwrap();
-                    Ok(InputModule {
-                        inputs,
+                    Ok(ModuleWithClass {
+                        module,
                         module_class,
                     })
                 })
@@ -109,7 +110,23 @@ impl ModuleCompiler {
         // Collect results, filter out any errors
         let mut collected_results = Vec::new();
         for result in results {
-            let input_module = result??;
+            let module_with_class = result??;
+            collected_results.push(module_with_class);
+        }
+
+        Ok(collected_results)
+    }
+
+    /// Generate input structure for preprocessor that need to pass to runner
+    async fn generate_input(
+        &self,
+        modules_with_class: Vec<ModuleWithClass>,
+        identified_keys_file: PathBuf,
+    ) -> Result<PreRunnerInput> {
+        // Collect results, filter out any errors
+        let mut collected_results = Vec::new();
+        for module in modules_with_class {
+            let input_module = module.into();
             collected_results.push(input_module);
         }
 

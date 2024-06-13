@@ -18,7 +18,7 @@ use crate::{
         input::run::{InputModule, RunnerInput},
         run::{RunResult, Runner},
     },
-    module::Module,
+    module::ModuleWithClass,
     module_registry::ModuleRegistry,
 };
 
@@ -42,7 +42,7 @@ impl Processor {
     // TODO: get classes directly when processing modules
     pub async fn process(
         &self,
-        modules: Vec<Module>,
+        modules_with_class: Vec<ModuleWithClass>,
         fetch_keys: HashSet<FetchKeyEnvelope>,
     ) -> Result<RunResult> {
         // generate input file from fetch points
@@ -55,7 +55,7 @@ impl Processor {
         let provider = AbstractProvider::new(config);
         let proofs = provider.fetch_proofs_from_keys(fetch_keys).await?;
         // 2. generate input struct with proofs and module bytes
-        let input = self.generate_input(proofs, modules).await?;
+        let input = self.generate_input(proofs, modules_with_class).await?;
         // 3. pass the input file to the runner
         let input_bytes = input.to_bytes();
         self.runner.run(input_bytes)
@@ -64,19 +64,22 @@ impl Processor {
     pub async fn generate_input(
         &self,
         proofs: AbstractProviderResult,
-        modules: Vec<Module>,
+        modules_with_class: Vec<ModuleWithClass>,
     ) -> Result<RunnerInput> {
         let registry: Arc<ModuleRegistry> = Arc::clone(&self.module_registry);
         // Map each module to an asynchronous task
-        let module_futures: Vec<_> = modules
+        let module_futures: Vec<_> = modules_with_class
             .into_iter()
-            .map(|module| {
+            .map(|module_with_class| {
                 let module_registry = Arc::clone(&registry);
                 task::spawn(async move {
                     // create input_module
-                    let module_hash = module.class_hash;
+                    let module = module_with_class.get_module();
                     let inputs = module.inputs;
-                    let module_class = module_registry.get_module_class(module_hash).await.unwrap();
+                    let module_class = module_registry
+                        .get_module_class(module.class_hash)
+                        .await
+                        .unwrap();
                     Ok(InputModule {
                         inputs,
                         module_class,
