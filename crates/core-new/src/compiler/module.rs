@@ -138,7 +138,7 @@ mod tests {
         });
         let module = Module::from_tag(ModuleTag::TEST, vec![felt!("1"), felt!("2")]);
         let module2 = Module::from_tag(ModuleTag::TEST, vec![felt!("1"), felt!("2")]);
-        let res = pre_processor
+        let _ = pre_processor
             .compile(vec![module.clone(), module2.clone()])
             .await
             .unwrap();

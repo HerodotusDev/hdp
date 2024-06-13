@@ -1,3 +1,6 @@
+//! The input for the pre-runner.
+//! This serialized struct will be passed to the pre-runner(cairo-run) as input.json file.
+
 use cairo_lang_starknet_classes::casm_contract_class::CasmContractClass;
 use serde::Serialize;
 use serde_with::serde_as;
@@ -17,7 +20,7 @@ pub struct PreRunnerInput {
 pub struct InputModule {
     #[serde_as(as = "Vec<UfeHex>")]
     pub inputs: Vec<FieldElement>,
-    /// Detail casm code of the module.
+    /// Detail class code of the module.
     /// This will be loaded to bootloader.
     pub module_class: CasmContractClass,
 }
