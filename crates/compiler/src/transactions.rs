@@ -1,12 +1,14 @@
-use alloy_primitives::{hex, U256};
 use anyhow::Result;
-use hdp_primitives::datalake::{
-    output::{Header, HeaderProof, MMRMeta},
-    transactions::{
-        output::{Transaction, TransactionReceipt},
-        TransactionsCollection, TransactionsInBlockDatalake,
+use hdp_primitives::{
+    datalake::{
+        output::{Header, HeaderProof, MMRMeta},
+        transactions::{
+            output::{Transaction, TransactionReceipt},
+            TransactionsCollection, TransactionsInBlockDatalake,
+        },
+        DatalakeField,
     },
-    DatalakeField,
+    utils::tx_index_to_tx_key,
 };
 use hdp_provider::evm::AbstractProvider;
 use serde::{Deserialize, Serialize};
@@ -139,32 +141,4 @@ pub async fn compile_tx_datalake(
         transaction_receipts,
         mmr_meta,
     })
-}
-
-/// Convert a transaction index to a transaction key
-fn tx_index_to_tx_key(tx_index: u64) -> String {
-    let binding = alloy_rlp::encode(U256::from(tx_index));
-    format!("0x{}", hex::encode(binding))
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_tx_index_to_tx_key() {
-        // no rlp prefix
-        let tx_index = 127u64;
-        let tx_key = tx_index_to_tx_key(tx_index);
-        let expected_tx_key = "0x7f".to_string();
-
-        assert_eq!(tx_key, expected_tx_key);
-
-        // rlpx prefix
-        let tx_index = 303u64;
-        let tx_key = tx_index_to_tx_key(tx_index);
-        let expected_tx_key = "0x82012f".to_string();
-
-        assert_eq!(tx_key, expected_tx_key);
-    }
 }

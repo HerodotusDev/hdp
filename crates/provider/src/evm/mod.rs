@@ -1,4 +1,4 @@
-use alloy_primitives::Bytes;
+use alloy_primitives::{keccak256, Bytes};
 use anyhow::Result;
 use eth_trie_proofs::{tx_receipt_trie::TxReceiptsMptHandler, tx_trie::TxsMptHandler};
 use std::{
@@ -13,9 +13,10 @@ use hdp_primitives::{
     block::header::Header as HeaderPrimitive,
     datalake::{
         block_sampled::output::{Account, Storage},
-        output::{Header, HeaderProof, MMRMeta},
+        output::{Header, HeaderProof, MMRMeta, MPTProof},
         transactions::output::{Transaction, TransactionReceipt},
     },
+    utils::tx_index_to_tx_key,
 };
 
 use crate::key::{
@@ -179,25 +180,183 @@ impl AbstractProvider {
         &self,
         keys: &[AccountProviderKey],
     ) -> Result<Vec<Account>> {
-        todo!("Fetch accounts from provider by using fetch points")
+        let start_fetch = Instant::now();
+
+        // group by address
+        let mut address_to_block_range: HashMap<String, Vec<u64>> = HashMap::new();
+        for key in keys {
+            let block_range = address_to_block_range
+                .entry(key.address.to_string())
+                .or_default();
+            block_range.push(key.block_number);
+        }
+        // loop through each address and fetch accounts
+        let mut accounts = vec![];
+        for (address, block_range) in address_to_block_range {
+            let (rpc_sender, mut rx) = mpsc::channel::<FetchedAccountProof>(32);
+
+            self.trie_proof_provider
+                .get_account_proofs(rpc_sender, block_range, &address)
+                .await;
+
+            let mut account_proofs: Vec<MPTProof> = vec![];
+
+            while let Some(proof) = rx.recv().await {
+                let account_proof = MPTProof {
+                    block_number: proof.block_number,
+                    proof: proof.account_proof,
+                };
+                account_proofs.push(account_proof);
+            }
+            let account_key = keccak256(address.clone());
+            let account = Account {
+                address,
+                account_key: account_key.to_string(),
+                proofs: account_proofs,
+            };
+            accounts.push(account);
+        }
+        let duration = start_fetch.elapsed();
+        info!("Time taken (Account Fetch): {:?}", duration);
+
+        Ok(accounts)
     }
 
     pub async fn get_storages_from_keys(
         &self,
         keys: &[StorageProviderKey],
     ) -> Result<Vec<Storage>> {
-        todo!("Fetch storages from provider by using fetch points")
+        let start_fetch = Instant::now();
+
+        // group by address and slot
+        let mut address_slot_to_block_range: HashMap<(String, String), Vec<u64>> = HashMap::new();
+        for key in keys {
+            let block_range = address_slot_to_block_range
+                .entry((key.address.to_string(), key.key.to_string()))
+                .or_default();
+            block_range.push(key.block_number);
+        }
+        // loop through each address and fetch storages
+        let mut storages = vec![];
+        for ((address, slot), block_range) in address_slot_to_block_range {
+            let (rpc_sender, mut rx) = mpsc::channel::<FetchedStorageProof>(32);
+
+            self.trie_proof_provider
+                .get_storage_proofs(rpc_sender, block_range, &address, slot.clone())
+                .await;
+
+            let mut storage_proofs: Vec<MPTProof> = vec![];
+
+            while let Some(proof) = rx.recv().await {
+                let storage_proof = MPTProof {
+                    block_number: proof.block_number,
+                    proof: proof.storage_proof,
+                };
+                storage_proofs.push(storage_proof);
+            }
+            let storage_key = keccak256(slot.clone()).to_string();
+            let storage = Storage {
+                address,
+                slot,
+                storage_key,
+                proofs: storage_proofs,
+            };
+            storages.push(storage);
+        }
+        let duration = start_fetch.elapsed();
+        info!("Time taken (Storage Fetch): {:?}", duration);
+
+        Ok(storages)
     }
 
     pub async fn get_txs_from_keys(&self, keys: &[TxProviderKey]) -> Result<Vec<Transaction>> {
-        todo!("Fetch transactions from provider by using fetch points")
+        let start_fetch = Instant::now();
+        // group by block number
+        let mut block_to_tx_range: HashMap<u64, Vec<u64>> = HashMap::new();
+        for key in keys {
+            let tx_range = block_to_tx_range.entry(key.block_number).or_default();
+            tx_range.push(key.tx_index);
+        }
+
+        let mut transactions = vec![];
+        for (block_number, tx_range) in block_to_tx_range {
+            let mut txs_mpt_handler = TxsMptHandler::new(self.trie_proof_provider.url).unwrap();
+            txs_mpt_handler
+                .build_tx_tree_from_block(block_number)
+                .await
+                .unwrap();
+            let txs = txs_mpt_handler.get_elements().unwrap();
+
+            for tx_index in tx_range {
+                let proof = txs_mpt_handler
+                    .get_proof(tx_index)
+                    .unwrap()
+                    .into_iter()
+                    .map(|x| Bytes::from(x).to_string())
+                    .collect::<Vec<_>>();
+                let consensus_tx = txs[tx_index as usize].clone();
+                let rlp = Bytes::from(consensus_tx.rlp_encode()).to_string();
+                let key_fixed_bytes = tx_index_to_tx_key(tx_index);
+                let tx = Transaction {
+                    block_number,
+                    proof,
+                    key: key_fixed_bytes,
+                };
+                transactions.push(tx);
+            }
+        }
+        let duration = start_fetch.elapsed();
+        info!("Time taken (Transaction Fetch): {:?}", duration);
+        Ok(transactions)
     }
 
     pub async fn get_tx_receipts_from_keys(
         &self,
         keys: &[TxReceiptProviderKey],
     ) -> Result<Vec<TransactionReceipt>> {
-        todo!("Fetch transaction receipts from provider by using fetch points")
+        let start_fetch = Instant::now();
+        // group by block number
+        let mut block_to_tx_receipt_range: HashMap<u64, Vec<u64>> = HashMap::new();
+        for key in keys {
+            let tx_receipt_range = block_to_tx_receipt_range
+                .entry(key.block_number)
+                .or_default();
+            tx_receipt_range.push(key.tx_index);
+        }
+
+        let mut transaction_receipts = vec![];
+        for (block_number, tx_receipt_range) in block_to_tx_receipt_range {
+            let mut tx_reciepts_mpt_handler =
+                TxReceiptsMptHandler::new(self.trie_proof_provider.url).unwrap();
+
+            tx_reciepts_mpt_handler
+                .build_tx_receipts_tree_from_block(block_number)
+                .await
+                .unwrap();
+            let tx_receipts = tx_reciepts_mpt_handler.get_elements().unwrap();
+
+            for tx_receipt_index in tx_receipt_range {
+                let proof = tx_reciepts_mpt_handler
+                    .get_proof(tx_receipt_index)
+                    .unwrap()
+                    .into_iter()
+                    .map(|x| Bytes::from(x).to_string())
+                    .collect::<Vec<_>>();
+                let consensus_tx_receipt = tx_receipts[tx_receipt_index as usize].clone();
+                let rlp = Bytes::from(consensus_tx_receipt.rlp_encode()).to_string();
+                let key_fixed_bytes = tx_index_to_tx_key(tx_receipt_index);
+                let tx_receipt = TransactionReceipt {
+                    block_number,
+                    proof,
+                    key: key_fixed_bytes,
+                };
+                transaction_receipts.push(tx_receipt);
+            }
+        }
+
+        let duration = start_fetch.elapsed();
+        info!("Time taken (Transaction Receipt Fetch): {:?}", duration);
+        Ok(transaction_receipts)
     }
 
     // TODO: wip
