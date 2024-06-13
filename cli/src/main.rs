@@ -16,6 +16,7 @@ use hdp_primitives::{
             TransactionsInBlockDatalake,
         },
     },
+    task::ComputationalTask,
 };
 use inquire::{error::InquireError, Select};
 use std::{str::FromStr, sync::Arc, vec};
@@ -29,7 +30,6 @@ use hdp_core::{
     },
     config::Config,
     evaluator::evaluator,
-    task::ComputationalTask,
 };
 
 pub mod cairo_runner;

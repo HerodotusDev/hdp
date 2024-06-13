@@ -4,9 +4,9 @@ use alloy_dyn_abi::{DynSolType, DynSolValue};
 use alloy_primitives::{hex::FromHex, keccak256, FixedBytes, U256};
 use anyhow::{bail, Result};
 
-use hdp_primitives::aggregate_fn::integer::Operator;
-use hdp_primitives::aggregate_fn::FunctionContext;
-use hdp_primitives::{
+use crate::aggregate_fn::integer::Operator;
+use crate::aggregate_fn::FunctionContext;
+use crate::{
     aggregate_fn::AggregationFunction, datalake::envelope::DatalakeEnvelope,
     utils::bytes_to_hex_string,
 };
@@ -148,7 +148,8 @@ impl ComputationalTask {
 
 #[cfg(test)]
 mod tests {
-    use hdp_primitives::datalake::block_sampled::BlockSampledDatalake;
+
+    use crate::datalake::block_sampled::BlockSampledDatalake;
 
     use super::*;
 

@@ -13,16 +13,15 @@ use tokio::sync::RwLock;
 
 use hdp_compiler::{CompiledDatalakeEnvelope, DatalakeCompiler};
 
-use crate::task::ComputationalTaskWithDatalake;
-
-use super::task::ComputationalTask;
-
-use hdp_primitives::datalake::{
-    block_sampled::output::{Account, Storage},
-    datalake_type::DatalakeType,
-    envelope::DatalakeEnvelope,
-    output::{Header, MMRMeta, Task},
-    transactions::output::{Transaction, TransactionReceipt},
+use hdp_primitives::{
+    datalake::{
+        block_sampled::output::{Account, Storage},
+        datalake_type::DatalakeType,
+        envelope::DatalakeEnvelope,
+        output::{Header, MMRMeta, Task},
+        transactions::output::{Transaction, TransactionReceipt},
+    },
+    task::{ComputationalTask, ComputationalTaskWithDatalake},
 };
 
 use hdp_provider::evm::AbstractProvider;

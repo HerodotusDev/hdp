@@ -1,4 +1,3 @@
-use crate::task::ComputationalTask;
 use alloy_dyn_abi::{DynSolType, DynSolValue};
 use alloy_primitives::hex::FromHex;
 use anyhow::{Ok, Result};
@@ -7,6 +6,7 @@ use hdp_primitives::{
         block_sampled::BlockSampledDatalake, datalake_type::DatalakeType,
         envelope::DatalakeEnvelope, transactions::TransactionsInBlockDatalake, Datalake,
     },
+    task::ComputationalTask,
     utils::{bytes_to_hex_string, last_byte_to_u8},
 };
 
