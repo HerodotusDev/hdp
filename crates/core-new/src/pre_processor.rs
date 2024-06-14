@@ -3,7 +3,6 @@
 
 use std::collections::HashSet;
 use std::path::PathBuf;
-use std::sync::Arc;
 
 use crate::compiler::module::ModuleCompilerConfig;
 use crate::compiler::Compiler;
@@ -17,7 +16,7 @@ use tracing::info;
 
 pub struct PreProcessor {
     /// compiler
-    compiler: Arc<Compiler>,
+    compiler: Compiler,
 }
 
 pub struct PreProcessorConfig {
@@ -42,9 +41,7 @@ impl PreProcessor {
             module_registry_rpc_url: rpc_url,
             program_path: program_path.clone(),
         });
-        Self {
-            compiler: Arc::new(compiler),
-        }
+        Self { compiler }
     }
 
     /// User request is pass as input of this function,
