@@ -50,7 +50,7 @@ impl Processor {
         self.runner.run(input_bytes)
     }
 
-    pub async fn generate_input(
+    async fn generate_input(
         &self,
         proofs: AbstractProviderResult,
         tasks: Vec<ExtendedTask>,

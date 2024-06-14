@@ -20,7 +20,7 @@ use tempfile::NamedTempFile;
 use tokio::task;
 use tracing::info;
 
-pub struct ModuleCompiler {
+pub(crate) struct ModuleCompiler {
     pre_runner: PreRunner,
     /// Registery provider
     module_registry: Arc<ModuleRegistry>,

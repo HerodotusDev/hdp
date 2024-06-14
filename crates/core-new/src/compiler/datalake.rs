@@ -16,7 +16,7 @@ use hdp_provider::key::{
 };
 use std::collections::HashSet;
 
-pub struct DatalakeCompiler {}
+pub(crate) struct DatalakeCompiler {}
 
 impl Default for DatalakeCompiler {
     fn default() -> Self {
