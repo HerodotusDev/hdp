@@ -117,10 +117,9 @@ impl DatalakeCompiler {
                 }
             }
             let extended_datalake = ExtendedDatalake {
-                task_commitment: datalake.commit(),
-                // TODO: get the values
+                task: datalake,
+                // TODO: get the values that are required to run the aggregation function
                 aggregate_values_set: Vec::new(),
-                compute: datalake.compute,
             };
 
             extended_datalakes.push(extended_datalake);

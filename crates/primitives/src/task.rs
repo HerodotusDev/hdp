@@ -1,9 +1,8 @@
 //! Task is a unit of work that can be executed by the processor/pre-processor.
 
 use cairo_lang_starknet_classes::casm_contract_class::CasmContractClass;
-use starknet_crypto::FieldElement;
 
-use crate::datalake::task::{Computation, DatalakeCompute};
+use crate::datalake::task::DatalakeCompute;
 use crate::module::Module;
 
 /// [`TaskEnvelope`] is a structure that contains task itself
@@ -30,14 +29,12 @@ pub enum ExtendedTask {
 }
 
 pub struct ExtendedDatalake {
-    pub task_commitment: String,
+    pub task: DatalakeCompute,
     pub aggregate_values_set: Vec<String>,
-    pub compute: Computation,
 }
 
 #[derive(Clone, Debug)]
 pub struct ExtendedModule {
-    pub task_commitment: String,
-    pub module_inputs: Vec<FieldElement>,
+    pub task: Module,
     pub module_class: CasmContractClass,
 }

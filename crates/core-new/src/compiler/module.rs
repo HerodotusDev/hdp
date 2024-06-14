@@ -97,8 +97,7 @@ impl ModuleCompiler {
                     let module_hash = module.class_hash;
                     let module_class = module_registry.get_module_class(module_hash).await.unwrap();
                     Ok(ExtendedModule {
-                        task_commitment: module.commit(),
-                        module_inputs: module.inputs,
+                        task: module,
                         module_class,
                     })
                 })
@@ -128,7 +127,7 @@ impl ModuleCompiler {
         let mut collected_results = Vec::new();
         for module in extended_modules {
             let input_module = InputModule {
-                inputs: module.module_inputs,
+                inputs: module.task.inputs,
                 module_class: module.module_class,
             };
             collected_results.push(input_module);
