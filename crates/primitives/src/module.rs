@@ -3,7 +3,6 @@
 //! This is request interface for the preprocessor.
 
 use alloy_primitives::{keccak256, Keccak256};
-use cairo_lang_starknet_classes::casm_contract_class::CasmContractClass;
 use serde::Serialize;
 use serde_with::serde_as;
 use starknet::core::serde::unsigned_field_element::UfeHex;
@@ -56,29 +55,5 @@ impl Module {
 
         let commit = hasher.clone().finalize();
         format!("0x{:x}", commit)
-    }
-}
-
-#[serde_as]
-#[derive(Clone, Debug, Serialize, PartialEq, Eq)]
-pub struct ExtendedModuleTask {
-    pub module: Module,
-    pub module_class: CasmContractClass,
-}
-
-impl ExtendedModuleTask {
-    pub fn new(module: Module, module_class: CasmContractClass) -> Self {
-        Self {
-            module,
-            module_class,
-        }
-    }
-
-    pub fn get_module(&self) -> Module {
-        self.module.clone()
-    }
-
-    pub fn get_class(&self) -> CasmContractClass {
-        self.module_class.clone()
     }
 }

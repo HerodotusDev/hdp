@@ -9,9 +9,9 @@ The `TaskEnvelope` definition is used as an input for the `pre-processor`. There
 
 Both task interfaces can be committed on-chain as a `bytes32` type.
 
-## ExtendedTaskEnvelope
+## ExtendedTask
 
-The `ExtendedTaskEnvelope` is used as an input for the `processor`. It extends the `TaskEnvelope` definition with pre-processed data:
+The `ExtendedTask` is used as an input for the `processor`. It extends the `TaskEnvelope` definition with pre-processed data:
 
 - **DatalakeCompute**: It provides a list of values that the aggregate function needs to pre-compute over.
 - **Module**: It includes the `module_class` that is fetched during the pre-processing step.

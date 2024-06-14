@@ -2,16 +2,19 @@
 //! The datalake compiler is responsible for compiling the datalake into a set of fetch keys.
 //! The fetch keys are used to fetch the data from the provider.
 
-use std::collections::HashSet;
-
-use hdp_primitives::datalake::{
-    block_sampled::BlockSampledCollection, envelope::DatalakeEnvelope, task::DatalakeCompute,
-    transactions::TransactionsCollection,
+use anyhow::Result;
+use hdp_primitives::{
+    datalake::{
+        block_sampled::BlockSampledCollection, envelope::DatalakeEnvelope, task::DatalakeCompute,
+        transactions::TransactionsCollection,
+    },
+    task::ExtendedDatalake,
 };
 use hdp_provider::key::{
     AccountProviderKey, FetchKeyEnvelope, HeaderProviderKey, StorageProviderKey, TxProviderKey,
     TxReceiptProviderKey,
 };
+use std::collections::HashSet;
 
 pub struct DatalakeCompiler {}
 
@@ -34,11 +37,12 @@ impl DatalakeCompiler {
         &self,
         datalakes: Vec<DatalakeCompute>,
         chain_id: u64,
-    ) -> HashSet<FetchKeyEnvelope> {
+    ) -> Result<(HashSet<FetchKeyEnvelope>, Vec<ExtendedDatalake>)> {
         let mut fetch_set: HashSet<FetchKeyEnvelope> = HashSet::new();
+        let mut extended_datalakes: Vec<ExtendedDatalake> = Vec::new();
         for datalake in datalakes {
             match datalake.datalake {
-                DatalakeEnvelope::BlockSampled(datalake) => {
+                DatalakeEnvelope::BlockSampled(ref datalake) => {
                     let target_blocks: Vec<u64> = (datalake.block_range_start
                         ..datalake.block_range_end)
                         .step_by(datalake.increment as usize)
@@ -76,7 +80,7 @@ impl DatalakeCompiler {
                         }
                     }
                 }
-                DatalakeEnvelope::Transactions(datalake) => {
+                DatalakeEnvelope::Transactions(ref datalake) => {
                     let target_tx_index: Vec<u64> = (datalake.start_index..datalake.end_index)
                         .step_by(datalake.increment as usize)
                         .collect();
@@ -112,8 +116,16 @@ impl DatalakeCompiler {
                     }
                 }
             }
+            let extended_datalake = ExtendedDatalake {
+                task_commitment: datalake.commit(),
+                // TODO: get the values
+                aggregate_values_set: Vec::new(),
+                compute: datalake.compute,
+            };
+
+            extended_datalakes.push(extended_datalake);
         }
-        fetch_set
+        Ok((fetch_set, extended_datalakes))
     }
 }
 
@@ -149,7 +161,7 @@ mod tests {
             },
         ];
 
-        let fetch_keys = compiler.compile(datalakes, 1);
+        let (fetch_keys, _) = compiler.compile(datalakes, 1).unwrap();
         assert_eq!(fetch_keys.len(), 10);
         assert!(fetch_keys.contains(&FetchKeyEnvelope::Header(HeaderProviderKey::new(1, 0))));
     }
