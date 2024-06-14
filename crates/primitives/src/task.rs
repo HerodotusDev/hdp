@@ -1,3 +1,5 @@
+//! Task is a unit of work that can be executed by the processor/pre-processor.
+
 use cairo_lang_starknet_classes::casm_contract_class::CasmContractClass;
 use starknet_crypto::FieldElement;
 
