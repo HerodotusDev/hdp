@@ -29,8 +29,6 @@ pub struct RunnerInput {
 #[serde_as]
 #[derive(Serialize)]
 pub struct InputModule {
-    /// encoded module task
-    pub encoded_task: String,
     /// Inputs of the module.
     #[serde_as(as = "Vec<UfeHex>")]
     inputs: Vec<FieldElement>,
