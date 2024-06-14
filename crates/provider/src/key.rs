@@ -33,11 +33,32 @@ impl_hash_for_provider_key!(StorageProviderKey {
     key
 });
 
+impl_hash_for_provider_key!(TxProviderKey {
+    chain_id,
+    block_number,
+    tx_index
+});
+
+impl_hash_for_provider_key!(TxReceiptProviderKey {
+    chain_id,
+    block_number,
+    tx_index
+});
+
 /// Key for fetching block header from provider.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HeaderProviderKey {
     pub chain_id: ChainId,
     pub block_number: BlockNumber,
+}
+
+impl HeaderProviderKey {
+    pub fn new(chain_id: ChainId, block_number: BlockNumber) -> Self {
+        Self {
+            chain_id,
+            block_number,
+        }
+    }
 }
 
 /// Key for fetching account from provider.
@@ -46,6 +67,16 @@ pub struct AccountProviderKey {
     pub chain_id: ChainId,
     pub block_number: BlockNumber,
     pub address: Address,
+}
+
+impl AccountProviderKey {
+    pub fn new(chain_id: ChainId, block_number: BlockNumber, address: Address) -> Self {
+        Self {
+            chain_id,
+            block_number,
+            address,
+        }
+    }
 }
 
 /// Key for fetching storage value from provider.
@@ -57,13 +88,68 @@ pub struct StorageProviderKey {
     pub key: StorageKey,
 }
 
-// TODO: Temporary implemented from string approach, but need to sync with how bootloader will emit the keys
+impl StorageProviderKey {
+    pub fn new(
+        chain_id: ChainId,
+        block_number: BlockNumber,
+        address: Address,
+        key: StorageKey,
+    ) -> Self {
+        Self {
+            chain_id,
+            block_number,
+            address,
+            key,
+        }
+    }
+}
+
+/// Key for fetching transaction from provider.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TxProviderKey {
+    pub chain_id: ChainId,
+    pub block_number: BlockNumber,
+    pub tx_index: u64,
+}
+
+impl TxProviderKey {
+    pub fn new(chain_id: ChainId, block_number: BlockNumber, tx_index: u64) -> Self {
+        Self {
+            chain_id,
+            block_number,
+            tx_index,
+        }
+    }
+}
+
+/// Key for fetching transaction receipt from provider.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TxReceiptProviderKey {
+    pub chain_id: ChainId,
+    pub block_number: BlockNumber,
+    pub tx_index: u64,
+}
+
+impl TxReceiptProviderKey {
+    pub fn new(chain_id: ChainId, block_number: BlockNumber, tx_index: u64) -> Self {
+        Self {
+            chain_id,
+            block_number,
+            tx_index,
+        }
+    }
+}
+
+#[derive(Hash, Debug, PartialEq, Eq)]
 pub enum FetchKeyEnvelope {
     Header(HeaderProviderKey),
     Account(AccountProviderKey),
     Storage(StorageProviderKey),
+    Tx(TxProviderKey),
+    TxReceipt(TxReceiptProviderKey),
 }
 
+// TODO: Temporary implemented from string approach, but need to sync with how bootloader will emit the keys
 impl FromStr for FetchKeyEnvelope {
     type Err = anyhow::Error;
 

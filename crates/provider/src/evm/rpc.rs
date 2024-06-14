@@ -25,12 +25,32 @@ pub struct FetchedAccountProof {
     pub account_proof: Vec<String>,
 }
 
+/// Fetched storage and account proof and it's value
 #[derive(Debug, Clone)]
-pub struct FetchedStorageProof {
+pub struct FetchedStorageAccountProof {
     pub block_number: u64,
+    pub encoded_account: String,
     pub account_proof: Vec<String>,
     pub storage_value: String,
     pub storage_proof: Vec<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct FetchedTransactionProof {
+    pub block_number: u64,
+    pub tx_index: u64,
+    pub encoded_transaction: String,
+    pub transaction_proof: Vec<String>,
+    pub tx_type: u8,
+}
+
+#[derive(Debug, Clone)]
+pub struct FetchedTransactionReceiptProof {
+    pub block_number: u64,
+    pub tx_index: u64,
+    pub encoded_receipt: String,
+    pub receipt_proof: Vec<String>,
+    pub tx_type: u8,
 }
 
 pub struct HeaderProvider {
@@ -253,7 +273,7 @@ impl TrieProofProvider {
 
     pub async fn get_storage_proofs(
         &self,
-        rpc_sender: Sender<FetchedStorageProof>,
+        rpc_sender: Sender<FetchedStorageAccountProof>,
         block_numbers: Vec<u64>,
         address: &str,
         slot: String,
@@ -295,13 +315,16 @@ impl TrieProofProvider {
                             match account_from_rpc {
                                 Ok(account_from_rpc) => {
                                     let mut blocks_identifier = fetched_blocks_clone.write().await;
+                                    let account = Account::from(&account_from_rpc);
+                                    let encoded_account = account.rlp_encode();
                                     let storage = &account_from_rpc.storage_proof[0];
                                     let storage_value = storage.value.clone();
                                     let storage_proof =
                                         account_from_rpc.storage_proof[0].proof.clone();
                                     let account_proof = account_from_rpc.account_proof;
-                                    let mpt_proof = FetchedStorageProof {
+                                    let mpt_proof = FetchedStorageAccountProof {
                                         block_number: *block_number,
+                                        encoded_account,
                                         account_proof,
                                         storage_value,
                                         storage_proof,
