@@ -4,12 +4,9 @@
 
 use std::collections::HashSet;
 
-use hdp_primitives::{
-    datalake::{
-        block_sampled::BlockSampledCollection, envelope::DatalakeEnvelope,
-        transactions::TransactionsCollection,
-    },
-    task::ComputationalTaskWithDatalake,
+use hdp_primitives::datalake::{
+    block_sampled::BlockSampledCollection, envelope::DatalakeEnvelope, task::DatalakeCompute,
+    transactions::TransactionsCollection,
 };
 use hdp_provider::key::{
     AccountProviderKey, FetchKeyEnvelope, HeaderProviderKey, StorageProviderKey, TxProviderKey,
@@ -35,12 +32,12 @@ impl DatalakeCompiler {
     /// Also return vector of values required to run the aggregation function
     pub fn compile(
         &self,
-        datalakes: Vec<ComputationalTaskWithDatalake>,
+        datalakes: Vec<DatalakeCompute>,
         chain_id: u64,
     ) -> HashSet<FetchKeyEnvelope> {
         let mut fetch_set: HashSet<FetchKeyEnvelope> = HashSet::new();
         for datalake in datalakes {
-            match datalake.inner {
+            match datalake.datalake {
                 DatalakeEnvelope::BlockSampled(datalake) => {
                     let target_blocks: Vec<u64> = (datalake.block_range_start
                         ..datalake.block_range_end)
@@ -123,25 +120,27 @@ impl DatalakeCompiler {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use hdp_primitives::datalake::block_sampled::{BlockSampledDatalake, HeaderField};
-    use hdp_primitives::task::ComputationalTask;
+    use hdp_primitives::datalake::{
+        block_sampled::{BlockSampledDatalake, HeaderField},
+        task::Computation,
+    };
 
     #[test]
     fn test_compile() {
         let compiler = DatalakeCompiler::new();
         let datalakes = vec![
-            ComputationalTaskWithDatalake {
-                task: ComputationalTask::new("count", None),
-                inner: DatalakeEnvelope::BlockSampled(BlockSampledDatalake {
+            DatalakeCompute {
+                compute: Computation::new("count", None),
+                datalake: DatalakeEnvelope::BlockSampled(BlockSampledDatalake {
                     block_range_start: 0,
                     block_range_end: 10,
                     increment: 1,
                     sampled_property: BlockSampledCollection::Header(HeaderField::Number),
                 }),
             },
-            ComputationalTaskWithDatalake {
-                task: ComputationalTask::new("count", None),
-                inner: DatalakeEnvelope::BlockSampled(BlockSampledDatalake {
+            DatalakeCompute {
+                compute: Computation::new("count", None),
+                datalake: DatalakeEnvelope::BlockSampled(BlockSampledDatalake {
                     block_range_start: 0,
                     block_range_end: 10,
                     increment: 1,

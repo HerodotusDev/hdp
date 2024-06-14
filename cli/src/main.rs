@@ -11,12 +11,12 @@ use hdp_primitives::{
         },
         datalake_type::DatalakeType,
         envelope::DatalakeEnvelope,
+        task::Computation,
         transactions::{
             TransactionField, TransactionReceiptField, TransactionsCollectionType,
             TransactionsInBlockDatalake,
         },
     },
-    task::ComputationalTask,
 };
 use inquire::{error::InquireError, Select};
 use std::{str::FromStr, sync::Arc, vec};
@@ -165,7 +165,7 @@ enum DataLakeCommands {
 }
 
 struct DecodeMultipleResult {
-    tasks: Vec<ComputationalTask>,
+    tasks: Vec<Computation>,
     datalakes: Vec<DatalakeEnvelope>,
 }
 
@@ -190,7 +190,7 @@ async fn handle_decode_multiple(datalakes: String, tasks: String) -> Result<Deco
 }
 
 async fn handle_encode_multiple(
-    tasks: Vec<ComputationalTask>,
+    tasks: Vec<Computation>,
     datalakes: Vec<DatalakeEnvelope>,
 ) -> Result<EncodeMultipleResult> {
     let encoded_datalakes = datalakes_encoder(datalakes)?;
@@ -502,7 +502,7 @@ async fn main() -> Result<()> {
             };
 
             let encoded_result = handle_encode_multiple(
-                vec![ComputationalTask::new(aggregate_fn_id, aggregate_fn_ctx)],
+                vec![Computation::new(aggregate_fn_id, aggregate_fn_ctx)],
                 vec![datalake_envelope],
             )
             .await?;
@@ -600,7 +600,7 @@ async fn main() -> Result<()> {
             };
 
             let encoded_result = handle_encode_multiple(
-                vec![ComputationalTask::new(&aggregate_fn_id, aggregate_fn_ctx)],
+                vec![Computation::new(&aggregate_fn_id, aggregate_fn_ctx)],
                 vec![datalake],
             )
             .await?;

@@ -4,14 +4,14 @@ use anyhow::{Ok, Result};
 use hdp_primitives::{
     datalake::{
         block_sampled::BlockSampledDatalake, datalake_type::DatalakeType,
-        envelope::DatalakeEnvelope, transactions::TransactionsInBlockDatalake, Datalake,
+        envelope::DatalakeEnvelope, task::Computation, transactions::TransactionsInBlockDatalake,
+        Datalake,
     },
-    task::ComputationalTask,
     utils::{bytes_to_hex_string, last_byte_to_u8},
 };
 
 /// Decode a batch of tasks
-pub fn tasks_decoder(serialized_tasks_batch: String) -> Result<Vec<ComputationalTask>> {
+pub fn tasks_decoder(serialized_tasks_batch: String) -> Result<Vec<Computation>> {
     let tasks_type: DynSolType = "bytes[]".parse()?;
     let bytes = Vec::from_hex(serialized_tasks_batch).expect("Invalid hex string");
 
@@ -21,8 +21,7 @@ pub fn tasks_decoder(serialized_tasks_batch: String) -> Result<Vec<Computational
 
     if let Some(tasks) = serialized_tasks.as_array() {
         for task in tasks {
-            let computational_task =
-                ComputationalTask::decode_not_filled_task(task.as_bytes().unwrap())?;
+            let computational_task = Computation::decode_not_filled_task(task.as_bytes().unwrap())?;
             decoded_tasks.push(computational_task);
         }
     }
@@ -31,8 +30,8 @@ pub fn tasks_decoder(serialized_tasks_batch: String) -> Result<Vec<Computational
 }
 
 /// Decode a single task
-pub fn task_decoder(serialized_task: String) -> Result<ComputationalTask> {
-    let computational_task = ComputationalTask::decode_not_filled_task(serialized_task.as_bytes())?;
+pub fn task_decoder(serialized_task: String) -> Result<Computation> {
+    let computational_task = Computation::decode_not_filled_task(serialized_task.as_bytes())?;
     Ok(computational_task)
 }
 
@@ -105,7 +104,7 @@ pub fn datalakes_encoder(datalakes: Vec<DatalakeEnvelope>) -> Result<String> {
 }
 
 /// Encode batch of tasks
-pub fn tasks_encoder(tasks: Vec<ComputationalTask>) -> Result<String> {
+pub fn tasks_encoder(tasks: Vec<Computation>) -> Result<String> {
     let mut encoded_tasks: Vec<DynSolValue> = Vec::new();
 
     for task in tasks {
@@ -136,10 +135,10 @@ mod tests {
     fn test_task_decoder() {
         // Note: all task's datalake is None
         let original_tasks = vec![
-            ComputationalTask::new("avg", None),
-            ComputationalTask::new("sum", None),
-            ComputationalTask::new("min", None),
-            ComputationalTask::new("max", None),
+            Computation::new("avg", None),
+            Computation::new("sum", None),
+            Computation::new("min", None),
+            Computation::new("max", None),
         ];
 
         let encoded_tasks = tasks_encoder(original_tasks).unwrap();
