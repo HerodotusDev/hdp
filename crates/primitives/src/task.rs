@@ -6,10 +6,37 @@ use anyhow::{bail, Result};
 
 use crate::aggregate_fn::integer::Operator;
 use crate::aggregate_fn::FunctionContext;
+use crate::module::{ExtendedModuleTask, Module};
 use crate::{
     aggregate_fn::AggregationFunction, datalake::envelope::DatalakeEnvelope,
     utils::bytes_to_hex_string,
 };
+
+/// Most abstract structure that contains the task
+pub enum TaskEnvelope {
+    Datalake(ComputationalTaskWithDatalake),
+    Module(Module),
+}
+
+impl TaskEnvelope {
+    pub fn commit(&self) -> String {
+        match self {
+            TaskEnvelope::Datalake(task) => task.commit(),
+            TaskEnvelope::Module(module) => module.commit(),
+        }
+    }
+}
+
+/// Extended task envelope that contains the information that processor requires
+pub enum ExtendedTaskEnvelope {
+    Datalake(ExtendedDatalakeTask),
+    Module(ExtendedModuleTask),
+}
+
+pub struct ExtendedDatalakeTask {
+    pub task: ComputationalTaskWithDatalake,
+    pub values: Vec<U256>,
+}
 
 #[derive(Debug)]
 pub struct ComputationalTaskWithDatalake {

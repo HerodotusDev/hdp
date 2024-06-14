@@ -8,11 +8,11 @@ use std::sync::Arc;
 
 use crate::cairo_runner::input::pre_run::PreRunnerInput;
 use crate::cairo_runner::pre_run::PreRunner;
-use crate::module::{Module, ModuleWithClass};
 use crate::module_registry::ModuleRegistry;
 
 use anyhow::{Ok, Result};
 use futures::future::join_all;
+use hdp_primitives::module::{ExtendedModuleTask, Module};
 use hdp_provider::key::FetchKeyEnvelope;
 
 use starknet::providers::Url;
@@ -59,7 +59,7 @@ impl ModuleCompiler {
     pub async fn compile(
         &self,
         modules: Vec<Module>,
-    ) -> Result<(HashSet<FetchKeyEnvelope>, Vec<ModuleWithClass>)> {
+    ) -> Result<(HashSet<FetchKeyEnvelope>, Vec<ExtendedModuleTask>)> {
         // 1. generate input data required for preprocessor
         info!("Generating input data for preprocessor...");
 
@@ -85,7 +85,7 @@ impl ModuleCompiler {
         Ok((keys, modules_with_class))
     }
 
-    async fn fetch_modules_class(&self, modules: Vec<Module>) -> Result<Vec<ModuleWithClass>> {
+    async fn fetch_modules_class(&self, modules: Vec<Module>) -> Result<Vec<ExtendedModuleTask>> {
         let registry: Arc<ModuleRegistry> = Arc::clone(&self.module_registry);
         // Map each module to an asynchronous task
         let module_futures: Vec<_> = modules
@@ -96,7 +96,7 @@ impl ModuleCompiler {
                     // create input_module
                     let module_hash = module.class_hash;
                     let module_class = module_registry.get_module_class(module_hash).await.unwrap();
-                    Ok(ModuleWithClass {
+                    Ok(ExtendedModuleTask {
                         module,
                         module_class,
                     })
@@ -120,7 +120,7 @@ impl ModuleCompiler {
     /// Generate input structure for preprocessor that need to pass to runner
     async fn generate_input(
         &self,
-        modules_with_class: Vec<ModuleWithClass>,
+        modules_with_class: Vec<ExtendedModuleTask>,
         identified_keys_file: PathBuf,
     ) -> Result<PreRunnerInput> {
         // Collect results, filter out any errors
@@ -139,10 +139,10 @@ impl ModuleCompiler {
 
 #[cfg(test)]
 mod tests {
+    use hdp_primitives::module::ModuleTag;
     use starknet::macros::felt;
 
     use super::*;
-    use crate::module::{Module, ModuleTag};
 
     #[tokio::test]
     async fn test_pre_processor() {

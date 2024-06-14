@@ -6,6 +6,7 @@ use std::{collections::HashSet, sync::Arc};
 
 use anyhow::{Ok, Result};
 use futures::future::join_all;
+use hdp_primitives::module::ExtendedModuleTask;
 use hdp_provider::{
     evm::{AbstractProvider, AbstractProviderConfig, AbstractProviderResult},
     key::FetchKeyEnvelope,
@@ -18,7 +19,6 @@ use crate::{
         input::run::{InputModule, RunnerInput},
         run::{RunResult, Runner},
     },
-    module::ModuleWithClass,
     module_registry::ModuleRegistry,
 };
 
@@ -42,7 +42,7 @@ impl Processor {
     // TODO: get classes directly when processing modules
     pub async fn process(
         &self,
-        modules_with_class: Vec<ModuleWithClass>,
+        modules_with_class: Vec<ExtendedModuleTask>,
         fetch_keys: HashSet<FetchKeyEnvelope>,
     ) -> Result<RunResult> {
         // generate input file from fetch points
@@ -64,7 +64,7 @@ impl Processor {
     pub async fn generate_input(
         &self,
         proofs: AbstractProviderResult,
-        modules_with_class: Vec<ModuleWithClass>,
+        modules_with_class: Vec<ExtendedModuleTask>,
     ) -> Result<RunnerInput> {
         let registry: Arc<ModuleRegistry> = Arc::clone(&self.module_registry);
         // Map each module to an asynchronous task

@@ -2,13 +2,12 @@
 //! This serialized struct will be passed to the pre-runner(cairo-run) as input.json file.
 
 use cairo_lang_starknet_classes::casm_contract_class::CasmContractClass;
+use hdp_primitives::module::ExtendedModuleTask;
 use serde::Serialize;
 use serde_with::serde_as;
 use starknet::core::serde::unsigned_field_element::UfeHex;
 use starknet_crypto::FieldElement;
 use std::path::PathBuf;
-
-use crate::module::ModuleWithClass;
 
 #[serde_as]
 #[derive(Serialize)]
@@ -43,8 +42,8 @@ impl PreRunnerInput {
     }
 }
 
-impl From<ModuleWithClass> for InputModule {
-    fn from(module_with_class: ModuleWithClass) -> Self {
+impl From<ExtendedModuleTask> for InputModule {
+    fn from(module_with_class: ExtendedModuleTask) -> Self {
         let module = module_with_class.module;
         let module_class = module_with_class.module_class;
         Self {

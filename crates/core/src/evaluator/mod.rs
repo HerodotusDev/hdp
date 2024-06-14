@@ -302,7 +302,7 @@ pub async fn evaluator(
             .insert(task_commitment.to_string(), encoded_task);
         // Save the datalake data
         results.encoded_datalakes.insert(
-            task_commitment,
+            task_commitment.to_string(),
             EvaluatedDatalake {
                 encoded_datalake,
                 datalake_type,

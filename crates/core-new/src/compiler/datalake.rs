@@ -4,9 +4,12 @@
 
 use std::collections::HashSet;
 
-use hdp_primitives::datalake::{
-    block_sampled::BlockSampledCollection, envelope::DatalakeEnvelope,
-    transactions::TransactionsCollection,
+use hdp_primitives::{
+    datalake::{
+        block_sampled::BlockSampledCollection, envelope::DatalakeEnvelope,
+        transactions::TransactionsCollection,
+    },
+    task::ComputationalTaskWithDatalake,
 };
 use hdp_provider::key::{
     AccountProviderKey, FetchKeyEnvelope, HeaderProviderKey, StorageProviderKey, TxProviderKey,
@@ -28,14 +31,16 @@ impl DatalakeCompiler {
 
     // TODO: depends on the requested field, need to decide whether if this fetch key is able to included or not
     // TODO2: we don't need account key if there is same storage key exists
+    /// Resulted set of fetch keys are filtered as valid
+    /// Also return vector of values required to run the aggregation function
     pub fn compile(
         &self,
-        datalakes: Vec<DatalakeEnvelope>,
+        datalakes: Vec<ComputationalTaskWithDatalake>,
         chain_id: u64,
     ) -> HashSet<FetchKeyEnvelope> {
         let mut fetch_set: HashSet<FetchKeyEnvelope> = HashSet::new();
         for datalake in datalakes {
-            match datalake {
+            match datalake.inner {
                 DatalakeEnvelope::BlockSampled(datalake) => {
                     let target_blocks: Vec<u64> = (datalake.block_range_start
                         ..datalake.block_range_end)
@@ -119,32 +124,34 @@ impl DatalakeCompiler {
 mod tests {
     use super::*;
     use hdp_primitives::datalake::block_sampled::{BlockSampledDatalake, HeaderField};
-    use hdp_primitives::datalake::transactions::{
-        IncludedTypes, TransactionField, TransactionsInBlockDatalake,
-    };
+    use hdp_primitives::task::ComputationalTask;
 
     #[test]
     fn test_compile() {
         let compiler = DatalakeCompiler::new();
         let datalakes = vec![
-            DatalakeEnvelope::BlockSampled(BlockSampledDatalake {
-                block_range_start: 0,
-                block_range_end: 10,
-                increment: 1,
-                sampled_property: BlockSampledCollection::Header(HeaderField::BlobGasUsed),
-            }),
-            DatalakeEnvelope::Transactions(TransactionsInBlockDatalake {
-                start_index: 0,
-                end_index: 10,
-                increment: 1,
-                target_block: 0,
-                sampled_property: TransactionsCollection::Transactions(TransactionField::GasLimit),
-                included_types: IncludedTypes::from(&[1, 1, 1, 1]),
-            }),
+            ComputationalTaskWithDatalake {
+                task: ComputationalTask::new("count", None),
+                inner: DatalakeEnvelope::BlockSampled(BlockSampledDatalake {
+                    block_range_start: 0,
+                    block_range_end: 10,
+                    increment: 1,
+                    sampled_property: BlockSampledCollection::Header(HeaderField::Number),
+                }),
+            },
+            ComputationalTaskWithDatalake {
+                task: ComputationalTask::new("count", None),
+                inner: DatalakeEnvelope::BlockSampled(BlockSampledDatalake {
+                    block_range_start: 0,
+                    block_range_end: 10,
+                    increment: 1,
+                    sampled_property: BlockSampledCollection::Header(HeaderField::Nonce),
+                }),
+            },
         ];
 
         let fetch_keys = compiler.compile(datalakes, 1);
-        assert_eq!(fetch_keys.len(), 20);
+        assert_eq!(fetch_keys.len(), 10);
         assert!(fetch_keys.contains(&FetchKeyEnvelope::Header(HeaderProviderKey::new(1, 0))));
     }
 }
