@@ -2,7 +2,7 @@
 //! This run is sound execution of the module.
 //! This will be most abstract layer of the processor.
 
-use std::{collections::HashSet, sync::Arc};
+use std::collections::HashSet;
 
 use anyhow::Result;
 
@@ -11,31 +11,20 @@ use hdp_provider::{
     evm::{AbstractProvider, AbstractProviderConfig, AbstractProviderResult},
     key::FetchKeyEnvelope,
 };
-use starknet::providers::Url;
 
-use crate::{
-    cairo_runner::{
-        input::run::RunnerInput,
-        run::{RunResult, Runner},
-    },
-    module_registry::ModuleRegistry,
+use crate::cairo_runner::{
+    input::run::RunnerInput,
+    run::{RunResult, Runner},
 };
 
 pub struct Processor {
     runner: Runner,
-    /// Registery provider
-    module_registry: Arc<ModuleRegistry>,
 }
 
 impl Processor {
-    pub fn new(url: &str) -> Self {
-        let url = Url::parse(url).expect("Invalid url");
-        let module_registry = ModuleRegistry::new(url);
+    pub fn new() -> Self {
         let runner = Runner::new();
-        Self {
-            runner,
-            module_registry: Arc::new(module_registry),
-        }
+        Self { runner }
     }
 
     pub async fn process(
@@ -52,6 +41,9 @@ impl Processor {
         };
         let provider = AbstractProvider::new(config);
         let proofs = provider.fetch_proofs_from_keys(fetch_keys).await?;
+
+        // 2. pre-compute tasks
+
         // 2. generate input struct with proofs and module bytes
         let input = self.generate_input(proofs, tasks).await?;
         // 3. pass the input file to the runner

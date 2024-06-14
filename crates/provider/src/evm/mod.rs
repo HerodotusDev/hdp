@@ -2,11 +2,13 @@ use alloy_primitives::{keccak256, Bytes};
 use anyhow::Result;
 use eth_trie_proofs::{tx_receipt_trie::TxReceiptsMptHandler, tx_trie::TxsMptHandler};
 use rpc::{FetchedTransactionProof, FetchedTransactionReceiptProof};
+use serde::Serialize;
 use std::{
     collections::{HashMap, HashSet},
     time::Instant,
     vec,
 };
+
 use tokio::sync::mpsc;
 use tracing::{error, info};
 
@@ -57,6 +59,7 @@ pub struct AbstractProviderConfig {
 }
 
 /// Provider should fetch all the proofs and rlp values from given keys.
+#[derive(Serialize)]
 pub struct AbstractProviderResult {
     pub mmr_meta: MMRMeta,
     pub headers: Vec<Header>,

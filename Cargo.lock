@@ -1835,6 +1835,7 @@ dependencies = [
  "futures",
  "hdp-primitives",
  "reqwest",
+ "serde",
  "serde_json",
  "tokio",
  "tracing",
