@@ -29,7 +29,7 @@ pub struct PreProcessorConfig {
 pub struct PreProcessResult {
     /// Fetch points are the values that are required to run the module
     pub fetch_keys: HashSet<FetchKeyEnvelope>,
-
+    /// Tasks that are extended with relevant information for processor
     pub tasks: Vec<ExtendedTask>,
 }
 

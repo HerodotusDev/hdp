@@ -2,23 +2,26 @@
 //! This run is sound execution of the module.
 //! This will be most abstract layer of the processor.
 
-use std::collections::HashSet;
-
 use anyhow::Result;
-
 use hdp_primitives::task::ExtendedTask;
-use hdp_provider::{
-    evm::{AbstractProvider, AbstractProviderConfig, AbstractProviderResult},
-    key::FetchKeyEnvelope,
-};
+use hdp_provider::evm::{AbstractProvider, AbstractProviderConfig, AbstractProviderResult};
 
-use crate::cairo_runner::{
-    input::run::RunnerInput,
-    run::{RunResult, Runner},
+use crate::{
+    cairo_runner::{
+        input::run::RunnerInput,
+        run::{RunResult, Runner},
+    },
+    pre_processor::PreProcessResult,
 };
 
 pub struct Processor {
     runner: Runner,
+}
+
+impl Default for Processor {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Processor {
@@ -27,11 +30,7 @@ impl Processor {
         Self { runner }
     }
 
-    pub async fn process(
-        &self,
-        tasks: Vec<ExtendedTask>,
-        fetch_keys: HashSet<FetchKeyEnvelope>,
-    ) -> Result<RunResult> {
+    pub async fn process(&self, requset: PreProcessResult) -> Result<RunResult> {
         // generate input file from fetch points
         // 1. fetch proofs from provider by using fetch points
         let config = AbstractProviderConfig {
@@ -40,12 +39,12 @@ impl Processor {
             rpc_chunk_size: 1,
         };
         let provider = AbstractProvider::new(config);
-        let proofs = provider.fetch_proofs_from_keys(fetch_keys).await?;
+        let proofs = provider.fetch_proofs_from_keys(requset.fetch_keys).await?;
 
         // 2. pre-compute tasks
 
         // 2. generate input struct with proofs and module bytes
-        let input = self.generate_input(proofs, tasks).await?;
+        let input = self.generate_input(proofs, requset.tasks).await?;
         // 3. pass the input file to the runner
         let input_bytes = input.to_bytes();
         self.runner.run(input_bytes)
