@@ -13,15 +13,12 @@ use tokio::sync::RwLock;
 
 use hdp_compiler::{CompiledDatalakeEnvelope, DatalakeCompiler};
 
-use crate::task::ComputationalTaskWithDatalake;
-
-use super::task::ComputationalTask;
-
 use hdp_primitives::datalake::{
     block_sampled::output::{Account, Storage},
     datalake_type::DatalakeType,
     envelope::DatalakeEnvelope,
     output::{Header, MMRMeta, Task},
+    task::{Computation, DatalakeCompute},
     transactions::output::{Transaction, TransactionReceipt},
 };
 
@@ -249,16 +246,16 @@ impl Default for EvaluationResult {
 }
 
 pub async fn evaluator(
-    computational_tasks: Vec<ComputationalTask>,
+    computational_tasks: Vec<Computation>,
     datalake_for_tasks: Vec<DatalakeEnvelope>,
     provider: Arc<RwLock<AbstractProvider>>,
 ) -> Result<EvaluationResult> {
     let mut results = EvaluationResult::new();
 
-    let tasks_with_datalake: Vec<ComputationalTaskWithDatalake> = datalake_for_tasks
+    let tasks_with_datalake: Vec<DatalakeCompute> = datalake_for_tasks
         .into_iter()
         .zip(computational_tasks)
-        .map(|(datalake, task)| ComputationalTaskWithDatalake::new(datalake, task))
+        .map(|(datalake, task)| DatalakeCompute::new(datalake, task))
         .collect();
 
     // Evaulate the compute expressions
@@ -267,15 +264,15 @@ pub async fn evaluator(
         let task_commitment = task_with_datalake.commit();
         // Encode the task
         let encoded_task = task_with_datalake.encode()?;
-        let inner_datalake = task_with_datalake.inner;
+        let inner_datalake = task_with_datalake.datalake;
         let encoded_datalake = inner_datalake.encode()?;
         let datalake_type = inner_datalake.get_datalake_type();
         let property_type = inner_datalake.get_collection_type().to_index();
         let compiler = DatalakeCompiler::new(inner_datalake);
         let datalake_result = compiler.compile(&provider).await?;
 
-        let aggregation_fn = &task_with_datalake.task.aggregate_fn_id;
-        let fn_context = task_with_datalake.task.aggregate_fn_ctx;
+        let aggregation_fn = &task_with_datalake.compute.aggregate_fn_id;
+        let fn_context = task_with_datalake.compute.aggregate_fn_ctx;
 
         if !aggregation_fn.is_pre_processable() {
             // Compute datalake over specified aggregation function
@@ -303,7 +300,7 @@ pub async fn evaluator(
             .insert(task_commitment.to_string(), encoded_task);
         // Save the datalake data
         results.encoded_datalakes.insert(
-            task_commitment,
+            task_commitment.to_string(),
             EvaluatedDatalake {
                 encoded_datalake,
                 datalake_type,

@@ -53,6 +53,7 @@ impl PreRunner {
     }
 
     /// Parse the output of the dry run command
+    // TODO: This is a temporary implementation, need to handle fetch key vector properly via dumped file
     fn parse_run(&self, output: String) -> Result<Vec<FetchKeyEnvelope>> {
         let task_result_re = Regex::new(r"Task Result\((\d+)\): (\S+)").unwrap();
         let mut task_results = vec![];

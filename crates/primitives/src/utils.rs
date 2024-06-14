@@ -1,5 +1,5 @@
 use alloy_primitives::hex::{self};
-use alloy_primitives::FixedBytes;
+use alloy_primitives::{FixedBytes, U256};
 use anyhow::Result;
 
 /// Convert a `FixedBytes<32>` which originally encoded from utf8 string into original utf8 string value
@@ -36,6 +36,12 @@ pub fn hex_string_to_bytes(hex_string: &str) -> Result<Vec<u8>> {
 /// Get the last byte of a byte array as a u8
 pub fn last_byte_to_u8(bytes: &[u8]) -> u8 {
     *bytes.last().unwrap_or(&0)
+}
+
+/// Convert a transaction index to a transaction key
+pub fn tx_index_to_tx_key(tx_index: u64) -> String {
+    let binding = alloy_rlp::encode(U256::from(tx_index));
+    format!("0x{}", hex::encode(binding))
 }
 
 #[cfg(test)]
@@ -98,5 +104,22 @@ mod tests {
         let input = [0, 0, 0, 9, 255];
         let result = last_byte_to_u8(&input);
         assert_eq!(result, 255);
+    }
+
+    #[test]
+    fn test_tx_index_to_tx_key() {
+        // no rlp prefix
+        let tx_index = 127u64;
+        let tx_key = tx_index_to_tx_key(tx_index);
+        let expected_tx_key = "0x7f".to_string();
+
+        assert_eq!(tx_key, expected_tx_key);
+
+        // rlpx prefix
+        let tx_index = 303u64;
+        let tx_key = tx_index_to_tx_key(tx_index);
+        let expected_tx_key = "0x82012f".to_string();
+
+        assert_eq!(tx_key, expected_tx_key);
     }
 }
