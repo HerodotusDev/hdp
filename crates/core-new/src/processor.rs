@@ -3,7 +3,7 @@
 //! This will be most abstract layer of the processor.
 
 use anyhow::Result;
-use hdp_primitives::task::ExtendedTask;
+
 use hdp_provider::evm::{AbstractProvider, AbstractProviderConfig, AbstractProviderResult};
 
 use crate::{
@@ -11,7 +11,7 @@ use crate::{
         input::run::RunnerInput,
         run::{RunResult, Runner},
     },
-    pre_processor::PreProcessResult,
+    pre_processor::{ExtendedTask, PreProcessResult},
 };
 
 pub struct Processor {

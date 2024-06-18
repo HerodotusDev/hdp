@@ -20,21 +20,3 @@ impl TaskEnvelope {
         }
     }
 }
-
-/// [`ExtendedTask`] is a structure that contains the task commitment, aggregate values set, compute and module class
-/// This structure is used to provide the task to the processor
-pub enum ExtendedTask {
-    DatalakeCompute(ExtendedDatalake),
-    Module(ExtendedModule),
-}
-
-pub struct ExtendedDatalake {
-    pub task: DatalakeCompute,
-    pub aggregate_values_set: Vec<String>,
-}
-
-#[derive(Clone, Debug)]
-pub struct ExtendedModule {
-    pub task: Module,
-    pub module_class: CasmContractClass,
-}

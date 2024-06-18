@@ -3,18 +3,17 @@
 //! The fetch keys are used to fetch the data from the provider.
 
 use anyhow::Result;
-use hdp_primitives::{
-    datalake::{
-        block_sampled::BlockSampledCollection, envelope::DatalakeEnvelope, task::DatalakeCompute,
-        transactions::TransactionsCollection,
-    },
-    task::ExtendedDatalake,
+use hdp_primitives::datalake::{
+    block_sampled::BlockSampledCollection, envelope::DatalakeEnvelope, task::DatalakeCompute,
+    transactions::TransactionsCollection,
 };
 use hdp_provider::key::{
     AccountProviderKey, FetchKeyEnvelope, HeaderProviderKey, StorageProviderKey, TxProviderKey,
     TxReceiptProviderKey,
 };
 use std::collections::HashSet;
+
+use crate::pre_processor::ExtendedDatalake;
 
 pub(crate) struct DatalakeCompiler {}
 
@@ -40,7 +39,10 @@ impl DatalakeCompiler {
     ) -> Result<(HashSet<FetchKeyEnvelope>, Vec<ExtendedDatalake>)> {
         let mut fetch_set: HashSet<FetchKeyEnvelope> = HashSet::new();
         let mut extended_datalakes: Vec<ExtendedDatalake> = Vec::new();
+
         for datalake in datalakes {
+            let mut fetch_keys_in_datalake: Vec<FetchKeyEnvelope> = Vec::new();
+
             match datalake.datalake {
                 DatalakeEnvelope::BlockSampled(ref datalake) => {
                     let target_blocks: Vec<u64> = (datalake.block_range_start
@@ -50,30 +52,30 @@ impl DatalakeCompiler {
                     match datalake.sampled_property {
                         BlockSampledCollection::Header(_) => {
                             for block in target_blocks {
-                                fetch_set.insert(FetchKeyEnvelope::Header(HeaderProviderKey::new(
-                                    chain_id, block,
-                                )));
+                                fetch_keys_in_datalake.push(FetchKeyEnvelope::Header(
+                                    HeaderProviderKey::new(chain_id, block),
+                                ));
                             }
                         }
                         BlockSampledCollection::Account(address, _) => {
                             for block in target_blocks {
-                                fetch_set.insert(FetchKeyEnvelope::Header(HeaderProviderKey::new(
-                                    chain_id, block,
-                                )));
-                                fetch_set.insert(FetchKeyEnvelope::Account(
+                                fetch_keys_in_datalake.push(FetchKeyEnvelope::Header(
+                                    HeaderProviderKey::new(chain_id, block),
+                                ));
+                                fetch_keys_in_datalake.push(FetchKeyEnvelope::Account(
                                     AccountProviderKey::new(chain_id, block, address),
                                 ));
                             }
                         }
                         BlockSampledCollection::Storage(address, key) => {
                             for block in target_blocks {
-                                fetch_set.insert(FetchKeyEnvelope::Header(HeaderProviderKey::new(
-                                    chain_id, block,
-                                )));
-                                fetch_set.insert(FetchKeyEnvelope::Account(
+                                fetch_keys_in_datalake.push(FetchKeyEnvelope::Header(
+                                    HeaderProviderKey::new(chain_id, block),
+                                ));
+                                fetch_keys_in_datalake.push(FetchKeyEnvelope::Account(
                                     AccountProviderKey::new(chain_id, block, address),
                                 ));
-                                fetch_set.insert(FetchKeyEnvelope::Storage(
+                                fetch_keys_in_datalake.push(FetchKeyEnvelope::Storage(
                                     StorageProviderKey::new(chain_id, block, address, key),
                                 ));
                             }
@@ -87,24 +89,20 @@ impl DatalakeCompiler {
                     match datalake.sampled_property {
                         TransactionsCollection::Transactions(_) => {
                             for tx_index in target_tx_index {
-                                fetch_set.insert(FetchKeyEnvelope::Header(HeaderProviderKey::new(
-                                    chain_id,
-                                    datalake.target_block,
-                                )));
-                                fetch_set.insert(FetchKeyEnvelope::Tx(TxProviderKey::new(
-                                    chain_id,
-                                    datalake.target_block,
-                                    tx_index,
-                                )));
+                                fetch_keys_in_datalake.push(FetchKeyEnvelope::Header(
+                                    HeaderProviderKey::new(chain_id, datalake.target_block),
+                                ));
+                                fetch_keys_in_datalake.push(FetchKeyEnvelope::Tx(
+                                    TxProviderKey::new(chain_id, datalake.target_block, tx_index),
+                                ));
                             }
                         }
                         TransactionsCollection::TranasactionReceipts(_) => {
                             for tx_index in target_tx_index {
-                                fetch_set.insert(FetchKeyEnvelope::Header(HeaderProviderKey::new(
-                                    chain_id,
-                                    datalake.target_block,
-                                )));
-                                fetch_set.insert(FetchKeyEnvelope::TxReceipt(
+                                fetch_keys_in_datalake.push(FetchKeyEnvelope::Header(
+                                    HeaderProviderKey::new(chain_id, datalake.target_block),
+                                ));
+                                fetch_keys_in_datalake.push(FetchKeyEnvelope::TxReceipt(
                                     TxReceiptProviderKey::new(
                                         chain_id,
                                         datalake.target_block,
@@ -116,12 +114,14 @@ impl DatalakeCompiler {
                     }
                 }
             }
+
+            // TODO: use compiled fetch key envelope of the datalake to get the values that are required to run the aggregation function
+
             let extended_datalake = ExtendedDatalake {
                 task: datalake,
-                // TODO: get the values that are required to run the aggregation function
-                aggregate_values_set: Vec::new(),
+                fetch_keys_set: fetch_keys_in_datalake.clone(),
             };
-
+            fetch_set.extend(fetch_keys_in_datalake);
             extended_datalakes.push(extended_datalake);
         }
         Ok((fetch_set, extended_datalakes))
@@ -138,13 +138,14 @@ mod tests {
 
     #[test]
     fn test_compile() {
+        let start_compile = std::time::Instant::now();
         let compiler = DatalakeCompiler::new();
         let datalakes = vec![
             DatalakeCompute {
                 compute: Computation::new("count", None),
                 datalake: DatalakeEnvelope::BlockSampled(BlockSampledDatalake {
-                    block_range_start: 0,
-                    block_range_end: 10,
+                    block_range_start: 1000,
+                    block_range_end: 10000,
                     increment: 1,
                     sampled_property: BlockSampledCollection::Header(HeaderField::Number),
                 }),
@@ -153,15 +154,17 @@ mod tests {
                 compute: Computation::new("count", None),
                 datalake: DatalakeEnvelope::BlockSampled(BlockSampledDatalake {
                     block_range_start: 0,
-                    block_range_end: 10,
+                    block_range_end: 1000,
                     increment: 1,
                     sampled_property: BlockSampledCollection::Header(HeaderField::Nonce),
                 }),
             },
         ];
+        let end_compile = start_compile.elapsed();
+        println!("Compile time: {:?}", end_compile);
 
         let (fetch_keys, _) = compiler.compile(datalakes, 1).unwrap();
-        assert_eq!(fetch_keys.len(), 10);
+        assert_eq!(fetch_keys.len(), 10000);
         assert!(fetch_keys.contains(&FetchKeyEnvelope::Header(HeaderProviderKey::new(1, 0))));
     }
 }

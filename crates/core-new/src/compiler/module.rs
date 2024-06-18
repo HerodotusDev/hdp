@@ -9,10 +9,11 @@ use std::sync::Arc;
 use crate::cairo_runner::input::{pre_run::PreRunnerInput, types::InputModule};
 use crate::cairo_runner::pre_run::PreRunner;
 use crate::module_registry::ModuleRegistry;
+use crate::pre_processor::ExtendedModule;
 
 use anyhow::{Ok, Result};
 use futures::future::join_all;
-use hdp_primitives::{module::Module, task::ExtendedModule};
+use hdp_primitives::module::Module;
 use hdp_provider::key::FetchKeyEnvelope;
 
 use starknet::providers::Url;

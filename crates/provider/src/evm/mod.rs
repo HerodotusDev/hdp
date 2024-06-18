@@ -1,7 +1,10 @@
 use alloy_primitives::{keccak256, Bytes};
 use anyhow::Result;
 use eth_trie_proofs::{tx_receipt_trie::TxReceiptsMptHandler, tx_trie::TxsMptHandler};
-use rpc::{FetchedTransactionProof, FetchedTransactionReceiptProof};
+use rpc::proofs_provider::{
+    FetchedAccountProof, FetchedStorageAccountProof, FetchedTransactionProof,
+    FetchedTransactionReceiptProof, HeaderProvider, TrieProofProvider,
+};
 use serde::Serialize;
 use std::{
     collections::{HashMap, HashSet},
@@ -13,7 +16,6 @@ use tokio::sync::mpsc;
 use tracing::{error, info};
 
 use hdp_primitives::{
-    block::header::Header as HeaderPrimitive,
     datalake::{
         block_sampled::output::{Account, Storage},
         output::{Header, HeaderProof, MMRMeta, MPTProof},
@@ -27,13 +29,10 @@ use crate::key::{
     TxReceiptProviderKey,
 };
 
-use self::{
-    memory::{InMemoryProvider, RlpEncodedValue, StoredHeader, StoredHeaders},
-    rpc::{FetchedAccountProof, FetchedStorageAccountProof, HeaderProvider, TrieProofProvider},
-};
+use self::memory::{InMemoryProvider, StoredHeader, StoredHeaders};
 
 pub(crate) mod memory;
-pub(crate) mod rpc;
+pub mod rpc;
 
 // For more information swagger doc: https://rs-indexer.api.herodotus.cloud/swagger
 const HERODOTUS_RS_INDEXER_URL: &str = "https://rs-indexer.api.herodotus.cloud/accumulators";
@@ -426,24 +425,24 @@ impl AbstractProvider {
         }
     }
 
-    // Unoptimized version of get_rlp_header, just for testing purposes
-    pub async fn get_rlp_header(&mut self, block_number: u64) -> RlpEncodedValue {
-        match self.memory.get_rlp_header(block_number) {
-            Some(header) => header,
-            None => {
-                let header_rpc = self
-                    .trie_proof_provider
-                    .get_block_by_number(block_number)
-                    .await
-                    .unwrap();
-                let block_header = HeaderPrimitive::from(&header_rpc);
-                let rlp_encoded = block_header.rlp_encode();
-                self.memory.set_header(block_number, rlp_encoded.clone());
+    // // Unoptimized version of get_rlp_header, just for testing purposes
+    // pub async fn get_rlp_header(&mut self, block_number: u64) -> RlpEncodedValue {
+    //     match self.memory.get_rlp_header(block_number) {
+    //         Some(header) => header,
+    //         None => {
+    //             let header_rpc = self
+    //                 .trie_proof_provider
+    //                 .get_block_by_number(block_number)
+    //                 .await
+    //                 .unwrap();
+    //             let block_header = HeaderPrimitive::from(&header_rpc);
+    //             let rlp_encoded = block_header.rlp_encode();
+    //             self.memory.set_header(block_number, rlp_encoded.clone());
 
-                rlp_encoded
-            }
-        }
-    }
+    //             rlp_encoded
+    //         }
+    //     }
+    // }
 
     // Get account with proof in given range of blocks
     // This need to be used for block sampled datalake
@@ -607,33 +606,33 @@ mod tests {
     const SEPOLIA_RPC_URL: &str =
         "https://eth-sepolia.g.alchemy.com/v2/xar76cftwEtqTBWdF4ZFy9n8FLHAETDv";
 
-    #[tokio::test]
-    async fn test_provider_get_rlp_header() {
-        let config = AbstractProviderConfig {
-            rpc_url: SEPOLIA_RPC_URL,
-            chain_id: 11155111,
-            rpc_chunk_size: 40,
-        };
-        let mut provider = AbstractProvider::new(config);
-        let rlp_header = provider.get_rlp_header(0).await;
-        let block_hash = rlp_string_to_block_hash(&rlp_header);
-        assert_eq!(
-            block_hash,
-            "0x25a5cc106eea7138acab33231d7160d69cb777ee0c2c553fcddf5138993e6dd9"
-        );
-        let rlp_header = provider.get_rlp_header(5521772).await;
-        let block_hash = rlp_string_to_block_hash(&rlp_header);
-        assert_eq!(
-            block_hash,
-            "0xe72515bc74912f67912a64a458e6f2cd2742f8dfe0666e985749483dab0b7b9a"
-        );
-        let rlp_header = provider.get_rlp_header(487680).await;
-        let block_hash = rlp_string_to_block_hash(&rlp_header);
-        assert_eq!(
-            block_hash,
-            "0xf494127d30817d04b634eae9f6139d8155ee4c78ba60a35bd7be187378e93d6e"
-        );
-    }
+    // #[tokio::test]
+    // async fn test_provider_get_rlp_header() {
+    //     let config = AbstractProviderConfig {
+    //         rpc_url: SEPOLIA_RPC_URL,
+    //         chain_id: 11155111,
+    //         rpc_chunk_size: 40,
+    //     };
+    //     let mut provider = AbstractProvider::new(config);
+    //     let rlp_header = provider.get_rlp_header(0).await;
+    //     let block_hash = rlp_string_to_block_hash(&rlp_header);
+    //     assert_eq!(
+    //         block_hash,
+    //         "0x25a5cc106eea7138acab33231d7160d69cb777ee0c2c553fcddf5138993e6dd9"
+    //     );
+    //     let rlp_header = provider.get_rlp_header(5521772).await;
+    //     let block_hash = rlp_string_to_block_hash(&rlp_header);
+    //     assert_eq!(
+    //         block_hash,
+    //         "0xe72515bc74912f67912a64a458e6f2cd2742f8dfe0666e985749483dab0b7b9a"
+    //     );
+    //     let rlp_header = provider.get_rlp_header(487680).await;
+    //     let block_hash = rlp_string_to_block_hash(&rlp_header);
+    //     assert_eq!(
+    //         block_hash,
+    //         "0xf494127d30817d04b634eae9f6139d8155ee4c78ba60a35bd7be187378e93d6e"
+    //     );
+    // }
 
     #[tokio::test]
     async fn get_block_range_from_nonce_range_non_constant() {

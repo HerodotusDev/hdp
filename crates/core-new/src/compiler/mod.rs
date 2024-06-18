@@ -1,13 +1,11 @@
 use std::collections::HashSet;
 
 use anyhow::Result;
-use hdp_primitives::{
-    datalake::task::DatalakeCompute,
-    module::Module,
-    task::{ExtendedTask, TaskEnvelope},
-};
+use hdp_primitives::{datalake::task::DatalakeCompute, module::Module, task::TaskEnvelope};
 use hdp_provider::key::FetchKeyEnvelope;
 use module::ModuleCompilerConfig;
+
+use crate::pre_processor::ExtendedTask;
 
 pub mod datalake;
 pub mod module;
