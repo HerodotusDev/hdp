@@ -11,10 +11,11 @@ mod integration_test {
             envelope::DatalakeEnvelope,
             task::{Computation, DatalakeCompute},
         },
+        module::{Module, ModuleTag},
         task::TaskEnvelope,
     };
     use hdp_provider::evm::AbstractProviderConfig;
-    use starknet::providers::Url;
+    use starknet::{macros::felt, providers::Url};
 
     // Non-paid personal alchemy endpoint
     const SEPOLIA_RPC_URL: &str =
@@ -41,7 +42,7 @@ mod integration_test {
     }
 
     #[tokio::test]
-    async fn test_integration() {
+    async fn test_integration_1() {
         let pre_processor = init_preprocessor();
         let processor = init_processor();
         let start_process = std::time::Instant::now();
@@ -56,6 +57,38 @@ mod integration_test {
                     sampled_property: BlockSampledCollection::Header(HeaderField::Number),
                 }),
             }),
+            TaskEnvelope::DatalakeCompute(DatalakeCompute {
+                compute: Computation::new("min", None),
+                datalake: DatalakeEnvelope::BlockSampled(BlockSampledDatalake {
+                    block_range_start: 10003,
+                    block_range_end: 10004,
+                    increment: 1,
+                    sampled_property: BlockSampledCollection::Header(HeaderField::Number),
+                }),
+            }),
+        ];
+
+        let preprocessed_result = pre_processor.process(tasks).await.unwrap();
+        let end_process = start_process.elapsed();
+        println!("Preprocess time: {:?}", end_process);
+
+        let start_process = std::time::Instant::now();
+        let processed_result = processor.process(preprocessed_result).await.unwrap();
+        println!("Processed result: {:?}", processed_result);
+
+        let end_process = start_process.elapsed();
+        println!("Process time: {:?}", end_process);
+    }
+
+    #[tokio::test]
+    async fn test_integration_2() {
+        let pre_processor = init_preprocessor();
+        let processor = init_processor();
+        let start_process = std::time::Instant::now();
+
+        let module = Module::from_tag(ModuleTag::TEST, vec![felt!("1"), felt!("2")]);
+        let tasks = vec![
+            TaskEnvelope::Module(module),
             TaskEnvelope::DatalakeCompute(DatalakeCompute {
                 compute: Computation::new("min", None),
                 datalake: DatalakeEnvelope::BlockSampled(BlockSampledDatalake {
