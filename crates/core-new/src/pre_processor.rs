@@ -27,6 +27,15 @@ pub enum ExtendedTask {
     Module(ExtendedModule),
 }
 
+impl ExtendedTask {
+    pub fn get_task_commitment(&self) -> String {
+        match self {
+            ExtendedTask::DatalakeCompute(task) => task.task.commit(),
+            ExtendedTask::Module(task) => task.task.commit(),
+        }
+    }
+}
+
 pub struct ExtendedDatalake {
     pub task: DatalakeCompute,
     pub fetch_keys_set: Vec<FetchKeyEnvelope>,

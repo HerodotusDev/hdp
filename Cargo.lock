@@ -1053,6 +1053,9 @@ checksum = "06ea2b9bc92be3c2baa9334a323ebca2d6f074ff852cd1d7b11064035cd3868f"
 name = "core-new"
 version = "0.2.0"
 dependencies = [
+ "alloy-dyn-abi",
+ "alloy-merkle-tree",
+ "alloy-primitives",
  "anyhow",
  "cairo-lang-starknet-classes",
  "futures",

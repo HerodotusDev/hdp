@@ -8,8 +8,6 @@ use anyhow::bail;
 use hdp_primitives::datalake::output::{combine_parts_into_big_endian_hex, Uint256};
 use regex::Regex;
 
-const RUN_CAIRO_PROGRAM: &str = "build/compiled_cairo/hdp.json";
-
 /// Result of run
 #[derive(Debug)]
 pub struct RunResult {
@@ -18,23 +16,19 @@ pub struct RunResult {
     results_root: String,
 }
 
-pub struct Runner {}
-
-impl Default for Runner {
-    fn default() -> Self {
-        Self::new()
-    }
+pub struct Runner {
+    program_path: PathBuf,
 }
 
 impl Runner {
-    pub fn new() -> Self {
-        Self {}
+    pub fn new(program_path: PathBuf) -> Self {
+        Self { program_path }
     }
 
     fn _run(&self, input_file_path: &Path, cairo_pie_file_path: &Path) -> Result<String> {
         let task = Command::new("cairo-run")
             .arg("--program")
-            .arg(RUN_CAIRO_PROGRAM)
+            .arg(&self.program_path)
             .arg("--layout")
             .arg("starknet_with_keccak")
             .arg("--program_input")
@@ -102,7 +96,8 @@ mod tests {
 
     #[test]
     fn test_parse_run() {
-        let runner = Runner::new();
+        let program_path = PathBuf::from("../build/compiled_cairo/hdp.json");
+        let runner = Runner::new(program_path);
         let output = "Task Result(0): 0x01020304\nResults Root: 0x01020304 0x05060708";
         let (task_results, results_root) = runner.parse_run(output.to_string()).unwrap();
         assert_eq!(task_results.len(), 1);

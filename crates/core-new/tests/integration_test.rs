@@ -21,7 +21,7 @@ mod integration_test {
         "https://eth-sepolia.g.alchemy.com/v2/xar76cftwEtqTBWdF4ZFy9n8FLHAETDv";
     const STARKNET_SEPOLIA_RPC: &str =
         "https://starknet-sepolia.g.alchemy.com/v2/lINonYKIlp4NH9ZI6wvqJ4HeZj7T4Wm6";
-    const PREPROCESS_PROGRAM_PATH: &str = "../build/compiled_cairo/hdp.json";
+    const PREPROCESS_PROGRAM_PATH: &str = "../../build/compiled_cairo/hdp.json";
 
     fn init_preprocessor() -> PreProcessor {
         let config = PreProcessorConfig {
@@ -37,7 +37,7 @@ mod integration_test {
             chain_id: 11155111,
             rpc_chunk_size: 40,
         };
-        Processor::new(config)
+        Processor::new(config, PathBuf::from(PREPROCESS_PROGRAM_PATH))
     }
 
     #[tokio::test]
@@ -73,6 +73,7 @@ mod integration_test {
 
         let start_process = std::time::Instant::now();
         let processed_result = processor.process(preprocessed_result).await.unwrap();
+        println!("Processed result: {:?}", processed_result);
 
         let end_process = start_process.elapsed();
         println!("Process time: {:?}", end_process);
