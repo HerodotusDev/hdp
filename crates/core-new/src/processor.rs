@@ -16,30 +16,25 @@ use crate::{
 
 pub struct Processor {
     runner: Runner,
-}
-
-impl Default for Processor {
-    fn default() -> Self {
-        Self::new()
-    }
+    provider: AbstractProvider,
 }
 
 impl Processor {
-    pub fn new() -> Self {
+    pub fn new(provider_config: AbstractProviderConfig) -> Self {
         let runner = Runner::new();
-        Self { runner }
+        let provider = AbstractProvider::new(provider_config);
+        Self { runner, provider }
     }
 
     pub async fn process(&self, requset: PreProcessResult) -> Result<RunResult> {
         // generate input file from fetch points
         // 1. fetch proofs from provider by using fetch points
-        let config = AbstractProviderConfig {
-            rpc_url: "http://localhost:8080",
-            chain_id: 1,
-            rpc_chunk_size: 1,
-        };
-        let provider = AbstractProvider::new(config);
-        let proofs = provider.fetch_proofs_from_keys(requset.fetch_keys).await?;
+        let proofs = self
+            .provider
+            .fetch_proofs_from_keys(requset.fetch_keys)
+            .await?;
+
+        println!("Proofs: {:?}", proofs);
 
         // 2. pre-compute tasks
 
@@ -55,46 +50,6 @@ impl Processor {
         proofs: AbstractProviderResult,
         tasks: Vec<ExtendedTask>,
     ) -> Result<RunnerInput> {
-        // let registry: Arc<ModuleRegistry> = Arc::clone(&self.module_registry);
-        // // Map each module to an asynchronous task
-        // let module_futures: Vec<_> = tasks
-        //     .into_iter()
-        //     .map(|module_with_class| {
-        //         let module_registry = Arc::clone(&registry);
-        //         task::spawn(async move {
-        //             // create input_module
-        //             let module = module_with_class.get_module();
-        //             let inputs = module.inputs;
-        //             let module_class = module_registry
-        //                 .get_module_class(module.class_hash)
-        //                 .await
-        //                 .unwrap();
-        //             Ok(InputModule {
-        //                 inputs,
-        //                 module_class,
-        //                 task_proof: vec![],
-        //             })
-        //         })
-        //     })
-        //     .collect();
-
-        // // Join all tasks and collect their results
-        // let results: Vec<_> = join_all(module_futures).await;
-
-        // // Collect results, filter out any errors
-        // let mut collected_results = Vec::new();
-        // for result in results {
-        //     let input_module = result??;
-        //     collected_results.push(input_module);
-        // }
-
-        // Ok(RunnerInput {
-        //     task_root: "".to_string(),
-        //     result_root: None,
-        //     modules: collected_results,
-        //     proofs,
-        //     datalakes: vec![],
-        // });
-        todo!("Implement generate_input")
+        todo!("Generate input file for runner")
     }
 }

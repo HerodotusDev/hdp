@@ -58,7 +58,7 @@ pub struct AbstractProviderConfig {
 }
 
 /// Provider should fetch all the proofs and rlp values from given keys.
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 pub struct AbstractProviderResult {
     pub mmr_meta: MMRMeta,
     pub headers: Vec<Header>,

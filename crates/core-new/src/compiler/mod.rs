@@ -28,8 +28,18 @@ impl Compiler {
         tasks: Vec<TaskEnvelope>,
     ) -> Result<(HashSet<FetchKeyEnvelope>, Vec<ExtendedTask>)> {
         let (datalake_tasks, module_tasks) = self.split_tasks(tasks);
-        let (datalake_fetch_keys, datalake_result) = self.datalake.compile(datalake_tasks, 1)?;
-        let (module_fetch_keys, module_result) = self.module.compile(module_tasks).await?;
+        // if tasks are empty, return empty result
+        let (datalake_fetch_keys, datalake_result) = if datalake_tasks.is_empty() {
+            (HashSet::new(), Vec::new())
+        } else {
+            self.datalake.compile(datalake_tasks, 1)?
+        };
+
+        let (module_fetch_keys, module_result) = if module_tasks.is_empty() {
+            (HashSet::new(), Vec::new())
+        } else {
+            self.module.compile(module_tasks).await?
+        };
 
         // combine fetch keys
         let mut fetch_keys = datalake_fetch_keys;

@@ -3,7 +3,6 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use tempfile::NamedTempFile;
-use tracing::{debug, info};
 
 use anyhow::bail;
 use hdp_primitives::datalake::output::{combine_parts_into_big_endian_hex, Uint256};
@@ -12,6 +11,7 @@ use regex::Regex;
 const RUN_CAIRO_PROGRAM: &str = "build/compiled_cairo/hdp.json";
 
 /// Result of run
+#[derive(Debug)]
 pub struct RunResult {
     pie_path: PathBuf,
     task_results: Vec<String>,
