@@ -1,4 +1,3 @@
-use alloy_primitives::FixedBytes;
 use cairo_lang_starknet_classes::casm_contract_class::CasmContractClass;
 use hdp_primitives::datalake::output::TaskFormatted;
 use hdp_provider::evm::AbstractProviderResult;
@@ -40,11 +39,6 @@ pub struct InputProcessModule {
     /// Detail class code of the module.
     /// This will be loaded to bootloader.
     pub module_class: CasmContractClass,
-
-    /// The commitment of the task.
-    pub task_commitment: String,
-
-    pub task_proof: Vec<FixedBytes<32>>,
 }
 
 impl RunnerInput {

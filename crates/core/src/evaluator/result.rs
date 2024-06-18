@@ -1,10 +1,7 @@
 use anyhow::Result;
 use hdp_primitives::datalake::{
     block_sampled::output::{Account, AccountFormatted, Storage, StorageFormatted},
-    output::{
-        split_big_endian_hex_into_parts, Header, HeaderFormatted, MMRMeta, Task, TaskFormatted,
-        Uint256,
-    },
+    output::{Header, HeaderFormatted, MMRMeta, Task, TaskFormatted, Uint256},
     transactions::output::{
         Transaction, TransactionFormatted, TransactionReceipt, TransactionReceiptFormatted,
     },
@@ -62,11 +59,11 @@ impl ProcessedResult {
         let results_root = self
             .results_root
             .as_ref()
-            .map(|root| split_big_endian_hex_into_parts(root));
+            .map(|root| Uint256::from_be_hex_str(root).unwrap());
 
         ProcessedResultFormatted {
             results_root,
-            tasks_root: split_big_endian_hex_into_parts(&self.tasks_root),
+            tasks_root: Uint256::from_be_hex_str(&self.tasks_root).unwrap(),
             headers,
             mmr: self.mmr.clone(),
             accounts,

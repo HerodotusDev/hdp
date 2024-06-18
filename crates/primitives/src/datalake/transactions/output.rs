@@ -1,6 +1,8 @@
+use crate::datalake::output::FieldElementVectorUnit;
 use serde::{Deserialize, Serialize};
-
-use crate::datalake::output::{hex_to_8_byte_chunks_little_endian, CairoFormattedChunkResult};
+use serde_with::serde_as;
+use starknet::core::serde::unsigned_field_element::UfeHex;
+use starknet_crypto::FieldElement;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub struct Transaction {
@@ -12,17 +14,15 @@ pub struct Transaction {
 impl Transaction {
     pub fn to_cairo_format(&self) -> TransactionFormatted {
         let key = self.key.clone();
-        let proof_chunk_result: Vec<CairoFormattedChunkResult> = self
+        let proof_felts: Vec<FieldElementVectorUnit> = self
             .proof
             .iter()
-            .map(|proof| hex_to_8_byte_chunks_little_endian(proof))
+            .map(|proof| FieldElementVectorUnit::from_hex_str(proof).unwrap())
             .collect();
 
-        let proof_bytes_len = proof_chunk_result.iter().map(|x| x.chunks_len).collect();
-        let proof_result: Vec<Vec<String>> = proof_chunk_result
-            .iter()
-            .map(|x| x.chunks.clone())
-            .collect();
+        let proof_bytes_len = proof_felts.iter().map(|f| f.bytes_len).collect();
+        let proof_result: Vec<Vec<FieldElement>> =
+            proof_felts.iter().map(|f| f.felts.clone()).collect();
         TransactionFormatted {
             key,
             block_number: self.block_number,
@@ -32,13 +32,15 @@ impl Transaction {
     }
 }
 
+#[serde_as]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub struct TransactionFormatted {
     pub key: String,
     pub block_number: u64,
     /// proof_bytes_len is the byte( 8 bit ) length from each proof string
     pub proof_bytes_len: Vec<u64>,
-    pub proof: Vec<Vec<String>>,
+    #[serde_as(as = "Vec<Vec<UfeHex>>")]
+    pub proof: Vec<Vec<FieldElement>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
@@ -51,17 +53,15 @@ pub struct TransactionReceipt {
 impl TransactionReceipt {
     pub fn to_cairo_format(&self) -> TransactionReceiptFormatted {
         let key = self.key.clone();
-        let proof_chunk_result: Vec<CairoFormattedChunkResult> = self
+        let proof_felts: Vec<FieldElementVectorUnit> = self
             .proof
             .iter()
-            .map(|proof| hex_to_8_byte_chunks_little_endian(proof))
+            .map(|proof| FieldElementVectorUnit::from_hex_str(proof).unwrap())
             .collect();
 
-        let proof_bytes_len = proof_chunk_result.iter().map(|x| x.chunks_len).collect();
-        let proof_result: Vec<Vec<String>> = proof_chunk_result
-            .iter()
-            .map(|x| x.chunks.clone())
-            .collect();
+        let proof_bytes_len = proof_felts.iter().map(|f| f.bytes_len).collect();
+        let proof_result: Vec<Vec<FieldElement>> =
+            proof_felts.iter().map(|f| f.felts.clone()).collect();
         TransactionReceiptFormatted {
             key,
             block_number: self.block_number,
@@ -71,13 +71,15 @@ impl TransactionReceipt {
     }
 }
 
+#[serde_as]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub struct TransactionReceiptFormatted {
     pub key: String,
     pub block_number: u64,
     /// proof_bytes_len is the byte( 8 bit ) length from each proof string
     pub proof_bytes_len: Vec<u64>,
-    pub proof: Vec<Vec<String>>,
+    #[serde_as(as = "Vec<Vec<UfeHex>>")]
+    pub proof: Vec<Vec<FieldElement>>,
 }
 
 #[cfg(test)]
@@ -96,6 +98,8 @@ mod tests {
         };
 
         let tx_formatted = tx.to_cairo_format();
+        // let string = serde_json::to_string(&tx_formatted).unwrap();
+        // println!("{:#?}", string);
 
         assert_eq!(tx_formatted.key, "0x3c".to_string())
     }

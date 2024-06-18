@@ -5,7 +5,7 @@ use std::process::{Command, Stdio};
 use tempfile::NamedTempFile;
 
 use anyhow::bail;
-use hdp_primitives::datalake::output::{combine_parts_into_big_endian_hex, Uint256};
+use hdp_primitives::datalake::output::Uint256;
 use regex::Regex;
 
 /// Result of run
@@ -68,6 +68,7 @@ impl Runner {
     }
 
     /// Parse the output of the run command
+    // TODO: This is a temporary solution, we should use the output of the run command
     fn parse_run(&self, output: String) -> Result<(Vec<String>, String)> {
         let task_result_re = Regex::new(r"Task Result\((\d+)\): (\S+)").unwrap();
         let mut task_results = vec![];
@@ -80,10 +81,8 @@ impl Runner {
         if let Some(results_root_caps) = results_root_re.captures(&output) {
             let results_root_1 = &results_root_caps[1];
             let results_root_2 = &results_root_caps[2];
-            let combined_results_root = combine_parts_into_big_endian_hex(&Uint256 {
-                low: results_root_1.to_string(),
-                high: results_root_2.to_string(),
-            });
+            let result_root = Uint256::from_strs(results_root_2, results_root_1)?;
+            let combined_results_root = result_root.to_combined_string().to_string();
             Ok((task_results, combined_results_root))
         } else {
             bail!("Results Root not found");

@@ -130,15 +130,9 @@ impl Processor {
                     task_wrapper.push(InputTask::DatalakeCompute(wrapped_task.to_cairo_format()));
                 }
                 ExtendedTask::Module(extended_module) => {
-                    let task_proof = tasks_merkle_tree.get_proof(&DynSolValue::FixedBytes(
-                        B256::from_str(task_commit).unwrap(),
-                        32,
-                    ));
                     let wrapped_task = InputProcessModule {
                         inputs: extended_module.task.inputs,
                         module_class: extended_module.module_class,
-                        task_commitment: task_commit.clone(),
-                        task_proof,
                     };
                     task_wrapper.push(InputTask::Module(wrapped_task));
                 }

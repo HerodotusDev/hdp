@@ -1,19 +1,80 @@
+use std::{fmt::Debug, str::FromStr};
+
 use alloy_primitives::{
     hex::{self, FromHex},
-    FixedBytes,
+    FixedBytes, B256,
 };
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
+use serde_with::serde_as;
+use starknet::core::serde::unsigned_field_element::UfeHex;
+use starknet_crypto::FieldElement;
 
 use crate::utils::bytes_to_hex_string;
 
-//==============================================================================
-// for int type, use uint type
-// for string type, if formatted, use chunk[] to store field elements
-
+#[serde_as]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub struct Uint256 {
-    pub low: String,
-    pub high: String,
+    #[serde_as(as = "UfeHex")]
+    pub low: FieldElement,
+    #[serde_as(as = "UfeHex")]
+    pub high: FieldElement,
+}
+
+impl Uint256 {
+    pub fn from_strs(high: &str, low: &str) -> Result<Self> {
+        Ok(Self {
+            high: FieldElement::from_hex_be(high)?,
+            low: FieldElement::from_hex_be(low)?,
+        })
+    }
+
+    pub fn from_felts(high: FieldElement, low: FieldElement) -> Self {
+        Self { high, low }
+    }
+
+    pub fn from_le_hex_str(hex_str: &str) -> Result<Self> {
+        let clean_hex = hex_str.trim_start_matches("0x");
+        let mut fix_hex: B256 = B256::from_hex(clean_hex)?;
+        fix_hex.reverse();
+
+        let high_part = fix_hex[..16].to_vec();
+        let low_part = fix_hex[16..].to_vec();
+
+        Ok(Self {
+            high: FieldElement::from_hex_be(&bytes_to_hex_string(&high_part))?,
+            low: FieldElement::from_hex_be(&bytes_to_hex_string(&low_part))?,
+        })
+    }
+
+    pub fn from_be_hex_str(hex_str: &str) -> Result<Self> {
+        let clean_hex = hex_str.trim_start_matches("0x");
+        let padded_hex = format!("{:0>64}", clean_hex);
+        let (high_part, low_part) = padded_hex.split_at(32);
+        Ok(Self {
+            high: FieldElement::from_hex_be(&format!("0x{}", high_part))?,
+            low: FieldElement::from_hex_be(&format!("0x{}", low_part))?,
+        })
+    }
+
+    /// combine_parts_into_big_endian_hex
+    pub fn to_combined_string(&self) -> B256 {
+        // Ensure both parts are exactly 32 hex characters long
+        let high_padded = format!(
+            "{:0>32}",
+            bytes_to_hex_string(&self.high.to_bytes_be()[16..])
+        )
+        .trim_start_matches("0x")
+        .to_string();
+        let low_padded = format!(
+            "{:0>32}",
+            bytes_to_hex_string(&self.low.to_bytes_be()[16..])
+        )
+        .trim_start_matches("0x")
+        .to_string();
+
+        B256::from_str(&format!("0x{}{}", high_padded, low_padded)).unwrap()
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
@@ -38,11 +99,12 @@ pub struct Header {
 
 impl Header {
     pub fn to_cairo_format(&self) -> HeaderFormatted {
-        let chunk_result = hex_to_8_byte_chunks_little_endian(&self.rlp);
+        println!("rlp: {:?}", &format!("0x{}", &self.rlp));
+        let felts_unit = FieldElementVectorUnit::from_hex_str(&format!("0x{}", &self.rlp)).unwrap();
         let proof = self.proof.clone();
         HeaderFormatted {
-            rlp: chunk_result.chunks,
-            rlp_bytes_len: chunk_result.chunks_len,
+            rlp: felts_unit.felts,
+            rlp_bytes_len: felts_unit.bytes_len,
             proof: HeaderProofFormatted {
                 leaf_idx: proof.leaf_idx,
                 mmr_path: proof.mmr_path,
@@ -52,73 +114,57 @@ impl Header {
 }
 
 /// HeaderFormatted is the formatted version of Header
+#[serde_as]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub struct HeaderFormatted {
-    pub rlp: Vec<String>,
+    #[serde_as(as = "Vec<UfeHex>")]
+    pub rlp: Vec<FieldElement>,
     /// rlp_bytes_len is the byte( 8 bit ) length from rlp string
     pub rlp_bytes_len: u64,
     pub proof: HeaderProofFormatted,
 }
 
-pub fn hex_to_8_byte_chunks_little_endian(input_hex: &str) -> CairoFormattedChunkResult {
-    // Convert hex string to bytes
-    let bytes = hex::decode(input_hex).expect("Invalid hex input");
-    let chunks_len = bytes.len() as u64;
-    // Process bytes into 8-byte chunks and convert to little-endian u64, then to hex strings
-    let chunks = bytes
-        .chunks(8)
-        .map(|chunk| {
-            let mut arr = [0u8; 8];
-            let len = chunk.len();
-            arr[..len].copy_from_slice(chunk);
-            let le_int = u64::from_le_bytes(arr);
-            format!("0x{:x}", le_int)
-        })
-        .collect();
-
-    CairoFormattedChunkResult { chunks, chunks_len }
+#[serde_as]
+#[derive(Serialize)]
+pub struct FieldElementVectorUnit {
+    #[serde_as(as = "Vec<UfeHex>")]
+    pub felts: Vec<FieldElement>,
+    pub bytes_len: u64,
 }
 
-pub struct CairoFormattedChunkResult {
-    pub chunks: Vec<String>,
-    pub chunks_len: u64,
-}
+impl FieldElementVectorUnit {
+    pub fn from_hex_str(hex_str: &str) -> Result<Self> {
+        // Convert hex string to bytes
+        let bytes = hex::decode(hex_str).expect("Invalid hex input");
+        let bytes_len = bytes.len() as u64;
+        // Process bytes into 8-byte chunks and convert to little-endian u64, then to hex strings
+        let felts = bytes
+            .chunks(8)
+            .map(|chunk| {
+                let mut arr = [0u8; 8];
+                let len = chunk.len();
+                arr[..len].copy_from_slice(chunk);
+                let le_int = u64::from_le_bytes(arr);
+                FieldElement::from_dec_str(&le_int.to_string())
+                    .expect("Invalid to convert FieldElement")
+            })
+            .collect();
 
-pub fn split_little_endian_hex_into_parts(hex_str: &str) -> Uint256 {
-    let clean_hex = hex_str.trim_start_matches("0x");
-    let mut fix_hex: FixedBytes<32> = FixedBytes::from_hex(clean_hex).unwrap();
-    fix_hex.reverse();
-
-    let high_part = fix_hex[..16].to_vec();
-    let low_part = fix_hex[16..].to_vec();
-
-    Uint256 {
-        high: bytes_to_hex_string(&high_part),
-        low: bytes_to_hex_string(&low_part),
+        Ok(Self { felts, bytes_len })
     }
 }
 
-pub fn split_big_endian_hex_into_parts(hex_str: &str) -> Uint256 {
-    let clean_hex = hex_str.trim_start_matches("0x");
-    let padded_hex = format!("{:0>64}", clean_hex);
-    let (high_part, low_part) = padded_hex.split_at(32);
-    Uint256 {
-        high: format!("0x{}", high_part),
-        low: format!("0x{}", low_part),
-    }
-}
+// pub fn combine_parts_into_big_endian_hex(uint256: &Uint256) -> String {
+//     // Remove the "0x" prefix if present
+//     let high = uint256.high.trim_start_matches("0x");
+//     let low = uint256.low.trim_start_matches("0x");
 
-pub fn combine_parts_into_big_endian_hex(uint256: &Uint256) -> String {
-    // Remove the "0x" prefix if present
-    let high = uint256.high.trim_start_matches("0x");
-    let low = uint256.low.trim_start_matches("0x");
+//     // Ensure both parts are exactly 32 hex characters long
+//     let high_padded = format!("{:0>32}", high);
+//     let low_padded = format!("{:0>32}", low);
 
-    // Ensure both parts are exactly 32 hex characters long
-    let high_padded = format!("{:0>32}", high);
-    let low_padded = format!("{:0>32}", low);
-
-    format!("0x{}{}", high_padded, low_padded)
-}
+//     format!("0x{}{}", high_padded, low_padded)
+// }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub struct Task {
@@ -145,26 +191,29 @@ pub struct Task {
 
 impl Task {
     pub fn to_cairo_format(&self) -> TaskFormatted {
-        let computational_task_chunk_result =
-            hex_to_8_byte_chunks_little_endian(&self.encoded_task);
-        let datalake_chunk_result = hex_to_8_byte_chunks_little_endian(&self.encoded_datalake);
+        let computational_task_felts =
+            FieldElementVectorUnit::from_hex_str(&self.encoded_task).unwrap();
+        let datalake_felts = FieldElementVectorUnit::from_hex_str(&self.encoded_datalake).unwrap();
         TaskFormatted {
-            task_bytes_len: computational_task_chunk_result.chunks_len,
-            encoded_task: computational_task_chunk_result.chunks,
-            datalake_bytes_len: datalake_chunk_result.chunks_len,
-            encoded_datalake: datalake_chunk_result.chunks,
+            task_bytes_len: computational_task_felts.bytes_len,
+            encoded_task: computational_task_felts.felts,
+            datalake_bytes_len: datalake_felts.bytes_len,
+            encoded_datalake: datalake_felts.felts,
             datalake_type: self.datalake_type,
             property_type: self.property_type,
         }
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde_as]
+#[derive(Serialize, Debug, Clone, PartialEq, Deserialize)]
 pub struct TaskFormatted {
     pub task_bytes_len: u64,
-    pub encoded_task: Vec<String>,
+    #[serde_as(as = "Vec<UfeHex>")]
+    pub encoded_task: Vec<FieldElement>,
     pub datalake_bytes_len: u64,
-    pub encoded_datalake: Vec<String>,
+    #[serde_as(as = "Vec<UfeHex>")]
+    pub encoded_datalake: Vec<FieldElement>,
     pub datalake_type: u8,
     pub property_type: u8,
 }
@@ -175,12 +224,14 @@ pub struct MPTProof {
     pub proof: Vec<String>,
 }
 
+#[serde_as]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub struct MPTProofFormatted {
     pub block_number: u64,
     /// proof_bytes_len is the byte( 8 bit ) length from each proof string
     pub proof_bytes_len: Vec<u64>,
-    pub proof: Vec<Vec<String>>,
+    #[serde_as(as = "Vec<Vec<UfeHex>>")]
+    pub proof: Vec<Vec<FieldElement>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
@@ -194,78 +245,82 @@ pub struct MMRMeta {
 
 #[cfg(test)]
 mod tests {
+
+    use starknet::macros::felt;
+
     use super::*;
 
     #[test]
     fn test_combine_parts_into_big_endian_hex() {
-        let uint256 = Uint256 {
-            high: "0x988c19313bcbfb19fcc4da12e3adb46c".to_string(),
-            low: "0xf6fbdd08af91b1d8df80c6e755159f1".to_string(),
-        };
-        let result = combine_parts_into_big_endian_hex(&uint256);
+        let uint256 = Uint256::from_felts(
+            FieldElement::from_hex_be("0x988c19313bcbfb19fcc4da12e3adb46c").unwrap(),
+            FieldElement::from_hex_be("0xf6fbdd08af91b1d8df80c6e755159f1").unwrap(),
+        );
         assert_eq!(
-            result,
-            "0x988c19313bcbfb19fcc4da12e3adb46c0f6fbdd08af91b1d8df80c6e755159f1"
+            uint256.to_combined_string(),
+            B256::from_str("0x988c19313bcbfb19fcc4da12e3adb46c0f6fbdd08af91b1d8df80c6e755159f1")
+                .unwrap()
         );
 
-        let uint256 = Uint256 {
-            high: "0x988c19313bcbfb19fcc4da12e3adb46".to_string(),
-            low: "0xf6fbdd08af91b1d8df80c6e755159f1".to_string(),
-        };
-        let result = combine_parts_into_big_endian_hex(&uint256);
+        let uint256 = Uint256::from_felts(
+            felt!("0x988c19313bcbfb19fcc4da12e3adb46"),
+            felt!("0xf6fbdd08af91b1d8df80c6e755159f1"),
+        );
         assert_eq!(
-            result,
-            "0x0988c19313bcbfb19fcc4da12e3adb460f6fbdd08af91b1d8df80c6e755159f1"
+            uint256.to_combined_string(),
+            B256::from_str("0x0988c19313bcbfb19fcc4da12e3adb460f6fbdd08af91b1d8df80c6e755159f1")
+                .unwrap()
         );
 
-        let uint256 = Uint256 {
-            high: "0x988c19313bcbfb19fcc4da12e3adb4".to_string(),
-            low: "0xf6fbdd08af91b1d8df80c6e755159f1".to_string(),
-        };
-
-        let result = combine_parts_into_big_endian_hex(&uint256);
+        let uint256 = Uint256::from_felts(
+            felt!("0x988c19313bcbfb19fcc4da12e3adb4"),
+            felt!("0xf6fbdd08af91b1d8df80c6e755159f1"),
+        );
         assert_eq!(
-            result,
-            "0x00988c19313bcbfb19fcc4da12e3adb40f6fbdd08af91b1d8df80c6e755159f1"
+            uint256.to_combined_string(),
+            B256::from_str("0x00988c19313bcbfb19fcc4da12e3adb40f6fbdd08af91b1d8df80c6e755159f1")
+                .unwrap()
         );
     }
 
     #[test]
     fn test_split_big_endian_hex_into_parts() {
         let hex_str = "0x60870c80ce4e1d0c35e34f08b1648e8a4fdc7818eea7caedbd316c63a3863562";
-        let result = split_big_endian_hex_into_parts(hex_str);
+        let result = Uint256::from_be_hex_str(hex_str).unwrap();
         assert_eq!(
             result,
-            Uint256 {
-                high: "0x60870c80ce4e1d0c35e34f08b1648e8a".to_string(),
-                low: "0x4fdc7818eea7caedbd316c63a3863562".to_string()
-            }
+            Uint256::from_felts(
+                felt!("0x60870c80ce4e1d0c35e34f08b1648e8a"),
+                felt!("0x4fdc7818eea7caedbd316c63a3863562"),
+            )
         );
-
-        let combine = combine_parts_into_big_endian_hex(&result);
-        assert_eq!(combine, hex_str);
-
-        let hex_str = "0x8ddadb3a246d9988d78871b11dca322a2df53381bfacb9edc42cedfd263b691d";
-        let result = split_little_endian_hex_into_parts(hex_str);
-        assert_eq!(
-            result,
-            Uint256 {
-                high: "0x1d693b26fded2cc4edb9acbf8133f52d".to_string(),
-                low: "0x2a32ca1db17188d788996d243adbda8d".to_string()
-            }
-        );
+        assert_eq!(result.to_combined_string().to_string(), hex_str);
     }
 
     #[test]
     fn test_split_little_endian_hex_into_parts() {
         let hex_str = "0x8ddadb3a246d9988d78871b11dca322a2df53381bfacb9edc42cedfd263b691d";
-        let result = split_little_endian_hex_into_parts(hex_str);
+        let result = Uint256::from_le_hex_str(hex_str).unwrap();
         assert_eq!(
             result,
-            Uint256 {
-                high: "0x1d693b26fded2cc4edb9acbf8133f52d".to_string(),
-                low: "0x2a32ca1db17188d788996d243adbda8d".to_string()
-            }
+            Uint256::from_felts(
+                felt!("0x1d693b26fded2cc4edb9acbf8133f52d"),
+                felt!("0x2a32ca1db17188d788996d243adbda8d"),
+            )
         );
     }
+
+    // #[test]
+    // fn test_serde() {
+    //     let target = Uint256::from_felts(
+    //         felt!("0x1d693b26fded2cc4edb9acbf8133f52d"),
+    //         felt!("0x2a32ca1db17188d788996d243adbda8d"),
+    //     );
+    //     let string = serde_json::to_string(&target).unwrap();
+    //     assert_eq!(string, "{\"low\":\"0x2a32ca1db17188d788996d243adbda8d\",\"high\":\"0x1d693b26fded2cc4edb9acbf8133f52d\"}");
+
+    //     let target = Uint256::from_felts(felt!("0x1"), felt!("0x2"));
+    //     let string = serde_json::to_string(&target).unwrap();
+    //     assert_eq!(string, "{\"low\":\"0x2\",\"high\":\"0x1\"}")
+    // }
 }
