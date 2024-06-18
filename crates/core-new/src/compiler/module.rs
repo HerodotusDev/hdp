@@ -6,7 +6,7 @@ use std::fs;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use crate::cairo_runner::input::{pre_run::PreRunnerInput, types::InputModule};
+use crate::cairo_runner::input::pre_run::{InputModule, PreRunnerInput};
 use crate::cairo_runner::pre_run::PreRunner;
 use crate::module_registry::ModuleRegistry;
 use crate::pre_processor::ExtendedModule;

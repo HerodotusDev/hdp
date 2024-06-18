@@ -14,10 +14,7 @@ use tracing::info;
 
 use crate::{
     cairo_runner::{
-        input::{
-            run::{InputTask, RunnerInput},
-            types::InputProcessModule,
-        },
+        input::run::{InputProcessModule, InputTask, RunnerInput},
         run::{RunResult, Runner},
     },
     pre_processor::{ExtendedTask, PreProcessResult},
