@@ -1816,7 +1816,6 @@ dependencies = [
  "alloy-primitives",
  "alloy-rlp",
  "anyhow",
- "cairo-lang-starknet-classes",
  "eth-trie-proofs",
  "rand",
  "serde",

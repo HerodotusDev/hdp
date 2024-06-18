@@ -10,15 +10,11 @@ use reqwest::{header, Client};
 use serde_json::{from_value, json, Value};
 
 use hdp_primitives::block::{
-    account::{Account, AccountFromRpc, AccountProofFromRpc},
-    header::{
-        BlockHeaderFromRpc, MMRFromNewIndexer, MMRMetaFromNewIndexer, MMRProofFromNewIndexer,
-    },
+    account::{Account, AccountProofFromRpc},
+    header::{MMRFromNewIndexer, MMRMetaFromNewIndexer, MMRProofFromNewIndexer},
 };
 use tokio::sync::{mpsc::Sender, RwLock};
 use tracing::debug;
-
-use crate::key::{AccountProviderKey, HeaderProviderKey, StorageProviderKey};
 
 #[derive(Debug, Clone)]
 pub struct FetchedAccountProof {
@@ -390,7 +386,7 @@ mod tests {
     use std::str::FromStr;
 
     use alloy_primitives::{FixedBytes, U256};
-    use hdp_primitives::block::{account::Account, header::Header};
+    use hdp_primitives::block::account::Account;
 
     use super::*;
 
