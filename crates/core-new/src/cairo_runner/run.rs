@@ -52,6 +52,7 @@ impl Runner {
         let input_file = NamedTempFile::new()?;
         let input_file_path = input_file.path();
         fs::write(input_file_path, input_string).expect("Failed to write input file");
+        // TODO : PIE is not temp
         let pie_file = NamedTempFile::new()?;
         let input_file_path = input_file.path();
         let pie_file_path = pie_file.path();

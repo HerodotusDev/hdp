@@ -25,6 +25,26 @@ pub struct Processor {
     provider: AbstractProvider,
 }
 
+#[derive(Debug)]
+pub struct ProcessorResult {
+    /// leaf of result merkle tree
+    task_results: Vec<String>,
+    /// leaf of task merkle tree
+    task_commitments: Vec<String>,
+    /// tasks inclusion proofs
+    task_inclusion_proofs: Vec<Vec<String>>,
+    /// results inclusion proofs
+    results_inclusion_proofs: Vec<Vec<String>>,
+    /// root of the results merkle tree
+    results_root: String,
+    /// root of the tasks merkle tree
+    tasks_root: String,
+    /// mmr id
+    used_mmr_id: u64,
+    /// mmr size
+    used_mmr_size: u64,
+}
+
 impl Processor {
     pub fn new(provider_config: AbstractProviderConfig, program_path: PathBuf) -> Self {
         let runner = Runner::new(program_path);
@@ -32,7 +52,7 @@ impl Processor {
         Self { runner, provider }
     }
 
-    pub async fn process(&self, requset: PreProcessResult) -> Result<RunResult> {
+    pub async fn process(&self, requset: PreProcessResult) -> Result<ProcessorResult> {
         // generate input file from fetch points
         // 1. fetch proofs from provider by using fetch points
         let proofs = self
@@ -51,8 +71,8 @@ impl Processor {
             serde_json::to_string_pretty(&input).expect("Failed to serialize module class");
         fs::write("input_processor.json", input_string.clone()).expect("Unable to write file");
         let result = self.runner.run(input_string)?;
-        info!("Processor executed successfully");
-        Ok(result)
+        info!("Processor executed successfully, PIE is generated");
+        todo!("Return what execution store contract requires")
     }
 
     async fn generate_input(
