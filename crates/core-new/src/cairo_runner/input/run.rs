@@ -1,8 +1,6 @@
-use cairo_lang_starknet_classes::casm_contract_class::CasmContractClass;
 use hdp_primitives::datalake::output::{Task, TaskFormatted};
 use hdp_provider::evm::AbstractProviderResult;
 use serde::Serialize;
-use starknet_crypto::FieldElement;
 
 use super::types::InputModule;
 
@@ -26,22 +24,18 @@ pub struct RunnerInput {
 }
 
 impl RunnerInput {
-    pub fn new(proofs: AbstractProviderResult, datalakes: Vec<Task>) -> Self {
+    pub fn new(
+        proofs: AbstractProviderResult,
+        datalakes: Vec<Task>,
+        task_root: String,
+        modules: Vec<InputModule>,
+    ) -> Self {
         Self {
-            task_root: "".to_string(),
+            task_root,
             result_root: None,
-            modules: vec![],
+            modules,
             proofs,
             datalakes: datalakes.into_iter().map(|e| e.to_cairo_format()).collect(),
         }
-    }
-
-    pub fn add_module(&mut self, inputs: Vec<FieldElement>, module_class: CasmContractClass) {
-        todo!("Add module to RunnerInput")
-    }
-
-    // TODO: Somehow need to make `Vec<CairoProgram>`, `Vec<Module>`, Vec<Proof> to input data format
-    pub fn to_bytes(&self) -> Vec<u8> {
-        todo!("Convert ProcessorInput to json")
     }
 }

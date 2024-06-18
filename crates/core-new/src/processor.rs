@@ -5,6 +5,7 @@
 use anyhow::Result;
 
 use hdp_provider::evm::{AbstractProvider, AbstractProviderConfig, AbstractProviderResult};
+use tracing::info;
 
 use crate::{
     cairo_runner::{
@@ -35,14 +36,16 @@ impl Processor {
             .await?;
 
         println!("Proofs: {:?}", proofs);
-
         // 2. pre-compute tasks
 
         // 2. generate input struct with proofs and module bytes
         let input = self.generate_input(proofs, requset.tasks).await?;
         // 3. pass the input file to the runner
-        let input_bytes = input.to_bytes();
-        self.runner.run(input_bytes)
+        let input_string =
+            serde_json::to_string_pretty(&input).expect("Failed to serialize module class");
+        let result = self.runner.run(input_string)?;
+        info!("Processor executed successfully");
+        Ok(result)
     }
 
     async fn generate_input(

@@ -1,5 +1,5 @@
 use anyhow::Result;
-use std::io::Write;
+use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use tempfile::NamedTempFile;
@@ -51,13 +51,14 @@ impl Runner {
     }
 
     /// Run the cairo program to return PIE object and results of process
-    pub fn run(&self, input_bytes: Vec<u8>) -> Result<RunResult> {
-        if input_bytes.is_empty() {
+    pub fn run(&self, input_string: String) -> Result<RunResult> {
+        if input_string.is_empty() {
             bail!("Input file is empty");
         }
-        let mut input_file = NamedTempFile::new()?;
+        let input_file = NamedTempFile::new()?;
+        let input_file_path = input_file.path();
+        fs::write(input_file_path, input_string).expect("Failed to write input file");
         let pie_file = NamedTempFile::new()?;
-        input_file.write_all(&input_bytes)?;
         let input_file_path = input_file.path();
         let pie_file_path = pie_file.path();
         let output = self._run(input_file_path, pie_file_path)?;
