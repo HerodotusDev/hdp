@@ -1,4 +1,4 @@
-use alloy_primitives::{keccak256, Bytes};
+use alloy_primitives::Bytes;
 use anyhow::Result;
 use eth_trie_proofs::{tx_receipt_trie::TxReceiptsMptHandler, tx_trie::TxsMptHandler};
 use rpc::proofs_provider::{
@@ -15,13 +15,9 @@ use std::{
 use tokio::sync::mpsc;
 use tracing::{error, info};
 
-use hdp_primitives::{
-    datalake::{
-        block_sampled::output::{Account, Storage},
-        output::{Header, HeaderProof, MMRMeta, MPTProof},
-        transactions::output::{Transaction, TransactionReceipt},
-    },
-    utils::tx_index_to_tx_key,
+use hdp_primitives::processed_types::{
+    account::ProcessedAccount, header::ProcessedHeader, mmr::MMRMeta, mpt::ProcessedMPTProof,
+    receipt::ProcessedReceipt, storage::ProcessedStorage, transaction::ProcessedTransaction,
 };
 
 use crate::key::{
@@ -44,7 +40,7 @@ const HERODOTUS_RS_INDEXER_URL: &str = "https://rs-indexer.api.herodotus.cloud/a
 pub struct AbstractProvider {
     /// [`InMemoryProvider`] is used to fetch data from memory.
     // TODO: It's not using for now
-    memory: InMemoryProvider,
+    _memory: InMemoryProvider,
     /// Fetch data from the RPC
     trie_proof_provider: TrieProofProvider,
     /// Fetch block headers and MMR data from the Herodotus indexer.
@@ -59,19 +55,19 @@ pub struct AbstractProviderConfig {
 
 /// Provider should fetch all the proofs and rlp values from given keys.
 #[derive(Serialize, Debug)]
-pub struct AbstractProviderResult {
+pub struct ProcessedBlockProofs {
     pub mmr_meta: MMRMeta,
-    pub headers: Vec<Header>,
-    pub accounts: Vec<Account>,
-    pub storages: Vec<Storage>,
-    pub transactions: Vec<Transaction>,
-    pub transaction_receipts: Vec<TransactionReceipt>,
+    pub headers: Vec<ProcessedHeader>,
+    pub accounts: Vec<ProcessedAccount>,
+    pub storages: Vec<ProcessedStorage>,
+    pub transactions: Vec<ProcessedTransaction>,
+    pub transaction_receipts: Vec<ProcessedReceipt>,
 }
 
 impl AbstractProvider {
     pub fn new(config: AbstractProviderConfig) -> Self {
         Self {
-            memory: InMemoryProvider::new(),
+            _memory: InMemoryProvider::new(),
             trie_proof_provider: TrieProofProvider::new(config.rpc_url, config.rpc_chunk_size),
             header_provider: HeaderProvider::new(HERODOTUS_RS_INDEXER_URL, config.chain_id),
         }
@@ -81,7 +77,7 @@ impl AbstractProvider {
     pub async fn fetch_proofs_from_keys(
         &self,
         fetch_keys: HashSet<FetchKeyEnvelope>,
-    ) -> Result<AbstractProviderResult> {
+    ) -> Result<ProcessedBlockProofs> {
         // categorize fetch keys
         let mut target_keys_for_header = vec![];
         let mut target_keys_for_account = vec![];
@@ -123,7 +119,7 @@ impl AbstractProvider {
             .get_tx_receipts_from_keys(&target_keys_for_tx_receipt)
             .await?;
 
-        Ok(AbstractProviderResult {
+        Ok(ProcessedBlockProofs {
             mmr_meta,
             headers,
             accounts,
@@ -136,9 +132,8 @@ impl AbstractProvider {
     pub async fn fetch_headers_from_keys(
         &self,
         keys: &[HeaderProviderKey],
-    ) -> Result<(Vec<Header>, MMRMeta)> {
-        let mut result_headers: Vec<Header> = vec![];
-        // Fetch MMR data and header data from Herodotus indexer
+    ) -> Result<(Vec<ProcessedHeader>, MMRMeta)> {
+        let mut result_headers: Vec<ProcessedHeader> = vec![];
         let start_fetch = Instant::now();
 
         let start_block = keys.iter().map(|x| x.block_number).min().unwrap();
@@ -155,24 +150,13 @@ impl AbstractProvider {
                 let duration = start_fetch.elapsed();
                 info!("Time taken (fetch from Indexer): {:?}", duration);
                 for block_proof in &mmr.1 {
-                    result_headers.push(Header {
-                        rlp: block_proof.1.rlp_block_header.value.clone(),
-                        proof: HeaderProof {
-                            leaf_idx: block_proof.1.element_index,
-                            mmr_path: block_proof.1.siblings_hashes.clone(),
-                        },
-                    });
+                    result_headers.push(ProcessedHeader::new(
+                        block_proof.1.rlp_block_header.value.clone(),
+                        block_proof.1.element_index,
+                        block_proof.1.siblings_hashes.clone(),
+                    ));
                 }
-
-                Ok((
-                    result_headers,
-                    MMRMeta {
-                        id: mmr.0.mmr_id,
-                        root: mmr.0.mmr_root,
-                        size: mmr.0.mmr_size,
-                        peaks: mmr.0.mmr_peaks,
-                    },
-                ))
+                Ok((result_headers, mmr.0.into()))
             }
             Err(e) => {
                 let duration = start_fetch.elapsed();
@@ -189,7 +173,7 @@ impl AbstractProvider {
     pub async fn get_accounts_from_keys(
         &self,
         keys: &[AccountProviderKey],
-    ) -> Result<Vec<Account>> {
+    ) -> Result<Vec<ProcessedAccount>> {
         let start_fetch = Instant::now();
 
         // group by address
@@ -209,22 +193,15 @@ impl AbstractProvider {
                 .get_account_proofs(rpc_sender, block_range, &address)
                 .await;
 
-            let mut account_proofs: Vec<MPTProof> = vec![];
+            let mut account_proofs: Vec<ProcessedMPTProof> = vec![];
 
             while let Some(proof) = rx.recv().await {
-                let account_proof = MPTProof {
-                    block_number: proof.block_number,
-                    proof: proof.account_proof,
-                };
-                account_proofs.push(account_proof);
+                account_proofs.push(ProcessedMPTProof::new(
+                    proof.block_number,
+                    proof.account_proof,
+                ));
             }
-            let account_key = keccak256(address.clone());
-            let account = Account {
-                address,
-                account_key: account_key.to_string(),
-                proofs: account_proofs,
-            };
-            accounts.push(account);
+            accounts.push(ProcessedAccount::new(address, account_proofs));
         }
         let duration = start_fetch.elapsed();
         info!("Time taken (Account Fetch): {:?}", duration);
@@ -235,7 +212,7 @@ impl AbstractProvider {
     pub async fn get_storages_from_keys(
         &self,
         keys: &[StorageProviderKey],
-    ) -> Result<Vec<Storage>> {
+    ) -> Result<Vec<ProcessedStorage>> {
         let start_fetch = Instant::now();
 
         // group by address and slot
@@ -255,23 +232,15 @@ impl AbstractProvider {
                 .get_storage_proofs(rpc_sender, block_range, &address, slot.clone())
                 .await;
 
-            let mut storage_proofs: Vec<MPTProof> = vec![];
+            let mut storage_proofs: Vec<ProcessedMPTProof> = vec![];
 
             while let Some(proof) = rx.recv().await {
-                let storage_proof = MPTProof {
-                    block_number: proof.block_number,
-                    proof: proof.storage_proof,
-                };
-                storage_proofs.push(storage_proof);
+                storage_proofs.push(ProcessedMPTProof::new(
+                    proof.block_number,
+                    proof.storage_proof,
+                ));
             }
-            let storage_key = keccak256(slot.clone()).to_string();
-            let storage = Storage {
-                address,
-                slot,
-                storage_key,
-                proofs: storage_proofs,
-            };
-            storages.push(storage);
+            storages.push(ProcessedStorage::new(address, slot, storage_proofs));
         }
         let duration = start_fetch.elapsed();
         info!("Time taken (Storage Fetch): {:?}", duration);
@@ -279,7 +248,10 @@ impl AbstractProvider {
         Ok(storages)
     }
 
-    pub async fn get_txs_from_keys(&self, keys: &[TxProviderKey]) -> Result<Vec<Transaction>> {
+    pub async fn get_txs_from_keys(
+        &self,
+        keys: &[TxProviderKey],
+    ) -> Result<Vec<ProcessedTransaction>> {
         let start_fetch = Instant::now();
         // group by block number
         let mut block_to_tx_range: HashMap<u64, Vec<u64>> = HashMap::new();
@@ -295,7 +267,7 @@ impl AbstractProvider {
                 .build_tx_tree_from_block(block_number)
                 .await
                 .unwrap();
-            let txs = txs_mpt_handler.get_elements().unwrap();
+            // let txs = txs_mpt_handler.get_elements().unwrap();
 
             for tx_index in tx_range {
                 let proof = txs_mpt_handler
@@ -304,15 +276,9 @@ impl AbstractProvider {
                     .into_iter()
                     .map(|x| Bytes::from(x).to_string())
                     .collect::<Vec<_>>();
-                let consensus_tx = txs[tx_index as usize].clone();
-                let rlp = Bytes::from(consensus_tx.rlp_encode()).to_string();
-                let key_fixed_bytes = tx_index_to_tx_key(tx_index);
-                let tx = Transaction {
-                    block_number,
-                    proof,
-                    key: key_fixed_bytes,
-                };
-                transactions.push(tx);
+                // let consensus_tx = txs[tx_index as usize].clone();
+                // let rlp = Bytes::from(consensus_tx.rlp_encode()).to_string();
+                transactions.push(ProcessedTransaction::new(tx_index, block_number, proof));
             }
         }
         let duration = start_fetch.elapsed();
@@ -323,7 +289,7 @@ impl AbstractProvider {
     pub async fn get_tx_receipts_from_keys(
         &self,
         keys: &[TxReceiptProviderKey],
-    ) -> Result<Vec<TransactionReceipt>> {
+    ) -> Result<Vec<ProcessedReceipt>> {
         let start_fetch = Instant::now();
         // group by block number
         let mut block_to_tx_receipt_range: HashMap<u64, Vec<u64>> = HashMap::new();
@@ -343,7 +309,7 @@ impl AbstractProvider {
                 .build_tx_receipts_tree_from_block(block_number)
                 .await
                 .unwrap();
-            let tx_receipts = tx_reciepts_mpt_handler.get_elements().unwrap();
+            //let tx_receipts = tx_reciepts_mpt_handler.get_elements().unwrap();
 
             for tx_receipt_index in tx_receipt_range {
                 let proof = tx_reciepts_mpt_handler
@@ -352,15 +318,13 @@ impl AbstractProvider {
                     .into_iter()
                     .map(|x| Bytes::from(x).to_string())
                     .collect::<Vec<_>>();
-                let consensus_tx_receipt = tx_receipts[tx_receipt_index as usize].clone();
-                let rlp = Bytes::from(consensus_tx_receipt.rlp_encode()).to_string();
-                let key_fixed_bytes = tx_index_to_tx_key(tx_receipt_index);
-                let tx_receipt = TransactionReceipt {
+                // let consensus_tx_receipt = tx_receipts[tx_receipt_index as usize].clone();
+                // let rlp = Bytes::from(consensus_tx_receipt.rlp_encode()).to_string();
+                transaction_receipts.push(ProcessedReceipt::new(
+                    tx_receipt_index,
                     block_number,
                     proof,
-                    key: key_fixed_bytes,
-                };
-                transaction_receipts.push(tx_receipt);
+                ));
             }
         }
 
@@ -402,16 +366,7 @@ impl AbstractProvider {
                         ),
                     );
                 }
-
-                Ok((
-                    blocks_map,
-                    MMRMeta {
-                        id: mmr.0.mmr_id,
-                        root: mmr.0.mmr_root,
-                        size: mmr.0.mmr_size,
-                        peaks: mmr.0.mmr_peaks,
-                    },
-                ))
+                Ok((blocks_map, mmr.0.into()))
             }
             Err(e) => {
                 let duration = start_fetch.elapsed();
@@ -596,11 +551,11 @@ impl AbstractProvider {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use alloy_primitives::{hex, keccak256};
+    //use alloy_primitives::{hex, keccak256};
 
-    fn rlp_string_to_block_hash(rlp_string: &str) -> String {
-        keccak256(hex::decode(rlp_string).unwrap()).to_string()
-    }
+    // fn rlp_string_to_block_hash(rlp_string: &str) -> String {
+    //     keccak256(hex::decode(rlp_string).unwrap()).to_string()
+    // }
 
     // Non-paid personal alchemy endpoint
     const SEPOLIA_RPC_URL: &str =

@@ -6,15 +6,17 @@ use alloy_dyn_abi::DynSolValue;
 use alloy_merkle_tree::standard_binary_tree::StandardMerkleTree;
 use alloy_primitives::B256;
 use anyhow::Result;
-use hdp_primitives::datalake::output::Task;
+use hdp_primitives::processed_types::{
+    datalake_compute::ProcessedDatalakeCompute, module::ProcessedModule, traits::IntoFelts,
+};
 use std::{fs, path::PathBuf, str::FromStr};
 
-use hdp_provider::evm::{AbstractProvider, AbstractProviderConfig, AbstractProviderResult};
+use hdp_provider::evm::{AbstractProvider, AbstractProviderConfig, ProcessedBlockProofs};
 use tracing::info;
 
 use crate::{
     cairo_runner::{
-        input::run::{InputProcessModule, InputTask, RunnerInput},
+        input::run::{InputTask, RunnerInput},
         run::{RunResult, Runner},
     },
     pre_processor::{ExtendedTask, PreProcessResult},
@@ -77,7 +79,7 @@ impl Processor {
 
     async fn generate_input(
         &self,
-        proofs: AbstractProviderResult,
+        proofs: ProcessedBlockProofs,
         tasks: Vec<ExtendedTask>,
     ) -> Result<RunnerInput> {
         let (task_tree, wrapped_tasks) = self.build_task_merkle_tree(tasks)?;
@@ -116,7 +118,7 @@ impl Processor {
                         .datalake
                         .get_collection_type()
                         .to_index();
-                    let wrapped_task = Task {
+                    let wrapped_task = ProcessedDatalakeCompute {
                         encoded_task,
                         task_commitment: task_commit.clone(),
                         compiled_result: None,
@@ -127,13 +129,13 @@ impl Processor {
                         datalake_type,
                         property_type,
                     };
-                    task_wrapper.push(InputTask::DatalakeCompute(wrapped_task.to_cairo_format()));
+                    task_wrapper.push(InputTask::DatalakeCompute(wrapped_task.to_felts()));
                 }
                 ExtendedTask::Module(extended_module) => {
-                    let wrapped_task = InputProcessModule {
-                        inputs: extended_module.task.inputs,
-                        module_class: extended_module.module_class,
-                    };
+                    let wrapped_task = ProcessedModule::new(
+                        extended_module.task.inputs,
+                        extended_module.module_class,
+                    );
                     task_wrapper.push(InputTask::Module(wrapped_task));
                 }
             };

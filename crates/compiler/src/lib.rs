@@ -1,11 +1,12 @@
 use std::{fmt, sync::Arc};
 
 use anyhow::{bail, Result};
-use hdp_primitives::datalake::{
-    block_sampled::output::{Account, Storage},
-    envelope::DatalakeEnvelope,
-    output::{Header, MMRMeta},
-    transactions::output::{Transaction, TransactionReceipt},
+use hdp_primitives::{
+    datalake::envelope::DatalakeEnvelope,
+    processed_types::{
+        account::ProcessedAccount, header::ProcessedHeader, mmr::MMRMeta,
+        receipt::ProcessedReceipt, storage::ProcessedStorage, transaction::ProcessedTransaction,
+    },
 };
 use hdp_provider::evm::AbstractProvider;
 use serde::{Deserialize, Serialize};
@@ -41,7 +42,7 @@ impl CompiledDatalakeEnvelope {
     }
 
     ///Get headers from compiled datalake
-    pub fn get_headers(&self) -> Vec<Header> {
+    pub fn get_headers(&self) -> Vec<ProcessedHeader> {
         match self {
             CompiledDatalakeEnvelope::BlockSampled(compiled_block_sampled_datalake) => {
                 compiled_block_sampled_datalake.headers.clone()
@@ -53,7 +54,7 @@ impl CompiledDatalakeEnvelope {
     }
 
     ///Get account from compiled datalake
-    pub fn get_accounts(&self) -> Result<Vec<Account>> {
+    pub fn get_accounts(&self) -> Result<Vec<ProcessedAccount>> {
         match self {
             CompiledDatalakeEnvelope::BlockSampled(compiled_block_sampled_datalake) => {
                 Ok(compiled_block_sampled_datalake.accounts.clone())
@@ -65,7 +66,7 @@ impl CompiledDatalakeEnvelope {
     }
 
     /// Get storages from compiled datalake
-    pub fn get_storages(&self) -> Result<Vec<Storage>> {
+    pub fn get_storages(&self) -> Result<Vec<ProcessedStorage>> {
         match self {
             CompiledDatalakeEnvelope::BlockSampled(compiled_block_sampled_datalake) => {
                 Ok(compiled_block_sampled_datalake.storages.clone())
@@ -77,7 +78,7 @@ impl CompiledDatalakeEnvelope {
     }
 
     /// Get transactions from compiled datalake
-    pub fn get_transactions(&self) -> Result<Vec<Transaction>> {
+    pub fn get_transactions(&self) -> Result<Vec<ProcessedTransaction>> {
         match self {
             CompiledDatalakeEnvelope::BlockSampled(_) => {
                 bail!("block sampled datalake does not have transactions")
@@ -89,7 +90,7 @@ impl CompiledDatalakeEnvelope {
     }
 
     /// Get transaction receipts from compiled datalake
-    pub fn get_transaction_receipts(&self) -> Result<Vec<TransactionReceipt>> {
+    pub fn get_transaction_receipts(&self) -> Result<Vec<ProcessedReceipt>> {
         match self {
             CompiledDatalakeEnvelope::BlockSampled(_) => {
                 bail!("block sampled datalake does not have transaction receipts")

@@ -1,10 +1,15 @@
 use anyhow::Result;
-use hdp_primitives::datalake::{
-    block_sampled::output::{Account, AccountFormatted, Storage, StorageFormatted},
-    output::{Header, HeaderFormatted, MMRMeta, Task, TaskFormatted, Uint256},
-    transactions::output::{
-        Transaction, TransactionFormatted, TransactionReceipt, TransactionReceiptFormatted,
-    },
+
+use hdp_primitives::processed_types::{
+    account::{ProcessedAccount, ProcessedAccountInFelts},
+    datalake_compute::{ProcessedDatalakeCompute, ProcessedDatalakeComputeInFelts},
+    header::{ProcessedHeader, ProcessedHeaderInFelts},
+    mmr::MMRMeta,
+    receipt::{ProcessedReceipt, ProcessedReceiptInFelts},
+    storage::{ProcessedStorage, ProcessedStorageInFelts},
+    traits::IntoFelts,
+    transaction::{ProcessedTransaction, ProcessedTransactionInFelts},
+    uint256::Uint256,
 };
 use serde::{Deserialize, Serialize};
 
@@ -15,13 +20,13 @@ pub struct ProcessedResult {
     pub results_root: Option<String>,
     // U256 type
     pub tasks_root: String,
-    pub headers: Vec<Header>,
+    pub headers: Vec<ProcessedHeader>,
     pub mmr: MMRMeta,
-    pub accounts: Vec<Account>,
-    pub storages: Vec<Storage>,
-    pub transactions: Vec<Transaction>,
-    pub transaction_receipts: Vec<TransactionReceipt>,
-    pub tasks: Vec<Task>,
+    pub accounts: Vec<ProcessedAccount>,
+    pub storages: Vec<ProcessedStorage>,
+    pub transactions: Vec<ProcessedTransaction>,
+    pub transaction_receipts: Vec<ProcessedReceipt>,
+    pub tasks: Vec<ProcessedDatalakeCompute>,
 }
 
 impl ProcessedResult {
@@ -29,33 +34,29 @@ impl ProcessedResult {
         let headers = self
             .headers
             .iter()
-            .map(|header| header.to_cairo_format())
+            .map(|header| header.to_felts())
             .collect();
         let accounts = self
             .accounts
             .iter()
-            .map(|account| account.to_cairo_format())
+            .map(|account| account.to_felts())
             .collect();
         let storages = self
             .storages
             .iter()
-            .map(|storage| storage.to_cairo_format())
+            .map(|storage| storage.to_felts())
             .collect();
         let transactions = self
             .transactions
             .iter()
-            .map(|transaction| transaction.to_cairo_format())
+            .map(|transaction| transaction.to_felts())
             .collect();
         let transaction_receipts = self
             .transaction_receipts
             .iter()
-            .map(|receipt| receipt.to_cairo_format())
+            .map(|receipt| receipt.to_felts())
             .collect();
-        let tasks = self
-            .tasks
-            .iter()
-            .map(|task| task.to_cairo_format())
-            .collect();
+        let tasks = self.tasks.iter().map(|task| task.to_felts()).collect();
         let results_root = self
             .results_root
             .as_ref()
@@ -98,11 +99,11 @@ pub struct ProcessedResultFormatted {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub results_root: Option<Uint256>,
     pub tasks_root: Uint256,
-    pub headers: Vec<HeaderFormatted>,
+    pub headers: Vec<ProcessedHeaderInFelts>,
     pub mmr: MMRMeta,
-    accounts: Vec<AccountFormatted>,
-    storages: Vec<StorageFormatted>,
-    transactions: Vec<TransactionFormatted>,
-    transaction_receipts: Vec<TransactionReceiptFormatted>,
-    pub tasks: Vec<TaskFormatted>,
+    accounts: Vec<ProcessedAccountInFelts>,
+    storages: Vec<ProcessedStorageInFelts>,
+    transactions: Vec<ProcessedTransactionInFelts>,
+    transaction_receipts: Vec<ProcessedReceiptInFelts>,
+    pub tasks: Vec<ProcessedDatalakeComputeInFelts>,
 }

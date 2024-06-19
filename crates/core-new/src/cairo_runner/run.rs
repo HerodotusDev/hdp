@@ -1,11 +1,11 @@
 use anyhow::Result;
+use hdp_primitives::processed_types::uint256::Uint256;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use tempfile::NamedTempFile;
 
 use anyhow::bail;
-use hdp_primitives::datalake::output::Uint256;
 use regex::Regex;
 
 /// Result of run

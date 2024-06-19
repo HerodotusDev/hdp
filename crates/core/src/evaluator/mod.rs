@@ -13,13 +13,17 @@ use tokio::sync::RwLock;
 
 use hdp_compiler::{CompiledDatalakeEnvelope, DatalakeCompiler};
 
-use hdp_primitives::datalake::{
-    block_sampled::output::{Account, Storage},
-    datalake_type::DatalakeType,
-    envelope::DatalakeEnvelope,
-    output::{Header, MMRMeta, Task},
-    task::{Computation, DatalakeCompute},
-    transactions::output::{Transaction, TransactionReceipt},
+use hdp_primitives::{
+    datalake::{
+        datalake_type::DatalakeType,
+        envelope::DatalakeEnvelope,
+        task::{Computation, DatalakeCompute},
+    },
+    processed_types::{
+        account::ProcessedAccount, datalake_compute::ProcessedDatalakeCompute,
+        header::ProcessedHeader, mmr::MMRMeta, receipt::ProcessedReceipt,
+        storage::ProcessedStorage, transaction::ProcessedTransaction,
+    },
 };
 
 use hdp_provider::evm::AbstractProvider;
@@ -72,11 +76,11 @@ impl EvaluationResult {
         let task_merkle_root = tasks_merkle_tree.root();
 
         // 3. flatten the datalake result for all tasks
-        let mut flattened_headers: HashSet<Header> = HashSet::new();
-        let mut flattened_accounts: HashSet<Account> = HashSet::new();
-        let mut flattened_storages: HashSet<Storage> = HashSet::new();
-        let mut flattened_transactions: HashSet<Transaction> = HashSet::new();
-        let mut flattened_transaction_receipts: HashSet<TransactionReceipt> = HashSet::new();
+        let mut flattened_headers: HashSet<ProcessedHeader> = HashSet::new();
+        let mut flattened_accounts: HashSet<ProcessedAccount> = HashSet::new();
+        let mut flattened_storages: HashSet<ProcessedStorage> = HashSet::new();
+        let mut flattened_transactions: HashSet<ProcessedTransaction> = HashSet::new();
+        let mut flattened_transaction_receipts: HashSet<ProcessedReceipt> = HashSet::new();
         let mut assume_mmr_meta: Option<MMRMeta> = None;
 
         let mut tasks = Vec::new();
@@ -89,11 +93,11 @@ impl EvaluationResult {
 
             match compiled_datalake {
                 CompiledDatalakeEnvelope::BlockSampled(compiled_block_sampled) => {
-                    let header_set: HashSet<Header> =
+                    let header_set: HashSet<ProcessedHeader> =
                         compiled_block_sampled.headers.iter().cloned().collect();
-                    let account_set: HashSet<Account> =
+                    let account_set: HashSet<ProcessedAccount> =
                         compiled_block_sampled.accounts.iter().cloned().collect();
-                    let storage_set: HashSet<Storage> =
+                    let storage_set: HashSet<ProcessedStorage> =
                         compiled_block_sampled.storages.iter().cloned().collect();
                     flattened_headers.extend(header_set);
                     flattened_accounts.extend(account_set);
@@ -101,17 +105,18 @@ impl EvaluationResult {
                     assume_mmr_meta = Some(compiled_block_sampled.mmr_meta.clone());
                 }
                 CompiledDatalakeEnvelope::Transactions(compiled_transactions_in_block) => {
-                    let header_set: HashSet<Header> = compiled_transactions_in_block
+                    let header_set: HashSet<ProcessedHeader> = compiled_transactions_in_block
                         .headers
                         .iter()
                         .cloned()
                         .collect();
-                    let transaction_set: HashSet<Transaction> = compiled_transactions_in_block
-                        .transactions
-                        .iter()
-                        .cloned()
-                        .collect();
-                    let transaction_receipt_set: HashSet<TransactionReceipt> =
+                    let transaction_set: HashSet<ProcessedTransaction> =
+                        compiled_transactions_in_block
+                            .transactions
+                            .iter()
+                            .cloned()
+                            .collect();
+                    let transaction_receipt_set: HashSet<ProcessedReceipt> =
                         compiled_transactions_in_block
                             .transaction_receipts
                             .iter()
@@ -138,7 +143,7 @@ impl EvaluationResult {
 
             match self.is_pre_processable {
                 false => {
-                    let task = Task {
+                    let task = ProcessedDatalakeCompute {
                         encoded_task,
                         task_commitment: task_commitment.to_string(),
                         task_proof,
@@ -163,7 +168,7 @@ impl EvaluationResult {
                         .unwrap()
                         .get_proof(&DynSolValue::FixedBytes(result_commitment, 32));
 
-                    let task = Task {
+                    let task = ProcessedDatalakeCompute {
                         encoded_task,
                         task_commitment: task_commitment.to_string(),
                         task_proof,
@@ -316,9 +321,11 @@ pub async fn evaluator(
 mod tests {
 
     use hdp_compiler::block_sampled::CompiledBlockSampledDatalake;
+    use header::ProcessedHeaderProof;
+    use mpt::ProcessedMPTProof;
 
     use super::*;
-    use hdp_primitives::datalake::output::*;
+    use hdp_primitives::processed_types::*;
 
     fn setup() -> EvaluationResult {
         let mut init_eval_result = EvaluationResult::new();
@@ -326,9 +333,9 @@ mod tests {
             "0x242fe0d1fa98c743f84a168ff10abbcca83cb9e0424f4541fab5041cd63d3387".to_string(),
             CompiledDatalakeEnvelope::BlockSampled(CompiledBlockSampledDatalake {
                 values: vec!["0x9184e72a000".to_string()],
-                headers: vec![Header {
+                headers: vec![ProcessedHeader {
                     rlp: "f90253a008a4f6a7d5055ce465e285415779bc338134600b750c06396531ce6a29d09f4ba01dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347941268ad189526ac0b386faf06effc46779c340ee6a0fa23637d8a5d4a624479b33410895951995bae67f7c16b00859f9ac630b9e020a0792c487bc3176e482c995a9a1a16041d456db8d52e0db6fb73b540a64e96feaca04406def0dad7a6c6ef8c41a59be6b5b89124391a5b0491c8a5339e859e24d7acb901001a820024432050a200d1bc129162042984e09002002806340a14630c0aca5060c140a0608e043199e90280a1418cb89f1020085394a48f412d00d05041ad00a09002801a30b50d10c008522a2203284384841e055052404040710462e48103580026004a4e6842518210c2060c0729944118e4d0801936d020008811bb0c0464028a0008219056543b1111890cac50c04805000a400040401089904927409ec6720b8001c80a204628d8400064b402a1220480c21418480c24d00446a743000180a880128245028010a00103a8036b06c119a20124c32482280cc14021b430082a9408840030d46c062010f0b290c194040888189e081100c1070280304c0a01808352229a8401c9c38084017f9a188465df90188a4e65746865726d696e64a0178bae25662326acf0824d8441db8493865a53b8c627dc8aea5eb50ed2102fdc8800000000000000008401d76098a06eb2bc6208c3733aa1158ff8a100cb5c7ad1706ac6c3fb95d28f28007a770403808404c20000a0195eac87285a920cb37eb2b2dcf6eb9853efa2547c386bfe58ca2ff0fe167eb5".to_string(),
-                    proof: HeaderProof {
+                    proof: ProcessedHeaderProof {
                         leaf_idx: 660751,
                         mmr_path: vec![
                             "0x50b38c27a0e12585ae387c5fd218ccaea57f7ff72cd4739ed9ff0a29ba6fe7a".to_string(),
@@ -340,10 +347,10 @@ mod tests {
                     },
                 }],
               accounts: vec![
-                Account {
+                ProcessedAccount {
                     address: "0x75cec1db9dceb703200eaa6595f66885c962b920".to_string(),
                     account_key: "0x962f445fc8476432660877b666f653759ea69189b60d2f4a7008e70555746ad1".to_string(),
-                    proofs: vec![MPTProof {
+                    proofs: vec![ProcessedMPTProof {
                         block_number: 5382810,
                         proof: vec![
                         "0xf90211a004a07b0ced9c4e49cf3574d029b4aca46893aaead889508635b766b8bd9ff49aa035557e7ab5adda1f7876e96caf874a825a03267c9bcbd85e14f3578f7b80980ba05190d1fdc6e8506a5cc08e7291498d62aafc44913c4b47dc998d3cff5a7fee29a0cc16f65cc93a89251834e9e703f7bca425ad644dcb8d7502870439a47e7377c3a014623f34ab8b17adca3cf7648bac3f59b67fccf9082cf8bfd1a5f58a3cc5483da07f046112f9c54206ecf2379d2c75c6a343e19f19563a615163d7f032e54b70baa0869bb928152f852a8fb130ba8b95597a49a7c4b53cb6ab7af56f0f2e0a9d22f9a0effce50b7901262428133a0829fc11baf319f1a0a5388ddb0546a55d26ddb01ca096bedf7371a32ebbfbf159c3688efb85b675fc9968274d30f436025735633fd9a09ae43877fde992c6b39eed307abcea8a922918ceb672cc5257f3a2f1d23210d3a0c496cfc0e6c6d082ad5d80d827ad3fd748da5fef22e321f98d110f55166c0104a012155dffd30839241dad6bdba97b30b3b0368ceaf46069aba61cf63c7735ef8aa02b78b3f87d1c29a10c6b584e47f2df8b2f6d333b6c03f62413db4fc732d8b543a05bd948e3417c7e63795702d6d8b249d6bad8f5b47e05058ad83f869e719c76d9a037f216a3e0a186c53c6216a6990f422bf38c28e68e4d29f65feca1d9d518acdca0e56801140a1beffc0a88cad0b104d40024b5bf9586d175496821aff4a649cb3380".to_string(),
@@ -357,11 +364,11 @@ mod tests {
                     ]}
               ]}],
               storages: vec![
-                Storage {
+                ProcessedStorage {
                     address: "0x75cec1db9dceb703200eaa6595f66885c962b920".to_string(),
                     slot: "0x0000000000000000000000000000000000000000000000000000000000000002".to_string(),
                     storage_key: "0x405787fa12a823e0f2b7631cc41b3ba8828b3321ca811111fa75cd3aa3bb5ace".to_string(),
-                    proofs: vec![MPTProof {
+                    proofs: vec![ProcessedMPTProof {
                         block_number: 5382810,
                         proof: vec![
                             "0xf8918080a0b7a7c859e6ddbad6c18adb60b9f48842e652021b4f8b875894b8b879568629f880a0e7f9c6d331c7d110c992550a7baa3e051adc1e26a53d928dbd517a313d221863808080808080a0e40cf9c20b1e8e4aaf3201dd3cb84ab06d2bac34e8dc3e918626e5c44c4f0707808080a0c01a2f302bfc71151daac60eeb4c1b73470845d4fe219e71644752abaafb02ab80".to_string(),"0xe9a0305787fa12a823e0f2b7631cc41b3ba8828b3321ca811111fa75cd3aa3bb5ace878609184e72a000".to_string(),
