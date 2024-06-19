@@ -1,16 +1,16 @@
 //! This module defines the `ProcessedReceipt` struct and its corresponding `ProcessedReceiptInFelts` struct.
 
-use super::{felt_vec_unit::FieldElementVectorUnit, traits::IntoFelts};
+use super::{felt_vec_unit::FieldElementVectorUnit, traits::AsCairoFormat};
 use crate::processed_types::receipt::ProcessedReceipt as BaseProcessedReceipt;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use starknet::core::serde::unsigned_field_element::UfeHex;
 use starknet_crypto::FieldElement;
 
-impl IntoFelts for BaseProcessedReceipt {
+impl AsCairoFormat for BaseProcessedReceipt {
     type Output = ProcessedReceipt;
 
-    fn to_felts(&self) -> Self::Output {
+    fn as_cairo_format(&self) -> Self::Output {
         let key = self.key.clone();
         let proof_felts: Vec<FieldElementVectorUnit> = self
             .proof
@@ -52,7 +52,7 @@ mod tests {
     fn test_receipt_serde() {
         let processed_string = fs::read_to_string("fixtures/processed/receipt.json").unwrap();
         let receipts: BaseProcessedReceipt = serde_json::from_str(&processed_string).unwrap();
-        let receipts_in_felts: ProcessedReceipt = receipts.to_felts();
+        let receipts_in_felts: ProcessedReceipt = receipts.as_cairo_format();
         let string = serde_json::to_string_pretty(&receipts_in_felts).unwrap();
 
         let json_file = fs::read_to_string("./fixtures/processed_in_felts/receipt.json").unwrap();

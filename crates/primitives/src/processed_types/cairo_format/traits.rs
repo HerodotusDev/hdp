@@ -1,5 +1,5 @@
-pub trait IntoFelts {
+pub trait AsCairoFormat {
     type Output;
 
-    fn to_felts(&self) -> Self::Output;
+    fn as_cairo_format(&self) -> Self::Output;
 }

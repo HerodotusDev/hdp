@@ -1,15 +1,15 @@
 use crate::processed_types::datalake_compute::ProcessedDatalakeCompute as BaseProcessedDatalakeCompute;
 
-use super::{felt_vec_unit::FieldElementVectorUnit, traits::IntoFelts};
+use super::{felt_vec_unit::FieldElementVectorUnit, traits::AsCairoFormat};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use starknet::core::serde::unsigned_field_element::UfeHex;
 use starknet_crypto::FieldElement;
 
-impl IntoFelts for BaseProcessedDatalakeCompute {
+impl AsCairoFormat for BaseProcessedDatalakeCompute {
     type Output = ProcessedDatalakeCompute;
 
-    fn to_felts(&self) -> Self::Output {
+    fn as_cairo_format(&self) -> Self::Output {
         let computational_task_felts =
             FieldElementVectorUnit::from_hex_str(&self.encoded_task).unwrap();
         let datalake_felts = FieldElementVectorUnit::from_hex_str(&self.encoded_datalake).unwrap();
@@ -49,7 +49,8 @@ mod tests {
             fs::read_to_string("fixtures/processed/datalake_compute.json").unwrap();
         let datalake_computes: BaseProcessedDatalakeCompute =
             serde_json::from_str(&processed_string).unwrap();
-        let datalake_computes_in_felts: ProcessedDatalakeCompute = datalake_computes.to_felts();
+        let datalake_computes_in_felts: ProcessedDatalakeCompute =
+            datalake_computes.as_cairo_format();
         let string = serde_json::to_string_pretty(&datalake_computes_in_felts).unwrap();
 
         let json_file =

@@ -1,3 +1,6 @@
+//! This module contains the processed types for the Cairo format.
+//! Used to serialize the processed types to the Cairo Program's input format.
+
 pub mod account;
 pub mod datalake_compute;
 pub mod felt_vec_unit;

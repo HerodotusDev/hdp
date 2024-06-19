@@ -7,16 +7,20 @@ use starknet_crypto::FieldElement;
 
 use crate::processed_types::storage::ProcessedStorage as BaseProcessedStorage;
 
-use super::{felt_vec_unit::FieldElementVectorUnit, mpt::ProcessedMPTProof, traits::IntoFelts};
+use super::{felt_vec_unit::FieldElementVectorUnit, mpt::ProcessedMPTProof, traits::AsCairoFormat};
 
-impl IntoFelts for BaseProcessedStorage {
+impl AsCairoFormat for BaseProcessedStorage {
     type Output = ProcessedStorage;
 
-    fn to_felts(&self) -> Self::Output {
+    fn as_cairo_format(&self) -> Self::Output {
         let address_chunk_result = FieldElementVectorUnit::from_hex_str(&self.address).unwrap();
         let slot_chunk_result = FieldElementVectorUnit::from_hex_str(&self.slot).unwrap();
         let storage_key = self.storage_key.clone();
-        let proofs = self.proofs.iter().map(|proof| proof.to_felts()).collect();
+        let proofs = self
+            .proofs
+            .iter()
+            .map(|proof| proof.as_cairo_format())
+            .collect();
         ProcessedStorage {
             address: address_chunk_result.felts,
             slot: slot_chunk_result.felts,
@@ -48,7 +52,7 @@ mod tests {
     fn test_storage_serde() {
         let processed_string = fs::read_to_string("fixtures/processed/storage.json").unwrap();
         let storages: BaseProcessedStorage = serde_json::from_str(&processed_string).unwrap();
-        let storages_in_felts: ProcessedStorage = storages.to_felts();
+        let storages_in_felts: ProcessedStorage = storages.as_cairo_format();
         let string = serde_json::to_string_pretty(&storages_in_felts).unwrap();
 
         let json_file = fs::read_to_string("./fixtures/processed_in_felts/storage.json").unwrap();

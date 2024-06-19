@@ -2,7 +2,7 @@ use anyhow::Result;
 
 use hdp_primitives::processed_types::{
     account::ProcessedAccount,
-    cairo_format::{self, IntoFelts},
+    cairo_format::{self, AsCairoFormat},
     datalake_compute::ProcessedDatalakeCompute,
     header::ProcessedHeader,
     mmr::MMRMeta,
@@ -34,29 +34,33 @@ impl ProcessedResult {
         let headers = self
             .headers
             .iter()
-            .map(|header| header.to_felts())
+            .map(|header| header.as_cairo_format())
             .collect();
         let accounts = self
             .accounts
             .iter()
-            .map(|account| account.to_felts())
+            .map(|account| account.as_cairo_format())
             .collect();
         let storages = self
             .storages
             .iter()
-            .map(|storage| storage.to_felts())
+            .map(|storage| storage.as_cairo_format())
             .collect();
         let transactions = self
             .transactions
             .iter()
-            .map(|transaction| transaction.to_felts())
+            .map(|transaction| transaction.as_cairo_format())
             .collect();
         let transaction_receipts = self
             .transaction_receipts
             .iter()
-            .map(|receipt| receipt.to_felts())
+            .map(|receipt| receipt.as_cairo_format())
             .collect();
-        let tasks = self.tasks.iter().map(|task| task.to_felts()).collect();
+        let tasks = self
+            .tasks
+            .iter()
+            .map(|task| task.as_cairo_format())
+            .collect();
         let results_root = self
             .results_root
             .as_ref()

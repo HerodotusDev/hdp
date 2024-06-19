@@ -8,15 +8,19 @@ use starknet_crypto::FieldElement;
 
 use crate::processed_types::account::ProcessedAccount as BaseProcessedAccount;
 
-use super::{felt_vec_unit::FieldElementVectorUnit, mpt::ProcessedMPTProof, traits::IntoFelts};
+use super::{felt_vec_unit::FieldElementVectorUnit, mpt::ProcessedMPTProof, AsCairoFormat};
 
-impl IntoFelts for BaseProcessedAccount {
+impl AsCairoFormat for BaseProcessedAccount {
     type Output = ProcessedAccount;
 
-    fn to_felts(&self) -> Self::Output {
+    fn as_cairo_format(&self) -> Self::Output {
         let address_chunk_result = FieldElementVectorUnit::from_hex_str(&self.address).unwrap();
         let account_key = &self.account_key;
-        let proofs = self.proofs.iter().map(|proof| proof.to_felts()).collect();
+        let proofs = self
+            .proofs
+            .iter()
+            .map(|proof| proof.as_cairo_format())
+            .collect();
         ProcessedAccount {
             address: address_chunk_result.felts,
             account_key: account_key.into(),
@@ -44,7 +48,7 @@ mod tests {
     fn test_account_to_serde() {
         let processed_string = fs::read_to_string("fixtures/processed/account.json").unwrap();
         let accounts: BaseProcessedAccount = serde_json::from_str(&processed_string).unwrap();
-        let accounts_in_felts: ProcessedAccount = accounts.to_felts();
+        let accounts_in_felts: ProcessedAccount = accounts.as_cairo_format();
         let string = serde_json::to_string_pretty(&accounts_in_felts).unwrap();
 
         let json_file = fs::read_to_string("./fixtures/processed_in_felts/account.json").unwrap();

@@ -1,15 +1,15 @@
 use crate::processed_types::mpt::ProcessedMPTProof as BaseProcessedMPTProof;
 
-use super::{felt_vec_unit::FieldElementVectorUnit, traits::IntoFelts};
+use super::{felt_vec_unit::FieldElementVectorUnit, traits::AsCairoFormat};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use starknet::core::serde::unsigned_field_element::UfeHex;
 use starknet_crypto::FieldElement;
 
-impl IntoFelts for BaseProcessedMPTProof {
+impl AsCairoFormat for BaseProcessedMPTProof {
     type Output = ProcessedMPTProof;
 
-    fn to_felts(&self) -> ProcessedMPTProof {
+    fn as_cairo_format(&self) -> ProcessedMPTProof {
         let proof_felts: Vec<FieldElementVectorUnit> = self
             .proof
             .iter()

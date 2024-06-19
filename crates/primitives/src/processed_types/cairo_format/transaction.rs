@@ -1,16 +1,16 @@
 //! The transaction module contains the ProcessedTransaction struct and its conversion to ProcessedTransactionInFelts.
 
-use super::{felt_vec_unit::FieldElementVectorUnit, traits::IntoFelts};
+use super::{felt_vec_unit::FieldElementVectorUnit, traits::AsCairoFormat};
 use crate::processed_types::transaction::ProcessedTransaction as BaseProcessedTransaction;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use starknet::core::serde::unsigned_field_element::UfeHex;
 use starknet_crypto::FieldElement;
 
-impl IntoFelts for BaseProcessedTransaction {
+impl AsCairoFormat for BaseProcessedTransaction {
     type Output = ProcessedTransaction;
 
-    fn to_felts(&self) -> Self::Output {
+    fn as_cairo_format(&self) -> Self::Output {
         let key = self.key.clone();
         let proof_felts: Vec<FieldElementVectorUnit> = self
             .proof
@@ -50,7 +50,7 @@ mod tests {
     fn test_transaction_serde() {
         let processed_string = fs::read_to_string("fixtures/processed/transaction.json").unwrap();
         let tx: BaseProcessedTransaction = serde_json::from_str(&processed_string).unwrap();
-        let tx_in_felts = tx.to_felts();
+        let tx_in_felts = tx.as_cairo_format();
         let string = serde_json::to_string_pretty(&tx_in_felts).unwrap();
 
         let json_file =

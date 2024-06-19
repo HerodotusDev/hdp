@@ -7,12 +7,12 @@ use crate::processed_types::header::{
     ProcessedHeader as BaseProcessedHeader, ProcessedHeaderProof as BasedProcessedHeaderProof,
 };
 
-use super::{felt_vec_unit::FieldElementVectorUnit, traits::IntoFelts};
+use super::{felt_vec_unit::FieldElementVectorUnit, traits::AsCairoFormat};
 
-impl IntoFelts for BaseProcessedHeader {
+impl AsCairoFormat for BaseProcessedHeader {
     type Output = ProcessedHeader;
 
-    fn to_felts(&self) -> Self::Output {
+    fn as_cairo_format(&self) -> Self::Output {
         let felts_unit = FieldElementVectorUnit::from_hex_str(&format!("0x{}", &self.rlp)).unwrap();
         let proof = self.proof.clone();
         ProcessedHeader {
@@ -46,7 +46,7 @@ mod tests {
     fn test_header_serde() {
         let processed_string = fs::read_to_string("fixtures/processed/header.json").unwrap();
         let headers: BaseProcessedHeader = serde_json::from_str(&processed_string).unwrap();
-        let headers_in_felts: ProcessedHeader = headers.to_felts();
+        let headers_in_felts: ProcessedHeader = headers.as_cairo_format();
         let string = serde_json::to_string_pretty(&headers_in_felts).unwrap();
 
         let json_file = fs::read_to_string("./fixtures/processed_in_felts/header.json").unwrap();
