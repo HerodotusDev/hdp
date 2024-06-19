@@ -1,12 +1,12 @@
 use anyhow::Result;
 use hdp_core::evaluator::evaluation_result_to_result_commitment;
 use hdp_core::evaluator::result::ProcessedResult;
+use hdp_primitives::processed_types::uint256::Uint256;
 use std::process::{Command, Stdio};
 use std::{error::Error, fs};
 use tracing::{debug, info};
 
 use anyhow::bail;
-use hdp_primitives::datalake::output::{combine_parts_into_big_endian_hex, Uint256};
 use regex::Regex;
 
 const COMPILED_CAIRO_PATH: &str = "build/compiled_cairo/hdp.json";
@@ -78,10 +78,8 @@ impl CairoRunner {
         if let Some(results_root_caps) = results_root_re.captures(&output) {
             let results_root_1 = &results_root_caps[1];
             let results_root_2 = &results_root_caps[2];
-            let combined_results_root = combine_parts_into_big_endian_hex(&Uint256 {
-                low: results_root_1.to_string(),
-                high: results_root_2.to_string(),
-            });
+            let result_root = Uint256::from_strs(results_root_2, results_root_1)?;
+            let combined_results_root = result_root.to_combined_string().to_string();
             Ok(CairoRunResult {
                 task_results,
                 results_root: combined_results_root,

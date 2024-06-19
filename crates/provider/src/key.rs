@@ -140,7 +140,7 @@ impl TxReceiptProviderKey {
     }
 }
 
-#[derive(Hash, Debug, PartialEq, Eq)]
+#[derive(Hash, Debug, PartialEq, Eq, Clone)]
 pub enum FetchKeyEnvelope {
     Header(HeaderProviderKey),
     Account(AccountProviderKey),

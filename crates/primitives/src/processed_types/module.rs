@@ -6,10 +6,19 @@ use starknet_crypto::FieldElement;
 
 #[serde_as]
 #[derive(Serialize)]
-pub struct InputModule {
+pub struct ProcessedModule {
     #[serde_as(as = "Vec<UfeHex>")]
     pub inputs: Vec<FieldElement>,
     /// Detail class code of the module.
     /// This will be loaded to bootloader.
     pub module_class: CasmContractClass,
+}
+
+impl ProcessedModule {
+    pub fn new(inputs: Vec<FieldElement>, module_class: CasmContractClass) -> Self {
+        ProcessedModule {
+            inputs,
+            module_class,
+        }
+    }
 }

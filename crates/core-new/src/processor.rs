@@ -2,99 +2,145 @@
 //! This run is sound execution of the module.
 //! This will be most abstract layer of the processor.
 
+use alloy_dyn_abi::DynSolValue;
+use alloy_merkle_tree::standard_binary_tree::StandardMerkleTree;
+use alloy_primitives::B256;
 use anyhow::Result;
-use hdp_primitives::task::ExtendedTask;
-use hdp_provider::evm::{AbstractProvider, AbstractProviderConfig, AbstractProviderResult};
+use hdp_primitives::processed_types::{
+    datalake_compute::ProcessedDatalakeCompute, module::ProcessedModule, traits::IntoFelts,
+};
+use std::{fs, path::PathBuf, str::FromStr};
+
+use hdp_provider::evm::{AbstractProvider, AbstractProviderConfig, ProcessedBlockProofs};
+use tracing::info;
 
 use crate::{
     cairo_runner::{
-        input::run::RunnerInput,
+        input::run::{InputTask, RunnerInput},
         run::{RunResult, Runner},
     },
-    pre_processor::PreProcessResult,
+    pre_processor::{ExtendedTask, PreProcessResult},
 };
 
 pub struct Processor {
     runner: Runner,
+    provider: AbstractProvider,
 }
 
-impl Default for Processor {
-    fn default() -> Self {
-        Self::new()
-    }
+#[derive(Debug)]
+pub struct ProcessorResult {
+    /// leaf of result merkle tree
+    task_results: Vec<String>,
+    /// leaf of task merkle tree
+    task_commitments: Vec<String>,
+    /// tasks inclusion proofs
+    task_inclusion_proofs: Vec<Vec<String>>,
+    /// results inclusion proofs
+    results_inclusion_proofs: Vec<Vec<String>>,
+    /// root of the results merkle tree
+    results_root: String,
+    /// root of the tasks merkle tree
+    tasks_root: String,
+    /// mmr id
+    used_mmr_id: u64,
+    /// mmr size
+    used_mmr_size: u64,
 }
 
 impl Processor {
-    pub fn new() -> Self {
-        let runner = Runner::new();
-        Self { runner }
+    pub fn new(provider_config: AbstractProviderConfig, program_path: PathBuf) -> Self {
+        let runner = Runner::new(program_path);
+        let provider = AbstractProvider::new(provider_config);
+        Self { runner, provider }
     }
 
-    pub async fn process(&self, requset: PreProcessResult) -> Result<RunResult> {
+    pub async fn process(&self, requset: PreProcessResult) -> Result<ProcessorResult> {
         // generate input file from fetch points
         // 1. fetch proofs from provider by using fetch points
-        let config = AbstractProviderConfig {
-            rpc_url: "http://localhost:8080",
-            chain_id: 1,
-            rpc_chunk_size: 1,
-        };
-        let provider = AbstractProvider::new(config);
-        let proofs = provider.fetch_proofs_from_keys(requset.fetch_keys).await?;
+        let proofs = self
+            .provider
+            .fetch_proofs_from_keys(requset.fetch_keys)
+            .await?;
 
-        // 2. pre-compute tasks
+        println!("Proofs: {:?}", proofs);
+        // TODO 2. pre-compute tasks
+        // from requets.tasks.fetch keys -> value sets
 
         // 2. generate input struct with proofs and module bytes
         let input = self.generate_input(proofs, requset.tasks).await?;
         // 3. pass the input file to the runner
-        let input_bytes = input.to_bytes();
-        self.runner.run(input_bytes)
+        let input_string =
+            serde_json::to_string_pretty(&input).expect("Failed to serialize module class");
+        fs::write("input_processor.json", input_string.clone()).expect("Unable to write file");
+        let result = self.runner.run(input_string)?;
+        info!("Processor executed successfully, PIE is generated");
+        todo!("Return what execution store contract requires")
     }
 
     async fn generate_input(
         &self,
-        proofs: AbstractProviderResult,
+        proofs: ProcessedBlockProofs,
         tasks: Vec<ExtendedTask>,
     ) -> Result<RunnerInput> {
-        // let registry: Arc<ModuleRegistry> = Arc::clone(&self.module_registry);
-        // // Map each module to an asynchronous task
-        // let module_futures: Vec<_> = tasks
-        //     .into_iter()
-        //     .map(|module_with_class| {
-        //         let module_registry = Arc::clone(&registry);
-        //         task::spawn(async move {
-        //             // create input_module
-        //             let module = module_with_class.get_module();
-        //             let inputs = module.inputs;
-        //             let module_class = module_registry
-        //                 .get_module_class(module.class_hash)
-        //                 .await
-        //                 .unwrap();
-        //             Ok(InputModule {
-        //                 inputs,
-        //                 module_class,
-        //                 task_proof: vec![],
-        //             })
-        //         })
-        //     })
-        //     .collect();
+        let (task_tree, wrapped_tasks) = self.build_task_merkle_tree(tasks)?;
+        let input_data = RunnerInput::new(proofs, task_tree.root().to_string(), wrapped_tasks);
+        info!("Runner input is generated successfully");
+        Ok(input_data)
+    }
 
-        // // Join all tasks and collect their results
-        // let results: Vec<_> = join_all(module_futures).await;
-
-        // // Collect results, filter out any errors
-        // let mut collected_results = Vec::new();
-        // for result in results {
-        //     let input_module = result??;
-        //     collected_results.push(input_module);
-        // }
-
-        // Ok(RunnerInput {
-        //     task_root: "".to_string(),
-        //     result_root: None,
-        //     modules: collected_results,
-        //     proofs,
-        //     datalakes: vec![],
-        // });
-        todo!("Implement generate_input")
+    fn build_task_merkle_tree(
+        &self,
+        tasks: Vec<ExtendedTask>,
+    ) -> Result<(StandardMerkleTree, Vec<InputTask>)> {
+        let mut task_wrapper: Vec<InputTask> = Vec::new();
+        let task_commits = tasks
+            .iter()
+            .map(|task| task.get_task_commitment())
+            .collect::<Vec<_>>();
+        let tasks_leaves = task_commits
+            .iter()
+            .map(|commit| DynSolValue::FixedBytes(B256::from_str(commit).unwrap(), 32))
+            .collect::<Vec<_>>();
+        let tasks_merkle_tree = StandardMerkleTree::of(tasks_leaves);
+        for (index, target_task) in tasks.into_iter().enumerate() {
+            let task_commit = task_commits.get(index).unwrap();
+            match target_task {
+                ExtendedTask::DatalakeCompute(extended_datalake) => {
+                    let task_proof = tasks_merkle_tree.get_proof(&DynSolValue::FixedBytes(
+                        B256::from_str(task_commit).unwrap(),
+                        32,
+                    ));
+                    let encoded_task = extended_datalake.task.encode()?;
+                    let encoded_datalake = extended_datalake.task.datalake.encode()?;
+                    let datalake_type = extended_datalake.task.datalake.get_datalake_type() as u8;
+                    let property_type = extended_datalake
+                        .task
+                        .datalake
+                        .get_collection_type()
+                        .to_index();
+                    let wrapped_task = ProcessedDatalakeCompute {
+                        encoded_task,
+                        task_commitment: task_commit.clone(),
+                        compiled_result: None,
+                        result_commitment: None,
+                        task_proof,
+                        result_proof: None,
+                        encoded_datalake,
+                        datalake_type,
+                        property_type,
+                    };
+                    task_wrapper.push(InputTask::DatalakeCompute(wrapped_task.to_felts()));
+                }
+                ExtendedTask::Module(extended_module) => {
+                    let wrapped_task = ProcessedModule::new(
+                        extended_module.task.inputs,
+                        extended_module.module_class,
+                    );
+                    task_wrapper.push(InputTask::Module(wrapped_task));
+                }
+            };
+        }
+        info!("Task merkle tree is built successfully");
+        Ok((tasks_merkle_tree, task_wrapper))
     }
 }
