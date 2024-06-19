@@ -7,7 +7,7 @@ use alloy_merkle_tree::standard_binary_tree::StandardMerkleTree;
 use alloy_primitives::B256;
 use anyhow::Result;
 use hdp_primitives::processed_types::{
-    datalake_compute::ProcessedDatalakeCompute, module::ProcessedModule, traits::IntoFelts,
+    cairo_format::IntoFelts, datalake_compute::ProcessedDatalakeCompute, module::ProcessedModule,
 };
 use std::{fs, path::PathBuf, str::FromStr};
 
