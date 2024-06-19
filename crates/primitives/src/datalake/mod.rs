@@ -6,7 +6,6 @@ use anyhow::Result;
 pub mod block_sampled;
 pub mod datalake_type;
 pub mod envelope;
-pub mod output;
 pub mod task;
 pub mod transactions;
 

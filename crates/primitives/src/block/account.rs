@@ -41,27 +41,37 @@ impl Account {
 /// Account data from RPC `eth_getProof` response
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct AccountFromRpc {
+pub struct AccountProofFromRpc {
     pub account_proof: Vec<String>,
     pub address: String,
     pub balance: String,
     pub code_hash: String,
     pub nonce: String,
     pub storage_hash: String,
-    pub storage_proof: Vec<StorageFromRpc>,
+    pub storage_proof: Vec<StorageProofFromRpc>,
+}
+
+/// Account data from RPC `eth_getAccount` response
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct AccountFromRpc {
+    pub balance: String,
+    pub code_hash: String,
+    pub nonce: String,
+    pub storage_root: String,
 }
 
 /// Storage data from RPC `eth_getProof` response
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct StorageFromRpc {
+pub struct StorageProofFromRpc {
     pub key: String,
     pub proof: Vec<String>,
     pub value: String,
 }
 
-impl From<&AccountFromRpc> for Account {
-    fn from(account_from_rpc: &AccountFromRpc) -> Self {
+impl From<&AccountProofFromRpc> for Account {
+    fn from(account_from_rpc: &AccountProofFromRpc) -> Self {
         Account {
             nonce: u64::from_str_radix(&account_from_rpc.nonce[2..], 16).unwrap(),
             balance: U256::from_str_radix(&account_from_rpc.balance[2..], 16).unwrap(),

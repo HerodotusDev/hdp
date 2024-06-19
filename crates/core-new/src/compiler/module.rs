@@ -6,13 +6,14 @@ use std::fs;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use crate::cairo_runner::input::{pre_run::PreRunnerInput, types::InputModule};
+use crate::cairo_runner::input::pre_run::PreRunnerInput;
 use crate::cairo_runner::pre_run::PreRunner;
 use crate::module_registry::ModuleRegistry;
+use crate::pre_processor::ExtendedModule;
 
 use anyhow::{Ok, Result};
 use futures::future::join_all;
-use hdp_primitives::{module::Module, task::ExtendedModule};
+use hdp_primitives::{module::Module, processed_types::module::ProcessedModule};
 use hdp_provider::key::FetchKeyEnvelope;
 
 use starknet::providers::Url;
@@ -126,10 +127,7 @@ impl ModuleCompiler {
         // Collect results, filter out any errors
         let mut collected_results = Vec::new();
         for module in extended_modules {
-            let input_module = InputModule {
-                inputs: module.task.inputs,
-                module_class: module.module_class,
-            };
+            let input_module = ProcessedModule::new(module.task.inputs, module.module_class);
             collected_results.push(input_module);
         }
 
