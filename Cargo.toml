@@ -6,7 +6,6 @@ members = [
     "crates/provider",
     "crates/primitives",
     "crates/compiler",
-    "crates/core-new",
 ]
 
 [workspace.package]
