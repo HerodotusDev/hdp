@@ -8,10 +8,3 @@ The `TaskEnvelope` definition is used as an input for the `pre-processor`. There
 - **Module**: This is a more customized interface. It involves passing a contract hash and input bytes. During the Cairo runtime, the necessary values will be fetched without the need to adhere to a predefined interface.
 
 Both task interfaces can be committed on-chain as a `bytes32` type.
-
-## ExtendedTask
-
-The `ExtendedTask` is used as an input for the `processor`. It extends the `TaskEnvelope` definition with pre-processed data:
-
-- **DatalakeCompute**: It provides a list of values that the aggregate function needs to pre-compute over.
-- **Module**: It includes the `module_class` that is fetched during the pre-processing step.

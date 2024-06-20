@@ -1766,11 +1766,16 @@ dependencies = [
  "alloy-merkle-tree",
  "alloy-primitives",
  "anyhow",
+ "cairo-lang-starknet-classes",
  "hdp-primitives",
  "hdp-provider",
+ "lazy_static",
  "serde",
  "serde_json",
+ "starknet",
+ "starknet-crypto",
  "tokio",
+ "tracing",
 ]
 
 [[package]]
