@@ -8,11 +8,11 @@ use std::sync::Arc;
 
 use crate::cairo_runner::input::pre_run::PreRunnerInput;
 use crate::cairo_runner::pre_run::PreRunner;
-use crate::module_registry::ModuleRegistry;
 use crate::pre_processor::ExtendedModule;
 
 use anyhow::{Ok, Result};
 use futures::future::join_all;
+use hdp_core::module_registry::ModuleRegistry;
 use hdp_primitives::{module::Module, processed_types::module::ProcessedModule};
 use hdp_provider::key::FetchKeyEnvelope;
 

@@ -13,6 +13,11 @@ alloy-primitives = { workspace = true }
 alloy-merkle-tree = { workspace = true }
 alloy-dyn-abi = { workspace = true }
 anyhow = { workspace = true }
+cairo-lang-starknet-classes.workspace = true
+starknet-crypto.workspace = true
+starknet.workspace = true
 tokio = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+tracing.workspace = true
+lazy_static.workspace = true
