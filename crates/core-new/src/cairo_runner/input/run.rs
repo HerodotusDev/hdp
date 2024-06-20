@@ -1,6 +1,4 @@
-use hdp_primitives::processed_types::{
-    datalake_compute::ProcessedDatalakeComputeInFelts, module::ProcessedModule,
-};
+use hdp_primitives::processed_types::{cairo_format, module::ProcessedModule};
 use hdp_provider::evm::ProcessedBlockProofs;
 use serde::Serialize;
 
@@ -24,7 +22,7 @@ pub struct RunnerInput {
 #[derive(Serialize)]
 pub enum InputTask {
     #[serde(rename = "datalake_compute")]
-    DatalakeCompute(ProcessedDatalakeComputeInFelts),
+    DatalakeCompute(cairo_format::ProcessedDatalakeCompute),
     #[serde(rename = "module")]
     Module(ProcessedModule),
 }

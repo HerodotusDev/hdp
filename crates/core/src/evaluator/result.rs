@@ -1,14 +1,14 @@
 use anyhow::Result;
 
 use hdp_primitives::processed_types::{
-    account::{ProcessedAccount, ProcessedAccountInFelts},
-    datalake_compute::{ProcessedDatalakeCompute, ProcessedDatalakeComputeInFelts},
-    header::{ProcessedHeader, ProcessedHeaderInFelts},
+    account::ProcessedAccount,
+    cairo_format::{self, AsCairoFormat},
+    datalake_compute::ProcessedDatalakeCompute,
+    header::ProcessedHeader,
     mmr::MMRMeta,
-    receipt::{ProcessedReceipt, ProcessedReceiptInFelts},
-    storage::{ProcessedStorage, ProcessedStorageInFelts},
-    traits::IntoFelts,
-    transaction::{ProcessedTransaction, ProcessedTransactionInFelts},
+    receipt::ProcessedReceipt,
+    storage::ProcessedStorage,
+    transaction::ProcessedTransaction,
     uint256::Uint256,
 };
 use serde::{Deserialize, Serialize};
@@ -34,29 +34,33 @@ impl ProcessedResult {
         let headers = self
             .headers
             .iter()
-            .map(|header| header.to_felts())
+            .map(|header| header.as_cairo_format())
             .collect();
         let accounts = self
             .accounts
             .iter()
-            .map(|account| account.to_felts())
+            .map(|account| account.as_cairo_format())
             .collect();
         let storages = self
             .storages
             .iter()
-            .map(|storage| storage.to_felts())
+            .map(|storage| storage.as_cairo_format())
             .collect();
         let transactions = self
             .transactions
             .iter()
-            .map(|transaction| transaction.to_felts())
+            .map(|transaction| transaction.as_cairo_format())
             .collect();
         let transaction_receipts = self
             .transaction_receipts
             .iter()
-            .map(|receipt| receipt.to_felts())
+            .map(|receipt| receipt.as_cairo_format())
             .collect();
-        let tasks = self.tasks.iter().map(|task| task.to_felts()).collect();
+        let tasks = self
+            .tasks
+            .iter()
+            .map(|task| task.as_cairo_format())
+            .collect();
         let results_root = self
             .results_root
             .as_ref()
@@ -99,11 +103,11 @@ pub struct ProcessedResultFormatted {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub results_root: Option<Uint256>,
     pub tasks_root: Uint256,
-    pub headers: Vec<ProcessedHeaderInFelts>,
+    pub headers: Vec<cairo_format::ProcessedHeader>,
     pub mmr: MMRMeta,
-    accounts: Vec<ProcessedAccountInFelts>,
-    storages: Vec<ProcessedStorageInFelts>,
-    transactions: Vec<ProcessedTransactionInFelts>,
-    transaction_receipts: Vec<ProcessedReceiptInFelts>,
-    pub tasks: Vec<ProcessedDatalakeComputeInFelts>,
+    accounts: Vec<cairo_format::ProcessedAccount>,
+    storages: Vec<cairo_format::ProcessedStorage>,
+    transactions: Vec<cairo_format::ProcessedTransaction>,
+    transaction_receipts: Vec<cairo_format::ProcessedReceipt>,
+    pub tasks: Vec<cairo_format::ProcessedDatalakeCompute>,
 }
