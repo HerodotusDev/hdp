@@ -9,7 +9,6 @@ version.workspace = true
 [dependencies]
 hdp-provider = { workspace = true }
 hdp-primitives = { workspace = true }
-hdp-compiler = { workspace = true }
 alloy-primitives = { workspace = true }
 alloy-merkle-tree = { workspace = true }
 alloy-dyn-abi = { workspace = true }

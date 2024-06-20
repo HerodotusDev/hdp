@@ -1759,19 +1759,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "hdp-compiler"
-version = "0.2.0"
-dependencies = [
- "alloy-primitives",
- "alloy-rlp",
- "anyhow",
- "hdp-primitives",
- "hdp-provider",
- "serde",
- "tokio",
-]
-
-[[package]]
 name = "hdp-core"
 version = "0.2.0"
 dependencies = [
@@ -1779,7 +1766,6 @@ dependencies = [
  "alloy-merkle-tree",
  "alloy-primitives",
  "anyhow",
- "hdp-compiler",
  "hdp-primitives",
  "hdp-provider",
  "serde",

@@ -11,8 +11,6 @@ use std::{
 };
 use tokio::sync::RwLock;
 
-use hdp_compiler::{CompiledDatalakeEnvelope, DatalakeCompiler};
-
 use hdp_primitives::{
     datalake::{
         datalake_type::DatalakeType,
@@ -27,6 +25,8 @@ use hdp_primitives::{
 };
 
 use hdp_provider::evm::AbstractProvider;
+
+use crate::compiler::datalake::{CompiledDatalakeEnvelope, DatalakeCompiler};
 
 pub mod result;
 
@@ -320,9 +320,10 @@ pub async fn evaluator(
 #[cfg(test)]
 mod tests {
 
-    use hdp_compiler::block_sampled::CompiledBlockSampledDatalake;
     use header::ProcessedHeaderProof;
     use mpt::ProcessedMPTProof;
+
+    use crate::compiler::datalake::block_sampled::CompiledBlockSampledDatalake;
 
     use super::*;
     use hdp_primitives::processed_types::*;
