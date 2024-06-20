@@ -51,7 +51,7 @@ impl ModuleRegistry {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::constant::TEST_CONTRACT_CASM;
+    use crate::constant::SIMPLE_LINEAR_REGRESSION_CONTRACT_CASM;
 
     fn init() -> (ModuleRegistry, FieldElement) {
         let url = Url::parse(
@@ -61,7 +61,7 @@ mod tests {
         let module_registry = ModuleRegistry::new(url);
         // This is test contract class hash
         let class_hash = FieldElement::from_hex_be(
-            "0x054af96825d987ca89cf320f7c5a8031017815d884cff1592e8ff6da309f3ca6",
+            "0x05bd69cfc7d5c011d4a3c2933f8b7bcf34b5bfd6100da94a237f6970138f6305",
         )
         .unwrap();
 
@@ -73,7 +73,10 @@ mod tests {
         let (module_registry, class_hash) = init();
         let casm_from_rpc = module_registry.get_module_class(class_hash).await.unwrap();
 
-        assert_eq!(casm_from_rpc, TEST_CONTRACT_CASM.clone());
+        assert_eq!(
+            casm_from_rpc,
+            SIMPLE_LINEAR_REGRESSION_CONTRACT_CASM.clone()
+        );
     }
 
     #[tokio::test]
@@ -88,6 +91,9 @@ mod tests {
             _ => panic!("cairo1 module should have sierra as class"),
         };
         let casm_from_rpc = flattened_sierra_to_compiled_class(&sierra).unwrap();
-        assert_eq!(casm_from_rpc, TEST_CONTRACT_CASM.clone());
+        assert_eq!(
+            casm_from_rpc,
+            SIMPLE_LINEAR_REGRESSION_CONTRACT_CASM.clone()
+        );
     }
 }
