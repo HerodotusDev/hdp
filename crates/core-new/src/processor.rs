@@ -7,7 +7,8 @@ use alloy_merkle_tree::standard_binary_tree::StandardMerkleTree;
 use alloy_primitives::B256;
 use anyhow::Result;
 use hdp_primitives::processed_types::{
-    datalake_compute::ProcessedDatalakeCompute, module::ProcessedModule, traits::IntoFelts,
+    cairo_format::AsCairoFormat, datalake_compute::ProcessedDatalakeCompute,
+    module::ProcessedModule,
 };
 use std::{fs, path::PathBuf, str::FromStr};
 
@@ -129,7 +130,7 @@ impl Processor {
                         datalake_type,
                         property_type,
                     };
-                    task_wrapper.push(InputTask::DatalakeCompute(wrapped_task.to_felts()));
+                    task_wrapper.push(InputTask::DatalakeCompute(wrapped_task.as_cairo_format()));
                 }
                 ExtendedTask::Module(extended_module) => {
                     let wrapped_task = ProcessedModule::new(
