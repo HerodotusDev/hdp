@@ -11,6 +11,9 @@ pub mod storage;
 pub mod traits;
 pub mod transaction;
 
+// TODO: temporary query type for first sync with original flow, will merge with new genric query later
+pub mod v1_query;
+
 pub use account::*;
 pub use datalake_compute::*;
 pub use felt_vec_unit::*;
@@ -20,3 +23,5 @@ pub use receipt::*;
 pub use storage::*;
 pub use traits::*;
 pub use transaction::*;
+
+pub use v1_query::*;

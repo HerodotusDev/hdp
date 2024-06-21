@@ -12,7 +12,7 @@ use hdp_primitives::{
     },
 };
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
+use std::{collections::HashSet, sync::Arc};
 
 use alloy_primitives::keccak256;
 use anyhow::Result;
@@ -28,11 +28,11 @@ pub struct CompiledBlockSampledDatalake {
     /// Targeted datalake's compiled results
     pub values: Vec<String>,
     /// Headers related to the datalake
-    pub headers: Vec<ProcessedHeader>,
+    pub headers: HashSet<ProcessedHeader>,
     /// Accounts related to the datalake
-    pub accounts: Vec<ProcessedAccount>,
+    pub accounts: HashSet<ProcessedAccount>,
     /// Storages related to the datalake
-    pub storages: Vec<ProcessedStorage>,
+    pub storages: HashSet<ProcessedStorage>,
     /// MMR meta data related to the headers
     pub mmr_meta: MMRMeta,
 }
@@ -49,9 +49,9 @@ pub async fn compile_block_sampled_datalake(
         .get_sequencial_full_header_with_proof(datalake.block_range_start, datalake.block_range_end)
         .await?;
     let mmr_meta = full_header_and_proof_result.1;
-    let mut headers: Vec<ProcessedHeader> = vec![];
-    let mut accounts: Vec<ProcessedAccount> = vec![];
-    let mut storages: Vec<ProcessedStorage> = vec![];
+    let mut headers: HashSet<ProcessedHeader> = HashSet::new();
+    let mut accounts: HashSet<ProcessedAccount> = HashSet::new();
+    let mut storages: HashSet<ProcessedStorage> = HashSet::new();
     let block_range = (datalake.block_range_start..=datalake.block_range_end)
         .step_by(datalake.increment as usize);
 
@@ -61,7 +61,7 @@ pub async fn compile_block_sampled_datalake(
                 let fetched_block = full_header_and_proof_result.0.get(&block).unwrap().clone();
                 let value = property.decode_field_from_rlp(&fetched_block.0);
 
-                headers.push(ProcessedHeader {
+                headers.insert(ProcessedHeader {
                     rlp: fetched_block.0,
                     proof: ProcessedHeaderProof {
                         leaf_idx: fetched_block.2,
@@ -90,7 +90,7 @@ pub async fn compile_block_sampled_datalake(
                 let account_proof = accounts_and_proofs_result.get(&block).unwrap().clone();
                 let value = property.decode_field_from_rlp(&account_proof.encoded_account);
 
-                headers.push(ProcessedHeader {
+                headers.insert(ProcessedHeader {
                     rlp: fetched_block.0,
                     proof: ProcessedHeaderProof {
                         leaf_idx: fetched_block.2,
@@ -108,7 +108,7 @@ pub async fn compile_block_sampled_datalake(
             }
 
             let account_key = keccak256(address);
-            accounts.push(ProcessedAccount {
+            accounts.insert(ProcessedAccount {
                 address: address.to_string(),
                 account_key: account_key.to_string(),
                 proofs: account_proofs,
@@ -132,7 +132,7 @@ pub async fn compile_block_sampled_datalake(
                 let fetched_block = full_header_and_proof_result.0.get(&i).unwrap().clone();
                 let storage_proof = storages_and_proofs_result.get(&i).unwrap().clone();
 
-                headers.push(ProcessedHeader {
+                headers.insert(ProcessedHeader {
                     rlp: fetched_block.0,
                     proof: ProcessedHeaderProof {
                         leaf_idx: fetched_block.2,
@@ -156,13 +156,13 @@ pub async fn compile_block_sampled_datalake(
             let storage_key = keccak256(slot).to_string();
             let account_key = keccak256(address);
 
-            storages.push(ProcessedStorage {
+            storages.insert(ProcessedStorage {
                 address: address.to_string(),
                 slot: slot.to_string(),
                 storage_key,
                 proofs: storage_proofs,
             });
-            accounts.push(ProcessedAccount {
+            accounts.insert(ProcessedAccount {
                 address: address.to_string(),
                 account_key: account_key.to_string(),
                 proofs: account_proofs,

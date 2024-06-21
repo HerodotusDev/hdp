@@ -19,5 +19,9 @@ starknet.workspace = true
 tokio = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+serde_with = { workspace = true }
 tracing.workspace = true
 lazy_static.workspace = true
+regex.workspace = true
+tempfile.workspace = true
+futures.workspace = true

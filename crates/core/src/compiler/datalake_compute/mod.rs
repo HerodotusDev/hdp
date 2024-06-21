@@ -1,141 +1,77 @@
-use std::{fmt, sync::Arc};
-
 use anyhow::{bail, Result};
 use hdp_primitives::{
-    datalake::envelope::DatalakeEnvelope,
+    datalake::{envelope::DatalakeEnvelope, task::DatalakeCompute},
     processed_types::{
         account::ProcessedAccount, header::ProcessedHeader, mmr::MMRMeta,
         receipt::ProcessedReceipt, storage::ProcessedStorage, transaction::ProcessedTransaction,
     },
 };
-use hdp_provider::evm::AbstractProvider;
-use serde::{Deserialize, Serialize};
+use hdp_provider::evm::{AbstractProvider, AbstractProviderConfig};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 use tokio::sync::RwLock;
 
-use self::{
-    block_sampled::{compile_block_sampled_datalake, CompiledBlockSampledDatalake},
-    transactions::{compile_tx_datalake, CompiledTransactionsDatalake},
-};
+use self::{block_sampled::compile_block_sampled_datalake, transactions::compile_tx_datalake};
 
 pub mod block_sampled;
 pub mod transactions;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum CompiledDatalakeEnvelope {
-    /// Block sampled datalake
-    BlockSampled(CompiledBlockSampledDatalake),
-    /// Transactions datalake
-    Transactions(CompiledTransactionsDatalake),
+pub struct DatalakeComputeCompilationResults {
+    /// flag to check if the aggregation function is pre-processable
+    pub pre_processable: bool,
+    /// task_commitment -> value
+    pub commit_results_maps: HashMap<String, String>,
+    /// Headers related to the datalake
+    pub headers: HashSet<ProcessedHeader>,
+    /// Accounts related to the datalake
+    pub accounts: HashSet<ProcessedAccount>,
+    /// Storages related to the datalake
+    pub storages: HashSet<ProcessedStorage>,
+    /// Transactions related to the datalake
+    pub transactions: HashSet<ProcessedTransaction>,
+    /// Transaction receipts related to the datalake
+    pub transaction_receipts: HashSet<ProcessedReceipt>,
+    /// MMR meta data related to the headers
+    pub mmr_meta: MMRMeta,
 }
 
-impl CompiledDatalakeEnvelope {
-    ///Get values from compiled datalake
-    pub fn get_values(&self) -> Vec<String> {
-        match self {
-            CompiledDatalakeEnvelope::BlockSampled(compiled_block_sampled_datalake) => {
-                compiled_block_sampled_datalake.values.clone()
-            }
-            CompiledDatalakeEnvelope::Transactions(compiled_transactions_datalake) => {
-                compiled_transactions_datalake.values.clone()
-            }
-        }
-    }
-
-    ///Get headers from compiled datalake
-    pub fn get_headers(&self) -> Vec<ProcessedHeader> {
-        match self {
-            CompiledDatalakeEnvelope::BlockSampled(compiled_block_sampled_datalake) => {
-                compiled_block_sampled_datalake.headers.clone()
-            }
-            CompiledDatalakeEnvelope::Transactions(compiled_transactions_datalake) => {
-                compiled_transactions_datalake.headers.clone()
-            }
-        }
-    }
-
-    ///Get account from compiled datalake
-    pub fn get_accounts(&self) -> Result<Vec<ProcessedAccount>> {
-        match self {
-            CompiledDatalakeEnvelope::BlockSampled(compiled_block_sampled_datalake) => {
-                Ok(compiled_block_sampled_datalake.accounts.clone())
-            }
-            CompiledDatalakeEnvelope::Transactions(_) => {
-                bail!("transactions datalake does not have accounts")
-            }
-        }
-    }
-
-    /// Get storages from compiled datalake
-    pub fn get_storages(&self) -> Result<Vec<ProcessedStorage>> {
-        match self {
-            CompiledDatalakeEnvelope::BlockSampled(compiled_block_sampled_datalake) => {
-                Ok(compiled_block_sampled_datalake.storages.clone())
-            }
-            CompiledDatalakeEnvelope::Transactions(_) => {
-                bail!("transactions datalake does not have storages")
-            }
-        }
-    }
-
-    /// Get transactions from compiled datalake
-    pub fn get_transactions(&self) -> Result<Vec<ProcessedTransaction>> {
-        match self {
-            CompiledDatalakeEnvelope::BlockSampled(_) => {
-                bail!("block sampled datalake does not have transactions")
-            }
-            CompiledDatalakeEnvelope::Transactions(compiled_transactions_datalake) => {
-                Ok(compiled_transactions_datalake.transactions.clone())
-            }
-        }
-    }
-
-    /// Get transaction receipts from compiled datalake
-    pub fn get_transaction_receipts(&self) -> Result<Vec<ProcessedReceipt>> {
-        match self {
-            CompiledDatalakeEnvelope::BlockSampled(_) => {
-                bail!("block sampled datalake does not have transaction receipts")
-            }
-            CompiledDatalakeEnvelope::Transactions(compiled_transactions_datalake) => {
-                Ok(compiled_transactions_datalake.transaction_receipts.clone())
-            }
-        }
-    }
-
-    /// Get mmr_meta from compiled datalake
-    pub fn get_mmr_meta(&self) -> Result<MMRMeta> {
-        match self {
-            CompiledDatalakeEnvelope::BlockSampled(compiled_block_sampled_datalake) => {
-                Ok(compiled_block_sampled_datalake.mmr_meta.clone())
-            }
-            CompiledDatalakeEnvelope::Transactions(compiled_transactions_datalake) => {
-                Ok(compiled_transactions_datalake.mmr_meta.clone())
-            }
+impl DatalakeComputeCompilationResults {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        pre_processable: bool,
+        commit_results_maps: HashMap<String, String>,
+        headers: HashSet<ProcessedHeader>,
+        accounts: HashSet<ProcessedAccount>,
+        storages: HashSet<ProcessedStorage>,
+        transactions: HashSet<ProcessedTransaction>,
+        transaction_receipts: HashSet<ProcessedReceipt>,
+        mmr_meta: MMRMeta,
+    ) -> Self {
+        Self {
+            pre_processable,
+            commit_results_maps,
+            headers,
+            accounts,
+            storages,
+            transactions,
+            transaction_receipts,
+            mmr_meta,
         }
     }
 }
 
 pub struct DatalakeCompiler {
-    /// Datalake commitment. It is used to identify the datalake
-    pub commitment: String,
-    /// Datalake
-    pub datalake: DatalakeEnvelope,
-}
-
-impl fmt::Debug for DatalakeCompiler {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("DatalakeCompiler")
-            .field("commitment", &self.commitment)
-            .field("datalakes_pipeline", &self.datalake)
-            .finish()
-    }
+    provider: Arc<RwLock<AbstractProvider>>,
 }
 
 impl DatalakeCompiler {
     /// initialize DatalakeCompiler with commitment and datalake
-    pub fn new(datalake: DatalakeEnvelope) -> Self {
+    pub fn new_from_config(config: AbstractProviderConfig) -> Self {
+        let provider = AbstractProvider::new(config);
         Self {
-            commitment: datalake.get_commitment(),
-            datalake,
+            provider: Arc::new(provider.into()),
         }
     }
 
@@ -144,17 +80,77 @@ impl DatalakeCompiler {
     /// Plus, it will combine target datalake's datapoints in compiled_results.
     pub async fn compile(
         &self,
-        provider: &Arc<RwLock<AbstractProvider>>,
-    ) -> Result<CompiledDatalakeEnvelope> {
-        let result_datapoints = match &self.datalake {
-            DatalakeEnvelope::BlockSampled(datalake) => CompiledDatalakeEnvelope::BlockSampled(
-                compile_block_sampled_datalake(datalake.clone(), provider).await?,
-            ),
-            DatalakeEnvelope::Transactions(datalake) => CompiledDatalakeEnvelope::Transactions(
-                compile_tx_datalake(datalake.clone(), provider).await?,
-            ),
-        };
+        datalake_computes: &[DatalakeCompute],
+    ) -> Result<DatalakeComputeCompilationResults> {
+        let mut commit_results_maps = HashMap::new();
+        let mut headers: HashSet<ProcessedHeader> = HashSet::new();
+        let mut accounts: HashSet<ProcessedAccount> = HashSet::new();
+        let mut storages: HashSet<ProcessedStorage> = HashSet::new();
+        let mut transactions: HashSet<ProcessedTransaction> = HashSet::new();
+        let mut transaction_receipts: HashSet<ProcessedReceipt> = HashSet::new();
+        let mut mmr = None;
+        let mut pre_processable = true;
 
-        Ok(result_datapoints)
+        for datalake_compute in datalake_computes {
+            let task_commitment = datalake_compute.commit();
+            let aggregation_fn = &datalake_compute.compute.aggregate_fn_id;
+            let fn_context = datalake_compute.compute.aggregate_fn_ctx.clone();
+            match datalake_compute.datalake {
+                DatalakeEnvelope::BlockSampled(ref datalake) => {
+                    let compiled_block_sampled =
+                        compile_block_sampled_datalake(datalake.clone(), &self.provider).await?;
+                    headers.extend(compiled_block_sampled.headers);
+                    accounts.extend(compiled_block_sampled.accounts);
+                    storages.extend(compiled_block_sampled.storages);
+                    if mmr.is_some() && mmr.unwrap() != compiled_block_sampled.mmr_meta {
+                        bail!("MMR meta data is not consistent");
+                    } else {
+                        mmr = Some(compiled_block_sampled.mmr_meta);
+                    }
+
+                    // Compute datalake over specified aggregation function to validate
+                    let aggregated_result = aggregation_fn
+                        .operation(&compiled_block_sampled.values, Some(fn_context))?;
+                    // Save the datalake results
+                    commit_results_maps.insert(task_commitment.to_string(), aggregated_result);
+                    if !aggregation_fn.is_pre_processable() {
+                        pre_processable = false;
+                    }
+                }
+                DatalakeEnvelope::Transactions(ref datalake) => {
+                    let compiled_tx_datalake =
+                        compile_tx_datalake(datalake.clone(), &self.provider).await?;
+                    headers.extend(compiled_tx_datalake.headers);
+                    transactions.extend(compiled_tx_datalake.transactions);
+                    transaction_receipts.extend(compiled_tx_datalake.transaction_receipts);
+
+                    if mmr.is_some() && mmr.unwrap() != compiled_tx_datalake.mmr_meta {
+                        bail!("MMR meta data is not consistent");
+                    } else {
+                        mmr = Some(compiled_tx_datalake.mmr_meta);
+                    }
+
+                    // Compute datalake over specified aggregation function to validate
+                    let aggregated_result =
+                        aggregation_fn.operation(&compiled_tx_datalake.values, Some(fn_context))?;
+                    // Save the datalake results
+                    commit_results_maps.insert(task_commitment.to_string(), aggregated_result);
+                    if !aggregation_fn.is_pre_processable() {
+                        pre_processable = false;
+                    }
+                }
+            };
+        }
+
+        Ok(DatalakeComputeCompilationResults::new(
+            pre_processable,
+            commit_results_maps,
+            headers,
+            accounts,
+            storages,
+            transactions,
+            transaction_receipts,
+            mmr.unwrap(),
+        ))
     }
 }

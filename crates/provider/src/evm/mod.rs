@@ -47,6 +47,7 @@ pub struct AbstractProvider {
     header_provider: HeaderProvider,
 }
 
+#[derive(Clone)]
 pub struct AbstractProviderConfig {
     pub rpc_url: &'static str,
     pub chain_id: u64,

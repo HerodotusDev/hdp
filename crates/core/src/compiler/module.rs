@@ -1,18 +1,19 @@
 //!  Preprocessor is reponsible for identifying the required values.
 //!  This will be most abstract layer of the preprocessor.
+//!
+
+#![allow(dead_code)]
 
 use std::collections::HashSet;
-use std::fs;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use crate::cairo_runner::input::pre_run::PreRunnerInput;
 use crate::cairo_runner::pre_run::PreRunner;
 use crate::pre_processor::ExtendedModule;
+use crate::{cairo_runner::input::pre_run::PreRunnerInput, module_registry::ModuleRegistry};
 
 use anyhow::{Ok, Result};
 use futures::future::join_all;
-use hdp_core::module_registry::ModuleRegistry;
 use hdp_primitives::{module::Module, processed_types::module::ProcessedModule};
 use hdp_provider::key::FetchKeyEnvelope;
 
@@ -75,8 +76,8 @@ impl ModuleCompiler {
         let input_string =
             serde_json::to_string_pretty(&input).expect("Failed to serialize module class");
 
-        // //save into file
-        fs::write("input.json", input_string.clone()).expect("Unable to write file");
+        //save into file
+        // fs::write("input.json", input_string.clone()).expect("Unable to write file");
         // 2. run the preprocessor and get the fetch points
         info!("Running preprocessor...");
         info!("Preprocessor completed successfully");

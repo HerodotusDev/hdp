@@ -23,3 +23,51 @@ pub struct ProcessedDatalakeCompute {
     // ex. "header", "account", "storage"
     pub property_type: u8,
 }
+
+impl ProcessedDatalakeCompute {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new_with_result(
+        encoded_task: String,
+        task_commitment: String,
+        compiled_result: String,
+        result_commitment: String,
+        task_proof: Vec<B256>,
+        result_proof: Vec<B256>,
+        encoded_datalake: String,
+        datalake_type: u8,
+        property_type: u8,
+    ) -> Self {
+        Self {
+            encoded_task,
+            task_commitment,
+            compiled_result: Some(compiled_result),
+            result_commitment: Some(result_commitment),
+            task_proof,
+            result_proof: Some(result_proof),
+            encoded_datalake,
+            datalake_type,
+            property_type,
+        }
+    }
+
+    pub fn new_without_result(
+        encoded_task: String,
+        task_commitment: String,
+        task_proof: Vec<B256>,
+        encoded_datalake: String,
+        datalake_type: u8,
+        property_type: u8,
+    ) -> Self {
+        Self {
+            encoded_task,
+            task_commitment,
+            compiled_result: None,
+            result_commitment: None,
+            task_proof,
+            result_proof: None,
+            encoded_datalake,
+            datalake_type,
+            property_type,
+        }
+    }
+}

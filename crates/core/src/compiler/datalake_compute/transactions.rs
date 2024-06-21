@@ -14,7 +14,7 @@ use hdp_primitives::{
 };
 use hdp_provider::evm::AbstractProvider;
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
+use std::{collections::HashSet, sync::Arc};
 use tokio::sync::RwLock;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -22,11 +22,11 @@ pub struct CompiledTransactionsDatalake {
     /// Targeted datalake's compiled results
     pub values: Vec<String>,
     /// Headers related to the datalake
-    pub headers: Vec<ProcessedHeader>,
+    pub headers: HashSet<ProcessedHeader>,
     /// Transactions related to the datalake
-    pub transactions: Vec<ProcessedTransaction>,
+    pub transactions: HashSet<ProcessedTransaction>,
     /// Transaction receipts related to the datalake
-    pub transaction_receipts: Vec<ProcessedReceipt>,
+    pub transaction_receipts: HashSet<ProcessedReceipt>,
     /// MMR meta data related to the headers
     pub mmr_meta: MMRMeta,
 }
@@ -42,9 +42,9 @@ pub async fn compile_tx_datalake(
         .get_sequencial_full_header_with_proof(datalake.target_block, datalake.target_block)
         .await?;
     let mmr_meta = full_header_and_proof_result.1;
-    let mut headers: Vec<ProcessedHeader> = vec![];
-    let mut transactions: Vec<ProcessedTransaction> = vec![];
-    let mut transaction_receipts: Vec<ProcessedReceipt> = vec![];
+    let mut headers: HashSet<ProcessedHeader> = HashSet::new();
+    let mut transactions: HashSet<ProcessedTransaction> = HashSet::new();
+    let mut transaction_receipts: HashSet<ProcessedReceipt> = HashSet::new();
 
     match datalake.sampled_property {
         TransactionsCollection::Transactions(property) => {
@@ -59,13 +59,13 @@ pub async fn compile_tx_datalake(
             {
                 let key_fixed_bytes = tx_index_to_tx_key(tx.tx_index);
 
-                transactions.push(ProcessedTransaction {
+                transactions.insert(ProcessedTransaction {
                     key: key_fixed_bytes.to_string(),
                     block_number: tx.block_number,
                     proof: tx.transaction_proof,
                 });
 
-                headers.push(ProcessedHeader {
+                headers.insert(ProcessedHeader {
                     rlp: full_header_and_proof_result
                         .0
                         .get(&tx.block_number)
@@ -106,13 +106,13 @@ pub async fn compile_tx_datalake(
             {
                 let key_fixed_bytes = tx_index_to_tx_key(tx_receipt.tx_index);
 
-                transaction_receipts.push(ProcessedReceipt {
+                transaction_receipts.insert(ProcessedReceipt {
                     key: key_fixed_bytes.to_string(),
                     block_number: tx_receipt.block_number,
                     proof: tx_receipt.receipt_proof,
                 });
 
-                headers.push(ProcessedHeader {
+                headers.insert(ProcessedHeader {
                     rlp: full_header_and_proof_result
                         .0
                         .get(&tx_receipt.block_number)

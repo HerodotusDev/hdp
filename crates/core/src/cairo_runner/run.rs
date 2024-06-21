@@ -4,6 +4,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use tempfile::NamedTempFile;
+use tracing::info;
 
 use anyhow::bail;
 use regex::Regex;
@@ -11,9 +12,9 @@ use regex::Regex;
 /// Result of run
 #[derive(Debug)]
 pub struct RunResult {
-    pie_path: PathBuf,
-    task_results: Vec<String>,
-    results_root: String,
+    pub pie_path: PathBuf,
+    pub task_results: Vec<String>,
+    pub results_root: String,
 }
 
 pub struct Runner {
@@ -26,6 +27,7 @@ impl Runner {
     }
 
     fn _run(&self, input_file_path: &Path, cairo_pie_file_path: &Path) -> Result<String> {
+        println!("Running program: {:?}", input_file_path);
         let task = Command::new("cairo-run")
             .arg("--program")
             .arg(&self.program_path)
@@ -45,20 +47,20 @@ impl Runner {
     }
 
     /// Run the cairo program to return PIE object and results of process
-    pub fn run(&self, input_string: String) -> Result<RunResult> {
+    pub fn run(&self, input_string: String, pie_file_path: PathBuf) -> Result<RunResult> {
         if input_string.is_empty() {
             bail!("Input file is empty");
         }
+
         let input_file = NamedTempFile::new()?;
         let input_file_path = input_file.path();
         fs::write(input_file_path, input_string).expect("Failed to write input file");
-        // TODO : PIE is not temp
-        let pie_file = NamedTempFile::new()?;
-        let input_file_path = input_file.path();
-        let pie_file_path = pie_file.path();
-        let output = self._run(input_file_path, pie_file_path)?;
 
+        let output = self._run(input_file_path, &pie_file_path)?;
+        println!("Output: {:?}", output);
         let (task_results, results_root) = self.parse_run(output)?;
+        info!("Final result: {:#?}", task_results);
+        info!("Final result root: {:#?}", results_root);
 
         Ok(RunResult {
             pie_path: pie_file_path.to_owned(),
@@ -70,6 +72,7 @@ impl Runner {
     /// Parse the output of the run command
     // TODO: This is a temporary solution, we should use the output of the run command
     fn parse_run(&self, output: String) -> Result<(Vec<String>, String)> {
+        println!("Output: {:?}", output);
         let task_result_re = Regex::new(r"Task Result\((\d+)\): (\S+)").unwrap();
         let mut task_results = vec![];
         for caps in task_result_re.captures_iter(&output) {
