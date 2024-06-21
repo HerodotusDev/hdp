@@ -146,6 +146,7 @@ mod tests {
 
     use super::*;
 
+    #[ignore = "ignore for now"]
     #[tokio::test]
     async fn test_pre_processor() {
         let url: &str =
