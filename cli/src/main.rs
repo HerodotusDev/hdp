@@ -11,7 +11,7 @@ use hdp_primitives::{
         },
         datalake_type::DatalakeType,
         envelope::DatalakeEnvelope,
-        task::Computation,
+        task::{Computation, DatalakeCompute},
         transactions::{
             TransactionField, TransactionReceiptField, TransactionsCollectionType,
             TransactionsInBlockDatalake,
@@ -24,12 +24,7 @@ use tracing_subscriber::FmtSubscriber;
 
 use clap::{Parser, Subcommand};
 use hdp_core::{
-    codec::{
-        datalake_decoder, datalakes_decoder, datalakes_encoder, task_decoder, tasks_decoder,
-        tasks_encoder,
-    },
-    config::Config,
-    evaluator::evaluator,
+    codec::datalake_compute::DatalakeComputeCodec, config::Config, evaluator::evaluator,
 };
 
 pub mod cairo_runner;
@@ -164,47 +159,6 @@ enum DataLakeCommands {
     },
 }
 
-struct DecodeMultipleResult {
-    tasks: Vec<Computation>,
-    datalakes: Vec<DatalakeEnvelope>,
-}
-
-struct EncodeMultipleResult {
-    tasks: String,
-    datalakes: String,
-}
-
-async fn handle_decode_multiple(datalakes: String, tasks: String) -> Result<DecodeMultipleResult> {
-    let datalakes = datalakes_decoder(datalakes.clone())?;
-    info!("datalakes: {:#?}", datalakes);
-
-    let tasks = tasks_decoder(tasks)?;
-    info!("tasks: {:#?}", tasks);
-
-    if tasks.len() != datalakes.len() {
-        error!("Tasks and datalakes must have the same length");
-        bail!("Tasks and datalakes must have the same length");
-    } else {
-        Ok(DecodeMultipleResult { tasks, datalakes })
-    }
-}
-
-async fn handle_encode_multiple(
-    tasks: Vec<Computation>,
-    datalakes: Vec<DatalakeEnvelope>,
-) -> Result<EncodeMultipleResult> {
-    let encoded_datalakes = datalakes_encoder(datalakes)?;
-    info!("Encoded datalakes: {}", encoded_datalakes);
-
-    let encoded_tasks = tasks_encoder(tasks)?;
-    info!("Encoded tasks: {}", encoded_tasks);
-
-    Ok(EncodeMultipleResult {
-        tasks: encoded_tasks,
-        datalakes: encoded_datalakes,
-    })
-}
-
 async fn handle_run(
     tasks: Option<String>,
     datalakes: Option<String>,
@@ -221,17 +175,11 @@ async fn handle_run(
         rpc_chunk_size: config.rpc_chunk_size,
     };
     let provider = AbstractProvider::new(provider_config);
-
+    let datalake_compute_codec = DatalakeComputeCodec::new();
     let decoded_result =
-        handle_decode_multiple(config.datalakes.clone(), config.tasks.clone()).await?;
+        datalake_compute_codec.decode_batch(config.datalakes.clone(), config.tasks.clone())?;
 
-    match evaluator(
-        decoded_result.tasks,
-        decoded_result.datalakes,
-        Arc::new(RwLock::new(provider)),
-    )
-    .await
-    {
+    match evaluator(decoded_result, Arc::new(RwLock::new(provider))).await {
         Ok(res) => {
             debug!("Result: {:#?}", res);
             let pre_processed_result = res.get_processed_result().unwrap();
@@ -501,11 +449,13 @@ async fn main() -> Result<()> {
                 _ => None,
             };
 
-            let encoded_result = handle_encode_multiple(
-                vec![Computation::new(aggregate_fn_id, aggregate_fn_ctx)],
-                vec![datalake_envelope],
-            )
-            .await?;
+            let target_datalake_compute = DatalakeCompute::new(
+                datalake_envelope,
+                Computation::new(aggregate_fn_id, aggregate_fn_ctx),
+            );
+            let datalake_codec = DatalakeComputeCodec::new();
+            let (encoded_datalakes, encoded_computes) =
+                datalake_codec.encode_batch(vec![target_datalake_compute])?;
 
             let allow_run: bool = inquire::Confirm::new("Do you want to run the evaluator?")
                 .with_default(true)
@@ -542,8 +492,8 @@ async fn main() -> Result<()> {
                     .prompt()?;
 
                 handle_run(
-                    Some(encoded_result.tasks),
-                    Some(encoded_result.datalakes),
+                    Some(encoded_computes),
+                    Some(encoded_datalakes),
                     rpc_url,
                     chain_id,
                     Some(output_file),
@@ -598,17 +548,18 @@ async fn main() -> Result<()> {
                     DatalakeEnvelope::Transactions(transactions_datalake)
                 }
             };
-
-            let encoded_result = handle_encode_multiple(
-                vec![Computation::new(&aggregate_fn_id, aggregate_fn_ctx)],
-                vec![datalake],
-            )
-            .await?;
+            let target_datalake_compute = DatalakeCompute::new(
+                datalake,
+                Computation::new(&aggregate_fn_id, aggregate_fn_ctx),
+            );
+            let datalake_compute_codec = DatalakeComputeCodec::new();
+            let (encoded_datalakes, encoded_computes) =
+                datalake_compute_codec.encode_batch(vec![target_datalake_compute])?;
             // if allow_run is true, then run the evaluator
             if allow_run {
                 handle_run(
-                    Some(encoded_result.tasks),
-                    Some(encoded_result.datalakes),
+                    Some(encoded_computes),
+                    Some(encoded_datalakes),
                     rpc_url,
                     chain_id,
                     output_file,
@@ -619,14 +570,12 @@ async fn main() -> Result<()> {
             }
         }
         Commands::Decode { tasks, datalakes } => {
-            handle_decode_multiple(datalakes, tasks).await?;
+            let datalake_compute_codec = DatalakeComputeCodec::new();
+            datalake_compute_codec.decode_batch(datalakes, tasks)?;
         }
         Commands::DecodeOne { task, datalake } => {
-            let task = task_decoder(task)?;
-            let datalake = datalake_decoder(datalake)?;
-
-            info!("task: \n{:?}\n", task);
-            info!("datalake: \n{:?}\n", datalake);
+            let datalake_compute_codec = DatalakeComputeCodec::new();
+            datalake_compute_codec.decode_single(datalake, task)?;
         }
         Commands::Run {
             tasks,

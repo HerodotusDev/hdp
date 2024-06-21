@@ -12,11 +12,7 @@ use std::{
 use tokio::sync::RwLock;
 
 use hdp_primitives::{
-    datalake::{
-        datalake_type::DatalakeType,
-        envelope::DatalakeEnvelope,
-        task::{Computation, DatalakeCompute},
-    },
+    datalake::{datalake_type::DatalakeType, task::DatalakeCompute},
     processed_types::{
         account::ProcessedAccount, datalake_compute::ProcessedDatalakeCompute,
         header::ProcessedHeader, mmr::MMRMeta, receipt::ProcessedReceipt,
@@ -26,7 +22,7 @@ use hdp_primitives::{
 
 use hdp_provider::evm::AbstractProvider;
 
-use crate::compiler::datalake::{CompiledDatalakeEnvelope, DatalakeCompiler};
+use crate::compiler::datalake_compute::{CompiledDatalakeEnvelope, DatalakeCompiler};
 
 pub mod result;
 
@@ -251,20 +247,13 @@ impl Default for EvaluationResult {
 }
 
 pub async fn evaluator(
-    computational_tasks: Vec<Computation>,
-    datalake_for_tasks: Vec<DatalakeEnvelope>,
+    datalake_computes: Vec<DatalakeCompute>,
     provider: Arc<RwLock<AbstractProvider>>,
 ) -> Result<EvaluationResult> {
     let mut results = EvaluationResult::new();
 
-    let tasks_with_datalake: Vec<DatalakeCompute> = datalake_for_tasks
-        .into_iter()
-        .zip(computational_tasks)
-        .map(|(datalake, task)| DatalakeCompute::new(datalake, task))
-        .collect();
-
     // Evaulate the compute expressions
-    for task_with_datalake in tasks_with_datalake {
+    for task_with_datalake in datalake_computes {
         // task_commitment is the unique identifier for the task
         let task_commitment = task_with_datalake.commit();
         // Encode the task
@@ -323,7 +312,7 @@ mod tests {
     use header::ProcessedHeaderProof;
     use mpt::ProcessedMPTProof;
 
-    use crate::compiler::datalake::block_sampled::CompiledBlockSampledDatalake;
+    use crate::compiler::datalake_compute::block_sampled::CompiledBlockSampledDatalake;
 
     use super::*;
     use hdp_primitives::processed_types::*;
