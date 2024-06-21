@@ -1,3 +1,5 @@
+//!  THIS IS WIP, NOT READY FOR USE
+
 use anyhow::Result;
 use hdp_provider::key::FetchKeyEnvelope;
 use std::fs;

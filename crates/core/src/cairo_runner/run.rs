@@ -57,7 +57,6 @@ impl Runner {
         fs::write(input_file_path, input_string).expect("Failed to write input file");
 
         let output = self._run(input_file_path, &pie_file_path)?;
-        println!("Output: {:?}", output);
         let (task_results, results_root) = self.parse_run(output)?;
         info!("Final result: {:#?}", task_results);
         info!("Final result root: {:#?}", results_root);
@@ -70,9 +69,7 @@ impl Runner {
     }
 
     /// Parse the output of the run command
-    // TODO: This is a temporary solution, we should use the output of the run command
     fn parse_run(&self, output: String) -> Result<(Vec<String>, String)> {
-        println!("Output: {:?}", output);
         let task_result_re = Regex::new(r"Task Result\((\d+)\): (\S+)").unwrap();
         let mut task_results = vec![];
         for caps in task_result_re.captures_iter(&output) {
