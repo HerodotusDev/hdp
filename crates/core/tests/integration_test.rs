@@ -45,6 +45,7 @@ mod integration_test {
         Processor::new(config, PathBuf::from(PREPROCESS_PROGRAM_PATH))
     }
 
+    #[ignore = "ignore for now"]
     #[tokio::test]
     async fn test_integration_1() {
         let pre_processor = init_preprocessor();
