@@ -27,7 +27,6 @@ impl Runner {
     }
 
     fn _run(&self, input_file_path: &Path, cairo_pie_file_path: &Path) -> Result<String> {
-        println!("Running program: {:?}", input_file_path);
         let task = Command::new("cairo-run")
             .arg("--program")
             .arg(&self.program_path)

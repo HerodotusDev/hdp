@@ -171,8 +171,8 @@ async fn handle_run(
     pie_file: Option<String>,
 ) -> Result<()> {
     // TODO: module config is not used rn, hard coded url
-    let url: &str = "";
-    let program_path = "../../build/compiled_cairo/hdp.json";
+    let url: &str = "http://localhost:3030";
+    let program_path = "./build/compiled_cairo/hdp.json";
     let config = Config::init(rpc_url, datalakes, tasks, chain_id).await;
     let provider_config = AbstractProviderConfig {
         rpc_url: &config.rpc_url,
