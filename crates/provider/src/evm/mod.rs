@@ -1,7 +1,7 @@
 use alloy_primitives::Bytes;
 use anyhow::Result;
 use eth_trie_proofs::{tx_receipt_trie::TxReceiptsMptHandler, tx_trie::TxsMptHandler};
-use rpc::proofs_provider::{
+use rpc_provider::{
     FetchedAccountProof, FetchedStorageAccountProof, FetchedTransactionProof,
     FetchedTransactionReceiptProof, HeaderProvider, TrieProofProvider,
 };
@@ -25,10 +25,14 @@ use crate::key::{
     TxReceiptProviderKey,
 };
 
-use self::memory::{InMemoryProvider, StoredHeader, StoredHeaders};
+pub type RlpEncodedValue = String;
+pub type MPTProof = Vec<String>;
+/// `StoredHeader` is a tuple of RLP encoded header and MMR proof and element_index and mmr_id.
+pub type StoredHeader = (RlpEncodedValue, MPTProof, u64, u64);
+/// `StoredHeader` is a map of block number to a tuple of RLP encoded header and MMR proof and element_index and mmr_id.
+pub type StoredHeaders = HashMap<u64, StoredHeader>;
 
-pub(crate) mod memory;
-pub mod rpc;
+pub mod rpc_provider;
 
 // For more information swagger doc: https://rs-indexer.api.herodotus.cloud/swagger
 const HERODOTUS_RS_INDEXER_URL: &str = "https://rs-indexer.api.herodotus.cloud/accumulators";
@@ -38,9 +42,6 @@ const HERODOTUS_RS_INDEXER_URL: &str = "https://rs-indexer.api.herodotus.cloud/a
 ///
 /// but handle requests so that it would not make duplicate requests
 pub struct AbstractProvider {
-    /// [`InMemoryProvider`] is used to fetch data from memory.
-    // TODO: It's not using for now
-    _memory: InMemoryProvider,
     /// Fetch data from the RPC
     trie_proof_provider: TrieProofProvider,
     /// Fetch block headers and MMR data from the Herodotus indexer.
@@ -68,7 +69,6 @@ pub struct ProcessedBlockProofs {
 impl AbstractProvider {
     pub fn new(config: AbstractProviderConfig) -> Self {
         Self {
-            _memory: InMemoryProvider::new(),
             trie_proof_provider: TrieProofProvider::new(config.rpc_url, config.rpc_chunk_size),
             header_provider: HeaderProvider::new(HERODOTUS_RS_INDEXER_URL, config.chain_id),
         }
