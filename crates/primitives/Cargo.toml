@@ -14,3 +14,8 @@ alloy-rlp = { workspace = true, features = ["derive"] }
 alloy-primitives = { workspace = true, features = ["rlp", "serde"] }
 eth-trie-proofs.workspace = true
 rand = { workspace = true }
+starknet-crypto.workspace = true
+starknet.workspace = true
+cairo-lang-starknet-classes.workspace = true
+serde_with.workspace = true
+serde_json = { workspace = true }

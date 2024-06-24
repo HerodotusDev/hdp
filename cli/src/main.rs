@@ -2,37 +2,38 @@
 
 use alloy_primitives::U256;
 use anyhow::{bail, Result};
-use cairo_runner::CairoRunner;
-use hdp_primitives::datalake::{
-    block_sampled::{AccountField, BlockSampledCollectionType, BlockSampledDatalake, HeaderField},
-    datalake_type::DatalakeType,
-    envelope::DatalakeEnvelope,
-    transactions::{
-        TransactionField, TransactionReceiptField, TransactionsCollectionType,
-        TransactionsInBlockDatalake,
+use hdp_primitives::{
+    aggregate_fn::{integer::Operator, FunctionContext},
+    datalake::{
+        block_sampled::{
+            AccountField, BlockSampledCollectionType, BlockSampledDatalake, HeaderField,
+        },
+        datalake_type::DatalakeType,
+        envelope::DatalakeEnvelope,
+        task::{Computation, DatalakeCompute},
+        transactions::{
+            TransactionField, TransactionReceiptField, TransactionsCollectionType,
+            TransactionsInBlockDatalake,
+        },
     },
+    processed_types::cairo_format::AsCairoFormat,
 };
 use inquire::{error::InquireError, Select};
-use std::{str::FromStr, sync::Arc, vec};
+use std::{fs, path::PathBuf, str::FromStr, vec};
 use tracing_subscriber::FmtSubscriber;
 
 use clap::{Parser, Subcommand};
 use hdp_core::{
-    aggregate_fn::{integer::Operator, FunctionContext},
-    codec::{
-        datalake_decoder, datalakes_decoder, datalakes_encoder, task_decoder, tasks_decoder,
-        tasks_encoder,
-    },
+    codec::datalake_compute::DatalakeComputeCodec,
+    compiler::{module::ModuleCompilerConfig, CompilerConfig},
     config::Config,
-    evaluator::evaluator,
-    task::ComputationalTask,
+    pre_processor::PreProcessor,
+    processor::Processor,
 };
 
-pub mod cairo_runner;
+use hdp_provider::evm::AbstractProviderConfig;
 
-use hdp_provider::evm::AbstractProvider;
-use tokio::sync::RwLock;
-use tracing::{debug, error, info, Level};
+use tracing::{error, info, Level};
 
 /// Simple Herodotus Data Processor CLI to handle tasks and datalakes
 #[derive(Debug, Parser)]
@@ -160,47 +161,6 @@ enum DataLakeCommands {
     },
 }
 
-struct DecodeMultipleResult {
-    tasks: Vec<ComputationalTask>,
-    datalakes: Vec<DatalakeEnvelope>,
-}
-
-struct EncodeMultipleResult {
-    tasks: String,
-    datalakes: String,
-}
-
-async fn handle_decode_multiple(datalakes: String, tasks: String) -> Result<DecodeMultipleResult> {
-    let datalakes = datalakes_decoder(datalakes.clone())?;
-    info!("datalakes: {:#?}", datalakes);
-
-    let tasks = tasks_decoder(tasks)?;
-    info!("tasks: {:#?}", tasks);
-
-    if tasks.len() != datalakes.len() {
-        error!("Tasks and datalakes must have the same length");
-        bail!("Tasks and datalakes must have the same length");
-    } else {
-        Ok(DecodeMultipleResult { tasks, datalakes })
-    }
-}
-
-async fn handle_encode_multiple(
-    tasks: Vec<ComputationalTask>,
-    datalakes: Vec<DatalakeEnvelope>,
-) -> Result<EncodeMultipleResult> {
-    let encoded_datalakes = datalakes_encoder(datalakes)?;
-    info!("Encoded datalakes: {}", encoded_datalakes);
-
-    let encoded_tasks = tasks_encoder(tasks)?;
-    info!("Encoded tasks: {}", encoded_tasks);
-
-    Ok(EncodeMultipleResult {
-        tasks: encoded_tasks,
-        datalakes: encoded_datalakes,
-    })
-}
-
 async fn handle_run(
     tasks: Option<String>,
     datalakes: Option<String>,
@@ -210,41 +170,53 @@ async fn handle_run(
     cairo_input: Option<String>,
     pie_file: Option<String>,
 ) -> Result<()> {
+    // TODO: module config is not used rn, hard coded url
+    let url: &str = "http://localhost:3030";
+    let program_path = "./build/compiled_cairo/hdp.json";
     let config = Config::init(rpc_url, datalakes, tasks, chain_id).await;
-    let provider = AbstractProvider::new(&config.rpc_url, config.chain_id, config.rpc_chunk_size);
+    let provider_config = AbstractProviderConfig {
+        rpc_url: &config.rpc_url,
+        chain_id: config.chain_id,
+        rpc_chunk_size: config.rpc_chunk_size,
+    };
+    let module_config = ModuleCompilerConfig {
+        module_registry_rpc_url: url.parse().unwrap(),
+        program_path: PathBuf::from(&program_path),
+    };
+    let compiler_config = CompilerConfig::new(provider_config.clone(), module_config);
+    let preprocessor = PreProcessor::new_with_config(compiler_config);
+    let result = preprocessor
+        .process_from_serialized(config.datalakes.clone(), config.tasks.clone())
+        .await?;
 
-    let decoded_result =
-        handle_decode_multiple(config.datalakes.clone(), config.tasks.clone()).await?;
-
-    match evaluator(
-        decoded_result.tasks,
-        decoded_result.datalakes,
-        Arc::new(RwLock::new(provider)),
-    )
-    .await
-    {
-        Ok(res) => {
-            debug!("Result: {:#?}", res);
-            let pre_processed_result = res.get_processed_result().unwrap();
-            if let Some(cairo_input) = cairo_input {
-                pre_processed_result.save_to_file(&cairo_input, true)?;
-                info!("Cairo input file saved to: {}", cairo_input);
-
-                if let Some(output_file) = output_file {
-                    let runner = CairoRunner::new(pre_processed_result);
-                    let processed_result =
-                        runner.run(pie_file.unwrap(), cairo_input.clone()).unwrap();
-                    processed_result.save_to_file(&output_file, false)?;
-
-                    info!("Output file saved to: {}", output_file);
-                }
-            }
-
+    if cairo_input.is_none() {
+        info!("Finished pre processing the data");
+        Ok(())
+    } else {
+        // let input_string =
+        //     serde_json::to_string_pretty(&result).expect("Failed to serialize module class");
+        // fs::write(cairo_input.unwrap(), input_string.clone()).expect("Unable to write file");
+        let input_string = serde_json::to_string_pretty(&result.as_cairo_format())
+            .expect("Failed to serialize module class");
+        let input_file_path = cairo_input.unwrap();
+        fs::write(&input_file_path, input_string.clone()).expect("Unable to write file");
+        if output_file.is_none() && pie_file.is_none() {
+            info!(
+                "Finished processing the data, saved the input file in {}",
+                input_file_path
+            );
             Ok(())
-        }
-        Err(e) => {
-            error!("Error: {:?}", e);
-            bail!(e);
+        } else {
+            let output_file_path = output_file.unwrap();
+            let processor = Processor::new(provider_config, PathBuf::from(program_path));
+            let processor_result = processor.process(result, pie_file.unwrap()).await?;
+            let output_string = serde_json::to_string_pretty(&processor_result).unwrap();
+            fs::write(&output_file_path, output_string).expect("Unable to write file");
+            info!(
+                "Finished processing the data, saved the input file in {} and output file in {}",
+                input_file_path, output_file_path
+            );
+            Ok(())
         }
     }
 }
@@ -492,11 +464,13 @@ async fn main() -> Result<()> {
                 _ => None,
             };
 
-            let encoded_result = handle_encode_multiple(
-                vec![ComputationalTask::new(aggregate_fn_id, aggregate_fn_ctx)],
-                vec![datalake_envelope],
-            )
-            .await?;
+            let target_datalake_compute = DatalakeCompute::new(
+                datalake_envelope,
+                Computation::new(aggregate_fn_id, aggregate_fn_ctx),
+            );
+            let datalake_codec = DatalakeComputeCodec::new();
+            let (encoded_datalakes, encoded_computes) =
+                datalake_codec.encode_batch(vec![target_datalake_compute])?;
 
             let allow_run: bool = inquire::Confirm::new("Do you want to run the evaluator?")
                 .with_default(true)
@@ -533,8 +507,8 @@ async fn main() -> Result<()> {
                     .prompt()?;
 
                 handle_run(
-                    Some(encoded_result.tasks),
-                    Some(encoded_result.datalakes),
+                    Some(encoded_computes),
+                    Some(encoded_datalakes),
                     rpc_url,
                     chain_id,
                     Some(output_file),
@@ -589,17 +563,18 @@ async fn main() -> Result<()> {
                     DatalakeEnvelope::Transactions(transactions_datalake)
                 }
             };
-
-            let encoded_result = handle_encode_multiple(
-                vec![ComputationalTask::new(&aggregate_fn_id, aggregate_fn_ctx)],
-                vec![datalake],
-            )
-            .await?;
+            let target_datalake_compute = DatalakeCompute::new(
+                datalake,
+                Computation::new(&aggregate_fn_id, aggregate_fn_ctx),
+            );
+            let datalake_compute_codec = DatalakeComputeCodec::new();
+            let (encoded_datalakes, encoded_computes) =
+                datalake_compute_codec.encode_batch(vec![target_datalake_compute])?;
             // if allow_run is true, then run the evaluator
             if allow_run {
                 handle_run(
-                    Some(encoded_result.tasks),
-                    Some(encoded_result.datalakes),
+                    Some(encoded_computes),
+                    Some(encoded_datalakes),
                     rpc_url,
                     chain_id,
                     output_file,
@@ -610,14 +585,12 @@ async fn main() -> Result<()> {
             }
         }
         Commands::Decode { tasks, datalakes } => {
-            handle_decode_multiple(datalakes, tasks).await?;
+            let datalake_compute_codec = DatalakeComputeCodec::new();
+            datalake_compute_codec.decode_batch(datalakes, tasks)?;
         }
         Commands::DecodeOne { task, datalake } => {
-            let task = task_decoder(task)?;
-            let datalake = datalake_decoder(datalake)?;
-
-            info!("task: \n{:?}\n", task);
-            info!("datalake: \n{:?}\n", datalake);
+            let datalake_compute_codec = DatalakeComputeCodec::new();
+            datalake_compute_codec.decode_single(datalake, task)?;
         }
         Commands::Run {
             tasks,

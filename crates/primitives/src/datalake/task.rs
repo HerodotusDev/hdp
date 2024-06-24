@@ -1,22 +1,24 @@
 use std::str::FromStr;
 
+use crate::{
+    aggregate_fn::{integer::Operator, AggregationFunction, FunctionContext},
+    utils::bytes_to_hex_string,
+};
+
+use super::envelope::DatalakeEnvelope;
 use alloy_dyn_abi::{DynSolType, DynSolValue};
 use alloy_primitives::{hex::FromHex, keccak256, FixedBytes, U256};
 use anyhow::{bail, Result};
 
-use hdp_primitives::{datalake::envelope::DatalakeEnvelope, utils::bytes_to_hex_string};
-
-use crate::aggregate_fn::{integer::Operator, AggregationFunction, FunctionContext};
-
 #[derive(Debug)]
-pub struct ComputationalTaskWithDatalake {
-    pub inner: DatalakeEnvelope,
-    pub task: ComputationalTask,
+pub struct DatalakeCompute {
+    pub datalake: DatalakeEnvelope,
+    pub compute: Computation,
 }
 
-impl ComputationalTaskWithDatalake {
-    pub fn new(inner: DatalakeEnvelope, task: ComputationalTask) -> Self {
-        Self { inner, task }
+impl DatalakeCompute {
+    pub fn new(datalake: DatalakeEnvelope, compute: Computation) -> Self {
+        Self { datalake, compute }
     }
 
     pub fn commit(&self) -> String {
@@ -28,20 +30,21 @@ impl ComputationalTaskWithDatalake {
 
     pub fn encode(&self) -> Result<String> {
         let identifier_value = DynSolValue::FixedBytes(
-            FixedBytes::from_str(&self.inner.get_commitment()).unwrap(),
+            FixedBytes::from_str(&self.datalake.get_commitment()).unwrap(),
             32,
         );
 
         let aggregate_fn_id = DynSolValue::Uint(
-            U256::from(AggregationFunction::to_index(&self.task.aggregate_fn_id)),
+            U256::from(AggregationFunction::to_index(&self.compute.aggregate_fn_id)),
             8,
         );
 
         let operator = DynSolValue::Uint(
-            U256::from(Operator::to_index(&self.task.aggregate_fn_ctx.operator)),
+            U256::from(Operator::to_index(&self.compute.aggregate_fn_ctx.operator)),
             8,
         );
-        let value_to_compare = DynSolValue::Uint(self.task.aggregate_fn_ctx.value_to_compare, 32);
+        let value_to_compare =
+            DynSolValue::Uint(self.compute.aggregate_fn_ctx.value_to_compare, 32);
 
         let tuple_value = DynSolValue::Tuple(vec![
             identifier_value,
@@ -59,14 +62,14 @@ impl ComputationalTaskWithDatalake {
     }
 }
 
-/// [`ComputationalTask`] is a structure that contains the aggregate function id and context
+/// [`Computation`] is a structure that contains the aggregate function id and context
 #[derive(Debug, PartialEq, Eq)]
-pub struct ComputationalTask {
+pub struct Computation {
     pub aggregate_fn_id: AggregationFunction,
     pub aggregate_fn_ctx: FunctionContext,
 }
 
-impl ComputationalTask {
+impl Computation {
     pub fn new(aggregate_fn_id: &str, aggregate_fn_ctx: Option<FunctionContext>) -> Self {
         let aggregate_fn_ctn_parsed = match aggregate_fn_ctx {
             None => FunctionContext::new(Operator::None, U256::ZERO),
@@ -143,15 +146,21 @@ impl ComputationalTask {
     }
 }
 
+pub struct ExtendedDatalakeTask {
+    pub task: DatalakeCompute,
+    pub values: Vec<U256>,
+}
+
 #[cfg(test)]
 mod tests {
-    use hdp_primitives::datalake::block_sampled::BlockSampledDatalake;
+
+    use crate::datalake::block_sampled::BlockSampledDatalake;
 
     use super::*;
 
     #[test]
     fn test_task_with_ctx_serialize() {
-        let task = ComputationalTask::new(
+        let task = Computation::new(
             "count",
             Some(FunctionContext::new(
                 Operator::GreaterThanOrEqual,
@@ -159,7 +168,7 @@ mod tests {
             )),
         );
 
-        let inner_task = ComputationalTask {
+        let inner_task = Computation {
             aggregate_fn_id: AggregationFunction::COUNT,
             aggregate_fn_ctx: FunctionContext::new(Operator::GreaterThanOrEqual, U256::from(100)),
         };
@@ -170,16 +179,16 @@ mod tests {
 
         let serialized: &str = "0x000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000064";
         let deserialized =
-            ComputationalTask::decode_not_filled_task(&Vec::from_hex(serialized).unwrap()).unwrap();
+            Computation::decode_not_filled_task(&Vec::from_hex(serialized).unwrap()).unwrap();
         assert_eq!(task, deserialized)
     }
 
     #[test]
     fn test_task_without_ctx_serialize() {
         // AVG
-        let task = ComputationalTask::new("avg", None);
+        let task = Computation::new("avg", None);
 
-        let inner_task = ComputationalTask {
+        let inner_task = Computation {
             aggregate_fn_id: AggregationFunction::AVG,
             aggregate_fn_ctx: FunctionContext::default(),
         };
@@ -190,14 +199,13 @@ mod tests {
         let serialized_bytes: &str = "0x000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
         assert_eq!(serialized, serialized_bytes);
         let deserialized =
-            ComputationalTask::decode_not_filled_task(&Vec::from_hex(serialized_bytes).unwrap())
-                .unwrap();
+            Computation::decode_not_filled_task(&Vec::from_hex(serialized_bytes).unwrap()).unwrap();
         assert_eq!(task, deserialized);
 
         // MIN
-        let task = ComputationalTask::new("min", None);
+        let task = Computation::new("min", None);
 
-        let inner_task = ComputationalTask {
+        let inner_task = Computation {
             aggregate_fn_id: AggregationFunction::MIN,
             aggregate_fn_ctx: FunctionContext::default(),
         };
@@ -208,14 +216,13 @@ mod tests {
         let serialized_bytes: &str = "0x000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
         assert_eq!(serialized, serialized_bytes);
         let deserialized =
-            ComputationalTask::decode_not_filled_task(&Vec::from_hex(serialized_bytes).unwrap())
-                .unwrap();
+            Computation::decode_not_filled_task(&Vec::from_hex(serialized_bytes).unwrap()).unwrap();
         assert_eq!(task, deserialized);
     }
 
     #[test]
     fn test_task_with_datalake() {
-        let task = ComputationalTask::new(
+        let task = Computation::new(
             "count",
             Some(FunctionContext::new(
                 Operator::GreaterThanOrEqual,
@@ -225,7 +232,7 @@ mod tests {
         let datalake = DatalakeEnvelope::BlockSampled(
             BlockSampledDatalake::new(0, 100, "header.base_fee_per_gas".to_string(), 1).unwrap(),
         );
-        let task_with_datalake = ComputationalTaskWithDatalake::new(datalake, task);
+        let task_with_datalake = DatalakeCompute::new(datalake, task);
 
         let serialized = task_with_datalake.encode().unwrap();
         let serialized_bytes: &str = "0xcfa530587401307617ef751178c78751c83757e2143b73b4ffadb5969ca6215e000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000064";

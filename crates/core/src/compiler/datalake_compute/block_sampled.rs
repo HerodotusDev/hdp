@@ -1,15 +1,22 @@
-use hdp_primitives::datalake::{
-    block_sampled::{BlockSampledCollection, BlockSampledDatalake},
-    output::{Header, HeaderProof, MMRMeta, MPTProof},
-    DatalakeField,
+use hdp_primitives::{
+    datalake::{
+        block_sampled::{BlockSampledCollection, BlockSampledDatalake},
+        DatalakeField,
+    },
+    processed_types::{
+        account::ProcessedAccount,
+        header::{ProcessedHeader, ProcessedHeaderProof},
+        mmr::MMRMeta,
+        mpt::ProcessedMPTProof,
+        storage::ProcessedStorage,
+    },
 };
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
+use std::{collections::HashSet, sync::Arc};
 
 use alloy_primitives::keccak256;
 use anyhow::Result;
 
-use hdp_primitives::datalake::block_sampled::output::{Account, Storage};
 use hdp_provider::evm::AbstractProvider;
 use tokio::sync::RwLock;
 
@@ -21,11 +28,11 @@ pub struct CompiledBlockSampledDatalake {
     /// Targeted datalake's compiled results
     pub values: Vec<String>,
     /// Headers related to the datalake
-    pub headers: Vec<Header>,
+    pub headers: HashSet<ProcessedHeader>,
     /// Accounts related to the datalake
-    pub accounts: Vec<Account>,
+    pub accounts: HashSet<ProcessedAccount>,
     /// Storages related to the datalake
-    pub storages: Vec<Storage>,
+    pub storages: HashSet<ProcessedStorage>,
     /// MMR meta data related to the headers
     pub mmr_meta: MMRMeta,
 }
@@ -42,9 +49,9 @@ pub async fn compile_block_sampled_datalake(
         .get_sequencial_full_header_with_proof(datalake.block_range_start, datalake.block_range_end)
         .await?;
     let mmr_meta = full_header_and_proof_result.1;
-    let mut headers: Vec<Header> = vec![];
-    let mut accounts: Vec<Account> = vec![];
-    let mut storages: Vec<Storage> = vec![];
+    let mut headers: HashSet<ProcessedHeader> = HashSet::new();
+    let mut accounts: HashSet<ProcessedAccount> = HashSet::new();
+    let mut storages: HashSet<ProcessedStorage> = HashSet::new();
     let block_range = (datalake.block_range_start..=datalake.block_range_end)
         .step_by(datalake.increment as usize);
 
@@ -54,9 +61,9 @@ pub async fn compile_block_sampled_datalake(
                 let fetched_block = full_header_and_proof_result.0.get(&block).unwrap().clone();
                 let value = property.decode_field_from_rlp(&fetched_block.0);
 
-                headers.push(Header {
+                headers.insert(ProcessedHeader {
                     rlp: fetched_block.0,
-                    proof: HeaderProof {
+                    proof: ProcessedHeaderProof {
                         leaf_idx: fetched_block.2,
                         mmr_path: fetched_block.1,
                     },
@@ -75,7 +82,7 @@ pub async fn compile_block_sampled_datalake(
                 )
                 .await?;
 
-            let mut account_proofs: Vec<MPTProof> = vec![];
+            let mut account_proofs: Vec<ProcessedMPTProof> = vec![];
             // let mut encoded_account = "".to_string();
 
             for block in block_range {
@@ -83,15 +90,15 @@ pub async fn compile_block_sampled_datalake(
                 let account_proof = accounts_and_proofs_result.get(&block).unwrap().clone();
                 let value = property.decode_field_from_rlp(&account_proof.encoded_account);
 
-                headers.push(Header {
+                headers.insert(ProcessedHeader {
                     rlp: fetched_block.0,
-                    proof: HeaderProof {
+                    proof: ProcessedHeaderProof {
                         leaf_idx: fetched_block.2,
                         mmr_path: fetched_block.1,
                     },
                 });
 
-                let account_proof = MPTProof {
+                let account_proof = ProcessedMPTProof {
                     block_number: block,
                     proof: account_proof.account_proof,
                 };
@@ -101,7 +108,7 @@ pub async fn compile_block_sampled_datalake(
             }
 
             let account_key = keccak256(address);
-            accounts.push(Account {
+            accounts.insert(ProcessedAccount {
                 address: address.to_string(),
                 account_key: account_key.to_string(),
                 proofs: account_proofs,
@@ -118,27 +125,27 @@ pub async fn compile_block_sampled_datalake(
                 )
                 .await?;
 
-            let mut storage_proofs: Vec<MPTProof> = vec![];
-            let mut account_proofs: Vec<MPTProof> = vec![];
+            let mut storage_proofs: Vec<ProcessedMPTProof> = vec![];
+            let mut account_proofs: Vec<ProcessedMPTProof> = vec![];
 
             for i in block_range {
                 let fetched_block = full_header_and_proof_result.0.get(&i).unwrap().clone();
                 let storage_proof = storages_and_proofs_result.get(&i).unwrap().clone();
 
-                headers.push(Header {
+                headers.insert(ProcessedHeader {
                     rlp: fetched_block.0,
-                    proof: HeaderProof {
+                    proof: ProcessedHeaderProof {
                         leaf_idx: fetched_block.2,
                         mmr_path: fetched_block.1,
                     },
                 });
 
-                account_proofs.push(MPTProof {
+                account_proofs.push(ProcessedMPTProof {
                     block_number: i,
                     proof: storage_proof.account_proof,
                 });
 
-                storage_proofs.push(MPTProof {
+                storage_proofs.push(ProcessedMPTProof {
                     block_number: i,
                     proof: storage_proof.storage_proof,
                 });
@@ -149,13 +156,13 @@ pub async fn compile_block_sampled_datalake(
             let storage_key = keccak256(slot).to_string();
             let account_key = keccak256(address);
 
-            storages.push(Storage {
+            storages.insert(ProcessedStorage {
                 address: address.to_string(),
                 slot: slot.to_string(),
                 storage_key,
                 proofs: storage_proofs,
             });
-            accounts.push(Account {
+            accounts.insert(ProcessedAccount {
                 address: address.to_string(),
                 account_key: account_key.to_string(),
                 proofs: account_proofs,

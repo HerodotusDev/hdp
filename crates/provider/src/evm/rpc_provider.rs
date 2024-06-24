@@ -10,10 +10,8 @@ use reqwest::{header, Client};
 use serde_json::{from_value, json, Value};
 
 use hdp_primitives::block::{
-    account::{Account, AccountFromRpc},
-    header::{
-        BlockHeaderFromRpc, MMRFromNewIndexer, MMRMetaFromNewIndexer, MMRProofFromNewIndexer,
-    },
+    account::{Account, AccountProofFromRpc},
+    header::{MMRFromNewIndexer, MMRMetaFromNewIndexer, MMRProofFromNewIndexer},
 };
 use tokio::sync::{mpsc::Sender, RwLock};
 use tracing::debug;
@@ -25,12 +23,32 @@ pub struct FetchedAccountProof {
     pub account_proof: Vec<String>,
 }
 
+/// Fetched storage and account proof and it's value
 #[derive(Debug, Clone)]
-pub struct FetchedStorageProof {
+pub struct FetchedStorageAccountProof {
     pub block_number: u64,
+    pub encoded_account: String,
     pub account_proof: Vec<String>,
     pub storage_value: String,
     pub storage_proof: Vec<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct FetchedTransactionProof {
+    pub block_number: u64,
+    pub tx_index: u64,
+    pub encoded_transaction: String,
+    pub transaction_proof: Vec<String>,
+    pub tx_type: u8,
+}
+
+#[derive(Debug, Clone)]
+pub struct FetchedTransactionReceiptProof {
+    pub block_number: u64,
+    pub tx_index: u64,
+    pub encoded_receipt: String,
+    pub receipt_proof: Vec<String>,
+    pub tx_type: u8,
 }
 
 pub struct HeaderProvider {
@@ -141,44 +159,6 @@ impl TrieProofProvider {
         }
     }
 
-    pub async fn get_block_by_number(&self, block_number: u64) -> Result<BlockHeaderFromRpc> {
-        let rpc_request: Value = json!({
-            "jsonrpc": "2.0",
-            "method": "eth_getBlockByNumber",
-            "params": [format!("0x{:x}", block_number), false],
-            "id": 1,
-        });
-
-        let response = self
-            .client
-            .post(self.url)
-            .header(header::CONTENT_TYPE, "application/json")
-            .json(&rpc_request)
-            .send()
-            .await
-            .map_err(|e| anyhow!("Failed to send request: {}", e))?;
-
-        // Check if the response status is success
-        if !response.status().is_success() {
-            return Err(anyhow!(
-                "RPC request `eth_getBlockByNumber` failed with status: {}",
-                response.status()
-            ));
-        }
-
-        // Parse the response body as JSON
-        let rpc_response: Value = response
-            .json()
-            .await
-            .map_err(|e| anyhow!("Failed to parse response: {}", e))?;
-        let result = &rpc_response["result"];
-
-        // Deserialize into EvmBlockHeaderFromRpc
-        let block_header_from_rpc: BlockHeaderFromRpc = from_value(result.clone())?;
-
-        Ok(block_header_from_rpc)
-    }
-
     pub async fn get_account_proofs(
         &self,
         rpc_sender: Sender<FetchedAccountProof>,
@@ -253,7 +233,7 @@ impl TrieProofProvider {
 
     pub async fn get_storage_proofs(
         &self,
-        rpc_sender: Sender<FetchedStorageProof>,
+        rpc_sender: Sender<FetchedStorageAccountProof>,
         block_numbers: Vec<u64>,
         address: &str,
         slot: String,
@@ -295,13 +275,16 @@ impl TrieProofProvider {
                             match account_from_rpc {
                                 Ok(account_from_rpc) => {
                                     let mut blocks_identifier = fetched_blocks_clone.write().await;
+                                    let account = Account::from(&account_from_rpc);
+                                    let encoded_account = account.rlp_encode();
                                     let storage = &account_from_rpc.storage_proof[0];
                                     let storage_value = storage.value.clone();
                                     let storage_proof =
                                         account_from_rpc.storage_proof[0].proof.clone();
                                     let account_proof = account_from_rpc.account_proof;
-                                    let mpt_proof = FetchedStorageProof {
+                                    let mpt_proof = FetchedStorageAccountProof {
                                         block_number: *block_number,
+                                        encoded_account,
                                         account_proof,
                                         storage_value,
                                         storage_proof,
@@ -330,7 +313,7 @@ impl TrieProofProvider {
         block_number: u64,
         address: &str,
         storage_keys: Option<Vec<String>>,
-    ) -> Result<AccountFromRpc> {
+    ) -> Result<AccountProofFromRpc> {
         let storage_key_param = storage_keys.unwrap_or_default();
 
         let target_num = if block_number == u64::MAX {
@@ -374,7 +357,7 @@ impl TrieProofProvider {
             .map_err(|e| anyhow!("Failed to parse response: {}", e))?;
         let result = &rpc_response["result"];
 
-        let account_from_rpc: AccountFromRpc = from_value(result.clone())?;
+        let account_from_rpc: AccountProofFromRpc = from_value(result.clone())?;
 
         // Error handling for empty proof (no account found)
         if account_from_rpc.account_proof.is_empty() {
@@ -403,7 +386,7 @@ mod tests {
     use std::str::FromStr;
 
     use alloy_primitives::{FixedBytes, U256};
-    use hdp_primitives::block::{account::Account, header::Header};
+    use hdp_primitives::block::account::Account;
 
     use super::*;
 
@@ -454,23 +437,6 @@ mod tests {
         "https://eth-sepolia.g.alchemy.com/v2/a-w72ZvoUS0dfMD_LBPAuRzHOlQEhi_m";
 
     const SEPOLIA_TARGET_ADDRESS: &str = "0x7f2c6f930306d3aa736b3a6c6a98f512f74036d4";
-
-    #[tokio::test]
-    async fn test_get_block_by_number() {
-        let rpc_provider = TrieProofProvider::new(SEPOLIA_RPC_URL, 40);
-
-        let block = rpc_provider.get_block_by_number(0).await.unwrap();
-        let block_header = Header::from(&block);
-        assert_eq!(block.get_block_hash(), block_header.get_block_hash());
-
-        let block = rpc_provider.get_block_by_number(5521772).await.unwrap();
-        let block_header = Header::from(&block);
-        assert_eq!(block.get_block_hash(), block_header.get_block_hash());
-
-        let block = rpc_provider.get_block_by_number(421772).await.unwrap();
-        let block_header = Header::from(&block);
-        assert_eq!(block.get_block_hash(), block_header.get_block_hash())
-    }
 
     #[tokio::test]
     async fn test_rpc_get_proof() {
