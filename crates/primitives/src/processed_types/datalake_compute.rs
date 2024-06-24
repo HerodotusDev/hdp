@@ -70,4 +70,15 @@ impl ProcessedDatalakeCompute {
             property_type,
         }
     }
+
+    pub fn update_results(
+        &mut self,
+        compiled_result: String,
+        result_commitment: String,
+        result_proof: Vec<B256>,
+    ) {
+        self.compiled_result = Some(compiled_result);
+        self.result_commitment = Some(result_commitment);
+        self.result_proof = Some(result_proof);
+    }
 }

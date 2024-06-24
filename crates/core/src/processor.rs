@@ -6,13 +6,16 @@ use alloy_dyn_abi::DynSolValue;
 use alloy_merkle_tree::standard_binary_tree::StandardMerkleTree;
 use alloy_primitives::{hex::FromHex, FixedBytes, Keccak256, B256, U256};
 use anyhow::Result;
-use hdp_primitives::processed_types::{cairo_format::AsCairoFormat, v1_query::ProcessedResult};
+use hdp_primitives::processed_types::{
+    cairo_format::AsCairoFormat, datalake_compute::ProcessedDatalakeCompute,
+    v1_query::ProcessedResult,
+};
 use serde::Serialize;
 use std::{path::PathBuf, str::FromStr};
 
 use hdp_provider::evm::{AbstractProvider, AbstractProviderConfig};
 
-use crate::cairo_runner::run::Runner;
+use crate::cairo_runner::run::{RunResult, Runner};
 
 pub struct Processor {
     runner: Runner,
@@ -78,7 +81,7 @@ impl Processor {
         &self,
         requset: ProcessedResult,
         pie_path: String,
-    ) -> Result<ProcessorResult> {
+    ) -> Result<ProcessedResult> {
         // generate input file from fetch points
         // 1. fetch proofs from provider by using fetch points
         // TODO: only for module
@@ -94,19 +97,51 @@ impl Processor {
             .expect("Failed to serialize module class");
         let result = self.runner.run(input_string, PathBuf::from(pie_path))?;
 
+        let pr = self.build_legacy_output_file(requset, result)?;
+
+        // let task_commitments: Vec<String> = requset
+        //     .tasks
+        //     .iter()
+        //     .map(|task| task.task_commitment.clone())
+        //     .collect();
+        // let task_inclusion_proofs: Vec<_> = requset
+        //     .tasks
+        //     .iter()
+        //     .map(|task| task.task_proof.clone())
+        //     .collect();
+
+        // let task_root = requset.tasks_root.clone();
+
+        // let (results_tree, result_commitments) =
+        //     self.build_result_merkle_tree(task_commitments.clone(), result.task_results.clone())?;
+        // let results_inclusion_proofs: Vec<_> = result_commitments
+        //     .iter()
+        //     .map(|rc| results_tree.get_proof(&DynSolValue::FixedBytes(*rc, 32)))
+        //     .collect();
+        // let result_root = results_tree.root().to_string();
+        // let mmr = requset.mmr.clone();
+
+        Ok(pr)
+    }
+
+    // TODO: for now, we are using the legacy output file format.
+    fn build_legacy_output_file(
+        &self,
+        requset: ProcessedResult,
+        result: RunResult,
+    ) -> Result<ProcessedResult> {
         let task_commitments: Vec<String> = requset
             .tasks
             .iter()
             .map(|task| task.task_commitment.clone())
             .collect();
-        let task_inclusion_proofs: Vec<_> = requset
-            .tasks
-            .iter()
-            .map(|task| task.task_proof.clone())
-            .collect();
+        // let task_inclusion_proofs: Vec<_> = requset
+        //     .tasks
+        //     .iter()
+        //     .map(|task| task.task_proof.clone())
+        //     .collect();
 
         let task_root = requset.tasks_root.clone();
-
         let (results_tree, result_commitments) =
             self.build_result_merkle_tree(task_commitments.clone(), result.task_results.clone())?;
         let results_inclusion_proofs: Vec<_> = result_commitments
@@ -114,18 +149,28 @@ impl Processor {
             .map(|rc| results_tree.get_proof(&DynSolValue::FixedBytes(*rc, 32)))
             .collect();
         let result_root = results_tree.root().to_string();
-        let mmr = requset.mmr.clone();
 
-        Ok(ProcessorResult::new(
-            result.task_results,
-            task_commitments,
-            task_inclusion_proofs,
-            results_inclusion_proofs,
-            result_root,
-            task_root,
-            mmr.id,
-            mmr.size,
-        ))
+        let mut new_tasks: Vec<ProcessedDatalakeCompute> = Vec::new();
+        for (idx, mut task) in requset.tasks.into_iter().enumerate() {
+            let compiled_result = result.task_results[idx].clone();
+            let result_commitment = result_commitments[idx].to_string();
+            let result_proof = results_inclusion_proofs[idx].clone();
+            task.update_results(compiled_result, result_commitment, result_proof);
+            new_tasks.push(task.clone());
+        }
+
+        let new_final_processed_result = ProcessedResult {
+            results_root: Some(result_root),
+            tasks_root: task_root,
+            headers: requset.headers,
+            mmr: requset.mmr,
+            accounts: requset.accounts,
+            storages: requset.storages,
+            transactions: requset.transactions,
+            transaction_receipts: requset.transaction_receipts,
+            tasks: new_tasks,
+        };
+        Ok(new_final_processed_result)
     }
 
     fn build_result_merkle_tree(
