@@ -1,7 +1,7 @@
 use alloy_primitives::Bytes;
 use anyhow::Result;
 use eth_trie_proofs::{tx_receipt_trie::TxReceiptsMptHandler, tx_trie::TxsMptHandler};
-use rpc_provider::{
+use rpc::{
     FetchedAccountProof, FetchedStorageAccountProof, FetchedTransactionProof,
     FetchedTransactionReceiptProof, HeaderProvider, TrieProofProvider,
 };
@@ -32,7 +32,7 @@ pub type StoredHeader = (RlpEncodedValue, MPTProof, u64, u64);
 /// `StoredHeader` is a map of block number to a tuple of RLP encoded header and MMR proof and element_index and mmr_id.
 pub type StoredHeaders = HashMap<u64, StoredHeader>;
 
-pub mod rpc_provider;
+pub mod rpc;
 
 // For more information swagger doc: https://rs-indexer.api.herodotus.cloud/swagger
 const HERODOTUS_RS_INDEXER_URL: &str = "https://rs-indexer.api.herodotus.cloud/accumulators";

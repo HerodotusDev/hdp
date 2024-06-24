@@ -465,7 +465,7 @@ pub struct MMRDataFromNewIndexer {
     pub proofs: Vec<MMRProofFromNewIndexer>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct MMRMetaFromNewIndexer {
     pub mmr_id: u64,
     pub mmr_peaks: Vec<String>,

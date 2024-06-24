@@ -18,6 +18,8 @@ alloy-dyn-abi = "0.6.2"
 alloy-primitives = { version = "0.6.2", feature = ["rlp"] }
 alloy-merkle-tree = { version = "0.5.0" }
 alloy-rlp = { version = "0.3.4", features = ["derive"] }
+alloy-rpc-client = { version = "0.1.1" }
+alloy = { version = "0.1.1", features = ["full"] }
 anyhow = "1.0.79"
 serde = { version = "1.0", features = ["derive"] }
 serde_with = "2.3.2"
@@ -31,6 +33,7 @@ starknet-crypto = "0.6.1"
 cairo-lang-starknet-classes = "2.6.3"
 futures = "0.3.30"
 lazy_static = "1.4.0"
+thiserror = "1.0"
 
 # TODO: ideally should published
 eth-trie-proofs = { git = "https://github.com/HerodotusDev/eth-trie-proofs.git", branch = "main" }

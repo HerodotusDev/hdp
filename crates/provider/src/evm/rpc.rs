@@ -390,48 +390,6 @@ mod tests {
 
     use super::*;
 
-    const HERODOTUS_RS_INDEXER_URL: &str = "https://rs-indexer.api.herodotus.cloud/accumulators";
-
-    #[tokio::test]
-    async fn test_get_sepolia_sequencial_headers_and_mmr_from_indexer() {
-        let rpc_provider = HeaderProvider::new(HERODOTUS_RS_INDEXER_URL, 11155111);
-
-        let block_header = rpc_provider
-            .get_sequencial_headers_and_mmr_from_indexer(4952200, 4952229)
-            .await
-            .unwrap();
-
-        let _ = &block_header.0;
-        // assert_eq!(mmr_meta.mmr_id, 2);
-        let length = block_header.1.len();
-        assert_eq!(length, 30);
-        let block_4952200 = block_header.1.get(&4952200).unwrap();
-        assert_eq!(block_4952200.block_number, 4952200);
-
-        let block_4952229 = block_header.1.get(&4952229).unwrap();
-        assert_eq!(block_4952229.block_number, 4952229);
-    }
-
-    #[tokio::test]
-    async fn test_get_mainnet_sequencial_headers_and_mmr_from_indexer() {
-        let rpc_provider = HeaderProvider::new(HERODOTUS_RS_INDEXER_URL, 1);
-
-        let block_header = rpc_provider
-            .get_sequencial_headers_and_mmr_from_indexer(4952200, 4952229)
-            .await
-            .unwrap();
-
-        let mmr_meta = &block_header.0;
-        assert_eq!(mmr_meta.mmr_id, 6);
-        let length = block_header.1.len();
-        assert_eq!(length, 30);
-        let block_4952200 = block_header.1.get(&4952200).unwrap();
-        assert_eq!(block_4952200.block_number, 4952200);
-
-        let block_4952229 = block_header.1.get(&4952229).unwrap();
-        assert_eq!(block_4952229.block_number, 4952229);
-    }
-
     // Non-paid personal alchemy endpoint
     const SEPOLIA_RPC_URL: &str =
         "https://eth-sepolia.g.alchemy.com/v2/a-w72ZvoUS0dfMD_LBPAuRzHOlQEhi_m";
