@@ -1,13 +1,13 @@
 use std::str::FromStr;
 
-use crate::{
-    aggregate_fn::{integer::Operator, AggregationFunction, FunctionContext},
-    utils::bytes_to_hex_string,
-};
+use crate::aggregate_fn::{integer::Operator, AggregationFunction, FunctionContext};
 
 use super::envelope::DatalakeEnvelope;
-use alloy_dyn_abi::{DynSolType, DynSolValue};
-use alloy_primitives::{hex::FromHex, keccak256, FixedBytes, U256};
+use alloy::primitives::{hex::FromHex, keccak256, U256};
+use alloy::{
+    dyn_abi::{DynSolType, DynSolValue},
+    primitives::B256,
+};
 use anyhow::{bail, Result};
 
 #[derive(Debug)]
@@ -21,18 +21,14 @@ impl DatalakeCompute {
         Self { datalake, compute }
     }
 
-    pub fn commit(&self) -> String {
+    pub fn commit(&self) -> B256 {
         let encoded_datalake = self.encode().unwrap();
         let bytes = Vec::from_hex(encoded_datalake).expect("Invalid hex string");
-        let hash = keccak256(bytes);
-        format!("0x{:x}", hash)
+        keccak256(bytes)
     }
 
-    pub fn encode(&self) -> Result<String> {
-        let identifier_value = DynSolValue::FixedBytes(
-            FixedBytes::from_str(&self.datalake.get_commitment()).unwrap(),
-            32,
-        );
+    pub fn encode(&self) -> Result<Vec<u8>> {
+        let identifier_value = DynSolValue::FixedBytes(self.datalake.get_commitment(), 32);
 
         let aggregate_fn_id = DynSolValue::Uint(
             U256::from(AggregationFunction::to_index(&self.compute.aggregate_fn_id)),
@@ -53,7 +49,7 @@ impl DatalakeCompute {
             value_to_compare,
         ]);
 
-        Ok(bytes_to_hex_string(&tuple_value.abi_encode()))
+        Ok(tuple_value.abi_encode())
 
         // match header_tuple_value.abi_encode_sequence() {
         //     Some(encoded) => Ok(bytes_to_hex_string(&encoded)),
@@ -82,7 +78,7 @@ impl Computation {
     }
 
     /// Encode the task without datalake
-    pub fn encode(&self) -> Result<String> {
+    pub fn encode(&self) -> Result<Vec<u8>> {
         let aggregate_fn_id = DynSolValue::Uint(
             U256::from(AggregationFunction::to_index(&self.aggregate_fn_id)),
             8,
@@ -98,8 +94,7 @@ impl Computation {
         let header_tuple_value =
             DynSolValue::Tuple(vec![aggregate_fn_id, operator, value_to_compare]);
 
-        let encoded_datalake = header_tuple_value.abi_encode();
-        Ok(bytes_to_hex_string(&encoded_datalake))
+        Ok(header_tuple_value.abi_encode())
     }
 
     /// Decode task that is not filled with datalake
@@ -196,12 +191,10 @@ mod tests {
         let serialized = task.encode().unwrap();
         let inner_task_serialized = inner_task.encode().unwrap();
         assert_eq!(serialized, inner_task_serialized);
-        let serialized_bytes: &str = "0x000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
+        let serialized_bytes: Vec<u8> = Vec::from_hex("0x000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000").unwrap();
         assert_eq!(serialized, serialized_bytes);
-        let deserialized =
-            Computation::decode_not_filled_task(&Vec::from_hex(serialized_bytes).unwrap()).unwrap();
+        let deserialized = Computation::decode_not_filled_task(&serialized_bytes).unwrap();
         assert_eq!(task, deserialized);
-
         // MIN
         let task = Computation::new("min", None);
 
@@ -213,10 +206,9 @@ mod tests {
         let serialized = task.encode().unwrap();
         let inner_task_serialized = inner_task.encode().unwrap();
         assert_eq!(serialized, inner_task_serialized);
-        let serialized_bytes: &str = "0x000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
+        let serialized_bytes: Vec<u8> = Vec::from_hex("0x000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000").unwrap();
         assert_eq!(serialized, serialized_bytes);
-        let deserialized =
-            Computation::decode_not_filled_task(&Vec::from_hex(serialized_bytes).unwrap()).unwrap();
+        let deserialized = Computation::decode_not_filled_task(&serialized_bytes).unwrap();
         assert_eq!(task, deserialized);
     }
 
@@ -235,7 +227,7 @@ mod tests {
         let task_with_datalake = DatalakeCompute::new(datalake, task);
 
         let serialized = task_with_datalake.encode().unwrap();
-        let serialized_bytes: &str = "0xcfa530587401307617ef751178c78751c83757e2143b73b4ffadb5969ca6215e000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000064";
+        let serialized_bytes: Vec<u8> = Vec::from_hex("cfa530587401307617ef751178c78751c83757e2143b73b4ffadb5969ca6215e000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000064").unwrap();
         assert_eq!(serialized, serialized_bytes);
     }
 }

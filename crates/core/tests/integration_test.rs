@@ -2,8 +2,8 @@ mod integration_test {
     use std::path::PathBuf;
 
     use hdp_core::{
-        compiler::{module::ModuleCompilerConfig, CompilerConfig},
-        pre_processor::PreProcessor,
+        compiler::module::ModuleCompilerConfig,
+        pre_processor::{PreProcessor, PreProcessorConfig},
         processor::Processor,
     };
     use hdp_primitives::datalake::{
@@ -11,7 +11,8 @@ mod integration_test {
         envelope::DatalakeEnvelope,
         task::{Computation, DatalakeCompute},
     };
-    use hdp_provider::evm::AbstractProviderConfig;
+
+    use hdp_provider::evm::provider::EvmProviderConfig;
     use starknet::providers::Url;
 
     // Non-paid personal alchemy endpoint
@@ -27,22 +28,21 @@ mod integration_test {
             module_registry_rpc_url: Url::parse(STARKNET_SEPOLIA_RPC).unwrap(),
             program_path: PathBuf::from(PREPROCESS_PROGRAM_PATH),
         };
-
-        let datalake_config = AbstractProviderConfig {
-            rpc_url: SEPOLIA_RPC_URL,
+        let datalake_config = EvmProviderConfig {
+            rpc_url: Url::parse(SEPOLIA_RPC_URL).unwrap(),
             chain_id: 11155111,
-            rpc_chunk_size: 40,
         };
-        PreProcessor::new_with_config(CompilerConfig::new(datalake_config, module_config))
+
+        let preprocessor_config = PreProcessorConfig {
+            datalake_config,
+            module_config,
+        };
+
+        PreProcessor::new_with_config(preprocessor_config)
     }
 
     fn init_processor() -> Processor {
-        let config = AbstractProviderConfig {
-            rpc_url: SEPOLIA_RPC_URL,
-            chain_id: 11155111,
-            rpc_chunk_size: 40,
-        };
-        Processor::new(config, PathBuf::from(PREPROCESS_PROGRAM_PATH))
+        Processor::new(PathBuf::from(PREPROCESS_PROGRAM_PATH))
     }
 
     #[ignore = "ignore for now"]

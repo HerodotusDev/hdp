@@ -7,14 +7,12 @@
 
 use std::str::FromStr;
 
-use alloy_dyn_abi::{DynSolType, DynSolValue};
-use alloy_primitives::{hex::FromHex, keccak256, U256};
+use alloy::dyn_abi::{DynSolType, DynSolValue};
+use alloy::primitives::B256;
+use alloy::primitives::{keccak256, U256};
 use anyhow::{bail, Result};
 
-use crate::{
-    datalake::{datalake_type::DatalakeType, Datalake, DatalakeCollection},
-    utils::bytes_to_hex_string,
-};
+use crate::datalake::{datalake_type::DatalakeType, Datalake, DatalakeCollection};
 
 use super::TransactionsCollection;
 
@@ -61,7 +59,7 @@ impl Datalake for TransactionsInBlockDatalake {
     }
 
     /// Encode the [`TransactionsInBlockDatalake`] into a hex string
-    fn encode(&self) -> Result<String> {
+    fn encode(&self) -> Result<Vec<u8>> {
         let datalake_code: DynSolValue = self.get_datalake_type().to_u8().into();
         let target_block: DynSolValue = self.target_block.into();
         let sampled_property: DynSolValue = self.sampled_property.serialize()?.into();
@@ -81,25 +79,22 @@ impl Datalake for TransactionsInBlockDatalake {
         ]);
 
         match tuple_value.abi_encode_sequence() {
-            Some(encoded_datalake) => Ok(bytes_to_hex_string(&encoded_datalake)),
+            Some(encoded_datalake) => Ok(encoded_datalake),
             None => bail!("Encoding failed"),
         }
     }
 
     /// Get the commitment hash of the [`TransactionsDatalake`]
-    fn commit(&self) -> String {
+    fn commit(&self) -> B256 {
         let encoded_datalake = self.encode().expect("Encoding failed");
-        let bytes = Vec::from_hex(encoded_datalake).expect("Invalid hex string");
-        let hash = keccak256(bytes);
-        format!("0x{:x}", hash)
+        keccak256(encoded_datalake)
     }
 
     /// Decode the encoded transactions datalake hex string into a [`TransactionsDatalake`]
-    fn decode(encoded: &str) -> Result<Self> {
+    fn decode(encoded: &[u8]) -> Result<Self> {
         let abi_type: DynSolType =
             "(uint256, uint256, uint256, uint256, uint256, uint256, bytes)".parse()?;
-        let bytes = Vec::from_hex(encoded).expect("Invalid hex string");
-        let decoded = abi_type.abi_decode_sequence(&bytes)?;
+        let decoded = abi_type.abi_decode_sequence(encoded)?;
 
         let value = decoded.as_tuple().unwrap();
         let datalake_code = value[0].as_uint().unwrap().0.to_string().parse::<u8>()?;

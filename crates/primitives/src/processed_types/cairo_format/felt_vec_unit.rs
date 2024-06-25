@@ -1,4 +1,3 @@
-use alloy_primitives::hex;
 use anyhow::Result;
 use serde::Serialize;
 use serde_with::serde_as;
@@ -14,11 +13,10 @@ pub struct FieldElementVectorUnit {
 }
 
 impl FieldElementVectorUnit {
-    pub fn from_hex_str(hex_str: &str) -> Result<Self> {
-        if hex_str.is_empty() {
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
+        if bytes.is_empty() {
             return Err(anyhow::anyhow!("Empty hex input"));
         }
-        let bytes = hex::decode(hex_str)?;
         let bytes_len = bytes.len() as u64;
         let felts = bytes
             .chunks(8)
@@ -38,35 +36,30 @@ impl FieldElementVectorUnit {
 
 #[cfg(test)]
 mod tests {
+    use alloy::hex;
+
     use super::*;
 
     #[test]
-    fn test_empty_hex_str() {
-        let hex_str = "";
-        let result = FieldElementVectorUnit::from_hex_str(hex_str);
+    fn test_empty_bytes() {
+        let bytes = hex::decode("").unwrap();
+        let result = FieldElementVectorUnit::from_bytes(&bytes);
         assert!(result.is_err());
     }
 
     #[test]
-    fn test_single_byte_hex_str() {
-        let hex_str = "0x01";
-        let result = FieldElementVectorUnit::from_hex_str(hex_str).unwrap();
+    fn test_single_byte_bytes() {
+        let bytes = hex::decode("0x01").unwrap();
+        let result = FieldElementVectorUnit::from_bytes(&bytes).unwrap();
         assert_eq!(result.bytes_len, 1);
         assert_eq!(result.felts.len(), 1);
         assert_eq!(result.felts[0], FieldElement::from_hex_be("0x1").unwrap());
     }
 
     #[test]
-    fn test_non_aligned_hex_str() {
-        let hex_str = "0x1234567890abc";
-        let result = FieldElementVectorUnit::from_hex_str(hex_str);
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn test_single_chunk_hex_str() {
-        let hex_str = "0x1234567890abcdef";
-        let result = FieldElementVectorUnit::from_hex_str(hex_str).unwrap();
+    fn test_single_chunk_bytes() {
+        let bytes = hex::decode("0x1234567890abcdef").unwrap();
+        let result = FieldElementVectorUnit::from_bytes(&bytes).unwrap();
         assert_eq!(result.bytes_len, 8);
         assert_eq!(result.felts.len(), 1);
         assert_eq!(
@@ -76,9 +69,9 @@ mod tests {
     }
 
     #[test]
-    fn test_multiple_chunks_hex_str() {
-        let hex_str = "0x1234567890abcdef1122334455667788";
-        let result = FieldElementVectorUnit::from_hex_str(hex_str).unwrap();
+    fn test_multiple_chunks_bytes() {
+        let bytes = hex::decode("0x1234567890abcdef1122334455667788").unwrap();
+        let result = FieldElementVectorUnit::from_bytes(&bytes).unwrap();
         assert_eq!(result.bytes_len, 16);
         assert_eq!(result.felts.len(), 2);
         assert_eq!(

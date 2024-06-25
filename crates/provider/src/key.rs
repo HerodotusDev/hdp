@@ -2,7 +2,7 @@
 
 use std::str::FromStr;
 
-use alloy_primitives::{Address, BlockNumber, ChainId, StorageKey};
+use alloy::primitives::{Address, BlockNumber, ChainId, StorageKey};
 
 macro_rules! impl_hash_for_provider_key {
     // Match a struct with an identifier and any number of fields.

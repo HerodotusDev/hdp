@@ -1,5 +1,5 @@
-use alloy_primitives::hex::{self};
-use alloy_primitives::{FixedBytes, U256};
+use alloy::primitives::hex::{self};
+use alloy::primitives::{FixedBytes, U256};
 use anyhow::Result;
 
 /// Convert a `FixedBytes<32>` which originally encoded from utf8 string into original utf8 string value
@@ -47,7 +47,7 @@ pub fn tx_index_to_tx_key(tx_index: u64) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use alloy_primitives::{hex::FromHex, FixedBytes};
+    use alloy::primitives::{hex::FromHex, FixedBytes};
 
     #[test]
     fn test_bytes32_to_str() {

@@ -8,7 +8,7 @@
 //! let response = indexer.get_headers_proof(BLOCK_RANGE_START, BLOCK_RANGE_END, INCREMENT).await?;
 //! ```
 
-use alloy_primitives::BlockNumber;
+use alloy::primitives::BlockNumber;
 use hdp_primitives::block::header::{
     MMRDataFromNewIndexer, MMRFromNewIndexer, MMRMetaFromNewIndexer, MMRProofFromNewIndexer,
 };
@@ -80,6 +80,7 @@ impl Indexer {
         // validate status
         if response.status().is_success() {
             let body: Value = response.json().await.map_err(IndexerError::ReqwestError)?;
+            println!("Body: {:#?}", body);
             let parsed_mmr: MMRFromNewIndexer =
                 from_value(body).map_err(IndexerError::SerdeJsonError)?;
 

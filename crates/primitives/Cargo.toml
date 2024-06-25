@@ -7,11 +7,10 @@ repository.workspace = true
 version.workspace = true
 
 [dependencies]
-serde = { workspace = true, features = ["derive"] }
+serde = { workspace = true }
 anyhow = { workspace = true }
-alloy-dyn-abi = { workspace = true }
-alloy-rlp = { workspace = true, features = ["derive"] }
-alloy-primitives = { workspace = true, features = ["rlp", "serde"] }
+alloy = { workspace = true }
+alloy-rlp = { workspace = true }
 eth-trie-proofs.workspace = true
 rand = { workspace = true }
 starknet-crypto.workspace = true

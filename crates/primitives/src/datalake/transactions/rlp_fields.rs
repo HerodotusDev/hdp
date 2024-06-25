@@ -1,10 +1,10 @@
 use std::{fmt::Display, str::FromStr};
 
-use alloy_primitives::hex;
+use alloy::primitives::U256;
 use anyhow::{bail, Result};
 use eth_trie_proofs::{tx::ConsensusTx, tx_receipt::ConsensusTxReceipt};
 
-use crate::{datalake::DatalakeField, utils::bytes_to_hex_string};
+use crate::datalake::DatalakeField;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TransactionField {
@@ -113,40 +113,48 @@ impl DatalakeField for TransactionField {
         }
     }
 
-    fn decode_field_from_rlp(&self, rlp: &str) -> String {
-        let raw_tx = ConsensusTx::rlp_decode(hex::decode(rlp).unwrap().as_slice()).unwrap();
+    fn decode_field_from_rlp(&self, rlp: &[u8]) -> U256 {
+        let raw_tx = ConsensusTx::rlp_decode(rlp).unwrap();
         match self {
-            TransactionField::Nonce => raw_tx.nonce().to_string(),
-            TransactionField::GasPrice => raw_tx.gas_price().map(|x| x.to_string()).unwrap(),
-            TransactionField::GasLimit => raw_tx.gas_limit().to_string(),
-            TransactionField::To => raw_tx.to().to().map(|x| x.to_string()).unwrap(),
-            TransactionField::Value => raw_tx.value().to_string(),
-            TransactionField::Input => bytes_to_hex_string(raw_tx.input()),
-            TransactionField::V => raw_tx.v().to_string(),
-            TransactionField::R => raw_tx.r().to_string(),
-            TransactionField::S => raw_tx.s().to_string(),
-            TransactionField::ChainId => raw_tx.chain_id().map(|x| x.to_string()).unwrap(),
-            // TODO:  string should be properly rlp encoded
-            TransactionField::AccessList => raw_tx
-                .access_list()
-                .map(|_| "access_list".to_string())
-                .unwrap(),
-            TransactionField::MaxFeePerGas => {
-                raw_tx.max_fee_per_gas().map(|x| x.to_string()).unwrap()
+            TransactionField::Nonce => U256::from(raw_tx.nonce()),
+            TransactionField::GasPrice => {
+                U256::from(raw_tx.gas_price().expect("gas price does not exist"))
             }
-            TransactionField::MaxPriorityFeePerGas => raw_tx
-                .max_priority_fee_per_gas()
-                .map(|x| x.to_string())
-                .unwrap(),
+            TransactionField::GasLimit => U256::from(raw_tx.gas_limit()),
+            TransactionField::To => U256::from_str_radix(
+                &raw_tx.to().to().expect("to does not exist").to_string(),
+                16,
+            )
+            .unwrap(),
+            TransactionField::Value => U256::from(raw_tx.value()),
+            TransactionField::Input => U256::from_be_slice(raw_tx.input()),
+            TransactionField::V => U256::from(raw_tx.v()),
+            TransactionField::R => U256::from(raw_tx.r()),
+            TransactionField::S => U256::from(raw_tx.s()),
+            TransactionField::ChainId => {
+                U256::from(raw_tx.chain_id().expect("chain id does not exist"))
+            }
             // TODO:  string should be properly rlp encoded
+            TransactionField::AccessList => todo!("access list cannot parse into u256"),
+            TransactionField::MaxFeePerGas => U256::from(
+                raw_tx
+                    .max_fee_per_gas()
+                    .expect("max fee per gas does not exist"),
+            ),
+            TransactionField::MaxPriorityFeePerGas => U256::from(
+                raw_tx
+                    .max_priority_fee_per_gas()
+                    .expect("max priority fee per gas does not exist"),
+            ),
             TransactionField::BlobVersionedHashes => raw_tx
                 .blob_versioned_hashes()
-                .map(|x| x[0].to_string())
-                .unwrap(),
-            TransactionField::MaxFeePerBlobGas => raw_tx
-                .max_fee_per_blob_gas()
-                .map(|x| x.to_string())
-                .unwrap(),
+                .expect("blob versioned hashes does not exist")[0]
+                .into(),
+            TransactionField::MaxFeePerBlobGas => U256::from(
+                raw_tx
+                    .max_fee_per_blob_gas()
+                    .expect("max fee per blob gas does not exist"),
+            ),
         }
     }
 }
@@ -262,21 +270,20 @@ impl DatalakeField for TransactionReceiptField {
         }
     }
 
-    fn decode_field_from_rlp(&self, rlp: &str) -> String {
-        let raw_tx_receipt =
-            ConsensusTxReceipt::rlp_decode(hex::decode(rlp).unwrap().as_slice()).unwrap();
+    fn decode_field_from_rlp(&self, rlp: &[u8]) -> U256 {
+        let raw_tx_receipt = ConsensusTxReceipt::rlp_decode(rlp).unwrap();
 
         match self {
             TransactionReceiptField::Success => match raw_tx_receipt.success() {
-                true => "1".to_string(),
-                false => "0".to_string(),
+                true => U256::from(1),
+                false => U256::from(0),
             },
             TransactionReceiptField::CumulativeGasUsed => {
-                raw_tx_receipt.cumulative_gas_used().to_string()
+                U256::from(raw_tx_receipt.cumulative_gas_used())
             }
             // TODO: string should be properly rlp encoded
-            TransactionReceiptField::Logs => "logs".to_string(),
-            TransactionReceiptField::Bloom => "bloom".to_string(),
+            TransactionReceiptField::Logs => U256::from(raw_tx_receipt.logs().len()),
+            TransactionReceiptField::Bloom => U256::from(raw_tx_receipt.bloom().len()),
         }
     }
 }

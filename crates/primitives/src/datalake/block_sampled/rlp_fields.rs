@@ -4,6 +4,7 @@
 
 use std::{fmt::Display, str::FromStr};
 
+use alloy::primitives::U256;
 use anyhow::{bail, Result};
 
 use crate::{
@@ -129,32 +130,43 @@ impl DatalakeField for HeaderField {
         }
     }
 
-    fn decode_field_from_rlp(&self, header_rlp: &str) -> String {
+    fn decode_field_from_rlp(&self, header_rlp: &[u8]) -> U256 {
         let decoded = <Header>::rlp_decode(header_rlp);
 
         match self {
-            HeaderField::ParentHash => decoded.parent_hash.to_string(),
-            HeaderField::OmmerHash => decoded.ommers_hash.to_string(),
-            HeaderField::Beneficiary => decoded.beneficiary.to_string(),
-            HeaderField::StateRoot => decoded.state_root.to_string(),
-            HeaderField::TransactionsRoot => decoded.transactions_root.to_string(),
-            HeaderField::ReceiptsRoot => decoded.receipts_root.to_string(),
-            HeaderField::LogsBloom => decoded.logs_bloom.to_string(),
-            HeaderField::Difficulty => decoded.difficulty.to_string(),
-            HeaderField::Number => decoded.number.to_string(),
-            HeaderField::GasLimit => decoded.gas_limit.to_string(),
-            HeaderField::GasUsed => decoded.gas_used.to_string(),
-            HeaderField::Timestamp => decoded.timestamp.to_string(),
-            HeaderField::ExtraData => decoded.extra_data.to_string(),
-            HeaderField::MixHash => decoded.mix_hash.to_string(),
-            HeaderField::Nonce => decoded.nonce.to_string(),
-            HeaderField::BaseFeePerGas => decoded.base_fee_per_gas.unwrap().to_string(),
-            HeaderField::WithdrawalsRoot => decoded.withdrawals_root.unwrap().to_string(),
-            HeaderField::BlobGasUsed => decoded.blob_gas_used.unwrap().to_string(),
-            HeaderField::ExcessBlobGas => decoded.excess_blob_gas.unwrap().to_string(),
-            HeaderField::ParentBeaconBlockRoot => {
-                decoded.parent_beacon_block_root.unwrap().to_string()
+            HeaderField::ParentHash => decoded.parent_hash.into(),
+            HeaderField::OmmerHash => decoded.ommers_hash.into(),
+            HeaderField::Beneficiary => {
+                U256::from_str_radix(&decoded.beneficiary.to_string(), 16).unwrap()
             }
+            HeaderField::StateRoot => decoded.state_root.into(),
+            HeaderField::TransactionsRoot => decoded.transactions_root.into(),
+            HeaderField::ReceiptsRoot => decoded.receipts_root.into(),
+            HeaderField::LogsBloom => U256::from_str_radix(&decoded.logs_bloom.to_string(), 16)
+                .expect("logs bloom does not match U256"),
+            HeaderField::Difficulty => U256::from(decoded.difficulty),
+            HeaderField::Number => U256::from(decoded.number),
+            HeaderField::GasLimit => U256::from(decoded.gas_limit),
+            HeaderField::GasUsed => U256::from(decoded.gas_used),
+            HeaderField::Timestamp => U256::from(decoded.timestamp),
+            HeaderField::ExtraData => todo!("extra data doesn't fit into U256"),
+            HeaderField::MixHash => decoded.mix_hash.into(),
+            HeaderField::Nonce => U256::from(decoded.nonce),
+            HeaderField::BaseFeePerGas => U256::from(
+                decoded
+                    .base_fee_per_gas
+                    .expect("base fee per gas does not exist"),
+            ),
+            HeaderField::WithdrawalsRoot => decoded
+                .withdrawals_root
+                .expect("withdrawals root does not exist")
+                .into(),
+            HeaderField::BlobGasUsed => U256::from(decoded.blob_gas_used.unwrap()),
+            HeaderField::ExcessBlobGas => U256::from(decoded.excess_blob_gas.unwrap()),
+            HeaderField::ParentBeaconBlockRoot => decoded
+                .parent_beacon_block_root
+                .expect("parent beacon block root does not exist")
+                .into(),
         }
     }
 }
@@ -271,13 +283,13 @@ impl DatalakeField for AccountField {
         }
     }
 
-    fn decode_field_from_rlp(&self, account_rlp: &str) -> String {
+    fn decode_field_from_rlp(&self, account_rlp: &[u8]) -> U256 {
         let decoded = <Account>::rlp_decode(account_rlp);
         match self {
-            AccountField::Nonce => decoded.nonce.to_string(),
-            AccountField::Balance => decoded.balance.to_string(),
-            AccountField::StorageRoot => decoded.storage_root.to_string(),
-            AccountField::CodeHash => decoded.code_hash.to_string(),
+            AccountField::Nonce => U256::from(decoded.nonce),
+            AccountField::Balance => U256::from(decoded.balance),
+            AccountField::StorageRoot => decoded.storage_root.into(),
+            AccountField::CodeHash => decoded.code_hash.into(),
         }
     }
 }

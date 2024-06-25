@@ -1,3 +1,4 @@
+use alloy::primitives::B256;
 use anyhow::Result;
 
 use super::{
@@ -24,7 +25,7 @@ impl DatalakeEnvelope {
         }
     }
 
-    pub fn encode(&self) -> Result<String> {
+    pub fn encode(&self) -> Result<Vec<u8>> {
         match self {
             DatalakeEnvelope::BlockSampled(datalake) => datalake.encode(),
             DatalakeEnvelope::Transactions(datalake) => datalake.encode(),
@@ -38,14 +39,14 @@ impl DatalakeEnvelope {
         }
     }
 
-    pub fn get_commitment(&self) -> String {
+    pub fn get_commitment(&self) -> B256 {
         match self {
             DatalakeEnvelope::BlockSampled(datalake) => datalake.commit(),
             DatalakeEnvelope::Transactions(datalake) => datalake.commit(),
         }
     }
 
-    pub fn from_index(value: u8, data: &str) -> Result<Self> {
+    pub fn from_index(value: u8, data: &[u8]) -> Result<Self> {
         match DatalakeType::from_index(value)? {
             DatalakeType::BlockSampled => Ok(DatalakeEnvelope::BlockSampled(
                 BlockSampledDatalake::decode(data)?,

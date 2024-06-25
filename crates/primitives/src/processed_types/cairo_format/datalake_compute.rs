@@ -11,8 +11,8 @@ impl AsCairoFormat for BaseProcessedDatalakeCompute {
 
     fn as_cairo_format(&self) -> Self::Output {
         let computational_task_felts =
-            FieldElementVectorUnit::from_hex_str(&self.encoded_task).unwrap();
-        let datalake_felts = FieldElementVectorUnit::from_hex_str(&self.encoded_datalake).unwrap();
+            FieldElementVectorUnit::from_bytes(&self.encoded_task).unwrap();
+        let datalake_felts = FieldElementVectorUnit::from_bytes(&self.encoded_datalake).unwrap();
         ProcessedDatalakeCompute {
             task_bytes_len: computational_task_felts.bytes_len,
             encoded_task: computational_task_felts.felts,

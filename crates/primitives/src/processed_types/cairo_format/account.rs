@@ -14,7 +14,8 @@ impl AsCairoFormat for BaseProcessedAccount {
     type Output = ProcessedAccount;
 
     fn as_cairo_format(&self) -> Self::Output {
-        let address_chunk_result = FieldElementVectorUnit::from_hex_str(&self.address).unwrap();
+        let address_chunk_result =
+            FieldElementVectorUnit::from_bytes(self.address.as_ref()).unwrap();
         let account_key = &self.account_key;
         let proofs = self
             .proofs

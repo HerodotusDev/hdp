@@ -1,12 +1,12 @@
 use std::str::FromStr;
 
-use alloy_primitives::U256;
+use alloy::primitives::U256;
 use anyhow::{bail, Result};
 
 use super::FunctionContext;
 
 /// Returns the average of the values: [`AVG`](https://en.wikipedia.org/wiki/Average)
-pub fn average(values: &[U256]) -> Result<String> {
+pub fn average(values: &[U256]) -> Result<U256> {
     if values.is_empty() {
         bail!("No values found");
     }
@@ -16,18 +16,16 @@ pub fn average(values: &[U256]) -> Result<String> {
         .try_fold(U256::from(0), |acc, val| acc.checked_add(*val))
         .unwrap();
 
-    let divided_value = divide(sum, U256::from(values.len()));
-
-    Ok(divided_value)
+    divide(sum, U256::from(values.len()))
 }
 
 // TODO: Implement bloom_filterize
-pub fn bloom_filterize(_values: &[U256]) -> Result<String> {
-    Ok("0".to_string())
+pub fn bloom_filterize(_values: &[U256]) -> Result<U256> {
+    Ok(U256::from(0))
 }
 
 /// Find the maximum value: [`MAX`](https://en.wikipedia.org/wiki/Maxima_and_minima)
-pub fn find_max(values: &[U256]) -> Result<String> {
+pub fn find_max(values: &[U256]) -> Result<U256> {
     if values.is_empty() {
         bail!("No values found");
     }
@@ -40,11 +38,11 @@ pub fn find_max(values: &[U256]) -> Result<String> {
         }
     }
 
-    Ok(max.to_string())
+    Ok(max)
 }
 
 /// Find the minimum value: [`MIN`](https://en.wikipedia.org/wiki/Maxima_and_minima)
-pub fn find_min(values: &[U256]) -> Result<String> {
+pub fn find_min(values: &[U256]) -> Result<U256> {
     if values.is_empty() {
         bail!("No values found");
     }
@@ -56,12 +54,12 @@ pub fn find_min(values: &[U256]) -> Result<String> {
         }
     }
 
-    Ok(min.to_string())
+    Ok(min)
 }
 
 /// Standard deviation
 /// wip
-pub fn standard_deviation(values: &[U256]) -> Result<String> {
+pub fn standard_deviation(values: &[U256]) -> Result<U256> {
     if values.is_empty() {
         bail!("No values found");
     }
@@ -73,7 +71,11 @@ pub fn standard_deviation(values: &[U256]) -> Result<String> {
         sum += value;
     }
 
-    let avg = divide(sum, count).parse::<f64>().unwrap();
+    let avg = divide(sum, count)
+        .expect("Division have failed")
+        .to_string()
+        .parse::<f64>()
+        .unwrap();
 
     let mut variance_sum = 0.0;
     for value in values {
@@ -82,13 +84,15 @@ pub fn standard_deviation(values: &[U256]) -> Result<String> {
     }
 
     let variance: f64 = divide(U256::from(variance_sum), U256::from(count))
-        .parse()
+        .expect("Division have failed")
+        .to_string()
+        .parse::<f64>()
         .unwrap();
-    Ok(roundup(variance.sqrt().to_string()).to_string())
+    Ok(U256::from(roundup(variance.sqrt().to_string())))
 }
 
 /// Sum of values: [`SUM`](https://en.wikipedia.org/wiki/Summation)
-pub fn sum(values: &[U256]) -> Result<String> {
+pub fn sum(values: &[U256]) -> Result<U256> {
     if values.is_empty() {
         bail!("No values found");
     }
@@ -99,7 +103,7 @@ pub fn sum(values: &[U256]) -> Result<String> {
         sum += value;
     }
 
-    Ok(sum.to_string())
+    Ok(sum)
 }
 
 /// Count number of values that satisfy a condition
@@ -115,7 +119,7 @@ pub fn sum(values: &[U256]) -> Result<String> {
 /// - 03: Greater than or equal (>=)
 /// - 04: Less than (<)
 /// - 05: Less than or equal (<=)
-pub fn count(values: &[U256], ctx: &FunctionContext) -> Result<String> {
+pub fn count(values: &[U256], ctx: &FunctionContext) -> Result<U256> {
     let logical_operator = &ctx.operator;
     let value_to_compare = ctx.value_to_compare;
 
@@ -159,16 +163,16 @@ pub fn count(values: &[U256], ctx: &FunctionContext) -> Result<String> {
         }
     }
 
-    Ok(condition_satisfiability_count.to_string())
+    Ok(U256::from(condition_satisfiability_count))
 }
 
-pub fn simple_linear_regression(values: &[U256]) -> Result<String> {
+pub fn simple_linear_regression(values: &[U256]) -> Result<U256> {
     // if value is empty or has only one value, return error
     if values.is_empty() || values.len() == 1 {
         bail!("At least 2 values are needed to compute SLR");
     }
     // TODO: handle custom compute module
-    Ok("0".to_string())
+    Ok(U256::from(0))
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -255,9 +259,9 @@ impl Operator {
 }
 
 // Handle division properly using U256 type
-fn divide(a: U256, b: U256) -> String {
+fn divide(a: U256, b: U256) -> Result<U256> {
     if b.is_zero() {
-        return "Division by zero error".to_string();
+        bail!("Division by zero error");
     }
 
     let quotient = a / b;
@@ -266,9 +270,9 @@ fn divide(a: U256, b: U256) -> String {
 
     if remainder > divisor_half || (remainder == divisor_half && b % U256::from(2) == U256::from(0))
     {
-        (quotient + U256::from(1)).to_string()
+        Ok(quotient + U256::from(1))
     } else {
-        quotient.to_string()
+        Ok(quotient)
     }
 }
 
@@ -286,34 +290,37 @@ mod tests {
     #[test]
     fn test_avg() {
         let values = vec![U256::from(1), U256::from(2), U256::from(3)];
-        assert_eq!(average(&values).unwrap(), "2".to_string());
+        assert_eq!(average(&values).unwrap(), U256::from(2));
 
         let values = vec![U256::from(1), U256::from(2)];
-        assert_eq!(average(&values).unwrap(), "2".to_string());
-
+        assert_eq!(average(&values).unwrap(), U256::from(2));
         let values = vec![U256::from_str("1000000000000").unwrap()];
-        assert_eq!(average(&values).unwrap(), "1000000000000".to_string());
-
+        assert_eq!(
+            average(&values).unwrap(),
+            U256::from_str("1000000000000").unwrap()
+        );
         let values = vec![U256::from_str("41697298409483537348").unwrap()];
         assert_eq!(
             average(&values).unwrap(),
-            "41697298409483537348".to_string()
+            U256::from_str("41697298409483537348").unwrap()
         );
     }
 
     #[test]
     fn test_sum() {
         let values = vec![U256::from(1), U256::from(2), U256::from(3)];
-        assert_eq!(sum(&values).unwrap(), "6".to_string());
+        assert_eq!(sum(&values).unwrap(), U256::from(6));
 
         let values = vec![U256::from(1), U256::from(2)];
-        assert_eq!(sum(&values).unwrap(), "3".to_string());
+        assert_eq!(sum(&values).unwrap(), U256::from(3));
 
         let values = vec![U256::from_str("6776").unwrap()];
-        assert_eq!(sum(&values).unwrap(), "6776".to_string());
-
+        assert_eq!(sum(&values).unwrap(), U256::from(6776));
         let values = vec![U256::from_str("41697298409483537348").unwrap()];
-        assert_eq!(sum(&values).unwrap(), "41697298409483537348".to_string());
+        assert_eq!(
+            sum(&values).unwrap(),
+            U256::from_str("41697298409483537348").unwrap()
+        );
     }
 
     #[test]
@@ -333,7 +340,7 @@ mod tests {
         ];
         assert_eq!(
             average(&values).unwrap(),
-            "41697151157910180414".to_string()
+            U256::from_str("41697151157910180414").unwrap()
         );
     }
 
@@ -346,25 +353,25 @@ mod tests {
     #[test]
     fn test_find_max() {
         let values = vec![U256::from(1), U256::from(2), U256::from(3)];
-        assert_eq!(find_max(&values).unwrap(), "3".to_string());
+        assert_eq!(find_max(&values).unwrap(), U256::from(3));
 
         let values = vec![U256::from(1), U256::from(2)];
-        assert_eq!(find_max(&values).unwrap(), "2".to_string());
+        assert_eq!(find_max(&values).unwrap(), U256::from(2));
     }
 
     #[test]
     fn test_find_min() {
         let values = vec![U256::from(1), U256::from(2), U256::from(3)];
-        assert_eq!(find_min(&values).unwrap(), "1".to_string());
+        assert_eq!(find_min(&values).unwrap(), U256::from(1));
 
         let values = vec![U256::from(1), U256::from(2)];
-        assert_eq!(find_min(&values).unwrap(), "1".to_string());
+        assert_eq!(find_min(&values).unwrap(), U256::from(1));
     }
 
     #[test]
     fn test_std() {
         let values = vec![U256::from(1), U256::from(2), U256::from(3)];
-        assert_eq!(standard_deviation(&values).unwrap(), "1".to_string());
+        assert_eq!(standard_deviation(&values).unwrap(), U256::from(1));
 
         let values = vec![
             U256::from(0),
@@ -373,7 +380,7 @@ mod tests {
             U256::from(2),
             U256::from(100),
         ];
-        assert_eq!(standard_deviation(&values).unwrap(), "39".to_string());
+        assert_eq!(standard_deviation(&values).unwrap(), U256::from(39));
     }
 
     #[test]
@@ -386,7 +393,7 @@ mod tests {
                 &FunctionContext::new(Operator::GreaterThanOrEqual, U256::from(2))
             )
             .unwrap(),
-            "2".to_string()
+            U256::from(2)
         );
 
         let values = vec![U256::from(1), U256::from(10)];
@@ -397,7 +404,7 @@ mod tests {
                 &FunctionContext::new(Operator::GreaterThan, U256::from(1))
             )
             .unwrap(),
-            "1".to_string()
+            U256::from(1)
         );
     }
 }

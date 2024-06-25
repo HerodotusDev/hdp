@@ -1,3 +1,4 @@
+use alloy::primitives::{B256, U256};
 use anyhow::{bail, Result};
 use hdp_primitives::{
     datalake::{envelope::DatalakeEnvelope, task::DatalakeCompute},
@@ -6,7 +7,7 @@ use hdp_primitives::{
         receipt::ProcessedReceipt, storage::ProcessedStorage, transaction::ProcessedTransaction,
     },
 };
-use hdp_provider::evm::{AbstractProvider, AbstractProviderConfig};
+use hdp_provider::evm::provider::{EvmProvider, EvmProviderConfig};
 use std::{
     collections::{HashMap, HashSet},
     sync::Arc,
@@ -22,7 +23,7 @@ pub struct DatalakeComputeCompilationResults {
     /// flag to check if the aggregation function is pre-processable
     pub pre_processable: bool,
     /// task_commitment -> value
-    pub commit_results_maps: HashMap<String, String>,
+    pub commit_results_maps: HashMap<B256, U256>,
     /// Headers related to the datalake
     pub headers: HashSet<ProcessedHeader>,
     /// Accounts related to the datalake
@@ -41,7 +42,7 @@ impl DatalakeComputeCompilationResults {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         pre_processable: bool,
-        commit_results_maps: HashMap<String, String>,
+        commit_results_maps: HashMap<B256, U256>,
         headers: HashSet<ProcessedHeader>,
         accounts: HashSet<ProcessedAccount>,
         storages: HashSet<ProcessedStorage>,
@@ -63,13 +64,13 @@ impl DatalakeComputeCompilationResults {
 }
 
 pub struct DatalakeCompiler {
-    provider: Arc<RwLock<AbstractProvider>>,
+    provider: Arc<RwLock<EvmProvider>>,
 }
 
 impl DatalakeCompiler {
     /// initialize DatalakeCompiler with commitment and datalake
-    pub fn new_from_config(config: AbstractProviderConfig) -> Self {
-        let provider = AbstractProvider::new(config);
+    pub fn new_from_config(config: EvmProviderConfig) -> Self {
+        let provider = EvmProvider::new(config);
         Self {
             provider: Arc::new(provider.into()),
         }
@@ -112,7 +113,7 @@ impl DatalakeCompiler {
                     let aggregated_result = aggregation_fn
                         .operation(&compiled_block_sampled.values, Some(fn_context))?;
                     // Save the datalake results
-                    commit_results_maps.insert(task_commitment.to_string(), aggregated_result);
+                    commit_results_maps.insert(task_commitment, aggregated_result);
                     if !aggregation_fn.is_pre_processable() {
                         pre_processable = false;
                     }
@@ -134,7 +135,7 @@ impl DatalakeCompiler {
                     let aggregated_result =
                         aggregation_fn.operation(&compiled_tx_datalake.values, Some(fn_context))?;
                     // Save the datalake results
-                    commit_results_maps.insert(task_commitment.to_string(), aggregated_result);
+                    commit_results_maps.insert(task_commitment, aggregated_result);
                     if !aggregation_fn.is_pre_processable() {
                         pre_processable = false;
                     }

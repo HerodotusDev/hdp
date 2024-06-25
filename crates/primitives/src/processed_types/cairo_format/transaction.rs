@@ -15,7 +15,7 @@ impl AsCairoFormat for BaseProcessedTransaction {
         let proof_felts: Vec<FieldElementVectorUnit> = self
             .proof
             .iter()
-            .map(|proof| FieldElementVectorUnit::from_hex_str(proof).unwrap())
+            .map(|proof| FieldElementVectorUnit::from_bytes(proof).unwrap())
             .collect();
 
         let proof_bytes_len = proof_felts.iter().map(|f| f.bytes_len).collect();

@@ -1,8 +1,10 @@
+use alloy::primitives::{B256, U256};
 use anyhow::Result;
 use hdp_primitives::processed_types::uint256::Uint256;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
+use std::str::FromStr;
 use tempfile::NamedTempFile;
 use tracing::info;
 
@@ -13,8 +15,8 @@ use regex::Regex;
 #[derive(Debug)]
 pub struct RunResult {
     pub pie_path: PathBuf,
-    pub task_results: Vec<String>,
-    pub results_root: String,
+    pub task_results: Vec<U256>,
+    pub results_root: B256,
 }
 
 pub struct Runner {
@@ -68,20 +70,20 @@ impl Runner {
     }
 
     /// Parse the output of the run command
-    fn parse_run(&self, output: String) -> Result<(Vec<String>, String)> {
+    fn parse_run(&self, output: String) -> Result<(Vec<U256>, B256)> {
         let task_result_re = Regex::new(r"Task Result\((\d+)\): (\S+)").unwrap();
         let mut task_results = vec![];
         for caps in task_result_re.captures_iter(&output) {
             let _ = &caps[1];
             let value = &caps[2];
-            task_results.push(value.to_string());
+            task_results.push(U256::from_str(value)?);
         }
         let results_root_re = Regex::new(r"Results Root: (\S+) (\S+)").unwrap();
         if let Some(results_root_caps) = results_root_re.captures(&output) {
             let results_root_1 = &results_root_caps[1];
             let results_root_2 = &results_root_caps[2];
             let result_root = Uint256::from_strs(results_root_2, results_root_1)?;
-            let combined_results_root = result_root.to_combined_string().to_string();
+            let combined_results_root = result_root.to_combined_string();
             Ok((task_results, combined_results_root))
         } else {
             bail!("Results Root not found");
@@ -100,10 +102,15 @@ mod tests {
         let output = "Task Result(0): 0x01020304\nResults Root: 0x01020304 0x05060708";
         let (task_results, results_root) = runner.parse_run(output.to_string()).unwrap();
         assert_eq!(task_results.len(), 1);
-        assert_eq!(task_results[0], "0x01020304");
+        assert_eq!(
+            task_results[0],
+            U256::from_str_radix("01020304", 16).unwrap()
+        );
         assert_eq!(
             results_root,
-            "0x0000000000000000000000000506070800000000000000000000000001020304"
+            Uint256::from_strs("05060708", "01020304")
+                .unwrap()
+                .to_combined_string()
         );
     }
 }

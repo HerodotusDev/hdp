@@ -11,8 +11,13 @@ pub use rlp_fields::*;
 #[cfg(test)]
 mod tests {
 
+    use std::str::FromStr;
+
     use crate::datalake::{Datalake, DatalakeCollection};
-    use alloy_primitives::U256;
+    use alloy::{
+        hex,
+        primitives::{B256, U256},
+    };
 
     use super::*;
 
@@ -32,11 +37,12 @@ mod tests {
 
         let encoded = transaction_datalake.encode().unwrap();
 
-        assert_eq!(encoded, encoded_datalake);
+        assert_eq!(encoded, hex::decode(encoded_datalake).unwrap());
 
         assert_eq!(
             transaction_datalake.commit(),
-            "0xbcc6e9f8aea4122dedf75f9cc0ce1126b3a38694366ee6f98ddbfffffeaf8e1a"
+            B256::from_str("0xbcc6e9f8aea4122dedf75f9cc0ce1126b3a38694366ee6f98ddbfffffeaf8e1a")
+                .unwrap()
         );
 
         assert_eq!(
@@ -68,11 +74,12 @@ mod tests {
 
         let encoded = transaction_datalake.encode().unwrap();
 
-        assert_eq!(encoded, encoded_datalake);
+        assert_eq!(encoded, hex::decode(encoded_datalake).unwrap());
 
         assert_eq!(
             transaction_datalake.commit(),
-            "0x64882f901df552341bc9582ae597945cc69575b8e37cde61eaacb3b0f7af682c"
+            B256::from_str("0x64882f901df552341bc9582ae597945cc69575b8e37cde61eaacb3b0f7af682c")
+                .unwrap()
         );
 
         assert_eq!(

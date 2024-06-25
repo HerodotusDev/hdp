@@ -1,5 +1,6 @@
 //! This module defines the `ProcessedStorage` struct and its corresponding `ProcessedStorageInFelts` struct.
 
+use alloy::primitives::StorageKey;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use starknet::core::serde::unsigned_field_element::UfeHex;
@@ -13,9 +14,10 @@ impl AsCairoFormat for BaseProcessedStorage {
     type Output = ProcessedStorage;
 
     fn as_cairo_format(&self) -> Self::Output {
-        let address_chunk_result = FieldElementVectorUnit::from_hex_str(&self.address).unwrap();
-        let slot_chunk_result = FieldElementVectorUnit::from_hex_str(&self.slot).unwrap();
-        let storage_key = self.storage_key.clone();
+        let address_chunk_result =
+            FieldElementVectorUnit::from_bytes(self.address.as_ref()).unwrap();
+        let slot_chunk_result = FieldElementVectorUnit::from_bytes(self.slot.as_ref()).unwrap();
+        let storage_key = self.storage_key;
         let proofs = self
             .proofs
             .iter()
@@ -39,7 +41,7 @@ pub struct ProcessedStorage {
     // chunked storage slot
     #[serde_as(as = "Vec<UfeHex>")]
     pub slot: Vec<FieldElement>,
-    pub storage_key: String,
+    pub storage_key: StorageKey,
     pub proofs: Vec<ProcessedMPTProof>,
 }
 

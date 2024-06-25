@@ -1,29 +1,53 @@
-use std::{collections::HashMap, time::Instant};
+use std::{
+    collections::{HashMap, HashSet},
+    time::Instant,
+};
 
 use alloy::{
     primitives::{Address, BlockNumber, Bytes, StorageKey},
     rpc::types::EIP1186AccountProofResponse,
 };
 use eth_trie_proofs::{tx_receipt_trie::TxReceiptsMptHandler, tx_trie::TxsMptHandler};
-use hdp_primitives::block::header::{MMRMetaFromNewIndexer, MMRProofFromNewIndexer};
+use hdp_primitives::{
+    block::header::{MMRMetaFromNewIndexer, MMRProofFromNewIndexer},
+    processed_types::block_proofs::ProcessedBlockProofs,
+};
 use itertools::Itertools;
 use reqwest::Url;
 use tracing::info;
 
 use crate::{
-    errors::ProviderError, indexer::Indexer, rpc::RpcProvider, types::FetchedTransactionProof,
+    errors::ProviderError, indexer::Indexer, key::FetchKeyEnvelope, types::FetchedTransactionProof,
 };
+
+use super::rpc::RpcProvider;
 
 pub struct EvmProvider {
     /// Account and storage trie provider
-    rpc_provider: RpcProvider,
+    rpc_provider: super::rpc::RpcProvider,
     /// Header provider
     header_provider: Indexer,
     /// transaction url
     tx_provider_url: Url,
 }
 
+pub struct EvmProviderConfig {
+    pub rpc_url: Url,
+    pub chain_id: u64,
+}
+
 impl EvmProvider {
+    pub fn new(config: EvmProviderConfig) -> Self {
+        let rpc_provider = RpcProvider::new(config.rpc_url.clone(), 100);
+        let header_provider = Indexer::new(config.chain_id);
+
+        Self {
+            rpc_provider,
+            header_provider,
+            tx_provider_url: config.rpc_url,
+        }
+    }
+
     pub fn new_with_url(url: Url, chain_id: u64) -> Self {
         let rpc_provider = RpcProvider::new(url.clone(), 100);
         let header_provider = Indexer::new(chain_id);
@@ -33,6 +57,14 @@ impl EvmProvider {
             header_provider,
             tx_provider_url: url,
         }
+    }
+
+    #[allow(unused)]
+    pub async fn fetch_proofs_from_keys(
+        &self,
+        fetch_keys: HashSet<FetchKeyEnvelope>,
+    ) -> Result<ProcessedBlockProofs, ProviderError> {
+        todo!("Implement fetch_proofs_from_keys")
     }
 
     pub async fn get_range_of_header_proofs(
@@ -159,7 +191,7 @@ impl EvmProvider {
                 .get_proof(tx_index)
                 .unwrap()
                 .into_iter()
-                .map(|x| Bytes::from(x).to_string())
+                .map(Bytes::from)
                 .collect::<Vec<_>>();
             if tx_index >= txs.len() as u64 {
                 return Err(ProviderError::GetTransactionProofError(format!(
@@ -168,13 +200,13 @@ impl EvmProvider {
                 )));
             }
             let consensus_tx = txs[tx_index as usize].clone();
-            let rlp = Bytes::from(consensus_tx.rlp_encode()).to_string();
+            let rlp = Bytes::from(consensus_tx.rlp_encode());
             let tx_type = consensus_tx.0.tx_type() as u8;
             let fetched_result = FetchedTransactionProof {
                 block_number: target_block,
                 tx_index,
                 encoded_transaction: rlp,
-                transaction_proof: proof.clone(),
+                transaction_proof: proof,
                 tx_type,
             };
             tx_with_proof.push(fetched_result);
@@ -205,7 +237,7 @@ impl EvmProvider {
                 .get_proof(tx_index)
                 .unwrap()
                 .into_iter()
-                .map(|x| Bytes::from(x).to_string())
+                .map(Bytes::from)
                 .collect::<Vec<_>>();
             if tx_index >= tx_receipts.len() as u64 {
                 return Err(ProviderError::GetTransactionReceiptProofError(format!(
@@ -214,13 +246,13 @@ impl EvmProvider {
                 )));
             }
             let consensus_tx_receipt = tx_receipts[tx_index as usize].clone();
-            let rlp = Bytes::from(consensus_tx_receipt.rlp_encode()).to_string();
+            let rlp = Bytes::from(consensus_tx_receipt.rlp_encode());
             let tx_type = consensus_tx_receipt.0.tx_type() as u8;
             let fetched_result = FetchedTransactionProof {
                 block_number: target_block,
                 tx_index,
                 encoded_transaction: rlp,
-                transaction_proof: proof.clone(),
+                transaction_proof: proof,
                 tx_type,
             };
             tx_with_proof.push(fetched_result);

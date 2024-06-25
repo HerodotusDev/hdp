@@ -1,26 +1,11 @@
-#[derive(Debug, Clone)]
-pub struct FetchedAccountProof {
-    pub block_number: u64,
-    pub encoded_account: String,
-    pub account_proof: Vec<String>,
-}
-
-/// Fetched storage and account proof and it's value
-#[derive(Debug, Clone)]
-pub struct FetchedStorageAccountProof {
-    pub block_number: u64,
-    pub encoded_account: String,
-    pub account_proof: Vec<String>,
-    pub storage_value: String,
-    pub storage_proof: Vec<String>,
-}
+use alloy::primitives::Bytes;
 
 #[derive(Debug, Clone)]
 pub struct FetchedTransactionProof {
     pub block_number: u64,
     pub tx_index: u64,
-    pub encoded_transaction: String,
-    pub transaction_proof: Vec<String>,
+    pub encoded_transaction: Bytes,
+    pub transaction_proof: Vec<Bytes>,
     pub tx_type: u8,
 }
 
@@ -28,7 +13,7 @@ pub struct FetchedTransactionProof {
 pub struct FetchedTransactionReceiptProof {
     pub block_number: u64,
     pub tx_index: u64,
-    pub encoded_receipt: String,
-    pub receipt_proof: Vec<String>,
+    pub encoded_receipt: Bytes,
+    pub receipt_proof: Vec<Bytes>,
     pub tx_type: u8,
 }

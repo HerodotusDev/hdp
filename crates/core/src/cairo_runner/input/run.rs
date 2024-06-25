@@ -1,5 +1,6 @@
-use hdp_primitives::processed_types::{cairo_format, module::ProcessedModule};
-use hdp_provider::evm::ProcessedBlockProofs;
+use hdp_primitives::processed_types::{
+    block_proofs::ProcessedBlockProofs, cairo_format, module::ProcessedModule,
+};
 use serde::Serialize;
 
 /*

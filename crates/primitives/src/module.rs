@@ -2,7 +2,7 @@
 //! It contains the hash and the input.
 //! This is request interface for the preprocessor.
 
-use alloy_primitives::{keccak256, Keccak256};
+use alloy::primitives::{keccak256, Keccak256, B256};
 use serde::Serialize;
 use serde_with::serde_as;
 use starknet::core::serde::unsigned_field_element::UfeHex;
@@ -44,7 +44,7 @@ impl Module {
         self.inputs.clone()
     }
 
-    pub fn commit(&self) -> String {
+    pub fn commit(&self) -> B256 {
         // commit = keccak256(class_hash, keccak256(inputs))
         let input_bytes: Vec<u8> = self.inputs.iter().flat_map(|x| x.to_bytes_be()).collect();
         let commit_input = keccak256(input_bytes);
@@ -53,7 +53,6 @@ impl Module {
         hasher.update(self.class_hash.to_bytes_be());
         hasher.update(commit_input);
 
-        let commit = hasher.clone().finalize();
-        format!("0x{:x}", commit)
+        hasher.clone().finalize()
     }
 }
