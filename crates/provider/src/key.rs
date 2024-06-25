@@ -1,4 +1,7 @@
 //! Provider keys for fetching data from memoizer and rpc.
+//! Only used for context of Module Compiler
+//!
+//! TODO: need to sync with how bootloader will emit the keys
 
 use std::str::FromStr;
 

@@ -1,6 +1,6 @@
 use std::{fmt::Display, str::FromStr};
 
-use alloy::primitives::U256;
+use alloy::{consensus::Eip658Value, primitives::U256};
 use anyhow::{bail, Result};
 use eth_trie_proofs::{tx::ConsensusTx, tx_receipt::ConsensusTxReceipt};
 
@@ -274,9 +274,9 @@ impl DatalakeField for TransactionReceiptField {
         let raw_tx_receipt = ConsensusTxReceipt::rlp_decode(rlp).unwrap();
 
         match self {
-            TransactionReceiptField::Success => match raw_tx_receipt.success() {
-                true => U256::from(1),
-                false => U256::from(0),
+            TransactionReceiptField::Success => match raw_tx_receipt.status() {
+                Eip658Value::Eip658(bool) => U256::from(*bool as u8),
+                Eip658Value::PostState(state) => (*state).into(),
             },
             TransactionReceiptField::CumulativeGasUsed => {
                 U256::from(raw_tx_receipt.cumulative_gas_used())

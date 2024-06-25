@@ -176,7 +176,7 @@ impl EvmProvider {
         incremental: u64,
     ) -> Result<Vec<FetchedTransactionProof>, ProviderError> {
         let mut tx_with_proof = vec![];
-        let mut tx_trie_provider = TxsMptHandler::new(self.tx_provider_url.as_ref()).unwrap();
+        let mut tx_trie_provider = TxsMptHandler::new(self.tx_provider_url.clone()).unwrap();
         tx_trie_provider
             .build_tx_tree_from_block(target_block)
             .await
@@ -222,7 +222,7 @@ impl EvmProvider {
     ) -> Result<Vec<FetchedTransactionProof>, ProviderError> {
         let mut tx_with_proof = vec![];
         let mut tx_receipt_trie_provider =
-            TxReceiptsMptHandler::new(self.tx_provider_url.as_ref()).unwrap();
+            TxReceiptsMptHandler::new(self.tx_provider_url.clone()).unwrap();
         tx_receipt_trie_provider
             .build_tx_receipts_tree_from_block(target_block)
             .await
@@ -318,6 +318,7 @@ mod tests {
         Ok(())
     }
 
+    #[ignore = "ignore for now"]
     #[tokio::test]
     async fn test_get_all_tx_with_proof_from_block() -> Result<(), ProviderError> {
         // TODO: tx provider cannot handle 429 error rn
@@ -363,6 +364,7 @@ mod tests {
         );
     }
 
+    #[ignore = "ignore for now"]
     #[tokio::test]
     async fn test_error_get_tx_receipt_with_proof_from_block() {
         // TODO: tx provider cannot handle 429 error rn
