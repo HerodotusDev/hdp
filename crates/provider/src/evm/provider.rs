@@ -117,8 +117,6 @@ impl EvmProvider {
 
         let target_blocks: Vec<Vec<u64>> = self._chunk_block_range(from_block, to_block, increment);
 
-        println!("Target blocks: {:?}", target_blocks);
-
         let mut processed_accounts = HashMap::new();
         for target_block in target_blocks {
             let result = self

@@ -105,7 +105,6 @@ impl PreProcessor {
             let encoded_task = task.encode()?;
             let datalake_type = task.datalake.get_datalake_type();
             let property_type = task.datalake.get_collection_type().to_index();
-            println!("result: {:?}", result);
 
             let datalake_compute = match result {
                 Some(result_value) => {
@@ -172,8 +171,6 @@ impl PreProcessor {
             }
             tasks_leaves.push(DynSolValue::FixedBytes(task_commitment, 32));
         }
-
-        println!("tasks_leaves: {:#?}", tasks_leaves);
         let tasks_merkle_tree = StandardMerkleTree::of(tasks_leaves);
 
         if compiled_results.pre_processable {
