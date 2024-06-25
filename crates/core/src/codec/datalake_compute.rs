@@ -48,12 +48,7 @@ impl DatalakeCodec {
     /// Decode a batch of datalakes
     fn decode_batch(&self, serialized_datalakes_batch: &[u8]) -> Result<Vec<DatalakeEnvelope>> {
         let datalakes_type: DynSolType = "bytes[]".parse()?;
-        println!(
-            "Serialized datalakes batch: {:#?}",
-            serialized_datalakes_batch
-        );
         let serialized_datalakes = datalakes_type.abi_decode(serialized_datalakes_batch)?;
-        println!("Serialized datalakes: {:#?}", serialized_datalakes);
         let mut decoded_datalakes = Vec::new();
 
         if let Some(datalakes) = serialized_datalakes.as_array() {

@@ -3,7 +3,7 @@ use std::str::FromStr;
 use crate::aggregate_fn::{integer::Operator, AggregationFunction, FunctionContext};
 
 use super::envelope::DatalakeEnvelope;
-use alloy::primitives::{hex::FromHex, keccak256, U256};
+use alloy::primitives::{keccak256, U256};
 use alloy::{
     dyn_abi::{DynSolType, DynSolValue},
     primitives::B256,
@@ -23,8 +23,7 @@ impl DatalakeCompute {
 
     pub fn commit(&self) -> B256 {
         let encoded_datalake = self.encode().unwrap();
-        let bytes = Vec::from_hex(encoded_datalake).expect("Invalid hex string");
-        keccak256(bytes)
+        keccak256(encoded_datalake)
     }
 
     pub fn encode(&self) -> Result<Vec<u8>> {
@@ -148,6 +147,8 @@ pub struct ExtendedDatalakeTask {
 
 #[cfg(test)]
 mod tests {
+
+    use alloy::hex::FromHex;
 
     use crate::datalake::block_sampled::BlockSampledDatalake;
 
