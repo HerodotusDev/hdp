@@ -80,7 +80,6 @@ impl Indexer {
         // validate status
         if response.status().is_success() {
             let body: Value = response.json().await.map_err(IndexerError::ReqwestError)?;
-            println!("Body: {:#?}", body);
             let parsed_mmr: MMRFromNewIndexer =
                 from_value(body).map_err(IndexerError::SerdeJsonError)?;
 

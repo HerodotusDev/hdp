@@ -8,8 +8,7 @@ use crate::compiler::module::ModuleCompilerConfig;
 use crate::compiler::Compiler;
 use alloy::dyn_abi::DynSolValue;
 use alloy::hex;
-use alloy::primitives::hex::FromHex;
-use alloy::primitives::{Bytes, FixedBytes, Keccak256, B256, U256};
+use alloy::primitives::{Bytes, Keccak256, B256, U256};
 use alloy_merkle_tree::standard_binary_tree::StandardMerkleTree;
 use anyhow::{bail, Ok, Result};
 use cairo_lang_starknet_classes::casm_contract_class::CasmContractClass;
@@ -72,10 +71,8 @@ impl PreProcessor {
     /// Then it will run the preprocessor and return the result, fetch points
     /// Fetch points are the values that are required to run the module
     pub async fn process(&self, tasks: Vec<DatalakeCompute>) -> Result<ProcessedResult> {
-        let task_commitments: Vec<B256> = tasks
-            .iter()
-            .map(|task| task.datalake.get_commitment())
-            .collect::<Vec<_>>();
+        let task_commitments: Vec<B256> =
+            tasks.iter().map(|task| task.commit()).collect::<Vec<_>>();
         // do compile with the tasks
         let compiled_results = self.compiler.compile(&tasks).await?;
         // do operation if possible
@@ -103,13 +100,12 @@ impl PreProcessor {
             } else {
                 None
             };
-
-            let typed_task_commitment = FixedBytes::from_hex(task_commitment)?;
             let task_proof =
-                tasks_merkle_tree.get_proof(&DynSolValue::FixedBytes(typed_task_commitment, 32));
+                tasks_merkle_tree.get_proof(&DynSolValue::FixedBytes(task_commitment, 32));
             let encoded_task = task.encode()?;
             let datalake_type = task.datalake.get_datalake_type();
             let property_type = task.datalake.get_collection_type().to_index();
+            println!("result: {:?}", result);
 
             let datalake_compute = match result {
                 Some(result_value) => {
@@ -174,9 +170,10 @@ impl PreProcessor {
                     self._raw_result_to_result_commitment(&task_commitment, *compiled_result);
                 results_leaves.push(DynSolValue::FixedBytes(result_commitment, 32));
             }
-            let typed_task_commitment = FixedBytes::from_hex(task_commitment)?;
-            tasks_leaves.push(DynSolValue::FixedBytes(typed_task_commitment, 32));
+            tasks_leaves.push(DynSolValue::FixedBytes(task_commitment, 32));
         }
+
+        println!("tasks_leaves: {:#?}", tasks_leaves);
         let tasks_merkle_tree = StandardMerkleTree::of(tasks_leaves);
 
         if compiled_results.pre_processable {
