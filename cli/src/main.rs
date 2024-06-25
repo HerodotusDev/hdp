@@ -181,10 +181,7 @@ async fn handle_run(
         module_registry_rpc_url: url.parse().unwrap(),
         program_path: PathBuf::from(&program_path),
     };
-    let preprocessor_config = PreProcessorConfig {
-        datalake_config,
-        module_config,
-    };
+    let preprocessor_config = PreProcessorConfig::new(datalake_config, module_config);
     let preprocessor = PreProcessor::new_with_config(preprocessor_config);
     let result = preprocessor
         .process_from_serialized(config.datalakes.clone(), config.tasks.clone())

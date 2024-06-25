@@ -24,13 +24,21 @@ use tracing::info;
 pub struct PreProcessor {
     /// compiler
     compiler: Compiler,
-
     decoder: DatalakeComputeCodec,
 }
 
 pub struct PreProcessorConfig {
     pub datalake_config: EvmProviderConfig,
     pub module_config: ModuleCompilerConfig,
+}
+
+impl PreProcessorConfig {
+    pub fn new(datalake_config: EvmProviderConfig, module_config: ModuleCompilerConfig) -> Self {
+        Self {
+            datalake_config,
+            module_config,
+        }
+    }
 }
 
 pub struct ExtendedDatalake {
