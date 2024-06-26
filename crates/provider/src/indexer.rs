@@ -14,7 +14,7 @@
 //! }
 //! ```
 
-use alloy::primitives::BlockNumber;
+use alloy::primitives::{BlockNumber, ChainId};
 use hdp_primitives::block::header::{
     MMRDataFromNewIndexer, MMRFromNewIndexer, MMRMetaFromNewIndexer, MMRProofFromNewIndexer,
 };
@@ -76,7 +76,7 @@ impl IndexerHeadersProofResponse {
 }
 
 impl Indexer {
-    pub fn new(chain_id: u64) -> Self {
+    pub fn new(chain_id: ChainId) -> Self {
         Self {
             client: Client::new(),
             chain_id,
@@ -91,9 +91,11 @@ impl Indexer {
     /// - `chain_id`: The chain id
     pub async fn get_headers_proof(
         &self,
-        from_block: u64,
-        to_block: u64,
+        from_block: BlockNumber,
+        to_block: BlockNumber,
     ) -> Result<IndexerHeadersProofResponse, IndexerError> {
+        let target_length = (to_block - from_block + 1) as usize;
+
         // validate from_block and to_block
         if from_block > to_block {
             return Err(IndexerError::InvalidBlockRange);
@@ -121,18 +123,33 @@ impl Indexer {
                     "MMR length should be 1".to_string(),
                 ));
             } else {
+                // validate header response length
+                if parsed_mmr.data[0].proofs.len() != target_length {
+                    return Err(IndexerError::ValidationError(
+                        "Indexer didn't return the correct number of headers that requested"
+                            .to_string(),
+                    ));
+                }
                 let mmr_data = parsed_mmr.data[0].clone();
                 Ok(IndexerHeadersProofResponse::new(mmr_data))
             }
         } else {
-            error!("Failed to get headers proof: {}", response.status());
+            error!(
+                "Failed to get headers proof from rs-indexer: {}",
+                response.status()
+            );
             Err(IndexerError::GetHeadersProofError(
                 response.text().await.map_err(IndexerError::ReqwestError)?,
             ))
         }
     }
 
-    fn _query(&self, from_block: u64, to_block: u64, chain_id: u64) -> Vec<(String, String)> {
+    fn _query(
+        &self,
+        from_block: BlockNumber,
+        to_block: BlockNumber,
+        chain_id: ChainId,
+    ) -> Vec<(String, String)> {
         vec![
             ("deployed_on_chain".to_string(), chain_id.to_string()),
             ("accumulates_chain".to_string(), chain_id.to_string()),

@@ -20,7 +20,7 @@ use tokio::sync::{
     mpsc::{self, Sender},
     RwLock,
 };
-use tracing::{debug, info};
+use tracing::debug;
 
 /// Error from [`RpcProvider`]
 #[derive(Error, Debug)]
@@ -75,18 +75,7 @@ impl RpcProvider {
         blocks: Vec<BlockNumber>,
         address: Address,
     ) -> Result<HashMap<BlockNumber, EIP1186AccountProofResponse>, RpcProviderError> {
-        let start_fetch = Instant::now();
-
-        let (rpc_sender, mut rx) = mpsc::channel::<(BlockNumber, EIP1186AccountProofResponse)>(32);
-        self._get_account_proofs(rpc_sender, blocks, address);
-        let mut fetched_account_proofs_block_maps = HashMap::new();
-        while let Some((block_number, proof)) = rx.recv().await {
-            fetched_account_proofs_block_maps.insert(block_number, proof);
-        }
-        let duration = start_fetch.elapsed();
-        info!("Time taken (Account Fetch): {:?}", duration);
-
-        Ok(fetched_account_proofs_block_maps)
+        self.get_proofs(blocks, address, None).await
     }
 
     /// Get storage with proof in given vector of blocks and slot
@@ -96,49 +85,60 @@ impl RpcProvider {
         address: Address,
         storage_key: StorageKey,
     ) -> Result<HashMap<BlockNumber, EIP1186AccountProofResponse>, RpcProviderError> {
+        self.get_proofs(block_range, address, Some(storage_key))
+            .await
+    }
+
+    /// Generalized function to get proofs (account or storage) in given vector of blocks
+    async fn get_proofs(
+        &self,
+        blocks: Vec<BlockNumber>,
+        address: Address,
+        storage_key: Option<StorageKey>,
+    ) -> Result<HashMap<BlockNumber, EIP1186AccountProofResponse>, RpcProviderError> {
         let start_fetch = Instant::now();
 
         let (rpc_sender, mut rx) = mpsc::channel::<(BlockNumber, EIP1186AccountProofResponse)>(32);
-        self._get_storage_proofs(rpc_sender, block_range, address, storage_key);
+        self.spawn_proof_fetcher(rpc_sender, blocks, address, storage_key);
 
-        let mut fetched_storage_proofs_block_maps = HashMap::new();
-
+        let mut fetched_proofs = HashMap::new();
         while let Some((block_number, proof)) = rx.recv().await {
-            fetched_storage_proofs_block_maps.insert(block_number, proof);
+            fetched_proofs.insert(block_number, proof);
         }
         let duration = start_fetch.elapsed();
-        info!("Time taken (Storage Fetch): {:?}", duration);
+        debug!("RPC| Time taken (Fetch): {:?}", duration);
 
-        Ok(fetched_storage_proofs_block_maps)
+        Ok(fetched_proofs)
     }
 
-    fn _get_account_proofs(
+    /// Spawns a task to fetch proofs (account or storage) in parallel with chunk size
+    fn spawn_proof_fetcher(
         &self,
         rpc_sender: Sender<(BlockNumber, EIP1186AccountProofResponse)>,
         blocks: Vec<BlockNumber>,
         address: Address,
+        storage_key: Option<StorageKey>,
     ) {
         let chunk_size = self.chunk_size;
-        let provider_clone = self.provider.clone(); // Clone provider here
+        let provider_clone = self.provider.clone();
+        let target_blocks_length = blocks.len();
 
-        debug!(
-            "Fetching account proofs for {} chunk size: {}",
-            address, chunk_size
-        );
+        debug!("Fetching proofs for {} chunk size: {}", address, chunk_size);
 
         tokio::spawn(async move {
             let mut try_count = 0;
-            let blocks_map = Arc::new(RwLock::new(HashSet::<u64>::new()));
+            let blocks_map = Arc::new(RwLock::new(HashSet::<BlockNumber>::new()));
 
-            while blocks_map.read().await.len() < blocks.len() {
+            while blocks_map.read().await.len() < target_blocks_length {
                 try_count += 1;
                 if try_count > 50 {
                     panic!("❗️❗️❗️ Too many retries, failed to fetch all blocks")
                 }
                 let fetched_blocks_clone = blocks_map.read().await.clone();
-                let blocks_to_fetch: Vec<u64> = blocks
+
+                let blocks_to_fetch: Vec<BlockNumber> = blocks
                     .iter()
-                    .filter(|block_number| !fetched_blocks_clone.contains(*block_number))
+                    .filter(|block_number| !fetched_blocks_clone.contains(block_number))
                     .take(chunk_size as usize)
                     .cloned()
                     .collect();
@@ -148,32 +148,18 @@ impl RpcProvider {
                     .map(|block_number| {
                         let fetched_blocks_clone = blocks_map.clone();
                         let rpc_sender = rpc_sender.clone();
-                        let provider_clone = provider_clone.clone(); // Use cloned provider
+                        let provider_clone = provider_clone.clone();
                         async move {
-                            let account_from_rpc = provider_clone
-                                .get_proof(address, vec![])
-                                .block_id(block_number.into())
-                                .await;
-                            match account_from_rpc {
-                                Ok(account_from_rpc) => {
-                                    let mut blocks_identifier = fetched_blocks_clone.write().await;
-                                    rpc_sender
-                                        .send((block_number, account_from_rpc))
-                                        .await
-                                        .map_err(RpcProviderError::MpscError)
-                                        .unwrap();
-                                    blocks_identifier.insert(block_number);
-                                }
-                                Err(e) => {
-                                    if let Some(backoff) = handle_error(e) {
-                                        let mut delay = backoff;
-                                        while delay <= 4 {
-                                            tokio::time::sleep(Duration::from_nanos(delay)).await;
-                                            delay *= 2;
-                                        }
-                                    }
-                                }
-                            }
+                            let proof =
+                                fetch_proof(&provider_clone, address, block_number, storage_key)
+                                    .await;
+                            handle_proof_result(
+                                proof,
+                                block_number,
+                                fetched_blocks_clone,
+                                rpc_sender,
+                            )
+                            .await;
                         }
                     })
                     .collect::<Vec<_>>();
@@ -182,75 +168,57 @@ impl RpcProvider {
             }
         });
     }
+}
 
-    fn _get_storage_proofs(
-        &self,
-        rpc_sender: Sender<(BlockNumber, EIP1186AccountProofResponse)>,
-        blocks: Vec<BlockNumber>,
-        address: Address,
-        storage_key: StorageKey,
-    ) {
-        let chunk_size = self.chunk_size;
-        let provider_clone = self.provider.clone(); // Clone provider here
+/// Fetches proof (account or storage) for a given block number
+async fn fetch_proof(
+    provider: &RootProvider<Http<Client>>,
+    address: Address,
+    block_number: BlockNumber,
+    storage_key: Option<StorageKey>,
+) -> Result<EIP1186AccountProofResponse, RpcError<TransportErrorKind>> {
+    match storage_key {
+        Some(key) => {
+            provider
+                .get_proof(address, vec![key])
+                .block_id(block_number.into())
+                .await
+        }
+        None => {
+            provider
+                .get_proof(address, vec![])
+                .block_id(block_number.into())
+                .await
+        }
+    }
+}
 
-        debug!(
-            "Fetching storage proofs for {} chunk size: {}",
-            address, chunk_size
-        );
-
-        tokio::spawn(async move {
-            let mut try_count = 0;
-            let blocks_map = Arc::new(RwLock::new(HashSet::<u64>::new()));
-
-            while blocks_map.read().await.len() < blocks.len() {
-                try_count += 1;
-                if try_count > 50 {
-                    panic!("❗️❗️❗️ Too many retries, failed to fetch all blocks")
+/// Handles the result of a proof fetch operation
+async fn handle_proof_result(
+    proof: Result<EIP1186AccountProofResponse, RpcError<TransportErrorKind>>,
+    block_number: BlockNumber,
+    blocks_map: Arc<RwLock<HashSet<BlockNumber>>>,
+    rpc_sender: Sender<(BlockNumber, EIP1186AccountProofResponse)>,
+) {
+    match proof {
+        Ok(proof) => {
+            let mut blocks_identifier = blocks_map.write().await;
+            rpc_sender
+                .send((block_number, proof))
+                .await
+                .map_err(RpcProviderError::MpscError)
+                .unwrap();
+            blocks_identifier.insert(block_number);
+        }
+        Err(e) => {
+            if let Some(backoff) = handle_error(e) {
+                let mut delay = backoff;
+                while delay <= 4 {
+                    tokio::time::sleep(Duration::from_nanos(delay)).await;
+                    delay *= 2;
                 }
-                let fetched_blocks_clone = blocks_map.read().await.clone();
-                let blocks_to_fetch: Vec<u64> = blocks
-                    .iter()
-                    .filter(|block_number| !fetched_blocks_clone.contains(*block_number))
-                    .take(chunk_size as usize)
-                    .cloned()
-                    .collect();
-
-                let fetch_futures = blocks_to_fetch.into_iter().map(|block_number| {
-                    let fetched_blocks_clone = blocks_map.clone();
-                    let rpc_sender = rpc_sender.clone();
-                    let provider_clone = provider_clone.clone();
-
-                    async move {
-                        let storage_proof = provider_clone
-                            .get_proof(address, vec![storage_key])
-                            .block_id(block_number.into())
-                            .await;
-                        match storage_proof {
-                            Ok(storage_proof) => {
-                                let mut blocks_identifier = fetched_blocks_clone.write().await;
-                                rpc_sender
-                                    .send((block_number, storage_proof))
-                                    .await
-                                    .map_err(RpcProviderError::MpscError)
-                                    .unwrap();
-                                blocks_identifier.insert(block_number);
-                            }
-                            Err(e) => {
-                                if let Some(backoff) = handle_error(e) {
-                                    let mut delay = backoff;
-                                    while delay <= 4 {
-                                        tokio::time::sleep(Duration::from_nanos(delay)).await;
-                                        delay *= 2;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                });
-
-                join_all(fetch_futures).await;
             }
-        });
+        }
     }
 }
 

@@ -153,12 +153,16 @@ impl EvmProvider {
                 .await?;
 
             // validate MMR among range of blocks
-            if mmr.is_none() {
-                mmr = Some(indexer_response.mmr_meta);
-                fetched_headers_proofs_with_blocks_map.extend(indexer_response.headers);
-            } else if mmr.as_ref().unwrap() != &indexer_response.mmr_meta {
-                return Err(ProviderError::MismatchedMMRMeta);
+            match mmr {
+                None => {
+                    mmr = Some(indexer_response.mmr_meta);
+                }
+                Some(ref existing_mmr) if existing_mmr != &indexer_response.mmr_meta => {
+                    return Err(ProviderError::MismatchedMMRMeta);
+                }
+                _ => {}
             }
+            fetched_headers_proofs_with_blocks_map.extend(indexer_response.headers);
         }
 
         let duration = start_fetch.elapsed();
