@@ -22,6 +22,7 @@ use crate::errors::IndexerError;
 pub const HERODOTUS_RS_INDEXER_URL: &str =
     "https://rs-indexer.api.herodotus.cloud/accumulators/proofs";
 
+#[derive(Clone)]
 pub struct Indexer {
     client: Client,
     chain_id: u64,

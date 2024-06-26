@@ -24,4 +24,6 @@ pub enum ProviderError {
     GetTransactionProofError(String),
     #[error("Failed to get transaction receipt proof: {0}")]
     GetTransactionReceiptProofError(String),
+    #[error("EthTrieError: {0}")]
+    EthTrieError(#[from] eth_trie_proofs::EthTrieError),
 }

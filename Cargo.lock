@@ -1678,8 +1678,6 @@ dependencies = [
 [[package]]
 name = "eth-trie-proofs"
 version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c92fcc17cdd2fc88baee089bd11acf1af398161c521f48f5e9bd944f1465bb53"
 dependencies = [
  "alloy",
  "alloy-primitives",
@@ -1691,6 +1689,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_with 3.8.1",
+ "thiserror",
  "tokio",
  "url",
 ]

@@ -33,6 +33,7 @@ use tracing::{debug, info};
 
 use crate::errors::ProviderError;
 
+#[derive(Clone)]
 pub struct RpcProvider {
     provider: RootProvider<Http<Client>>,
     chunk_size: u64,

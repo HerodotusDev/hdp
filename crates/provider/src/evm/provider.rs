@@ -6,8 +6,11 @@ use std::{
 use alloy::{
     primitives::{Address, BlockNumber, Bytes, StorageKey},
     rpc::types::EIP1186AccountProofResponse,
+    transports::{RpcError, TransportErrorKind},
 };
-use eth_trie_proofs::{tx_receipt_trie::TxReceiptsMptHandler, tx_trie::TxsMptHandler};
+use eth_trie_proofs::{
+    tx_receipt_trie::TxReceiptsMptHandler, tx_trie::TxsMptHandler, EthTrieError,
+};
 use hdp_primitives::{
     block::header::{MMRMetaFromNewIndexer, MMRProofFromNewIndexer},
     processed_types::block_proofs::ProcessedBlockProofs,
@@ -22,6 +25,7 @@ use crate::{
 
 use super::rpc::RpcProvider;
 
+#[derive(Clone)]
 pub struct EvmProvider {
     /// Account and storage trie provider
     rpc_provider: super::rpc::RpcProvider,
@@ -177,12 +181,28 @@ impl EvmProvider {
     ) -> Result<Vec<FetchedTransactionProof>, ProviderError> {
         let mut tx_with_proof = vec![];
         let mut tx_trie_provider = TxsMptHandler::new(self.tx_provider_url.clone()).unwrap();
-        tx_trie_provider
-            .build_tx_tree_from_block(target_block)
-            .await
-            .unwrap();
-        let txs = tx_trie_provider.get_elements().unwrap();
 
+        loop {
+            let trie_build_result = tx_trie_provider
+                .build_tx_tree_from_block(target_block)
+                .await;
+            if trie_build_result.is_ok() {
+                break;
+            }
+            let error = trie_build_result.err().unwrap();
+            match error {
+                EthTrieError::RPC(RpcError::Transport(TransportErrorKind::HttpError(
+                    http_error,
+                ))) if http_error.status == 429 => {
+                    println!("429 error, retrying...");
+                    tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+                    continue;
+                }
+                _ => return Err(ProviderError::EthTrieError(error)),
+            }
+        }
+
+        let txs = tx_trie_provider.get_elements().unwrap();
         let target_tx_index_range = (start_index..end_index).step_by(incremental as usize);
         for tx_index in target_tx_index_range {
             let proof = tx_trie_provider
@@ -223,10 +243,24 @@ impl EvmProvider {
         let mut tx_with_proof = vec![];
         let mut tx_receipt_trie_provider =
             TxReceiptsMptHandler::new(self.tx_provider_url.clone()).unwrap();
-        tx_receipt_trie_provider
-            .build_tx_receipts_tree_from_block(target_block)
-            .await
-            .unwrap();
+        loop {
+            let trie_build_result = tx_receipt_trie_provider
+                .build_tx_receipts_tree_from_block(target_block)
+                .await;
+            if trie_build_result.is_ok() {
+                break;
+            }
+            let error = trie_build_result.err().unwrap();
+            match error {
+                EthTrieError::RPC(RpcError::Transport(TransportErrorKind::HttpError(
+                    http_error,
+                ))) if http_error.status == 429 => {
+                    tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+                    continue;
+                }
+                _ => return Err(ProviderError::EthTrieError(error)),
+            }
+        }
         let tx_receipts = tx_receipt_trie_provider.get_elements().unwrap();
 
         let target_tx_index_range = (start_index..end_index).step_by(incremental as usize);
@@ -318,41 +352,112 @@ mod tests {
         Ok(())
     }
 
-    #[ignore = "ignore for now"]
     #[tokio::test]
-    async fn test_get_all_tx_with_proof_from_block() -> Result<(), ProviderError> {
-        // TODO: tx provider cannot handle 429 error rn
-        tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+    async fn test_get_parallel_4_all_tx_with_proof_from_block() {
         let provider = EvmProvider::new_with_url(Url::parse(SEPOLIA_RPC_URL).unwrap(), 11155111);
-        let result = provider
-            .get_tx_with_proof_from_block(6127485, 0, 92, 1)
-            .await;
-        assert!(result.is_ok());
-        let length = result.unwrap().len();
-        assert_eq!(length, 92);
-        Ok(())
+
+        let task1 = {
+            let provider = provider.clone();
+            tokio::spawn(async move {
+                provider
+                    .get_tx_with_proof_from_block(6127485, 0, 23, 1)
+                    .await
+            })
+        };
+
+        let task2 = {
+            let provider = provider.clone();
+            tokio::spawn(async move {
+                provider
+                    .get_tx_with_proof_from_block(6127486, 0, 20, 1)
+                    .await
+            })
+        };
+
+        let task3 = {
+            let provider = provider.clone();
+            tokio::spawn(async move {
+                provider
+                    .get_tx_with_proof_from_block(6127487, 1, 30, 1)
+                    .await
+            })
+        };
+
+        let task4 = {
+            let provider = provider.clone();
+            tokio::spawn(async move {
+                provider
+                    .get_tx_with_proof_from_block(6127488, 5, 80, 1)
+                    .await
+            })
+        };
+
+        let (result1, result2, result3, result4) =
+            tokio::try_join!(task1, task2, task3, task4).unwrap();
+        // validate result 1
+        assert_eq!(result1.unwrap().len(), 23);
+        // validate result 2
+        assert_eq!(result2.unwrap().len(), 20);
+        // validate result 3
+        assert_eq!(result3.unwrap().len(), 29);
+        // validate result 4
+        assert_eq!(result4.unwrap().len(), 75);
     }
 
-    #[ignore = "ignore for now"]
     #[tokio::test]
-    async fn test_get_all_tx_receipt_with_proof_from_block() -> Result<(), ProviderError> {
-        // TODO: tx provider cannot handle 429 error rn
-        tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+    async fn test_get_parallel_4_all_tx_receipt_with_proof_from_block() {
         let provider = EvmProvider::new_with_url(Url::parse(SEPOLIA_RPC_URL).unwrap(), 11155111);
-        let result = provider
-            .get_tx_receipt_with_proof_from_block(6127485, 0, 92, 1)
-            .await;
-        assert!(result.is_ok());
-        let length = result.unwrap().len();
-        assert_eq!(length, 92);
-        Ok(())
+        let task1 = {
+            let provider = provider.clone();
+            tokio::spawn(async move {
+                provider
+                    .get_tx_receipt_with_proof_from_block(6127485, 0, 23, 1)
+                    .await
+            })
+        };
+
+        let task2 = {
+            let provider = provider.clone();
+            tokio::spawn(async move {
+                provider
+                    .get_tx_receipt_with_proof_from_block(6127486, 0, 20, 1)
+                    .await
+            })
+        };
+
+        let task3 = {
+            let provider = provider.clone();
+            tokio::spawn(async move {
+                provider
+                    .get_tx_receipt_with_proof_from_block(6127487, 1, 30, 1)
+                    .await
+            })
+        };
+
+        let task4 = {
+            let provider = provider.clone();
+            tokio::spawn(async move {
+                provider
+                    .get_tx_receipt_with_proof_from_block(6127488, 5, 80, 1)
+                    .await
+            })
+        };
+
+        let (result1, result2, result3, result4) =
+            tokio::try_join!(task1, task2, task3, task4).unwrap();
+
+        // validate result 1
+        assert_eq!(result1.unwrap().len(), 23);
+        // validate result 2
+        assert_eq!(result2.unwrap().len(), 20);
+        // validate result 3
+        assert_eq!(result3.unwrap().len(), 29);
+        // validate result 4
+        assert_eq!(result4.unwrap().len(), 75);
     }
 
-    #[ignore = "ignore for now"]
     #[tokio::test]
     async fn test_error_get_tx_with_proof_from_block() {
-        // TODO: tx provider cannot handle 429 error rn
-        tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
         let provider = EvmProvider::new_with_url(Url::parse(SEPOLIA_RPC_URL).unwrap(), 11155111);
         let result = provider
             .get_tx_with_proof_from_block(6127485, 0, 2000, 1)
@@ -364,11 +469,8 @@ mod tests {
         );
     }
 
-    #[ignore = "ignore for now"]
     #[tokio::test]
     async fn test_error_get_tx_receipt_with_proof_from_block() {
-        // TODO: tx provider cannot handle 429 error rn
-        tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
         let provider = EvmProvider::new_with_url(Url::parse(SEPOLIA_RPC_URL).unwrap(), 1155511);
         let result = provider
             .get_tx_receipt_with_proof_from_block(6127485, 0, 2000, 1)
