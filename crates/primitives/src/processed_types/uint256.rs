@@ -1,7 +1,7 @@
 //! This module contains the `Uint256` type, which is a 256-bit unsigned integer.
 //! This is compatible with Cairo `uint256` type.
 
-use alloy_primitives::{hex::FromHex, B256};
+use alloy::primitives::{hex::FromHex, B256};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;

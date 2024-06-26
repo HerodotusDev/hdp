@@ -1,8 +1,11 @@
 //! Provider keys for fetching data from memoizer and rpc.
+//! Only used for context of Module Compiler
+//!
+//! TODO: need to sync with how bootloader will emit the keys
 
 use std::str::FromStr;
 
-use alloy_primitives::{Address, BlockNumber, ChainId, StorageKey};
+use alloy::primitives::{Address, BlockNumber, ChainId, StorageKey};
 
 macro_rules! impl_hash_for_provider_key {
     // Match a struct with an identifier and any number of fields.

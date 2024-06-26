@@ -1,8 +1,13 @@
 use std::str::FromStr;
 
-use alloy_primitives::{hex, keccak256, Address, BlockNumber, Bloom, Bytes, B256, B64, U256};
+use alloy::{
+    hex,
+    primitives::{keccak256, Address, BlockNumber, Bloom, Bytes, B256, B64, U256},
+};
 use alloy_rlp::{length_of_length, BufMut, Decodable, Encodable};
 use serde::{Deserialize, Serialize};
+
+use crate::processed_types::mmr::MMRMeta;
 
 // =============================================================================
 // Header (credit: https://github.com/paradigmxyz/reth/blob/main/crates/primitives/src/header.rs#L133)
@@ -324,14 +329,14 @@ impl Header {
         }
     }
 
-    pub fn rlp_encode(&self) -> String {
+    pub fn rlp_encode(&self) -> Vec<u8> {
         let mut buffer = Vec::<u8>::new();
         self.encode(&mut buffer);
-        hex::encode(buffer)
+        buffer
     }
 
-    pub fn rlp_decode(rlp: &str) -> Self {
-        <Header>::decode(&mut hex::decode(rlp).unwrap().as_slice()).unwrap()
+    pub fn rlp_decode(mut rlp: &[u8]) -> Self {
+        <Header>::decode(&mut rlp).unwrap()
     }
 
     pub fn get_block_hash(&self) -> String {
@@ -442,6 +447,17 @@ pub struct MMRMetaFromIndexer {
     pub mmr_size: u64,
 }
 
+impl From<&MMRMetaFromIndexer> for MMRMeta {
+    fn from(value: &MMRMetaFromIndexer) -> Self {
+        Self {
+            id: value.mmr_id,
+            peaks: value.mmr_peaks.clone(),
+            root: value.mmr_root.to_string(),
+            size: value.mmr_size,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct MMRProofFromIndexer {
     pub block_number: u64,
@@ -465,7 +481,7 @@ pub struct MMRDataFromNewIndexer {
     pub proofs: Vec<MMRProofFromNewIndexer>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct MMRMetaFromNewIndexer {
     pub mmr_id: u64,
     pub mmr_peaks: Vec<String>,
@@ -477,6 +493,12 @@ pub struct MMRMetaFromNewIndexer {
 pub struct RlpBlockHeader {
     #[serde(rename = "String")]
     pub value: String,
+}
+
+impl From<RlpBlockHeader> for Bytes {
+    fn from(rlp_block_header: RlpBlockHeader) -> Self {
+        Bytes::from(hex::decode(rlp_block_header.value).expect("Cannot decode RLP block header"))
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -494,7 +516,7 @@ mod tests {
     use super::*;
     use std::str::FromStr;
 
-    use alloy_primitives::{hex, Address, Bloom, Bytes, FixedBytes, U256};
+    use alloy::primitives::{hex, Address, Bloom, Bytes, FixedBytes, U256};
     use alloy_rlp::Decodable;
 
     #[test]

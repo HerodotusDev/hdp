@@ -2,24 +2,21 @@
 //! This run is sound execution of the module.
 //! This will be most abstract layer of the processor.
 
-use alloy_dyn_abi::DynSolValue;
+use alloy::dyn_abi::DynSolValue;
+use alloy::primitives::{FixedBytes, Keccak256, B256, U256};
 use alloy_merkle_tree::standard_binary_tree::StandardMerkleTree;
-use alloy_primitives::{hex::FromHex, FixedBytes, Keccak256, B256, U256};
 use anyhow::Result;
 use hdp_primitives::processed_types::{
     cairo_format::AsCairoFormat, datalake_compute::ProcessedDatalakeCompute,
     v1_query::ProcessedResult,
 };
 use serde::Serialize;
-use std::{path::PathBuf, str::FromStr};
-
-use hdp_provider::evm::{AbstractProvider, AbstractProviderConfig};
+use std::path::PathBuf;
 
 use crate::cairo_runner::run::{RunResult, Runner};
 
 pub struct Processor {
     runner: Runner,
-    _provider: AbstractProvider,
 }
 
 #[derive(Debug, Serialize)]
@@ -68,13 +65,9 @@ impl ProcessorResult {
 }
 
 impl Processor {
-    pub fn new(provider_config: AbstractProviderConfig, program_path: PathBuf) -> Self {
+    pub fn new(program_path: PathBuf) -> Self {
         let runner = Runner::new(program_path);
-        let provider = AbstractProvider::new(provider_config);
-        Self {
-            runner,
-            _provider: provider,
-        }
+        Self { runner }
     }
 
     pub async fn process(
@@ -130,10 +123,10 @@ impl Processor {
         requset: ProcessedResult,
         result: RunResult,
     ) -> Result<ProcessedResult> {
-        let task_commitments: Vec<String> = requset
+        let task_commitments: Vec<B256> = requset
             .tasks
             .iter()
-            .map(|task| task.task_commitment.clone())
+            .map(|task| task.task_commitment)
             .collect();
         // let task_inclusion_proofs: Vec<_> = requset
         //     .tasks
@@ -152,8 +145,8 @@ impl Processor {
 
         let mut new_tasks: Vec<ProcessedDatalakeCompute> = Vec::new();
         for (idx, mut task) in requset.tasks.into_iter().enumerate() {
-            let compiled_result = result.task_results[idx].clone();
-            let result_commitment = result_commitments[idx].to_string();
+            let compiled_result = result.task_results[idx];
+            let result_commitment = result_commitments[idx];
             let result_proof = results_inclusion_proofs[idx].clone();
             task.update_results(compiled_result, result_commitment, result_proof);
             new_tasks.push(task.clone());
@@ -175,8 +168,8 @@ impl Processor {
 
     fn build_result_merkle_tree(
         &self,
-        task_commitments: Vec<String>,
-        task_results: Vec<String>,
+        task_commitments: Vec<B256>,
+        task_results: Vec<U256>,
     ) -> Result<(StandardMerkleTree, Vec<FixedBytes<32>>)> {
         let mut results_leaves = Vec::new();
         let mut results_commitments = Vec::new();
@@ -192,12 +185,12 @@ impl Processor {
 
     fn _raw_result_to_result_commitment(
         &self,
-        task_commitment: &str,
-        compiled_result: &str,
-    ) -> FixedBytes<32> {
+        task_commitment: &B256,
+        compiled_result: &U256,
+    ) -> B256 {
         let mut hasher = Keccak256::new();
-        hasher.update(Vec::from_hex(task_commitment).unwrap());
-        hasher.update(B256::from(U256::from_str(compiled_result).unwrap()));
+        hasher.update(task_commitment);
+        hasher.update(B256::from(*compiled_result));
         hasher.finalize()
     }
 }

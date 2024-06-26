@@ -7,14 +7,13 @@
 
 use std::str::FromStr;
 
-use alloy_dyn_abi::{DynSolType, DynSolValue};
-use alloy_primitives::{hex::FromHex, keccak256, U256};
+use alloy::consensus::TxType;
+use alloy::dyn_abi::{DynSolType, DynSolValue};
+use alloy::primitives::B256;
+use alloy::primitives::{keccak256, U256};
 use anyhow::{bail, Result};
 
-use crate::{
-    datalake::{datalake_type::DatalakeType, Datalake, DatalakeCollection},
-    utils::bytes_to_hex_string,
-};
+use crate::datalake::{datalake_type::DatalakeType, Datalake, DatalakeCollection};
 
 use super::TransactionsCollection;
 
@@ -61,7 +60,7 @@ impl Datalake for TransactionsInBlockDatalake {
     }
 
     /// Encode the [`TransactionsInBlockDatalake`] into a hex string
-    fn encode(&self) -> Result<String> {
+    fn encode(&self) -> Result<Vec<u8>> {
         let datalake_code: DynSolValue = self.get_datalake_type().to_u8().into();
         let target_block: DynSolValue = self.target_block.into();
         let sampled_property: DynSolValue = self.sampled_property.serialize()?.into();
@@ -81,25 +80,22 @@ impl Datalake for TransactionsInBlockDatalake {
         ]);
 
         match tuple_value.abi_encode_sequence() {
-            Some(encoded_datalake) => Ok(bytes_to_hex_string(&encoded_datalake)),
+            Some(encoded_datalake) => Ok(encoded_datalake),
             None => bail!("Encoding failed"),
         }
     }
 
     /// Get the commitment hash of the [`TransactionsDatalake`]
-    fn commit(&self) -> String {
+    fn commit(&self) -> B256 {
         let encoded_datalake = self.encode().expect("Encoding failed");
-        let bytes = Vec::from_hex(encoded_datalake).expect("Invalid hex string");
-        let hash = keccak256(bytes);
-        format!("0x{:x}", hash)
+        keccak256(encoded_datalake)
     }
 
     /// Decode the encoded transactions datalake hex string into a [`TransactionsDatalake`]
-    fn decode(encoded: &str) -> Result<Self> {
+    fn decode(encoded: &[u8]) -> Result<Self> {
         let abi_type: DynSolType =
             "(uint256, uint256, uint256, uint256, uint256, uint256, bytes)".parse()?;
-        let bytes = Vec::from_hex(encoded).expect("Invalid hex string");
-        let decoded = abi_type.abi_decode_sequence(&bytes)?;
+        let decoded = abi_type.abi_decode_sequence(encoded)?;
 
         let value = decoded.as_tuple().unwrap();
         let datalake_code = value[0].as_uint().unwrap().0.to_string().parse::<u8>()?;
@@ -155,7 +151,7 @@ impl IncludedTypes {
         Self { inner }
     }
 
-    pub fn is_included(&self, target_type: u8) -> bool {
+    pub fn is_included(&self, target_type: TxType) -> bool {
         // check with the index of bytes is either 0 or 1
         self.inner[target_type as usize] != 0
     }
@@ -181,36 +177,36 @@ mod tests {
     #[test]
     fn test_included_types() {
         let included_types = IncludedTypes::from(&[1, 1, 1, 1]);
-        assert!(included_types.is_included(0));
-        assert!(included_types.is_included(1));
-        assert!(included_types.is_included(2));
-        assert!(included_types.is_included(3));
+        assert!(included_types.is_included(TxType::Legacy));
+        assert!(included_types.is_included(TxType::Eip2930));
+        assert!(included_types.is_included(TxType::Eip1559));
+        assert!(included_types.is_included(TxType::Eip4844));
 
         let uint256 = included_types.to_uint256();
         assert_eq!(uint256, U256::from(0x01010101));
 
         let included_types = IncludedTypes::from_uint256(uint256);
-        assert!(included_types.is_included(0));
-        assert!(included_types.is_included(1));
-        assert!(included_types.is_included(2));
-        assert!(included_types.is_included(3));
+        assert!(included_types.is_included(TxType::Legacy));
+        assert!(included_types.is_included(TxType::Eip2930));
+        assert!(included_types.is_included(TxType::Eip1559));
+        assert!(included_types.is_included(TxType::Eip4844));
     }
 
     #[test]
     fn test_included_types_partial() {
         let included_types = IncludedTypes::from(&[1, 0, 1, 0]);
-        assert!(included_types.is_included(0));
-        assert!(!included_types.is_included(1));
-        assert!(included_types.is_included(2));
-        assert!(!included_types.is_included(3));
+        assert!(included_types.is_included(TxType::Legacy));
+        assert!(!included_types.is_included(TxType::Eip2930));
+        assert!(included_types.is_included(TxType::Eip1559));
+        assert!(!included_types.is_included(TxType::Eip4844));
 
         let uint256 = included_types.to_uint256();
         assert_eq!(uint256, U256::from(0x01000100));
 
         let included_types = IncludedTypes::from_uint256(uint256);
-        assert!(included_types.is_included(0));
-        assert!(!included_types.is_included(1));
-        assert!(included_types.is_included(2));
-        assert!(!included_types.is_included(3));
+        assert!(included_types.is_included(TxType::Legacy));
+        assert!(!included_types.is_included(TxType::Eip2930));
+        assert!(included_types.is_included(TxType::Eip1559));
+        assert!(!included_types.is_included(TxType::Eip4844));
     }
 }

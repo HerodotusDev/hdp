@@ -1,6 +1,6 @@
 #![deny(unused_crate_dependencies)]
 
-use alloy_primitives::U256;
+use alloy::{hex, primitives::U256};
 use anyhow::{bail, Result};
 use hdp_primitives::{
     aggregate_fn::{integer::Operator, FunctionContext},
@@ -18,6 +18,7 @@ use hdp_primitives::{
     },
     processed_types::cairo_format::AsCairoFormat,
 };
+use hdp_provider::evm::provider::EvmProviderConfig;
 use inquire::{error::InquireError, Select};
 use std::{fs, path::PathBuf, str::FromStr, vec};
 use tracing_subscriber::FmtSubscriber;
@@ -25,13 +26,11 @@ use tracing_subscriber::FmtSubscriber;
 use clap::{Parser, Subcommand};
 use hdp_core::{
     codec::datalake_compute::DatalakeComputeCodec,
-    compiler::{module::ModuleCompilerConfig, CompilerConfig},
+    compiler::module::ModuleCompilerConfig,
     config::Config,
-    pre_processor::PreProcessor,
+    pre_processor::{PreProcessor, PreProcessorConfig},
     processor::Processor,
 };
-
-use hdp_provider::evm::AbstractProviderConfig;
 
 use tracing::{error, info, Level};
 
@@ -174,17 +173,17 @@ async fn handle_run(
     let url: &str = "http://localhost:3030";
     let program_path = "./build/compiled_cairo/hdp.json";
     let config = Config::init(rpc_url, datalakes, tasks, chain_id).await;
-    let provider_config = AbstractProviderConfig {
-        rpc_url: &config.rpc_url,
+    let datalake_config = EvmProviderConfig {
+        rpc_url: config.rpc_url.parse().expect("Failed to parse RPC URL"),
         chain_id: config.chain_id,
-        rpc_chunk_size: config.rpc_chunk_size,
+        max_requests: config.rpc_chunk_size,
     };
     let module_config = ModuleCompilerConfig {
         module_registry_rpc_url: url.parse().unwrap(),
         program_path: PathBuf::from(&program_path),
     };
-    let compiler_config = CompilerConfig::new(provider_config.clone(), module_config);
-    let preprocessor = PreProcessor::new_with_config(compiler_config);
+    let preprocessor_config = PreProcessorConfig::new(datalake_config, module_config);
+    let preprocessor = PreProcessor::new_with_config(preprocessor_config);
     let result = preprocessor
         .process_from_serialized(config.datalakes.clone(), config.tasks.clone())
         .await?;
@@ -208,7 +207,7 @@ async fn handle_run(
             Ok(())
         } else {
             let output_file_path = output_file.unwrap();
-            let processor = Processor::new(provider_config, PathBuf::from(program_path));
+            let processor = Processor::new(PathBuf::from(program_path));
             let processor_result = processor.process(result, pie_file.unwrap()).await?;
             let output_string = serde_json::to_string_pretty(&processor_result).unwrap();
             fs::write(&output_file_path, output_string).expect("Unable to write file");
@@ -507,8 +506,8 @@ async fn main() -> Result<()> {
                     .prompt()?;
 
                 handle_run(
-                    Some(encoded_computes),
-                    Some(encoded_datalakes),
+                    Some(hex::encode(encoded_computes)),
+                    Some(hex::encode(encoded_datalakes)),
                     rpc_url,
                     chain_id,
                     Some(output_file),
@@ -570,11 +569,14 @@ async fn main() -> Result<()> {
             let datalake_compute_codec = DatalakeComputeCodec::new();
             let (encoded_datalakes, encoded_computes) =
                 datalake_compute_codec.encode_batch(vec![target_datalake_compute])?;
+
+            let encoded_computes_str = hex::encode(encoded_computes);
+            let encoded_datalakes_str = hex::encode(encoded_datalakes);
             // if allow_run is true, then run the evaluator
             if allow_run {
                 handle_run(
-                    Some(encoded_computes),
-                    Some(encoded_datalakes),
+                    Some(encoded_computes_str),
+                    Some(encoded_datalakes_str),
                     rpc_url,
                     chain_id,
                     output_file,
@@ -586,11 +588,15 @@ async fn main() -> Result<()> {
         }
         Commands::Decode { tasks, datalakes } => {
             let datalake_compute_codec = DatalakeComputeCodec::new();
-            datalake_compute_codec.decode_batch(datalakes, tasks)?;
+            let tasks = hex::decode(tasks)?;
+            let datalakes = hex::decode(datalakes)?;
+            datalake_compute_codec.decode_batch(&datalakes, &tasks)?;
         }
         Commands::DecodeOne { task, datalake } => {
             let datalake_compute_codec = DatalakeComputeCodec::new();
-            datalake_compute_codec.decode_single(datalake, task)?;
+            let task = hex::decode(task)?;
+            let datalake = hex::decode(datalake)?;
+            datalake_compute_codec.decode_single(&datalake, &task)?;
         }
         Commands::Run {
             tasks,

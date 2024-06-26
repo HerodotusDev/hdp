@@ -9,9 +9,8 @@ version.workspace = true
 [dependencies]
 hdp-provider = { workspace = true }
 hdp-primitives = { workspace = true }
-alloy-primitives = { workspace = true }
 alloy-merkle-tree = { workspace = true }
-alloy-dyn-abi = { workspace = true }
+alloy = { workspace = true }
 anyhow = { workspace = true }
 cairo-lang-starknet-classes.workspace = true
 starknet-crypto.workspace = true

@@ -2,36 +2,43 @@
 //!  Preprocessor is reponsible for identifying the required values.
 //!  This will be most abstract layer of the preprocessor.
 
-use std::str::FromStr;
-
 use crate::codec::datalake_compute::DatalakeComputeCodec;
 use crate::compiler::datalake_compute::DatalakeComputeCompilationResults;
 use crate::compiler::module::ModuleCompilerConfig;
-use crate::compiler::{Compiler, CompilerConfig};
-use alloy_dyn_abi::DynSolValue;
+use crate::compiler::Compiler;
+use alloy::dyn_abi::DynSolValue;
+use alloy::hex;
+use alloy::primitives::{Bytes, Keccak256, B256, U256};
 use alloy_merkle_tree::standard_binary_tree::StandardMerkleTree;
-use alloy_primitives::hex::FromHex;
-use alloy_primitives::{FixedBytes, Keccak256, B256, U256};
 use anyhow::{bail, Ok, Result};
 use cairo_lang_starknet_classes::casm_contract_class::CasmContractClass;
 use hdp_primitives::module::Module;
 use hdp_primitives::processed_types::datalake_compute::ProcessedDatalakeCompute;
 use hdp_primitives::{datalake::task::DatalakeCompute, processed_types::v1_query::ProcessedResult};
 
-use hdp_provider::evm::AbstractProviderConfig;
+use hdp_provider::evm::provider::EvmProviderConfig;
 use hdp_provider::key::FetchKeyEnvelope;
+
 use tracing::info;
 
 pub struct PreProcessor {
     /// compiler
     compiler: Compiler,
-
     decoder: DatalakeComputeCodec,
 }
 
 pub struct PreProcessorConfig {
-    pub datalake_config: AbstractProviderConfig,
+    pub datalake_config: EvmProviderConfig,
     pub module_config: ModuleCompilerConfig,
+}
+
+impl PreProcessorConfig {
+    pub fn new(datalake_config: EvmProviderConfig, module_config: ModuleCompilerConfig) -> Self {
+        Self {
+            datalake_config,
+            module_config,
+        }
+    }
 }
 
 pub struct ExtendedDatalake {
@@ -46,7 +53,7 @@ pub struct ExtendedModule {
 }
 
 impl PreProcessor {
-    pub fn new_with_config(config: CompilerConfig) -> Self {
+    pub fn new_with_config(config: PreProcessorConfig) -> Self {
         let compiler = Compiler::new(config);
         let datalake_compute_codec = DatalakeComputeCodec::new();
         Self {
@@ -60,10 +67,10 @@ impl PreProcessor {
         batched_datalakes: String,
         batched_tasks: String,
     ) -> Result<ProcessedResult> {
+        let bytes_datalake = hex::decode(batched_datalakes)?;
+        let bytes_tasks = hex::decode(batched_tasks)?;
         // 1. decode the tasks
-        let tasks = self
-            .decoder
-            .decode_batch(batched_datalakes, batched_tasks)?;
+        let tasks = self.decoder.decode_batch(&bytes_datalake, &bytes_tasks)?;
         self.process(tasks).await
     }
 
@@ -72,7 +79,8 @@ impl PreProcessor {
     /// Then it will run the preprocessor and return the result, fetch points
     /// Fetch points are the values that are required to run the module
     pub async fn process(&self, tasks: Vec<DatalakeCompute>) -> Result<ProcessedResult> {
-        let task_commitments: Vec<String> = tasks.iter().map(|task| task.commit()).collect();
+        let task_commitments: Vec<B256> =
+            tasks.iter().map(|task| task.commit()).collect::<Vec<_>>();
         // do compile with the tasks
         let compiled_results = self.compiler.compile(&tasks).await?;
         // do operation if possible
@@ -91,7 +99,7 @@ impl PreProcessor {
                     .get(&task_commitment)
                     .unwrap();
                 let result_commitment =
-                    self._raw_result_to_result_commitment(&task_commitment, compiled_result);
+                    self._raw_result_to_result_commitment(&task_commitment, *compiled_result);
                 let result_proof = results_merkle_tree
                     .as_ref()
                     .unwrap()
@@ -100,10 +108,8 @@ impl PreProcessor {
             } else {
                 None
             };
-
-            let typed_task_commitment = FixedBytes::from_hex(task_commitment.clone())?;
             let task_proof =
-                tasks_merkle_tree.get_proof(&DynSolValue::FixedBytes(typed_task_commitment, 32));
+                tasks_merkle_tree.get_proof(&DynSolValue::FixedBytes(task_commitment, 32));
             let encoded_task = task.encode()?;
             let datalake_type = task.datalake.get_datalake_type();
             let property_type = task.datalake.get_collection_type().to_index();
@@ -112,22 +118,22 @@ impl PreProcessor {
                 Some(result_value) => {
                     let (compiled_result, result_commitment, result_proof) = result_value;
                     ProcessedDatalakeCompute::new_with_result(
-                        encoded_task,
+                        Bytes::from(encoded_task),
                         task_commitment,
-                        compiled_result.to_string(),
-                        result_commitment.to_string(),
+                        *compiled_result,
+                        result_commitment,
                         task_proof,
                         result_proof,
-                        task.datalake.encode()?,
+                        Bytes::from(task.datalake.encode()?),
                         datalake_type.into(),
                         property_type,
                     )
                 }
                 None => ProcessedDatalakeCompute::new_without_result(
-                    encoded_task,
+                    Bytes::from(encoded_task),
                     task_commitment,
                     task_proof,
-                    task.datalake.encode()?,
+                    Bytes::from(task.datalake.encode()?),
                     datalake_type.into(),
                     property_type,
                 ),
@@ -155,7 +161,7 @@ impl PreProcessor {
     fn build_merkle_tree(
         &self,
         compiled_results: &DatalakeComputeCompilationResults,
-        task_commitments: Vec<String>,
+        task_commitments: Vec<B256>,
     ) -> Result<(StandardMerkleTree, Option<StandardMerkleTree>)> {
         let mut tasks_leaves = Vec::new();
         let mut results_leaves = Vec::new();
@@ -168,11 +174,10 @@ impl PreProcessor {
                         None => bail!("Task commitment not found in compiled results"),
                     };
                 let result_commitment =
-                    self._raw_result_to_result_commitment(&task_commitment, compiled_result);
+                    self._raw_result_to_result_commitment(&task_commitment, *compiled_result);
                 results_leaves.push(DynSolValue::FixedBytes(result_commitment, 32));
             }
-            let typed_task_commitment = FixedBytes::from_hex(task_commitment)?;
-            tasks_leaves.push(DynSolValue::FixedBytes(typed_task_commitment, 32));
+            tasks_leaves.push(DynSolValue::FixedBytes(task_commitment, 32));
         }
         let tasks_merkle_tree = StandardMerkleTree::of(tasks_leaves);
 
@@ -186,12 +191,12 @@ impl PreProcessor {
 
     fn _raw_result_to_result_commitment(
         &self,
-        task_commitment: &str,
-        compiled_result: &str,
-    ) -> FixedBytes<32> {
+        task_commitment: &B256,
+        compiled_result: U256,
+    ) -> B256 {
         let mut hasher = Keccak256::new();
-        hasher.update(Vec::from_hex(task_commitment).unwrap());
-        hasher.update(B256::from(U256::from_str(compiled_result).unwrap()));
+        hasher.update(task_commitment);
+        hasher.update(B256::from(compiled_result));
         hasher.finalize()
     }
 }

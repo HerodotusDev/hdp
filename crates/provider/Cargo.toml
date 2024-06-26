@@ -10,10 +10,22 @@ version.workspace = true
 anyhow.workspace = true
 reqwest.workspace = true
 serde_json.workspace = true
-serde.workspace = true
 hdp-primitives.workspace = true
-alloy-primitives.workspace = true
 tokio.workspace = true
 tracing.workspace = true
 eth-trie-proofs.workspace = true
 futures.workspace = true
+thiserror.workspace = true
+alloy.workspace = true
+itertools.workspace = true
+
+[dev-dependencies]
+criterion = { version = "0.4", features = [
+    "async",
+    "async_futures",
+    "html_reports",
+] }
+
+[[bench]]
+name = "provider_benchmark"
+harness = false

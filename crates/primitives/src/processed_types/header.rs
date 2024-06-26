@@ -1,4 +1,11 @@
+use alloy::hex;
 use serde::{Deserialize, Serialize};
+use serde_with::serde_as;
+
+use crate::{
+    block::header::RlpBlockHeader,
+    serde::{deserialize_hex, serialize_hex},
+};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub struct ProcessedHeaderProof {
@@ -13,13 +20,16 @@ impl ProcessedHeaderProof {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
+#[serde_as]
 pub struct ProcessedHeader {
-    pub rlp: String,
+    #[serde(serialize_with = "serialize_hex", deserialize_with = "deserialize_hex")]
+    pub rlp: Vec<u8>,
     pub proof: ProcessedHeaderProof,
 }
 
 impl ProcessedHeader {
-    pub fn new(rlp: String, leaf_idx: u64, mmr_path: Vec<String>) -> Self {
+    pub fn new(rlp: RlpBlockHeader, leaf_idx: u64, mmr_path: Vec<String>) -> Self {
+        let rlp = hex::decode(rlp.value).expect("Cannot decode RLP block header to bytes");
         let proof = ProcessedHeaderProof::new(leaf_idx, mmr_path);
         ProcessedHeader { rlp, proof }
     }

@@ -1,5 +1,7 @@
 //! Task is a unit of work that can be executed by the processor/pre-processor.
 
+use alloy::primitives::B256;
+
 use crate::datalake::task::DatalakeCompute;
 use crate::module::Module;
 
@@ -11,7 +13,7 @@ pub enum TaskEnvelope {
 }
 
 impl TaskEnvelope {
-    pub fn commit(&self) -> String {
+    pub fn commit(&self) -> B256 {
         match self {
             TaskEnvelope::DatalakeCompute(task) => task.commit(),
             TaskEnvelope::Module(module) => module.commit(),
