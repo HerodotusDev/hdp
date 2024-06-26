@@ -1,6 +1,6 @@
 [package]
 name = "hdp-cli"
-version = "0.2.0"
+version = "0.2.5"
 edition = "2021"
 license-file = "LICENSE"
 description = "Interact Herodotus Data Processor via CLI"
