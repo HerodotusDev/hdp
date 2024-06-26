@@ -93,12 +93,12 @@ pub async fn compile_tx_datalake(
                 transaction_receipts.insert(ProcessedReceipt::new(
                     tx_receipt.tx_index,
                     tx_receipt.block_number,
-                    tx_receipt.transaction_proof,
+                    tx_receipt.receipt_proof,
                 ));
 
                 // depends on datalake.included_types filter the value to be included in the aggregation set
                 if datalake.included_types.is_included(tx_receipt.tx_type) {
-                    let value = property.decode_field_from_rlp(&tx_receipt.encoded_transaction);
+                    let value = property.decode_field_from_rlp(&tx_receipt.encoded_receipt);
                     aggregation_set.push(value);
                 }
             }

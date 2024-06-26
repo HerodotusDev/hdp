@@ -22,7 +22,7 @@ use tracing::info;
 use crate::{
     indexer::{Indexer, IndexerError},
     key::FetchKeyEnvelope,
-    types::FetchedTransactionProof,
+    types::{FetchedTransactionProof, FetchedTransactionReceiptProof},
 };
 
 use super::rpc::{RpcProvider, RpcProviderError};
@@ -262,60 +262,57 @@ impl EvmProvider {
     ) -> Result<Vec<FetchedTransactionProof>, ProviderError> {
         let start_fetch = Instant::now();
 
-        let mut tx_with_proof = vec![];
+        let mut fetched_transaction_proofs = vec![];
         let mut tx_trie_provider = TxsMptHandler::new(self.tx_provider_url.clone()).unwrap();
 
         loop {
-            let trie_build_result = tx_trie_provider
+            let trie_response = tx_trie_provider
                 .build_tx_tree_from_block(target_block)
                 .await;
-            if trie_build_result.is_ok() {
-                break;
-            }
-            let error = trie_build_result.err().unwrap();
-            match error {
-                EthTrieError::RPC(RpcError::Transport(TransportErrorKind::HttpError(
+
+            match trie_response {
+                Ok(_) => break,
+                Err(EthTrieError::RPC(RpcError::Transport(TransportErrorKind::HttpError(
                     http_error,
-                ))) if http_error.status == 429 => {
-                    println!("429 error, retrying...");
+                )))) if http_error.status == 429 => {
+                    // retry if 429 error
                     tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
                     continue;
                 }
-                _ => return Err(ProviderError::EthTrieError(error)),
+                _ => return Err(ProviderError::EthTrieError(trie_response.err().unwrap())),
             }
         }
 
         let fetched_transactions = tx_trie_provider.get_elements()?;
+        let tx_length = fetched_transactions.len() as u64;
         let target_tx_index_range = (start_index..end_index).step_by(incremental as usize);
         for tx_index in target_tx_index_range {
-            let proof = tx_trie_provider
+            // validate out of bound request
+            if tx_index >= tx_length {
+                return Err(ProviderError::OutOfBoundRequestError(tx_index, tx_length));
+            }
+
+            let tx_trie_proof = tx_trie_provider
                 .get_proof(tx_index)
                 .unwrap()
                 .into_iter()
                 .map(Bytes::from)
                 .collect::<Vec<_>>();
-            if tx_index >= fetched_transactions.len() as u64 {
-                return Err(ProviderError::OutOfBoundRequestError(
-                    tx_index,
-                    fetched_transactions.len() as u64,
-                ));
-            }
+
             let consensus_tx = fetched_transactions[tx_index as usize].clone();
-            let rlp = consensus_tx.rlp_encode();
-            let tx_type = consensus_tx.0.tx_type();
-            tx_with_proof.push(FetchedTransactionProof::new(
+            fetched_transaction_proofs.push(FetchedTransactionProof::new(
                 target_block,
                 tx_index,
-                rlp,
-                proof,
-                tx_type,
+                consensus_tx.rlp_encode(),
+                tx_trie_proof,
+                consensus_tx.0.tx_type(),
             ));
         }
 
         let duration = start_fetch.elapsed();
         info!("Time taken (Transactions Proofs Fetch): {:?}", duration);
 
-        Ok(tx_with_proof)
+        Ok(fetched_transaction_proofs)
     }
 
     /// Fetches the transaction receipts with proof from the MPT trie for the given block number.
@@ -329,8 +326,10 @@ impl EvmProvider {
         start_index: TxIndex,
         end_index: TxIndex,
         incremental: u64,
-    ) -> Result<Vec<FetchedTransactionProof>, ProviderError> {
-        let mut tx_with_proof = vec![];
+    ) -> Result<Vec<FetchedTransactionReceiptProof>, ProviderError> {
+        let start_fetch = Instant::now();
+
+        let mut fetched_transaction_receipts_proofs = vec![];
         let mut tx_receipt_trie_provider = TxReceiptsMptHandler::new(self.tx_provider_url.clone())?;
 
         loop {
@@ -351,8 +350,8 @@ impl EvmProvider {
             }
         }
 
-        let tx_receipts = tx_receipt_trie_provider.get_elements()?;
-        let tx_receipt_length = tx_receipts.len() as u64;
+        let fetched_transaction_receipts = tx_receipt_trie_provider.get_elements()?;
+        let tx_receipt_length = fetched_transaction_receipts.len() as u64;
         let target_tx_index_range = (start_index..end_index).step_by(incremental as usize);
         for tx_index in target_tx_index_range {
             // validate out of bound request
@@ -370,18 +369,23 @@ impl EvmProvider {
                 .map(Bytes::from)
                 .collect::<Vec<_>>();
 
-            let consensus_tx_receipt = tx_receipts[tx_index as usize].clone();
-            let tx_type = consensus_tx_receipt.0.tx_type();
-            tx_with_proof.push(FetchedTransactionProof::new(
+            let consensus_tx_receipt = fetched_transaction_receipts[tx_index as usize].clone();
+            fetched_transaction_receipts_proofs.push(FetchedTransactionReceiptProof::new(
                 target_block,
                 tx_index,
                 consensus_tx_receipt.rlp_encode(),
                 tx_receipt_trie_proof,
-                tx_type,
+                consensus_tx_receipt.0.tx_type(),
             ));
         }
 
-        Ok(tx_with_proof)
+        let duration = start_fetch.elapsed();
+        info!(
+            "Time taken (Transaction Receipts Proofs Fetch): {:?}",
+            duration
+        );
+
+        Ok(fetched_transaction_receipts_proofs)
     }
 }
 
