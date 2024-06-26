@@ -1,23 +1,3 @@
-//! RPC provider for fetching data from Ethereum RPC
-//! It is a wrapper around the alloy provider, using eth_getProof for fetching account and storage proofs
-//!
-//! How to use:
-//! ```rust
-//! use reqwest::Url;
-//! use hdp_provider::evm::rpc::RpcProvider;
-//! use alloy::primitives::Address;
-//!
-//! async fn call_provider(url: Url, chunk_size: u64, block_range_start: u64, block_range_end: u64, increment: u64, address: Address) {
-//!         let provider = RpcProvider::new(url, chunk_size);
-//!         let target_block_range = (block_range_start..=block_range_end).collect::<Vec<u64>>();
-//!         let result = provider.get_account_proofs(target_block_range, address).await;
-//!         match result {
-//!             Ok(proofs) => println!("Fetched proofs: {:?}", proofs),
-//!             Err(e) => eprintln!("Error fetching proofs: {:?}", e),
-//!         }
-//! }
-//! ```
-
 use std::{
     collections::{HashMap, HashSet},
     sync::Arc,
@@ -35,14 +15,45 @@ use alloy::{
 };
 use futures::future::join_all;
 use reqwest::Url;
+use thiserror::Error;
 use tokio::sync::{
     mpsc::{self, Sender},
     RwLock,
 };
 use tracing::{debug, info};
 
-use crate::errors::ProviderError;
+/// Error from [`RpcProvider`]
+#[derive(Error, Debug)]
+pub enum RpcProviderError {
+    #[error("Failed to send proofs with mpsc")]
+    MpscError(
+        #[from]
+        tokio::sync::mpsc::error::SendError<(
+            BlockNumber,
+            alloy::rpc::types::EIP1186AccountProofResponse,
+        )>,
+    ),
+}
 
+/// RPC provider for fetching data from Ethereum RPC
+/// It is a wrapper around the alloy provider, using eth_getProof for fetching account and storage proofs
+///
+/// How to use:
+/// ```rust
+/// use reqwest::Url;
+/// use hdp_provider::evm::rpc::RpcProvider;
+/// use alloy::primitives::Address;
+///
+/// async fn call_provider(url: Url, chunk_size: u64, block_range_start: u64, block_range_end: u64, increment: u64, address: Address) {
+///         let provider = RpcProvider::new(url, chunk_size);
+///         let target_block_range = (block_range_start..=block_range_end).collect::<Vec<u64>>();
+///         let result = provider.get_account_proofs(target_block_range, address).await;
+///         match result {
+///             Ok(proofs) => println!("Fetched proofs: {:?}", proofs),
+///             Err(e) => eprintln!("Error fetching proofs: {:?}", e),
+///         }
+/// }
+/// ```
 #[derive(Clone)]
 pub struct RpcProvider {
     provider: RootProvider<Http<Client>>,
@@ -61,51 +72,50 @@ impl RpcProvider {
     /// Get account with proof in given vector of blocks
     pub async fn get_account_proofs(
         &self,
-        blocks: Vec<u64>,
+        blocks: Vec<BlockNumber>,
         address: Address,
-    ) -> Result<HashMap<u64, EIP1186AccountProofResponse>, ProviderError> {
+    ) -> Result<HashMap<BlockNumber, EIP1186AccountProofResponse>, RpcProviderError> {
         let start_fetch = Instant::now();
 
         let (rpc_sender, mut rx) = mpsc::channel::<(BlockNumber, EIP1186AccountProofResponse)>(32);
         self._get_account_proofs(rpc_sender, blocks, address);
-        let mut result = HashMap::new();
-
+        let mut fetched_account_proofs_block_maps = HashMap::new();
         while let Some((block_number, proof)) = rx.recv().await {
-            result.insert(block_number, proof);
+            fetched_account_proofs_block_maps.insert(block_number, proof);
         }
         let duration = start_fetch.elapsed();
         info!("Time taken (Account Fetch): {:?}", duration);
 
-        Ok(result)
+        Ok(fetched_account_proofs_block_maps)
     }
 
     /// Get storage with proof in given vector of blocks and slot
     pub async fn get_storage_proofs(
         &self,
-        block_range: Vec<u64>,
+        block_range: Vec<BlockNumber>,
         address: Address,
         storage_key: StorageKey,
-    ) -> Result<HashMap<u64, EIP1186AccountProofResponse>, ProviderError> {
+    ) -> Result<HashMap<BlockNumber, EIP1186AccountProofResponse>, RpcProviderError> {
         let start_fetch = Instant::now();
 
         let (rpc_sender, mut rx) = mpsc::channel::<(BlockNumber, EIP1186AccountProofResponse)>(32);
         self._get_storage_proofs(rpc_sender, block_range, address, storage_key);
 
-        let mut result = HashMap::new();
+        let mut fetched_storage_proofs_block_maps = HashMap::new();
 
         while let Some((block_number, proof)) = rx.recv().await {
-            result.insert(block_number, proof);
+            fetched_storage_proofs_block_maps.insert(block_number, proof);
         }
         let duration = start_fetch.elapsed();
         info!("Time taken (Storage Fetch): {:?}", duration);
 
-        Ok(result)
+        Ok(fetched_storage_proofs_block_maps)
     }
 
     fn _get_account_proofs(
         &self,
         rpc_sender: Sender<(BlockNumber, EIP1186AccountProofResponse)>,
-        blocks: Vec<u64>,
+        blocks: Vec<BlockNumber>,
         address: Address,
     ) {
         let chunk_size = self.chunk_size;
@@ -150,6 +160,7 @@ impl RpcProvider {
                                     rpc_sender
                                         .send((block_number, account_from_rpc))
                                         .await
+                                        .map_err(RpcProviderError::MpscError)
                                         .unwrap();
                                     blocks_identifier.insert(block_number);
                                 }
@@ -175,7 +186,7 @@ impl RpcProvider {
     fn _get_storage_proofs(
         &self,
         rpc_sender: Sender<(BlockNumber, EIP1186AccountProofResponse)>,
-        blocks: Vec<u64>,
+        blocks: Vec<BlockNumber>,
         address: Address,
         storage_key: StorageKey,
     ) {
@@ -220,6 +231,7 @@ impl RpcProvider {
                                 rpc_sender
                                     .send((block_number, storage_proof))
                                     .await
+                                    .map_err(RpcProviderError::MpscError)
                                     .unwrap();
                                 blocks_identifier.insert(block_number);
                             }
@@ -244,20 +256,12 @@ impl RpcProvider {
 
 fn handle_error(e: RpcError<TransportErrorKind>) -> Option<u64> {
     match e {
-        RpcError::Transport(transport_error) => match transport_error {
-            TransportErrorKind::HttpError(http_error) => {
-                if http_error.status == 429 {
-                    Some(1) // Start backoff with 1 milisecond
-                } else {
-                    None
-                }
-            }
-            TransportErrorKind::MissingBatchResponse(_) => None,
-            TransportErrorKind::BackendGone => None,
-            TransportErrorKind::PubsubUnavailable => None,
-            TransportErrorKind::Custom(_) => None,
-            _ => None,
-        },
+        RpcError::Transport(TransportErrorKind::HttpError(http_error))
+            if http_error.status == 429 =>
+        {
+            Some(1)
+        }
+
         _ => None,
     }
 }
@@ -303,7 +307,8 @@ mod tests {
         let provider = RpcProvider::new(rpc_url, 100);
         let block_range_start = 6127485;
         let block_range_end = 6127584;
-        let target_block_range = (block_range_start..=block_range_end).collect::<Vec<u64>>();
+        let target_block_range =
+            (block_range_start..=block_range_end).collect::<Vec<BlockNumber>>();
         let target_address = address!("75CeC1db9dCeb703200EAa6595f66885C962B920");
         let target_slot = B256::from(U256::from(1));
         let result = provider
@@ -327,7 +332,8 @@ mod tests {
         let provider = RpcProvider::new(rpc_url, 100);
         let block_range_start = 6127485;
         let block_range_end = 6127584;
-        let target_block_range = (block_range_start..=block_range_end).collect::<Vec<u64>>();
+        let target_block_range =
+            (block_range_start..=block_range_end).collect::<Vec<BlockNumber>>();
         let target_address = address!("7f2c6f930306d3aa736b3a6c6a98f512f74036d4");
 
         let result = provider

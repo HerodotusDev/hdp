@@ -1,8 +1,3 @@
-use std::{
-    collections::{HashMap, HashSet},
-    time::Instant,
-};
-
 use alloy::{
     primitives::{Address, BlockNumber, Bytes, StorageKey},
     rpc::types::EIP1186AccountProofResponse,
@@ -17,14 +12,48 @@ use hdp_primitives::{
 };
 use itertools::Itertools;
 use reqwest::Url;
+use std::{
+    collections::{HashMap, HashSet},
+    time::Instant,
+};
+use thiserror::Error;
 use tracing::info;
 
 use crate::{
-    errors::ProviderError, indexer::Indexer, key::FetchKeyEnvelope, types::FetchedTransactionProof,
+    indexer::{Indexer, IndexerError},
+    key::FetchKeyEnvelope,
+    types::FetchedTransactionProof,
 };
 
-use super::rpc::RpcProvider;
+use super::rpc::{RpcProvider, RpcProviderError};
 
+/// Error from [`EvmProvider`]
+#[derive(Error, Debug)]
+pub enum ProviderError {
+    /// Error when the query is invalid
+    #[error("Out of bound: requested index: {0}, length: {1}")]
+    OutOfBoundRequestError(u64, u64),
+
+    /// Error from the [`Indexer`]
+    #[error("Failed from indexer")]
+    IndexerError(#[from] IndexerError),
+
+    /// Error from [`RpcProvider`]
+    #[error("Failed to get proofs: {0}")]
+    RpcProviderError(#[from] RpcProviderError),
+
+    /// Error from [`eth_trie_proofs`]
+    #[error("EthTrieError: {0}")]
+    EthTrieError(#[from] eth_trie_proofs::EthTrieError),
+}
+
+/// EVM provider
+///
+/// This provider is responsible for fetching proofs from the EVM chain.
+/// It uses the RPC provider to fetch proofs from the EVM chain and the indexer to fetch
+/// header proofs
+///
+/// Run benchmark [here](../benchmark/provider_benchmark.rs)
 #[derive(Clone)]
 pub struct EvmProvider {
     /// Account and storage trie provider
@@ -35,8 +64,11 @@ pub struct EvmProvider {
     tx_provider_url: Url,
 }
 
+/// EVM provider configuration
 pub struct EvmProviderConfig {
+    /// RPC url
     pub rpc_url: Url,
+    /// Chain id
     pub chain_id: u64,
 }
 
@@ -64,6 +96,7 @@ impl EvmProvider {
     }
 
     #[allow(unused)]
+    // TODO: not implemented yet for sync with module compiler
     pub async fn fetch_proofs_from_keys(
         &self,
         fetch_keys: HashSet<FetchKeyEnvelope>,
@@ -71,6 +104,12 @@ impl EvmProvider {
         todo!("Implement fetch_proofs_from_keys")
     }
 
+    /// Fetches the header proofs for the given block range.
+    /// The header proofs are fetched from the indexer and the MMR meta is fetched from the indexer.
+    ///
+    /// Return:
+    /// - MMR meta
+    /// - Header proofs mapped by block number
     pub async fn get_range_of_header_proofs(
         &self,
         from_block: u64,
@@ -110,6 +149,11 @@ impl EvmProvider {
         Ok((mmr.unwrap(), processed_headers))
     }
 
+    /// Fetches the account proofs for the given block range.
+    /// The account proofs are fetched from the RPC provider.
+    ///
+    /// Return:
+    /// - Account proofs mapped by block number
     pub async fn get_range_of_account_proofs(
         &self,
         from_block: u64,
@@ -136,6 +180,8 @@ impl EvmProvider {
         Ok(processed_accounts)
     }
 
+    /// Chunks the block range into smaller ranges of 800 blocks.
+    /// This is to avoid fetching too many blocks at once from the RPC provider.
     fn _chunk_block_range(&self, from_block: u64, to_block: u64, increment: u64) -> Vec<Vec<u64>> {
         (from_block..=to_block)
             .step_by(increment as usize)
@@ -145,6 +191,11 @@ impl EvmProvider {
             .collect()
     }
 
+    /// Fetches the storage proofs for the given block range.
+    /// The storage proofs are fetched from the RPC provider.
+    ///
+    /// Return:
+    /// - Storage proofs mapped by block number
     pub async fn get_range_of_storage_proofs(
         &self,
         from_block: u64,
@@ -172,6 +223,9 @@ impl EvmProvider {
 
     /// Fetches the encoded transaction with proof from the MPT trie for the given block number.
     /// The transaction is fetched from the MPT trie and the proof is generated from the MPT trie.
+    ///
+    /// Return:
+    /// - Transaction proofs mapped by block number
     pub async fn get_tx_with_proof_from_block(
         &self,
         target_block: u64,
@@ -212,10 +266,10 @@ impl EvmProvider {
                 .map(Bytes::from)
                 .collect::<Vec<_>>();
             if tx_index >= txs.len() as u64 {
-                return Err(ProviderError::GetTransactionProofError(format!(
-                    "tx index should be less than the number of transactions {}",
-                    txs.len()
-                )));
+                return Err(ProviderError::OutOfBoundRequestError(
+                    tx_index,
+                    txs.len() as u64,
+                ));
             }
             let consensus_tx = txs[tx_index as usize].clone();
             let rlp = Bytes::from(consensus_tx.rlp_encode());
@@ -233,6 +287,11 @@ impl EvmProvider {
         Ok(tx_with_proof)
     }
 
+    /// Fetches the transaction receipts with proof from the MPT trie for the given block number.
+    /// The transaction receipts are fetched from the MPT trie and the proof is generated from the MPT trie.
+    ///
+    /// Return:
+    /// - Transaction receipts proofs mapped by block number
     pub async fn get_tx_receipt_with_proof_from_block(
         &self,
         target_block: u64,
@@ -272,10 +331,10 @@ impl EvmProvider {
                 .map(Bytes::from)
                 .collect::<Vec<_>>();
             if tx_index >= tx_receipts.len() as u64 {
-                return Err(ProviderError::GetTransactionReceiptProofError(format!(
-                    "tx index should be less than the number of transactions receipts {}",
-                    tx_receipts.len()
-                )));
+                return Err(ProviderError::OutOfBoundRequestError(
+                    tx_index,
+                    tx_receipts.len() as u64,
+                ));
             }
             let consensus_tx_receipt = tx_receipts[tx_index as usize].clone();
             let rlp = Bytes::from(consensus_tx_receipt.rlp_encode());
@@ -302,7 +361,7 @@ mod tests {
     const SEPOLIA_RPC_URL: &str =
         "https://eth-sepolia.g.alchemy.com/v2/xar76cftwEtqTBWdF4ZFy9n8FLHAETDv";
 
-    #[ignore = "ignore for now"]
+    #[ignore = "too many requests, recommend to run locally"]
     #[tokio::test]
     async fn test_get_2000_range_of_account_proofs() -> Result<(), ProviderError> {
         let start_time = Instant::now();
@@ -319,7 +378,7 @@ mod tests {
         Ok(())
     }
 
-    #[ignore = "ignore for now"]
+    #[ignore = "too many requests, recommend to run locally"]
     #[tokio::test]
     async fn test_get_2000_range_of_storage_proofs() -> Result<(), ProviderError> {
         let start_time = Instant::now();
@@ -336,7 +395,7 @@ mod tests {
         Ok(())
     }
 
-    #[ignore = "ignore for now"]
+    #[ignore = "too many requests, recommend to run locally"]
     #[tokio::test]
     async fn test_get_2000_range_of_header_proofs() -> Result<(), ProviderError> {
         let start_time = Instant::now();
@@ -465,7 +524,7 @@ mod tests {
         assert!(result.is_err());
         assert_eq!(
             result.err().unwrap().to_string(),
-            "Failed to get transaction proof: tx index should be less than the number of transactions 93"
+            "Out of bound: requested index: 93, length: 93"
         );
     }
 
@@ -478,7 +537,7 @@ mod tests {
         assert!(result.is_err());
         assert_eq!(
             result.err().unwrap().to_string(),
-            "Failed to get transaction receipt proof: tx index should be less than the number of transactions receipts 93"
+            "Out of bound: requested index: 93, length: 93"
         );
     }
 }
