@@ -1,19 +1,3 @@
-//! Indexer client for fetching MMR and headers proof from Herodotus Indexer
-//!
-//! For more information, see: https://rs-indexer.api.herodotus.cloud/swagger
-//!
-//! How to use:
-//! ```rust
-//! use hdp_provider::indexer::Indexer;
-//! use hdp_provider::errors::IndexerError;
-//!
-//! async fn call_indexer(chain_id: u64, block_range_start: u64, block_range_end: u64) -> Result<(), IndexerError> {
-//!     let indexer = Indexer::new(chain_id);
-//!     let response = indexer.get_headers_proof(block_range_start, block_range_end).await?;
-//!     Ok(())
-//! }
-//! ```
-
 use alloy::primitives::{BlockNumber, ChainId};
 use hdp_primitives::block::header::{
     MMRDataFromNewIndexer, MMRFromNewIndexer, MMRMetaFromNewIndexer, MMRProofFromNewIndexer,
@@ -50,6 +34,22 @@ pub enum IndexerError {
     #[error("Failed to get headers proof: {0}")]
     GetHeadersProofError(String),
 }
+
+/// Indexer client for fetching MMR and headers proof from Herodotus Indexer
+///
+/// For more information, see: https://rs-indexer.api.herodotus.cloud/swagger
+///
+/// How to use:
+/// ```rust
+/// use hdp_provider::indexer::Indexer;
+/// use hdp_provider::errors::IndexerError;
+///
+/// async fn call_indexer(chain_id: u64, block_range_start: u64, block_range_end: u64) -> Result<(), IndexerError> {
+///     let indexer = Indexer::new(chain_id);
+///     let response = indexer.get_headers_proof(block_range_start, block_range_end).await?;
+///     Ok(())
+/// }
+/// ```
 
 #[derive(Clone)]
 pub struct Indexer {
