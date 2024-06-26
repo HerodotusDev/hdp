@@ -33,4 +33,5 @@ criterion = { version = "0.4", features = [
 
 [[bench]]
 name = "provider_benchmark"
+path = "benches/provider_benchmark.rs"
 harness = false
