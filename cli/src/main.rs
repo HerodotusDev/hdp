@@ -210,6 +210,7 @@ async fn handle_run(
             let processor = Processor::new(PathBuf::from(program_path));
             let processor_result = processor.process(result, pie_file.unwrap()).await?;
             let output_string = serde_json::to_string_pretty(&processor_result).unwrap();
+            info!("output_string: {:?}", output_string);
             fs::write(&output_file_path, output_string).expect("Unable to write file");
             info!(
                 "Finished processing the data, saved the input file in {} and output file in {}",

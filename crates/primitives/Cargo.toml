@@ -6,6 +6,10 @@ license-file.workspace = true
 repository.workspace = true
 version.workspace = true
 exclude.workspace = true
+keywords.workspace = true
+categories.workspace = true
+authors.workspace = true
+readme = "README.md"
 
 [dependencies]
 serde = { workspace = true }
