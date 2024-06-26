@@ -94,12 +94,12 @@ impl Indexer {
         from_block: BlockNumber,
         to_block: BlockNumber,
     ) -> Result<IndexerHeadersProofResponse, IndexerError> {
-        let target_length = (to_block - from_block + 1) as usize;
-
         // validate from_block and to_block
         if from_block > to_block {
             return Err(IndexerError::InvalidBlockRange);
         }
+
+        let target_length = (to_block - from_block + 1) as usize;
 
         let response = self
             .client

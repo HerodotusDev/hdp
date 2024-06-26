@@ -1804,7 +1804,9 @@ dependencies = [
 
 [[package]]
 name = "eth-trie-proofs"
-version = "0.1.0"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ffad0513a634350b4859934c3367cd171b4ed57c6b5c64d443e30bf278f1f8d0"
 dependencies = [
  "alloy",
  "alloy-primitives",
