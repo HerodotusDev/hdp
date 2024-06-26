@@ -17,4 +17,15 @@ eth-trie-proofs.workspace = true
 futures.workspace = true
 thiserror.workspace = true
 alloy.workspace = true
-itertools = "0.10"
+itertools.workspace = true
+
+[dev-dependencies]
+criterion = { version = "0.4", features = [
+    "async",
+    "async_futures",
+    "html_reports",
+] }
+
+[[bench]]
+name = "provider_benchmark"
+harness = false

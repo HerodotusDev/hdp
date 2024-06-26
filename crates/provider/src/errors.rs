@@ -1,3 +1,5 @@
+//! Errors for the provider crate.
+
 use thiserror::Error;
 
 #[derive(Error, Debug)]

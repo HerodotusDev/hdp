@@ -2,10 +2,20 @@
 //! It is a wrapper around the alloy provider, using eth_getProof for fetching account and storage proofs
 //!
 //! How to use:
-//! ```
-//! let rpc_url = Url::parse(SEPOLIA_RPC_URL).unwrap();
-//! let provider = RpcProvider::new(rpc_url, CHUNK_SIZE);
-//! let result = provider.get_range_account_with_proof(block_range_start, block_range_end, increment, address).await;
+//! ```rust
+//! use reqwest::Url;
+//! use hdp_provider::evm::rpc::RpcProvider;
+//! use alloy::primitives::Address;
+//!
+//! async fn call_provider(url: Url, chunk_size: u64, block_range_start: u64, block_range_end: u64, increment: u64, address: Address) {
+//!         let provider = RpcProvider::new(url, chunk_size);
+//!         let target_block_range = (block_range_start..=block_range_end).collect::<Vec<u64>>();
+//!         let result = provider.get_account_proofs(target_block_range, address).await;
+//!         match result {
+//!             Ok(proofs) => println!("Fetched proofs: {:?}", proofs),
+//!             Err(e) => eprintln!("Error fetching proofs: {:?}", e),
+//!         }
+//! }
 //! ```
 
 use std::{

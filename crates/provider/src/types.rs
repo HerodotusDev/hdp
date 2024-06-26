@@ -1,3 +1,8 @@
+//! Types for the provider crate.
+//! For the `FetchedTransactionProof` and `FetchedTransactionReceiptProof` types.
+//!
+//! We need this type to bind encoded transaction and receipts to the block number and proofs.
+
 use alloy::primitives::Bytes;
 
 #[derive(Debug, Clone)]
