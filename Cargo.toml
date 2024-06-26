@@ -19,9 +19,9 @@ categories = [
 ]
 
 [workspace.dependencies]
-hdp-core = { version = "0.2.0", path = "crates/core" }
-hdp-primitives = { version = "0.2.0", path = "crates/primitives" }
-hdp-provider = { version = "0.2.0", path = "crates/provider" }
+hdp-core = { version = "0.2.5", path = "crates/core" }
+hdp-primitives = { version = "0.2.5", path = "crates/primitives" }
+hdp-provider = { version = "0.2.5", path = "crates/provider" }
 tokio = { version = "1", features = ["full"] }
 tempfile = "3.10.1"
 alloy-merkle-tree = { version = "0.6.0" }
