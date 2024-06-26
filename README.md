@@ -25,7 +25,7 @@ The Data Processor CLI serves as an essential tool for developers working with C
 
 ```bash
 # Install with cargo
-❯ cargo install --git https://github.com/HerodotusDev/hdp --locked --force
+❯ cargo install --git https://github.com/HerodotusDev/hdp --tag v0.2.5 --locked --force
 ```
 
 ### Build from source
@@ -63,25 +63,25 @@ The following examples demonstrate how to use the HDP CLI to encode various bloc
 Header value with `AVG`:
 
 ```
-hdp encode "avg" -b 4952100 4952110 "header.base_fee_per_gas" 1
+hdp encode -a -c {input.file} "avg" -b 4952100 4952110 "header.base_fee_per_gas" 1
 ```
 
 Account value with `SUM`:
 
 ```
-hdp encode "sum" -b 4952100 4952110 "account.0x7f2c6f930306d3aa736b3a6c6a98f512f74036d4.nonce" 2
+hdp encode -a -c {input.file} "sum" -b 4952100 4952110 "account.0x7f2c6f930306d3aa736b3a6c6a98f512f74036d4.nonce" 2
 ```
 
 Storage value with `AVG`:
 
 ```
-hdp encode "avg" -b 5382810 5382820 "storage.0x75CeC1db9dCeb703200EAa6595f66885C962B920.0x0000000000000000000000000000000000000000000000000000000000000002" 1
+hdp encode -a -c {input.file} "avg" -b 5382810 5382820 "storage.0x75CeC1db9dCeb703200EAa6595f66885C962B920.0x0000000000000000000000000000000000000000000000000000000000000002" 1
 ```
 
 Account value with `COUNT`:
 
 ```
-hdp encode "count" "gt.1000" -b 4952100 4952110 "account.0x7f2c6f930306d3aa736b3a6c6a98f512f74036d4.nonce" 2
+hdp encode -a -c {input.file} "count" "gt.1000" -b 4952100 4952110 "account.0x7f2c6f930306d3aa736b3a6c6a98f512f74036d4.nonce" 2
 ```
 
 After encoding, you can directly run processing tasks using environmental configurations for RPC and Chain ID, as shown below:
@@ -185,9 +185,9 @@ For developers interested in extending the functionality of HDP by adding new mo
 
 ### Getting Started
 
-1. **Module Location**: Start by creating a new module within the `aggregate_fn` directory. You can find this at [aggregation_fn/mod.rs](./crates/core/src/aggregate_fn).
+1. **Module Location**: Start by creating a new module within the `aggregate_fn` directory. You can find this at [aggregation_fn/mod.rs](./crates/primitives/src/aggregate_fn).
 
-2. **Define Enum**: Define your new function as an enum in the [file](./crates/core/src/aggregate_fn). Make sure to add match arms for the new enum variants in the implementation.
+2. **Define Enum**: Define your new function as an enum in the [file](./crates/primitives/src/aggregate_fn). Make sure to add match arms for the new enum variants in the implementation.
 
 3. **Handle Data Types**: Depending on the expected input type for your function:
    - **Integer Inputs**: Use [`U256`](https://docs.rs/alloy-primitives/latest/alloy_primitives/index.html#reexport.U256) for handling large integers compatible with Ethereum's numeric constraints.
@@ -195,7 +195,7 @@ For developers interested in extending the functionality of HDP by adding new mo
 
 ### Context Required Operation
 
-For a practical example of how to implement context-sensitive operations, refer to the implementation of the [`COUNT`](./crates/core/src/aggregate_fn/integer.rs#L118) function. This example shows how to pass and utilize additional context for operations, which can be particularly useful for conditional processing or complex calculations.
+For a practical example of how to implement context-sensitive operations, refer to the implementation of the `COUNT` function. This example shows how to pass and utilize additional context for operations, which can be particularly useful for conditional processing or complex calculations.
 
 During `SLR` computation, we also need a context to use as the target index for computation. Since `SLR` is not supported during the preprocessing step, we simply pass the encoded task that contains the function context, and the Cairo program will handle this computation based on the provided index.
 

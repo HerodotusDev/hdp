@@ -2173,7 +2173,7 @@ dependencies = [
 
 [[package]]
 name = "hdp-cli"
-version = "0.2.0"
+version = "0.2.5"
 dependencies = [
  "alloy",
  "anyhow",
@@ -2191,7 +2191,7 @@ dependencies = [
 
 [[package]]
 name = "hdp-core"
-version = "0.2.0"
+version = "0.2.5"
 dependencies = [
  "alloy",
  "alloy-merkle-tree",
@@ -2214,7 +2214,7 @@ dependencies = [
 
 [[package]]
 name = "hdp-primitives"
-version = "0.2.0"
+version = "0.2.5"
 dependencies = [
  "alloy",
  "alloy-rlp",
@@ -2231,7 +2231,7 @@ dependencies = [
 
 [[package]]
 name = "hdp-provider"
-version = "0.2.0"
+version = "0.2.5"
 dependencies = [
  "alloy",
  "anyhow",

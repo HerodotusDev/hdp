@@ -3,10 +3,20 @@ resolver = "2"
 members = ["cli", "crates/core", "crates/primitives", "crates/provider"]
 
 [workspace.package]
-version = "0.2.0"
+version = "0.2.5"
 edition = "2021"
 license-file = "LICENSE"
+authors = ["Pia <pia@herodotus.dev>"]
 repository = "https://github.com/HerodotusDev/hdp"
+homepage = "https://herodotus.dev/"
+exclude = ["benches/", "tests/", "fixtures/"]
+keywords = ["blockchain", "ethereum", "rust", "data-processor", "storage-proof"]
+categories = [
+    "command-line-interface",
+    "cryptography::cryptocurrencies",
+    "compilers",
+    "asynchronous",
+]
 
 [workspace.dependencies]
 hdp-core = { version = "0.2.0", path = "crates/core" }

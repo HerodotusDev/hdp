@@ -1,20 +1,17 @@
 [package]
 name = "hdp-cli"
-version = "0.2.0"
-edition = "2021"
-license-file = "LICENSE"
-description = "Interact Herodotus Data Processor via CLI"
-authors = ["Pia <pia@herodotus.dev>"]
-homepage = "https://herodotus.dev/"
-repository = "https://github.com/HerodotusDev/hdp"
+description = "Interactive Herodotus Data Processor via CLI"
+edition.workspace = true
+license-file.workspace = true
+version.workspace = true
+repository.workspace = true
+homepage.workspace = true
+exclude.workspace = true
+keywords.workspace = true
+categories.workspace = true
+authors.workspace = true
 readme = "../README.md"
-keywords = ["blockchain", "ethereum", "rust", "data-processor", "storage-proof"]
-categories = [
-    "command-line-interface",
-    "cryptography::cryptocurrencies",
-    "compilers",
-    "asynchronous",
-]
+
 
 [[bin]]
 name = "hdp"
