@@ -4,6 +4,7 @@ use hdp_provider::evm::provider::EvmProvider; // Adjust this import path accordi
 use reqwest::Url;
 use tokio::runtime::Runtime;
 
+// Note: this is non-paid alchemy rpc url
 const SEPOLIA_RPC_URL: &str =
     "https://eth-sepolia.g.alchemy.com/v2/xar76cftwEtqTBWdF4ZFy9n8FLHAETDv";
 

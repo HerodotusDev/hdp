@@ -177,10 +177,9 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_invalid_query() -> Result<(), IndexerError> {
+    async fn test_invalid_query() {
         let indexer = Indexer::new(11155111);
         let response = indexer.get_headers_proof(10, 1).await;
         assert!(matches!(response, Err(IndexerError::InvalidBlockRange)));
-        Ok(())
     }
 }

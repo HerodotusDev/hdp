@@ -176,6 +176,7 @@ async fn handle_run(
     let datalake_config = EvmProviderConfig {
         rpc_url: config.rpc_url.parse().expect("Failed to parse RPC URL"),
         chain_id: config.chain_id,
+        max_requests: config.rpc_chunk_size,
     };
     let module_config = ModuleCompilerConfig {
         module_registry_rpc_url: url.parse().unwrap(),

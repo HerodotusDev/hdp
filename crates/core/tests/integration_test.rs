@@ -31,6 +31,7 @@ mod integration_test {
         let datalake_config = EvmProviderConfig {
             rpc_url: Url::parse(SEPOLIA_RPC_URL).unwrap(),
             chain_id: 11155111,
+            max_requests: 100,
         };
 
         let preprocessor_config = PreProcessorConfig {

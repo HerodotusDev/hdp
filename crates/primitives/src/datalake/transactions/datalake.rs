@@ -7,6 +7,7 @@
 
 use std::str::FromStr;
 
+use alloy::consensus::TxType;
 use alloy::dyn_abi::{DynSolType, DynSolValue};
 use alloy::primitives::B256;
 use alloy::primitives::{keccak256, U256};
@@ -150,7 +151,7 @@ impl IncludedTypes {
         Self { inner }
     }
 
-    pub fn is_included(&self, target_type: u8) -> bool {
+    pub fn is_included(&self, target_type: TxType) -> bool {
         // check with the index of bytes is either 0 or 1
         self.inner[target_type as usize] != 0
     }
@@ -176,36 +177,36 @@ mod tests {
     #[test]
     fn test_included_types() {
         let included_types = IncludedTypes::from(&[1, 1, 1, 1]);
-        assert!(included_types.is_included(0));
-        assert!(included_types.is_included(1));
-        assert!(included_types.is_included(2));
-        assert!(included_types.is_included(3));
+        assert!(included_types.is_included(TxType::Legacy));
+        assert!(included_types.is_included(TxType::Eip2930));
+        assert!(included_types.is_included(TxType::Eip1559));
+        assert!(included_types.is_included(TxType::Eip4844));
 
         let uint256 = included_types.to_uint256();
         assert_eq!(uint256, U256::from(0x01010101));
 
         let included_types = IncludedTypes::from_uint256(uint256);
-        assert!(included_types.is_included(0));
-        assert!(included_types.is_included(1));
-        assert!(included_types.is_included(2));
-        assert!(included_types.is_included(3));
+        assert!(included_types.is_included(TxType::Legacy));
+        assert!(included_types.is_included(TxType::Eip2930));
+        assert!(included_types.is_included(TxType::Eip1559));
+        assert!(included_types.is_included(TxType::Eip4844));
     }
 
     #[test]
     fn test_included_types_partial() {
         let included_types = IncludedTypes::from(&[1, 0, 1, 0]);
-        assert!(included_types.is_included(0));
-        assert!(!included_types.is_included(1));
-        assert!(included_types.is_included(2));
-        assert!(!included_types.is_included(3));
+        assert!(included_types.is_included(TxType::Legacy));
+        assert!(!included_types.is_included(TxType::Eip2930));
+        assert!(included_types.is_included(TxType::Eip1559));
+        assert!(!included_types.is_included(TxType::Eip4844));
 
         let uint256 = included_types.to_uint256();
         assert_eq!(uint256, U256::from(0x01000100));
 
         let included_types = IncludedTypes::from_uint256(uint256);
-        assert!(included_types.is_included(0));
-        assert!(!included_types.is_included(1));
-        assert!(included_types.is_included(2));
-        assert!(!included_types.is_included(3));
+        assert!(included_types.is_included(TxType::Legacy));
+        assert!(!included_types.is_included(TxType::Eip2930));
+        assert!(included_types.is_included(TxType::Eip1559));
+        assert!(!included_types.is_included(TxType::Eip4844));
     }
 }

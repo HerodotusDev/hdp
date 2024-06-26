@@ -1,5 +1,5 @@
 use alloy::{
-    primitives::{Address, BlockNumber, Bytes, StorageKey},
+    primitives::{Address, BlockNumber, Bytes, ChainId, StorageKey, TxIndex},
     rpc::types::EIP1186AccountProofResponse,
     transports::{RpcError, TransportErrorKind},
 };
@@ -27,12 +27,19 @@ use crate::{
 
 use super::rpc::{RpcProvider, RpcProviderError};
 
+/// This is optimal max number of requests to send in parallel when using non-paid alchemy rpc url
+const DEFAULT_MAX_REQUESTS: u64 = 100;
+
 /// Error from [`EvmProvider`]
 #[derive(Error, Debug)]
 pub enum ProviderError {
     /// Error when the query is invalid
     #[error("Out of bound: requested index: {0}, length: {1}")]
     OutOfBoundRequestError(u64, u64),
+
+    /// Error when the MMR meta is mismatched among range of requested blocks
+    #[error("MMR meta mismatch among range of requested blocks")]
+    MismatchedMMRMeta,
 
     /// Error from the [`Indexer`]
     #[error("Failed from indexer")]
@@ -70,11 +77,17 @@ pub struct EvmProviderConfig {
     pub rpc_url: Url,
     /// Chain id
     pub chain_id: u64,
+    /// Max number of requests to send in parallel
+    ///
+    /// For default, it is set to 100
+    /// For archive node, recommend to set it to 1000
+    /// This will effect fetch speed of account, storage proofs
+    pub max_requests: u64,
 }
 
 impl EvmProvider {
     pub fn new(config: EvmProviderConfig) -> Self {
-        let rpc_provider = RpcProvider::new(config.rpc_url.clone(), 100);
+        let rpc_provider = RpcProvider::new(config.rpc_url.clone(), config.max_requests);
         let header_provider = Indexer::new(config.chain_id);
 
         Self {
@@ -84,8 +97,8 @@ impl EvmProvider {
         }
     }
 
-    pub fn new_with_url(url: Url, chain_id: u64) -> Self {
-        let rpc_provider = RpcProvider::new(url.clone(), 100);
+    pub fn new_with_url(url: Url, chain_id: ChainId) -> Self {
+        let rpc_provider = RpcProvider::new(url.clone(), DEFAULT_MAX_REQUESTS);
         let header_provider = Indexer::new(chain_id);
 
         Self {
@@ -112,8 +125,8 @@ impl EvmProvider {
     /// - Header proofs mapped by block number
     pub async fn get_range_of_header_proofs(
         &self,
-        from_block: u64,
-        to_block: u64,
+        from_block: BlockNumber,
+        to_block: BlockNumber,
         increment: u64,
     ) -> Result<
         (
@@ -123,30 +136,35 @@ impl EvmProvider {
         ProviderError,
     > {
         let start_fetch = Instant::now();
-        let target_blocks: Vec<Vec<u64>> = self._chunk_block_range(from_block, to_block, increment);
 
-        let mut processed_headers = HashMap::new();
+        let target_blocks_batch: Vec<Vec<BlockNumber>> =
+            self._chunk_block_range(from_block, to_block, increment);
+
+        let mut fetched_headers_proofs_with_blocks_map = HashMap::new();
         let mut mmr = None;
-        for target_block in target_blocks {
-            let start_block = target_block[0];
-            let end_block = target_block[target_block.len() - 1];
-            let result = self
+
+        for target_blocks in target_blocks_batch {
+            let (start_block, end_block) =
+                (target_blocks[0], target_blocks[target_blocks.len() - 1]);
+
+            let indexer_response = self
                 .header_provider
                 .get_headers_proof(start_block, end_block)
                 .await?;
-            processed_headers.extend(result.headers);
 
+            // validate MMR among range of blocks
             if mmr.is_none() {
-                mmr = Some(result.mmr_meta);
-            } else {
-                assert_eq!(mmr.as_ref().unwrap(), &result.mmr_meta);
+                mmr = Some(indexer_response.mmr_meta);
+                fetched_headers_proofs_with_blocks_map.extend(indexer_response.headers);
+            } else if mmr.as_ref().unwrap() != &indexer_response.mmr_meta {
+                return Err(ProviderError::MismatchedMMRMeta);
             }
         }
 
         let duration = start_fetch.elapsed();
-        info!("Time taken (Header Fetch): {:?}", duration);
+        info!("Time taken (Headers Proofs Fetch): {:?}", duration);
 
-        Ok((mmr.unwrap(), processed_headers))
+        Ok((mmr.unwrap(), fetched_headers_proofs_with_blocks_map))
     }
 
     /// Fetches the account proofs for the given block range.
@@ -156,33 +174,39 @@ impl EvmProvider {
     /// - Account proofs mapped by block number
     pub async fn get_range_of_account_proofs(
         &self,
-        from_block: u64,
-        to_block: u64,
+        from_block: BlockNumber,
+        to_block: BlockNumber,
         increment: u64,
         address: Address,
     ) -> Result<HashMap<BlockNumber, EIP1186AccountProofResponse>, ProviderError> {
         let start_fetch = Instant::now();
 
-        let target_blocks: Vec<Vec<u64>> = self._chunk_block_range(from_block, to_block, increment);
+        let target_blocks_batch: Vec<Vec<BlockNumber>> =
+            self._chunk_block_range(from_block, to_block, increment);
 
-        let mut processed_accounts = HashMap::new();
-        for target_block in target_blocks {
-            let result = self
-                .rpc_provider
-                .get_account_proofs(target_block, address)
-                .await?;
-            processed_accounts.extend(result);
+        let mut fetched_accounts_proofs_with_blocks_map = HashMap::new();
+        for target_blocks in target_blocks_batch {
+            fetched_accounts_proofs_with_blocks_map.extend(
+                self.rpc_provider
+                    .get_account_proofs(target_blocks, address)
+                    .await?,
+            );
         }
 
         let duration = start_fetch.elapsed();
-        info!("Time taken (Account Fetch): {:?}", duration);
+        info!("Time taken (Account Proofs Fetch): {:?}", duration);
 
-        Ok(processed_accounts)
+        Ok(fetched_accounts_proofs_with_blocks_map)
     }
 
     /// Chunks the block range into smaller ranges of 800 blocks.
     /// This is to avoid fetching too many blocks at once from the RPC provider.
-    fn _chunk_block_range(&self, from_block: u64, to_block: u64, increment: u64) -> Vec<Vec<u64>> {
+    fn _chunk_block_range(
+        &self,
+        from_block: BlockNumber,
+        to_block: BlockNumber,
+        increment: u64,
+    ) -> Vec<Vec<BlockNumber>> {
         (from_block..=to_block)
             .step_by(increment as usize)
             .chunks(800)
@@ -198,26 +222,29 @@ impl EvmProvider {
     /// - Storage proofs mapped by block number
     pub async fn get_range_of_storage_proofs(
         &self,
-        from_block: u64,
-        to_block: u64,
+        from_block: BlockNumber,
+        to_block: BlockNumber,
         increment: u64,
         address: Address,
         storage_slot: StorageKey,
     ) -> Result<HashMap<BlockNumber, EIP1186AccountProofResponse>, ProviderError> {
         let start_fetch = Instant::now();
-        let target_blocks: Vec<Vec<u64>> = self._chunk_block_range(from_block, to_block, increment);
+
+        let target_blocks_batch: Vec<Vec<BlockNumber>> =
+            self._chunk_block_range(from_block, to_block, increment);
 
         let mut processed_accounts = HashMap::new();
-        for target_block in target_blocks {
-            let result = self
-                .rpc_provider
-                .get_storage_proofs(target_block, address, storage_slot)
-                .await?;
-            processed_accounts.extend(result);
+        for target_blocks in target_blocks_batch {
+            processed_accounts.extend(
+                self.rpc_provider
+                    .get_storage_proofs(target_blocks, address, storage_slot)
+                    .await?,
+            );
         }
 
         let duration = start_fetch.elapsed();
-        info!("Time taken (Storage Fetch): {:?}", duration);
+        info!("Time taken (Storage Proofs Fetch): {:?}", duration);
+
         Ok(processed_accounts)
     }
 
@@ -228,11 +255,13 @@ impl EvmProvider {
     /// - Transaction proofs mapped by block number
     pub async fn get_tx_with_proof_from_block(
         &self,
-        target_block: u64,
-        start_index: u64,
-        end_index: u64,
+        target_block: BlockNumber,
+        start_index: TxIndex,
+        end_index: TxIndex,
         incremental: u64,
     ) -> Result<Vec<FetchedTransactionProof>, ProviderError> {
+        let start_fetch = Instant::now();
+
         let mut tx_with_proof = vec![];
         let mut tx_trie_provider = TxsMptHandler::new(self.tx_provider_url.clone()).unwrap();
 
@@ -256,7 +285,7 @@ impl EvmProvider {
             }
         }
 
-        let txs = tx_trie_provider.get_elements().unwrap();
+        let fetched_transactions = tx_trie_provider.get_elements()?;
         let target_tx_index_range = (start_index..end_index).step_by(incremental as usize);
         for tx_index in target_tx_index_range {
             let proof = tx_trie_provider
@@ -265,24 +294,26 @@ impl EvmProvider {
                 .into_iter()
                 .map(Bytes::from)
                 .collect::<Vec<_>>();
-            if tx_index >= txs.len() as u64 {
+            if tx_index >= fetched_transactions.len() as u64 {
                 return Err(ProviderError::OutOfBoundRequestError(
                     tx_index,
-                    txs.len() as u64,
+                    fetched_transactions.len() as u64,
                 ));
             }
-            let consensus_tx = txs[tx_index as usize].clone();
-            let rlp = Bytes::from(consensus_tx.rlp_encode());
-            let tx_type = consensus_tx.0.tx_type() as u8;
-            let fetched_result = FetchedTransactionProof {
-                block_number: target_block,
+            let consensus_tx = fetched_transactions[tx_index as usize].clone();
+            let rlp = consensus_tx.rlp_encode();
+            let tx_type = consensus_tx.0.tx_type();
+            tx_with_proof.push(FetchedTransactionProof::new(
+                target_block,
                 tx_index,
-                encoded_transaction: rlp,
-                transaction_proof: proof,
+                rlp,
+                proof,
                 tx_type,
-            };
-            tx_with_proof.push(fetched_result);
+            ));
         }
+
+        let duration = start_fetch.elapsed();
+        info!("Time taken (Transactions Proofs Fetch): {:?}", duration);
 
         Ok(tx_with_proof)
     }
@@ -294,59 +325,60 @@ impl EvmProvider {
     /// - Transaction receipts proofs mapped by block number
     pub async fn get_tx_receipt_with_proof_from_block(
         &self,
-        target_block: u64,
-        start_index: u64,
-        end_index: u64,
+        target_block: BlockNumber,
+        start_index: TxIndex,
+        end_index: TxIndex,
         incremental: u64,
     ) -> Result<Vec<FetchedTransactionProof>, ProviderError> {
         let mut tx_with_proof = vec![];
-        let mut tx_receipt_trie_provider =
-            TxReceiptsMptHandler::new(self.tx_provider_url.clone()).unwrap();
+        let mut tx_receipt_trie_provider = TxReceiptsMptHandler::new(self.tx_provider_url.clone())?;
+
         loop {
-            let trie_build_result = tx_receipt_trie_provider
+            let trie_response = tx_receipt_trie_provider
                 .build_tx_receipts_tree_from_block(target_block)
                 .await;
-            if trie_build_result.is_ok() {
-                break;
-            }
-            let error = trie_build_result.err().unwrap();
-            match error {
-                EthTrieError::RPC(RpcError::Transport(TransportErrorKind::HttpError(
+
+            match trie_response {
+                Ok(_) => break,
+                Err(EthTrieError::RPC(RpcError::Transport(TransportErrorKind::HttpError(
                     http_error,
-                ))) if http_error.status == 429 => {
+                )))) if http_error.status == 429 => {
+                    // retry if 429 error
                     tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
                     continue;
                 }
-                _ => return Err(ProviderError::EthTrieError(error)),
+                _ => return Err(ProviderError::EthTrieError(trie_response.err().unwrap())),
             }
         }
-        let tx_receipts = tx_receipt_trie_provider.get_elements().unwrap();
 
+        let tx_receipts = tx_receipt_trie_provider.get_elements()?;
+        let tx_receipt_length = tx_receipts.len() as u64;
         let target_tx_index_range = (start_index..end_index).step_by(incremental as usize);
         for tx_index in target_tx_index_range {
-            let proof = tx_receipt_trie_provider
+            // validate out of bound request
+            if tx_index >= tx_receipt_length {
+                return Err(ProviderError::OutOfBoundRequestError(
+                    tx_index,
+                    tx_receipt_length,
+                ));
+            }
+
+            let tx_receipt_trie_proof = tx_receipt_trie_provider
                 .get_proof(tx_index)
                 .unwrap()
                 .into_iter()
                 .map(Bytes::from)
                 .collect::<Vec<_>>();
-            if tx_index >= tx_receipts.len() as u64 {
-                return Err(ProviderError::OutOfBoundRequestError(
-                    tx_index,
-                    tx_receipts.len() as u64,
-                ));
-            }
+
             let consensus_tx_receipt = tx_receipts[tx_index as usize].clone();
-            let rlp = Bytes::from(consensus_tx_receipt.rlp_encode());
-            let tx_type = consensus_tx_receipt.0.tx_type() as u8;
-            let fetched_result = FetchedTransactionProof {
-                block_number: target_block,
+            let tx_type = consensus_tx_receipt.0.tx_type();
+            tx_with_proof.push(FetchedTransactionProof::new(
+                target_block,
                 tx_index,
-                encoded_transaction: rlp,
-                transaction_proof: proof,
+                consensus_tx_receipt.rlp_encode(),
+                tx_receipt_trie_proof,
                 tx_type,
-            };
-            tx_with_proof.push(fetched_result);
+            ));
         }
 
         Ok(tx_with_proof)
@@ -367,11 +399,11 @@ mod tests {
         let start_time = Instant::now();
         let provider = EvmProvider::new_with_url(Url::parse(SEPOLIA_RPC_URL).unwrap(), 1155511);
         let target_address = address!("7f2c6f930306d3aa736b3a6c6a98f512f74036d4");
-        let result = provider
-            .get_range_of_account_proofs(6127485, 6129484, 1, target_address)
+        let response = provider
+            .get_range_of_account_proofs(6127485, 6127485 + 2000 - 1, 1, target_address)
             .await;
-        assert!(result.is_ok());
-        let length = result.unwrap().len();
+        assert!(response.is_ok());
+        let length = response.unwrap().len();
         assert_eq!(length, 2000);
         let duration = start_time.elapsed();
         println!("Time taken (Account Fetch): {:?}", duration);
@@ -385,7 +417,7 @@ mod tests {
         let provider = EvmProvider::new_with_url(Url::parse(SEPOLIA_RPC_URL).unwrap(), 11155111);
         let target_address = address!("75CeC1db9dCeb703200EAa6595f66885C962B920");
         let result = provider
-            .get_range_of_storage_proofs(6127485, 6129484, 1, target_address, B256::ZERO)
+            .get_range_of_storage_proofs(6127485, 6127485 + 2000 - 1, 1, target_address, B256::ZERO)
             .await;
         assert!(result.is_ok());
         let length = result.unwrap().len();
@@ -400,12 +432,11 @@ mod tests {
     async fn test_get_2000_range_of_header_proofs() -> Result<(), ProviderError> {
         let start_time = Instant::now();
         let provider = EvmProvider::new_with_url(Url::parse(SEPOLIA_RPC_URL).unwrap(), 11155111);
-        let result = provider
-            .get_range_of_header_proofs(6127485, 6129484, 1)
-            .await;
-        assert!(result.is_ok());
-        let length = result.unwrap().1.len();
-        assert_eq!(length, 2000);
+        let (_meta, header_response) = provider
+            .get_range_of_header_proofs(6127485, 6127485 + 2000 - 1, 1)
+            .await?;
+        assert_eq!(header_response.len(), 2000);
+        // assert_eq!(meta.mmr_id, 26);
         let duration = start_time.elapsed();
         println!("Time taken (Header Fetch): {:?}", duration);
         Ok(())
@@ -437,7 +468,7 @@ mod tests {
             let provider = provider.clone();
             tokio::spawn(async move {
                 provider
-                    .get_tx_with_proof_from_block(6127487, 1, 30, 1)
+                    .get_tx_with_proof_from_block(6127487, 1, 1 + 29, 1)
                     .await
             })
         };
@@ -446,7 +477,7 @@ mod tests {
             let provider = provider.clone();
             tokio::spawn(async move {
                 provider
-                    .get_tx_with_proof_from_block(6127488, 5, 80, 1)
+                    .get_tx_with_proof_from_block(6127488, 5, 5 + 75, 1)
                     .await
             })
         };
@@ -518,26 +549,26 @@ mod tests {
     #[tokio::test]
     async fn test_error_get_tx_with_proof_from_block() {
         let provider = EvmProvider::new_with_url(Url::parse(SEPOLIA_RPC_URL).unwrap(), 11155111);
-        let result = provider
+        let response = provider
             .get_tx_with_proof_from_block(6127485, 0, 2000, 1)
             .await;
-        assert!(result.is_err());
-        assert_eq!(
-            result.err().unwrap().to_string(),
-            "Out of bound: requested index: 93, length: 93"
-        );
+        assert!(response.is_err());
+        assert!(matches!(
+            response,
+            Err(ProviderError::OutOfBoundRequestError(93, 93))
+        ));
     }
 
     #[tokio::test]
     async fn test_error_get_tx_receipt_with_proof_from_block() {
         let provider = EvmProvider::new_with_url(Url::parse(SEPOLIA_RPC_URL).unwrap(), 1155511);
-        let result = provider
+        let response = provider
             .get_tx_receipt_with_proof_from_block(6127485, 0, 2000, 1)
             .await;
-        assert!(result.is_err());
-        assert_eq!(
-            result.err().unwrap().to_string(),
-            "Out of bound: requested index: 93, length: 93"
-        );
+        assert!(response.is_err());
+        assert!(matches!(
+            response,
+            Err(ProviderError::OutOfBoundRequestError(93, 93))
+        ));
     }
 }

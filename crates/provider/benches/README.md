@@ -6,6 +6,10 @@
 - **Memory**: 32 GB
 - **Operating System**: macOS
 
+## RPC Specifications
+
+- used Alchemy non-paid plan rpc url
+
 ## Benchmark Results
 
 | Benchmark                            | Time (ms)       | Iterations | Notes          |
