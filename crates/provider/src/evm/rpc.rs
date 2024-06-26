@@ -58,8 +58,7 @@ impl RpcProvider {
         }
     }
 
-    // Get account with proof in given range of blocks
-    // This need to be used for block sampled datalake
+    /// Get account with proof in given vector of blocks
     pub async fn get_account_proofs(
         &self,
         blocks: Vec<u64>,
@@ -80,18 +79,17 @@ impl RpcProvider {
         Ok(result)
     }
 
-    // Get storage with proof in given range of blocks
-    // This need to be used for block sampled datalake
+    /// Get storage with proof in given vector of blocks and slot
     pub async fn get_storage_proofs(
         &self,
         block_range: Vec<u64>,
         address: Address,
-        slot: StorageKey,
+        storage_key: StorageKey,
     ) -> Result<HashMap<u64, EIP1186AccountProofResponse>, ProviderError> {
         let start_fetch = Instant::now();
 
         let (rpc_sender, mut rx) = mpsc::channel::<(BlockNumber, EIP1186AccountProofResponse)>(32);
-        self._get_storage_proofs(rpc_sender, block_range, address, slot);
+        self._get_storage_proofs(rpc_sender, block_range, address, storage_key);
 
         let mut result = HashMap::new();
 
@@ -266,7 +264,7 @@ fn handle_error(e: RpcError<TransportErrorKind>) -> Option<u64> {
 
 #[cfg(test)]
 mod tests {
-    use alloy::primitives::{address, B256};
+    use alloy::primitives::{address, b256, B256, U256};
 
     use super::*;
 
@@ -275,7 +273,7 @@ mod tests {
         "https://eth-sepolia.g.alchemy.com/v2/a-w72ZvoUS0dfMD_LBPAuRzHOlQEhi_m";
 
     #[tokio::test]
-    async fn test_get_100_range_storage_with_proof() {
+    async fn test_get_100_range_storage_with_proof_by_storage_key() {
         let start_time = Instant::now();
         let rpc_url = Url::parse(SEPOLIA_RPC_URL).unwrap();
         let provider = RpcProvider::new(rpc_url, 100);
@@ -283,14 +281,41 @@ mod tests {
         let block_range_end = 6127584;
         let target_block_range = (block_range_start..=block_range_end).collect::<Vec<u64>>();
         let target_address = address!("75CeC1db9dCeb703200EAa6595f66885C962B920");
-        let target_slot = B256::ZERO;
+        let target_key = b256!("3c2b98cf472a02b84793a789af8876a73167e29a1a4f8bdbcb51dbfef0a75d7b");
+        let result = provider
+            .get_storage_proofs(target_block_range, target_address, target_key)
+            .await;
+        assert!(result.is_ok());
+        let result = result.unwrap();
+        let length = result.len();
+        assert_eq!(length, 100);
+        let value = result.get(&6127485).unwrap();
+        assert_eq!(value.storage_proof[0].key.0, target_key);
+        assert_eq!(value.storage_proof[0].value, U256::from(20000000000000u64));
+        let duration = start_time.elapsed();
+        println!("Time taken (Storage Fetch): {:?}", duration);
+    }
 
+    #[tokio::test]
+    async fn test_get_100_range_storage_with_proof_by_storage_slot() {
+        let start_time = Instant::now();
+        let rpc_url = Url::parse(SEPOLIA_RPC_URL).unwrap();
+        let provider = RpcProvider::new(rpc_url, 100);
+        let block_range_start = 6127485;
+        let block_range_end = 6127584;
+        let target_block_range = (block_range_start..=block_range_end).collect::<Vec<u64>>();
+        let target_address = address!("75CeC1db9dCeb703200EAa6595f66885C962B920");
+        let target_slot = B256::from(U256::from(1));
         let result = provider
             .get_storage_proofs(target_block_range, target_address, target_slot)
             .await;
         assert!(result.is_ok());
-        let length = result.unwrap().len();
+        let result = result.unwrap();
+        let length = result.len();
         assert_eq!(length, 100);
+        let value = result.get(&6127485).unwrap();
+        assert_eq!(value.storage_proof[0].key.0, target_slot);
+        assert_eq!(value.storage_proof[0].value, U256::from(20000000000000u64));
         let duration = start_time.elapsed();
         println!("Time taken (Storage Fetch): {:?}", duration);
     }

@@ -14,11 +14,12 @@ pub struct ProcessedStorage {
 
 impl ProcessedStorage {
     pub fn new(address: Address, slot: B256, proofs: Vec<ProcessedMPTProof>) -> Self {
-        let storage_key = keccak256(slot);
+        // TODO: actually this is storage leaf. slot == storage key
+        let storage_trie_leaf = keccak256(slot);
         ProcessedStorage {
             address,
             slot,
-            storage_key,
+            storage_key: storage_trie_leaf,
             proofs,
         }
     }

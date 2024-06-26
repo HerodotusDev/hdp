@@ -14,10 +14,11 @@ pub struct ProcessedAccount {
 
 impl ProcessedAccount {
     pub fn new(address: Address, proofs: Vec<ProcessedMPTProof>) -> Self {
-        let account_key = keccak256(address).to_string();
+        // TODO: actually this is account trie leaf to be more accurate
+        let account_trie_leaf = keccak256(address).to_string();
         ProcessedAccount {
             address,
-            account_key,
+            account_key: account_trie_leaf,
             proofs,
         }
     }
