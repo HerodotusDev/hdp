@@ -8,8 +8,8 @@ mod integration_test {
     };
     use hdp_primitives::datalake::{
         block_sampled::{BlockSampledCollection, BlockSampledDatalake, HeaderField},
+        compute::{Computation, DatalakeCompute},
         envelope::DatalakeEnvelope,
-        task::{Computation, DatalakeCompute},
     };
 
     use hdp_provider::evm::provider::EvmProviderConfig;

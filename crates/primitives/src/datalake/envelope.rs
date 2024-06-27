@@ -1,5 +1,6 @@
-use alloy::primitives::B256;
 use anyhow::Result;
+
+use crate::solidity_types::traits::DatalakeCodecs;
 
 use super::{
     block_sampled::BlockSampledDatalake,
@@ -7,8 +8,10 @@ use super::{
         DatalakeType, BLOCK_SAMPLED_DATALAKE_TYPE_ID, TRANSACTIONS_IN_BLOCK_DATALAKE_TYPE_ID,
     },
     transactions::TransactionsInBlockDatalake,
-    Datalake, DatalakeCollection,
+    DatalakeCollection,
 };
+
+pub type BatchedDatalakes = Vec<DatalakeEnvelope>;
 
 /// Type of datalake
 #[derive(Debug, Clone, PartialEq)]
@@ -25,24 +28,10 @@ impl DatalakeEnvelope {
         }
     }
 
-    pub fn encode(&self) -> Result<Vec<u8>> {
-        match self {
-            DatalakeEnvelope::BlockSampled(datalake) => datalake.encode(),
-            DatalakeEnvelope::Transactions(datalake) => datalake.encode(),
-        }
-    }
-
     pub fn get_collection_type(&self) -> Box<dyn DatalakeCollection> {
         match self {
             DatalakeEnvelope::BlockSampled(datalake) => Box::new(datalake.sampled_property.clone()),
             DatalakeEnvelope::Transactions(datalake) => Box::new(datalake.sampled_property.clone()),
-        }
-    }
-
-    pub fn get_commitment(&self) -> B256 {
-        match self {
-            DatalakeEnvelope::BlockSampled(datalake) => datalake.commit(),
-            DatalakeEnvelope::Transactions(datalake) => datalake.commit(),
         }
     }
 
@@ -54,13 +43,6 @@ impl DatalakeEnvelope {
             DatalakeType::TransactionsInBlock => Ok(DatalakeEnvelope::Transactions(
                 TransactionsInBlockDatalake::decode(data)?,
             )),
-        }
-    }
-
-    pub fn get_datalake_type(&self) -> DatalakeType {
-        match self {
-            DatalakeEnvelope::BlockSampled(_) => DatalakeType::BlockSampled,
-            DatalakeEnvelope::Transactions(_) => DatalakeType::TransactionsInBlock,
         }
     }
 }

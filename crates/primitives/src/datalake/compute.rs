@@ -3,11 +3,8 @@ use std::str::FromStr;
 use crate::aggregate_fn::{integer::Operator, AggregationFunction, FunctionContext};
 
 use super::envelope::DatalakeEnvelope;
-use alloy::primitives::{keccak256, U256};
-use alloy::{
-    dyn_abi::{DynSolType, DynSolValue},
-    primitives::B256,
-};
+use alloy::dyn_abi::{DynSolType, DynSolValue};
+use alloy::primitives::U256;
 use anyhow::{bail, Result};
 
 #[derive(Debug)]
@@ -20,45 +17,10 @@ impl DatalakeCompute {
     pub fn new(datalake: DatalakeEnvelope, compute: Computation) -> Self {
         Self { datalake, compute }
     }
-
-    pub fn commit(&self) -> B256 {
-        let encoded_datalake = self.encode().unwrap();
-        keccak256(encoded_datalake)
-    }
-
-    pub fn encode(&self) -> Result<Vec<u8>> {
-        let identifier_value = DynSolValue::FixedBytes(self.datalake.get_commitment(), 32);
-
-        let aggregate_fn_id = DynSolValue::Uint(
-            U256::from(AggregationFunction::to_index(&self.compute.aggregate_fn_id)),
-            8,
-        );
-
-        let operator = DynSolValue::Uint(
-            U256::from(Operator::to_index(&self.compute.aggregate_fn_ctx.operator)),
-            8,
-        );
-        let value_to_compare =
-            DynSolValue::Uint(self.compute.aggregate_fn_ctx.value_to_compare, 32);
-
-        let tuple_value = DynSolValue::Tuple(vec![
-            identifier_value,
-            aggregate_fn_id,
-            operator,
-            value_to_compare,
-        ]);
-
-        Ok(tuple_value.abi_encode())
-
-        // match header_tuple_value.abi_encode_sequence() {
-        //     Some(encoded) => Ok(bytes_to_hex_string(&encoded)),
-        //     None => bail!("Failed to encode the task"),
-        // }
-    }
 }
 
 /// [`Computation`] is a structure that contains the aggregate function id and context
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Computation {
     pub aggregate_fn_id: AggregationFunction,
     pub aggregate_fn_ctx: FunctionContext,
@@ -140,17 +102,15 @@ impl Computation {
     }
 }
 
-pub struct ExtendedDatalakeTask {
-    pub task: DatalakeCompute,
-    pub values: Vec<U256>,
-}
-
 #[cfg(test)]
 mod tests {
 
     use alloy::hex::FromHex;
 
-    use crate::datalake::block_sampled::BlockSampledDatalake;
+    use crate::{
+        datalake::block_sampled::BlockSampledDatalake,
+        solidity_types::traits::DatalakeComputeCodecs,
+    };
 
     use super::*;
 

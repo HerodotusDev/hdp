@@ -8,5 +8,6 @@ pub mod datalake;
 pub mod module;
 pub mod processed_types;
 pub mod serde;
+pub mod solidity_types;
 pub mod task;
 pub mod utils;

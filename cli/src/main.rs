@@ -8,15 +8,19 @@ use hdp_primitives::{
         block_sampled::{
             AccountField, BlockSampledCollectionType, BlockSampledDatalake, HeaderField,
         },
+        compute::{Computation, DatalakeCompute},
         datalake_type::DatalakeType,
         envelope::DatalakeEnvelope,
-        task::{Computation, DatalakeCompute},
         transactions::{
             TransactionField, TransactionReceiptField, TransactionsCollectionType,
             TransactionsInBlockDatalake,
         },
     },
     processed_types::cairo_format::AsCairoFormat,
+    solidity_types::{
+        datalake_compute::BatchedDatalakeCompute,
+        traits::{DatalakeComputeBatchCodecs, DatalakeComputeCodecs},
+    },
 };
 use hdp_provider::evm::provider::EvmProviderConfig;
 use inquire::{error::InquireError, Select};
@@ -25,7 +29,6 @@ use tracing_subscriber::FmtSubscriber;
 
 use clap::{Parser, Subcommand};
 use hdp_core::{
-    codec::datalake_compute::DatalakeComputeCodec,
     compiler::module::ModuleCompilerConfig,
     config::Config,
     pre_processor::{PreProcessor, PreProcessorConfig},
@@ -469,9 +472,7 @@ async fn main() -> Result<()> {
                 datalake_envelope,
                 Computation::new(aggregate_fn_id, aggregate_fn_ctx),
             );
-            let datalake_codec = DatalakeComputeCodec::new();
-            let (encoded_datalakes, encoded_computes) =
-                datalake_codec.encode_batch(vec![target_datalake_compute])?;
+            let (encoded_datalakes, encoded_computes) = vec![target_datalake_compute].encode()?;
 
             let allow_run: bool = inquire::Confirm::new("Do you want to run the evaluator?")
                 .with_default(true)
@@ -568,9 +569,7 @@ async fn main() -> Result<()> {
                 datalake,
                 Computation::new(&aggregate_fn_id, aggregate_fn_ctx),
             );
-            let datalake_compute_codec = DatalakeComputeCodec::new();
-            let (encoded_datalakes, encoded_computes) =
-                datalake_compute_codec.encode_batch(vec![target_datalake_compute])?;
+            let (encoded_datalakes, encoded_computes) = vec![target_datalake_compute].encode()?;
 
             let encoded_computes_str = hex::encode(encoded_computes);
             let encoded_datalakes_str = hex::encode(encoded_datalakes);
@@ -589,16 +588,14 @@ async fn main() -> Result<()> {
             }
         }
         Commands::Decode { tasks, datalakes } => {
-            let datalake_compute_codec = DatalakeComputeCodec::new();
             let tasks = hex::decode(tasks)?;
             let datalakes = hex::decode(datalakes)?;
-            datalake_compute_codec.decode_batch(&datalakes, &tasks)?;
+            BatchedDatalakeCompute::decode(&datalakes, &tasks)?;
         }
         Commands::DecodeOne { task, datalake } => {
-            let datalake_compute_codec = DatalakeComputeCodec::new();
             let task = hex::decode(task)?;
             let datalake = hex::decode(datalake)?;
-            datalake_compute_codec.decode_single(&datalake, &task)?;
+            DatalakeCompute::decode(&datalake, &task)?;
         }
         Commands::Run {
             tasks,

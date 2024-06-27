@@ -1,11 +1,12 @@
 use alloy::primitives::{B256, U256};
 use anyhow::{bail, Result};
 use hdp_primitives::{
-    datalake::{envelope::DatalakeEnvelope, task::DatalakeCompute},
+    datalake::{compute::DatalakeCompute, envelope::DatalakeEnvelope},
     processed_types::{
         account::ProcessedAccount, header::ProcessedHeader, mmr::MMRMeta,
         receipt::ProcessedReceipt, storage::ProcessedStorage, transaction::ProcessedTransaction,
     },
+    solidity_types::traits::DatalakeComputeCodecs,
 };
 use hdp_provider::evm::provider::{EvmProvider, EvmProviderConfig};
 use std::{
