@@ -1,7 +1,7 @@
 use alloy::primitives::{B256, U256};
 use anyhow::{bail, Result};
 use hdp_primitives::{
-    datalake::{compute::DatalakeCompute, envelope::DatalakeEnvelope},
+    datalake::{envelope::DatalakeEnvelope, DatalakeCompute},
     processed_types::{
         account::ProcessedAccount, header::ProcessedHeader, mmr::MMRMeta,
         receipt::ProcessedReceipt, storage::ProcessedStorage, transaction::ProcessedTransaction,

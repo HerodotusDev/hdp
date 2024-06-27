@@ -2,11 +2,25 @@ use alloy::primitives::U256;
 use anyhow::Result;
 use std::{fmt::Display, str::FromStr};
 
+use self::{compute::Computation, envelope::DatalakeEnvelope};
+
 pub mod block_sampled;
 pub mod compute;
 pub mod datalake_type;
 pub mod envelope;
 pub mod transactions;
+
+#[derive(Debug)]
+pub struct DatalakeCompute {
+    pub datalake: DatalakeEnvelope,
+    pub compute: Computation,
+}
+
+impl DatalakeCompute {
+    pub fn new(datalake: DatalakeEnvelope, compute: Computation) -> Self {
+        Self { datalake, compute }
+    }
+}
 
 pub trait DatalakeCollection {
     fn to_index(&self) -> u8;

@@ -6,18 +6,12 @@ use anyhow::Result;
 
 use crate::{
     aggregate_fn::{integer::Operator, AggregationFunction},
-    datalake::{
-        compute::{Computation, DatalakeCompute},
-        envelope::DatalakeEnvelope,
-    },
+    datalake::{compute::Computation, envelope::DatalakeEnvelope, DatalakeCompute},
 };
 
 use self::{compute::BatchedComputation, envelope::BatchedDatalakeEnvelope};
 
-use super::traits::{
-    ComputeCodecs, DatalakeBatchCodecs, DatalakeCodecs, DatalakeComputeBatchCodecs,
-    DatalakeComputeCodecs,
-};
+use super::traits::{BatchedDatalakeComputeCodecs, Codecs, DatalakeCodecs, DatalakeComputeCodecs};
 
 pub mod block_sampled;
 pub mod compute;
@@ -27,7 +21,7 @@ pub mod transactions_in_block;
 impl DatalakeComputeCodecs for DatalakeCompute {
     fn decode(serialized_datalake: &[u8], serialized_task: &[u8]) -> Result<DatalakeCompute> {
         let decoded_datalake = DatalakeEnvelope::decode(serialized_datalake)?;
-        let decoded_compute = Computation::decode_not_filled_task(serialized_task)?;
+        let decoded_compute = Computation::decode(serialized_task)?;
         Ok(DatalakeCompute::new(decoded_datalake, decoded_compute))
     }
 
@@ -69,7 +63,7 @@ impl DatalakeComputeCodecs for DatalakeCompute {
 
 pub type BatchedDatalakeCompute = Vec<DatalakeCompute>;
 
-impl DatalakeComputeBatchCodecs for BatchedDatalakeCompute {
+impl BatchedDatalakeComputeCodecs for BatchedDatalakeCompute {
     fn decode(
         serialized_datalakes: &[u8],
         serialized_computes: &[u8],

@@ -1,8 +1,8 @@
 //! Task is a unit of work that can be executed by the processor/pre-processor.
 
-use crate::datalake::compute::DatalakeCompute;
-use crate::module::Module;
-use crate::solidity_types::traits::DatalakeComputeCodecs;
+use crate::{
+    datalake::DatalakeCompute, module::Module, solidity_types::traits::DatalakeComputeCodecs,
+};
 use alloy::primitives::B256;
 
 /// [`TaskEnvelope`] is a structure that contains task itself

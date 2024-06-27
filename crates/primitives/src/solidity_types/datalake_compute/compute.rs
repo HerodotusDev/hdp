@@ -7,12 +7,12 @@ use anyhow::{bail, Result};
 use crate::{
     aggregate_fn::{integer::Operator, AggregationFunction, FunctionContext},
     datalake::compute::Computation,
-    solidity_types::traits::ComputeCodecs,
+    solidity_types::traits::Codecs,
 };
 
 pub type BatchedComputation = Vec<Computation>;
 
-impl ComputeCodecs for BatchedComputation {
+impl Codecs for BatchedComputation {
     fn encode(&self) -> Result<Vec<u8>> {
         let mut encoded_tasks: Vec<DynSolValue> = Vec::new();
 
@@ -44,7 +44,7 @@ impl ComputeCodecs for BatchedComputation {
     }
 }
 
-impl ComputeCodecs for Computation {
+impl Codecs for Computation {
     fn decode(encoded_compute: &[u8]) -> Result<Self> {
         let aggregate_fn_type: DynSolType = "(uint8,uint8,uint256)".parse()?;
         let decoded = aggregate_fn_type.abi_decode(encoded_compute)?;
@@ -87,6 +87,7 @@ impl ComputeCodecs for Computation {
         }
     }
 
+    /// Encode the task without datalake
     fn encode(&self) -> Result<Vec<u8>> {
         let aggregate_fn_id = DynSolValue::Uint(
             U256::from(AggregationFunction::to_index(&self.aggregate_fn_id)),
@@ -104,5 +105,97 @@ impl ComputeCodecs for Computation {
             DynSolValue::Tuple(vec![aggregate_fn_id, operator, value_to_compare]);
 
         Ok(header_tuple_value.abi_encode())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use alloy::hex::FromHex;
+
+    use crate::{
+        datalake::{
+            block_sampled::BlockSampledDatalake, envelope::DatalakeEnvelope, DatalakeCompute,
+        },
+        solidity_types::traits::DatalakeComputeCodecs,
+    };
+
+    use super::*;
+
+    #[test]
+    fn test_task_with_ctx_serialize() {
+        let task = Computation::new(
+            "count",
+            Some(FunctionContext::new(
+                Operator::GreaterThanOrEqual,
+                U256::from(100),
+            )),
+        );
+
+        let inner_task = Computation {
+            aggregate_fn_id: AggregationFunction::COUNT,
+            aggregate_fn_ctx: FunctionContext::new(Operator::GreaterThanOrEqual, U256::from(100)),
+        };
+
+        let serialized = task.encode().unwrap();
+        let inner_task_serialized = inner_task.encode().unwrap();
+        assert_eq!(serialized, inner_task_serialized);
+
+        let serialized: &str = "0x000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000064";
+        let deserialized = Computation::decode(&Vec::from_hex(serialized).unwrap()).unwrap();
+        assert_eq!(task, deserialized)
+    }
+
+    #[test]
+    fn test_task_without_ctx_serialize() {
+        // AVG
+        let task = Computation::new("avg", None);
+
+        let inner_task = Computation {
+            aggregate_fn_id: AggregationFunction::AVG,
+            aggregate_fn_ctx: FunctionContext::default(),
+        };
+
+        let serialized = task.encode().unwrap();
+        let inner_task_serialized = inner_task.encode().unwrap();
+        assert_eq!(serialized, inner_task_serialized);
+        let serialized_bytes: Vec<u8> = Vec::from_hex("0x000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000").unwrap();
+        assert_eq!(serialized, serialized_bytes);
+        let deserialized = Computation::decode(&serialized_bytes).unwrap();
+        assert_eq!(task, deserialized);
+        // MIN
+        let task = Computation::new("min", None);
+
+        let inner_task = Computation {
+            aggregate_fn_id: AggregationFunction::MIN,
+            aggregate_fn_ctx: FunctionContext::default(),
+        };
+
+        let serialized = task.encode().unwrap();
+        let inner_task_serialized = inner_task.encode().unwrap();
+        assert_eq!(serialized, inner_task_serialized);
+        let serialized_bytes: Vec<u8> = Vec::from_hex("0x000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000").unwrap();
+        assert_eq!(serialized, serialized_bytes);
+        let deserialized = Computation::decode(&serialized_bytes).unwrap();
+        assert_eq!(task, deserialized);
+    }
+
+    #[test]
+    fn test_task_with_datalake() {
+        let task = Computation::new(
+            "count",
+            Some(FunctionContext::new(
+                Operator::GreaterThanOrEqual,
+                U256::from(100),
+            )),
+        );
+        let datalake = DatalakeEnvelope::BlockSampled(
+            BlockSampledDatalake::new(0, 100, "header.base_fee_per_gas".to_string(), 1).unwrap(),
+        );
+        let task_with_datalake = DatalakeCompute::new(datalake, task);
+
+        let serialized = task_with_datalake.encode().unwrap();
+        let serialized_bytes: Vec<u8> = Vec::from_hex("cfa530587401307617ef751178c78751c83757e2143b73b4ffadb5969ca6215e000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000064").unwrap();
+        assert_eq!(serialized, serialized_bytes);
     }
 }

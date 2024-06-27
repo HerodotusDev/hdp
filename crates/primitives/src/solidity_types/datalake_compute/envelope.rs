@@ -3,7 +3,7 @@ use crate::{
         block_sampled::BlockSampledDatalake, datalake_type::DatalakeType,
         envelope::DatalakeEnvelope, transactions::TransactionsInBlockDatalake,
     },
-    solidity_types::traits::{DatalakeBatchCodecs, DatalakeCodecs},
+    solidity_types::traits::{Codecs, DatalakeCodecs},
     utils::last_byte_to_u8,
 };
 use alloy::{
@@ -14,7 +14,7 @@ use anyhow::Result;
 
 pub type BatchedDatalakeEnvelope = Vec<DatalakeEnvelope>;
 
-impl DatalakeBatchCodecs for BatchedDatalakeEnvelope {
+impl Codecs for BatchedDatalakeEnvelope {
     fn encode(&self) -> Result<Vec<u8>> {
         let mut encoded_datalakes: Vec<DynSolValue> = Vec::new();
 

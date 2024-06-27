@@ -8,18 +8,19 @@ use hdp_primitives::{
         block_sampled::{
             AccountField, BlockSampledCollectionType, BlockSampledDatalake, HeaderField,
         },
-        compute::{Computation, DatalakeCompute},
+        compute::Computation,
         datalake_type::DatalakeType,
         envelope::DatalakeEnvelope,
         transactions::{
             TransactionField, TransactionReceiptField, TransactionsCollectionType,
             TransactionsInBlockDatalake,
         },
+        DatalakeCompute,
     },
     processed_types::cairo_format::AsCairoFormat,
     solidity_types::{
         datalake_compute::BatchedDatalakeCompute,
-        traits::{DatalakeComputeBatchCodecs, DatalakeComputeCodecs},
+        traits::{BatchedDatalakeComputeCodecs, DatalakeComputeCodecs},
     },
 };
 use hdp_provider::evm::provider::EvmProviderConfig;

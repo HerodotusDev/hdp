@@ -3,7 +3,9 @@ use anyhow::Result;
 
 use crate::datalake::datalake_type::DatalakeType;
 
-/// Define the common trait for all datalakes
+/// Define the common trait for datalake
+///
+/// Common for both BlockSampled and TransactionsInBlock
 pub trait DatalakeCodecs {
     fn get_datalake_type(&self) -> DatalakeType;
     fn encode(&self) -> Result<Vec<u8>>;
@@ -13,20 +15,14 @@ pub trait DatalakeCodecs {
         Self: Sized;
 }
 
-pub trait DatalakeBatchCodecs {
+pub trait Codecs {
     fn encode(&self) -> Result<Vec<u8>>;
     fn decode(encoded: &[u8]) -> Result<Self>
     where
         Self: Sized;
 }
 
-pub trait ComputeCodecs {
-    fn encode(&self) -> Result<Vec<u8>>;
-    fn decode(encoded: &[u8]) -> Result<Self>
-    where
-        Self: Sized;
-}
-
+/// Codecs for [`DatalakeCompute`]
 pub trait DatalakeComputeCodecs {
     fn decode(encoded_datalake: &[u8], encoded_compute: &[u8]) -> Result<Self>
     where
@@ -35,8 +31,8 @@ pub trait DatalakeComputeCodecs {
     fn commit(&self) -> B256;
 }
 
-// we need this for now because datalake and compute is seperate bytes
-pub trait DatalakeComputeBatchCodecs {
+/// Codecs for [`BatchedDatalakeCompute`]
+pub trait BatchedDatalakeComputeCodecs {
     fn decode(encoded_datalake: &[u8], encoded_compute: &[u8]) -> Result<Self>
     where
         Self: std::marker::Sized;

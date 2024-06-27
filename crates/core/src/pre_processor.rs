@@ -11,14 +11,13 @@ use alloy::primitives::{Bytes, Keccak256, B256, U256};
 use alloy_merkle_tree::standard_binary_tree::StandardMerkleTree;
 use anyhow::{bail, Ok, Result};
 use cairo_lang_starknet_classes::casm_contract_class::CasmContractClass;
+use hdp_primitives::datalake::DatalakeCompute;
 use hdp_primitives::module::Module;
 use hdp_primitives::processed_types::datalake_compute::ProcessedDatalakeCompute;
+use hdp_primitives::processed_types::v1_query::ProcessedResult;
 use hdp_primitives::solidity_types::datalake_compute::BatchedDatalakeCompute;
 use hdp_primitives::solidity_types::traits::{
-    DatalakeCodecs, DatalakeComputeBatchCodecs, DatalakeComputeCodecs,
-};
-use hdp_primitives::{
-    datalake::compute::DatalakeCompute, processed_types::v1_query::ProcessedResult,
+    BatchedDatalakeComputeCodecs, DatalakeCodecs, DatalakeComputeCodecs,
 };
 
 use hdp_provider::evm::provider::EvmProviderConfig;
