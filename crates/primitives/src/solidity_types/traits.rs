@@ -37,5 +37,4 @@ pub trait BatchedDatalakeComputeCodecs {
     where
         Self: std::marker::Sized;
     fn encode(&self) -> Result<(Vec<u8>, Vec<u8>)>;
-    fn commit(&self) -> B256;
 }

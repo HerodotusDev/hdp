@@ -52,11 +52,6 @@ impl DatalakeComputeCodecs for DatalakeCompute {
         ]);
 
         Ok(tuple_value.abi_encode())
-
-        // match header_tuple_value.abi_encode_sequence() {
-        //     Some(encoded) => Ok(bytes_to_hex_string(&encoded)),
-        //     None => bail!("Failed to encode the task"),
-        // }
     }
 }
 
@@ -101,9 +96,5 @@ impl BatchedDatalakeComputeCodecs for BatchedDatalakeCompute {
         let encoded_datalakes = datalakes.encode()?;
         let encoded_computes = computes.encode()?;
         Ok((encoded_datalakes, encoded_computes))
-    }
-
-    fn commit(&self) -> B256 {
-        todo!()
     }
 }
