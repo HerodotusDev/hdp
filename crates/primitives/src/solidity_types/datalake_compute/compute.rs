@@ -110,17 +110,54 @@ impl Codecs for Computation {
 
 #[cfg(test)]
 mod tests {
-
-    use alloy::hex::FromHex;
-
     use crate::{
         datalake::{
             block_sampled::BlockSampledDatalake, envelope::DatalakeEnvelope, DatalakeCompute,
         },
         solidity_types::traits::DatalakeComputeCodecs,
     };
+    use alloy::hex::FromHex;
 
     use super::*;
+
+    #[test]
+    fn test_compute_decoder() {
+        // Note: all task's datalake is None
+        let original_tasks: BatchedComputation = vec![
+            Computation::new("avg", None),
+            Computation::new("sum", None),
+            Computation::new("min", None),
+            Computation::new("max", None),
+        ];
+
+        let encoded_tasks = original_tasks.encode().unwrap();
+        let decoded_tasks = BatchedComputation::decode(&encoded_tasks).unwrap();
+
+        assert_eq!(decoded_tasks.len(), 4);
+        assert_eq!(decoded_tasks[0].aggregate_fn_id, AggregationFunction::AVG);
+        assert_eq!(
+            decoded_tasks[0].aggregate_fn_ctx,
+            FunctionContext::default()
+        );
+
+        assert_eq!(decoded_tasks[1].aggregate_fn_id, AggregationFunction::SUM);
+        assert_eq!(
+            decoded_tasks[1].aggregate_fn_ctx,
+            FunctionContext::default()
+        );
+
+        assert_eq!(decoded_tasks[2].aggregate_fn_id, AggregationFunction::MIN);
+        assert_eq!(
+            decoded_tasks[2].aggregate_fn_ctx,
+            FunctionContext::default()
+        );
+
+        assert_eq!(decoded_tasks[3].aggregate_fn_id, AggregationFunction::MAX);
+        assert_eq!(
+            decoded_tasks[3].aggregate_fn_ctx,
+            FunctionContext::default()
+        );
+    }
 
     #[test]
     fn test_task_with_ctx_serialize() {
