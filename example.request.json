@@ -1,0 +1,37 @@
+{
+  "deliveryChainId": 11155111,
+  "sourceChainId": 11155111,
+  "tasks": [
+    {
+      "taskType": "datalake_compute",
+      "taskContent": {
+        "datalakeType": "transactions_in_block",
+        "datalake": {
+          "targetBlock": 5409986,
+          "startIndex": 10,
+          "endIndex": 40,
+          "increment": 10,
+          "includedTypes": {
+            "legacy": true,
+            "eip2930": true,
+            "eip1559": true,
+            "eip4844": true
+          },
+          "sampledProperty": "tx_receipt.success"
+        },
+        "aggregateFnId": "slr",
+        "aggregateFnCtx": {
+          "operatorId": "none",
+          "valueToCompare": 100
+        }
+      }
+    },
+    {
+      "taskType": "module_compute",
+      "taskContent": {
+        "class_hash": "0x054af96825d987ca89cf320f7c5a8031017815d884cff1592e8ff6da309f3ca6",
+        "inputs": ["0x1", "0x2", "0x3"]
+      }
+    }
+  ]
+}

@@ -34,6 +34,8 @@ use hdp_core::{
 
 use tracing::{error, info, Level};
 
+pub mod local_run;
+
 /// Simple Herodotus Data Processor CLI to handle tasks and datalakes
 #[derive(Debug, Parser)]
 #[command(name = "hdp")]
@@ -106,6 +108,27 @@ enum Commands {
         rpc_url: Option<String>,
         /// The chain id to fetch the data
         chain_id: Option<u64>,
+
+        /// Path to the file to save the input.json in cairo format
+        #[arg(short, long)]
+        cairo_input: Option<String>,
+
+        /// Path to the file to save the output result
+        #[arg(short, long, requires("cairo_input"))]
+        output_file: Option<String>,
+
+        /// Path to pie file
+        #[arg(short, long, requires("cairo_input"))]
+        pie_file: Option<String>,
+    },
+
+    /// Run in local mode
+    LocalRun {
+        /// Request JSON file path
+        tasks_request_file: PathBuf,
+
+        /// The RPC URL to fetch the data
+        rpc_url: Option<String>,
 
         /// Path to the file to save the input.json in cairo format
         #[arg(short, long)]
@@ -620,6 +643,19 @@ async fn main() -> Result<()> {
             )
             .await?
         }
+        Commands::LocalRun {
+            tasks_request_file,
+            rpc_url,
+            output_file,
+            cairo_input,
+            pie_file,
+        } => local_run::exec_local_run(
+            tasks_request_file,
+            rpc_url,
+            output_file,
+            cairo_input,
+            pie_file,
+        ),
     }
     let duration_run = start_run.elapsed();
     info!("HDP Cli Finished in: {:?}", duration_run);
