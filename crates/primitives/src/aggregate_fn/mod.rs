@@ -18,7 +18,7 @@ pub mod string;
 /// - COUNT - Count number of values that satisfy a condition
 /// - MERKLE - Return the merkle root of the values
 /// - SLR - Simple Linear Regression
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum AggregationFunction {
     AVG,
     SUM,

@@ -1,105 +1,53 @@
-use std::str::FromStr;
-
-use crate::aggregate_fn::{integer::Operator, AggregationFunction, FunctionContext};
-
-use super::envelope::DatalakeEnvelope;
-use alloy::primitives::{keccak256, U256};
 use alloy::{
     dyn_abi::{DynSolType, DynSolValue},
-    primitives::B256,
+    primitives::U256,
 };
 use anyhow::{bail, Result};
 
-#[derive(Debug)]
-pub struct DatalakeCompute {
-    pub datalake: DatalakeEnvelope,
-    pub compute: Computation,
-}
+use crate::{
+    aggregate_fn::{integer::Operator, AggregationFunction, FunctionContext},
+    datalake::compute::Computation,
+    solidity_types::traits::Codecs,
+};
 
-impl DatalakeCompute {
-    pub fn new(datalake: DatalakeEnvelope, compute: Computation) -> Self {
-        Self { datalake, compute }
-    }
+pub type BatchedComputation = Vec<Computation>;
 
-    pub fn commit(&self) -> B256 {
-        let encoded_datalake = self.encode().unwrap();
-        keccak256(encoded_datalake)
-    }
+impl Codecs for BatchedComputation {
+    fn encode(&self) -> Result<Vec<u8>> {
+        let mut encoded_tasks: Vec<DynSolValue> = Vec::new();
 
-    pub fn encode(&self) -> Result<Vec<u8>> {
-        let identifier_value = DynSolValue::FixedBytes(self.datalake.get_commitment(), 32);
-
-        let aggregate_fn_id = DynSolValue::Uint(
-            U256::from(AggregationFunction::to_index(&self.compute.aggregate_fn_id)),
-            8,
-        );
-
-        let operator = DynSolValue::Uint(
-            U256::from(Operator::to_index(&self.compute.aggregate_fn_ctx.operator)),
-            8,
-        );
-        let value_to_compare =
-            DynSolValue::Uint(self.compute.aggregate_fn_ctx.value_to_compare, 32);
-
-        let tuple_value = DynSolValue::Tuple(vec![
-            identifier_value,
-            aggregate_fn_id,
-            operator,
-            value_to_compare,
-        ]);
-
-        Ok(tuple_value.abi_encode())
-
-        // match header_tuple_value.abi_encode_sequence() {
-        //     Some(encoded) => Ok(bytes_to_hex_string(&encoded)),
-        //     None => bail!("Failed to encode the task"),
-        // }
-    }
-}
-
-/// [`Computation`] is a structure that contains the aggregate function id and context
-#[derive(Debug, PartialEq, Eq)]
-pub struct Computation {
-    pub aggregate_fn_id: AggregationFunction,
-    pub aggregate_fn_ctx: FunctionContext,
-}
-
-impl Computation {
-    pub fn new(aggregate_fn_id: &str, aggregate_fn_ctx: Option<FunctionContext>) -> Self {
-        let aggregate_fn_ctn_parsed = match aggregate_fn_ctx {
-            None => FunctionContext::new(Operator::None, U256::ZERO),
-            Some(ctx) => ctx,
-        };
-        Self {
-            aggregate_fn_id: AggregationFunction::from_str(aggregate_fn_id).unwrap(),
-            aggregate_fn_ctx: aggregate_fn_ctn_parsed,
+        for task in self {
+            let encoded_task = task.encode()?;
+            encoded_tasks.push(DynSolValue::Bytes(encoded_task));
         }
+
+        let array_encoded_tasks = DynSolValue::Array(encoded_tasks);
+        let encoded_tasks = array_encoded_tasks.abi_encode();
+        Ok(encoded_tasks)
     }
 
-    /// Encode the task without datalake
-    pub fn encode(&self) -> Result<Vec<u8>> {
-        let aggregate_fn_id = DynSolValue::Uint(
-            U256::from(AggregationFunction::to_index(&self.aggregate_fn_id)),
-            8,
-        );
+    fn decode(encoded: &[u8]) -> Result<Self> {
+        let tasks_type: DynSolType = "bytes[]".parse()?;
 
-        let operator = DynSolValue::Uint(
-            U256::from(Operator::to_index(&self.aggregate_fn_ctx.operator)),
-            8,
-        );
+        let serialized_tasks = tasks_type.abi_decode(encoded)?;
 
-        let value_to_compare = DynSolValue::Uint(self.aggregate_fn_ctx.value_to_compare, 32);
+        let mut decoded_tasks = Vec::new();
+        if let Some(tasks) = serialized_tasks.as_array() {
+            for task in tasks {
+                decoded_tasks.push(Computation::decode(
+                    task.as_bytes().expect("Cannot get bytes from task"),
+                )?);
+            }
+        }
 
-        let header_tuple_value =
-            DynSolValue::Tuple(vec![aggregate_fn_id, operator, value_to_compare]);
-
-        Ok(header_tuple_value.abi_encode())
+        Ok(decoded_tasks)
     }
+}
 
-    /// Decode task that is not filled with datalake
-    pub fn decode_not_filled_task(serialized: &[u8]) -> Result<Self> {
+impl Codecs for Computation {
+    fn decode(encoded_compute: &[u8]) -> Result<Self> {
         let aggregate_fn_type: DynSolType = "(uint8,uint8,uint256)".parse()?;
-        let decoded = aggregate_fn_type.abi_decode(serialized)?;
+        let decoded = aggregate_fn_type.abi_decode(encoded_compute)?;
 
         let value = decoded.as_tuple().unwrap();
 
@@ -138,21 +86,78 @@ impl Computation {
             None => bail!("Invalid operator type"),
         }
     }
-}
 
-pub struct ExtendedDatalakeTask {
-    pub task: DatalakeCompute,
-    pub values: Vec<U256>,
+    /// Encode the task without datalake
+    fn encode(&self) -> Result<Vec<u8>> {
+        let aggregate_fn_id = DynSolValue::Uint(
+            U256::from(AggregationFunction::to_index(&self.aggregate_fn_id)),
+            8,
+        );
+
+        let operator = DynSolValue::Uint(
+            U256::from(Operator::to_index(&self.aggregate_fn_ctx.operator)),
+            8,
+        );
+
+        let value_to_compare = DynSolValue::Uint(self.aggregate_fn_ctx.value_to_compare, 32);
+
+        let header_tuple_value =
+            DynSolValue::Tuple(vec![aggregate_fn_id, operator, value_to_compare]);
+
+        Ok(header_tuple_value.abi_encode())
+    }
 }
 
 #[cfg(test)]
 mod tests {
-
+    use crate::{
+        datalake::{
+            block_sampled::BlockSampledDatalake, envelope::DatalakeEnvelope, DatalakeCompute,
+        },
+        solidity_types::traits::DatalakeComputeCodecs,
+    };
     use alloy::hex::FromHex;
 
-    use crate::datalake::block_sampled::BlockSampledDatalake;
-
     use super::*;
+
+    #[test]
+    fn test_compute_decoder() {
+        // Note: all task's datalake is None
+        let original_tasks: BatchedComputation = vec![
+            Computation::new("avg", None),
+            Computation::new("sum", None),
+            Computation::new("min", None),
+            Computation::new("max", None),
+        ];
+
+        let encoded_tasks = original_tasks.encode().unwrap();
+        let decoded_tasks = BatchedComputation::decode(&encoded_tasks).unwrap();
+
+        assert_eq!(decoded_tasks.len(), 4);
+        assert_eq!(decoded_tasks[0].aggregate_fn_id, AggregationFunction::AVG);
+        assert_eq!(
+            decoded_tasks[0].aggregate_fn_ctx,
+            FunctionContext::default()
+        );
+
+        assert_eq!(decoded_tasks[1].aggregate_fn_id, AggregationFunction::SUM);
+        assert_eq!(
+            decoded_tasks[1].aggregate_fn_ctx,
+            FunctionContext::default()
+        );
+
+        assert_eq!(decoded_tasks[2].aggregate_fn_id, AggregationFunction::MIN);
+        assert_eq!(
+            decoded_tasks[2].aggregate_fn_ctx,
+            FunctionContext::default()
+        );
+
+        assert_eq!(decoded_tasks[3].aggregate_fn_id, AggregationFunction::MAX);
+        assert_eq!(
+            decoded_tasks[3].aggregate_fn_ctx,
+            FunctionContext::default()
+        );
+    }
 
     #[test]
     fn test_task_with_ctx_serialize() {
@@ -174,8 +179,7 @@ mod tests {
         assert_eq!(serialized, inner_task_serialized);
 
         let serialized: &str = "0x000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000064";
-        let deserialized =
-            Computation::decode_not_filled_task(&Vec::from_hex(serialized).unwrap()).unwrap();
+        let deserialized = Computation::decode(&Vec::from_hex(serialized).unwrap()).unwrap();
         assert_eq!(task, deserialized)
     }
 
@@ -194,7 +198,7 @@ mod tests {
         assert_eq!(serialized, inner_task_serialized);
         let serialized_bytes: Vec<u8> = Vec::from_hex("0x000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000").unwrap();
         assert_eq!(serialized, serialized_bytes);
-        let deserialized = Computation::decode_not_filled_task(&serialized_bytes).unwrap();
+        let deserialized = Computation::decode(&serialized_bytes).unwrap();
         assert_eq!(task, deserialized);
         // MIN
         let task = Computation::new("min", None);
@@ -209,7 +213,7 @@ mod tests {
         assert_eq!(serialized, inner_task_serialized);
         let serialized_bytes: Vec<u8> = Vec::from_hex("0x000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000").unwrap();
         assert_eq!(serialized, serialized_bytes);
-        let deserialized = Computation::decode_not_filled_task(&serialized_bytes).unwrap();
+        let deserialized = Computation::decode(&serialized_bytes).unwrap();
         assert_eq!(task, deserialized);
     }
 

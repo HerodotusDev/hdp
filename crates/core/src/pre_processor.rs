@@ -2,7 +2,6 @@
 //!  Preprocessor is reponsible for identifying the required values.
 //!  This will be most abstract layer of the preprocessor.
 
-use crate::codec::datalake_compute::DatalakeComputeCodec;
 use crate::compiler::datalake_compute::DatalakeComputeCompilationResults;
 use crate::compiler::module::ModuleCompilerConfig;
 use crate::compiler::Compiler;
@@ -12,9 +11,14 @@ use alloy::primitives::{Bytes, Keccak256, B256, U256};
 use alloy_merkle_tree::standard_binary_tree::StandardMerkleTree;
 use anyhow::{bail, Ok, Result};
 use cairo_lang_starknet_classes::casm_contract_class::CasmContractClass;
+use hdp_primitives::datalake::DatalakeCompute;
 use hdp_primitives::module::Module;
 use hdp_primitives::processed_types::datalake_compute::ProcessedDatalakeCompute;
-use hdp_primitives::{datalake::task::DatalakeCompute, processed_types::v1_query::ProcessedResult};
+use hdp_primitives::processed_types::v1_query::ProcessedResult;
+use hdp_primitives::solidity_types::datalake_compute::BatchedDatalakeCompute;
+use hdp_primitives::solidity_types::traits::{
+    BatchedDatalakeComputeCodecs, DatalakeCodecs, DatalakeComputeCodecs,
+};
 
 use hdp_provider::evm::provider::EvmProviderConfig;
 use hdp_provider::key::FetchKeyEnvelope;
@@ -24,7 +28,6 @@ use tracing::info;
 pub struct PreProcessor {
     /// compiler
     compiler: Compiler,
-    decoder: DatalakeComputeCodec,
 }
 
 pub struct PreProcessorConfig {
@@ -55,11 +58,7 @@ pub struct ExtendedModule {
 impl PreProcessor {
     pub fn new_with_config(config: PreProcessorConfig) -> Self {
         let compiler = Compiler::new(config);
-        let datalake_compute_codec = DatalakeComputeCodec::new();
-        Self {
-            compiler,
-            decoder: datalake_compute_codec,
-        }
+        Self { compiler }
     }
 
     pub async fn process_from_serialized(
@@ -70,7 +69,7 @@ impl PreProcessor {
         let bytes_datalake = hex::decode(batched_datalakes)?;
         let bytes_tasks = hex::decode(batched_tasks)?;
         // 1. decode the tasks
-        let tasks = self.decoder.decode_batch(&bytes_datalake, &bytes_tasks)?;
+        let tasks = BatchedDatalakeCompute::decode(&bytes_datalake, &bytes_tasks)?;
         self.process(tasks).await
     }
 

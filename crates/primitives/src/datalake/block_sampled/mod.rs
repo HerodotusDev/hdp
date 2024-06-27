@@ -10,7 +10,7 @@ pub use rlp_fields::*;
 
 #[cfg(test)]
 mod tests {
-    use crate::datalake::{Datalake, DatalakeCollection};
+    use crate::{datalake::DatalakeCollection, solidity_types::traits::DatalakeCodecs};
 
     use super::*;
     use alloy::{
