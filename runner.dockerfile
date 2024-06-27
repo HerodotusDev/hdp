@@ -19,6 +19,10 @@ RUN LATEST_TAG=$(curl -s https://api.github.com/repos/HerodotusDev/hdp/releases/
 # Copy the rest of the application source
 COPY . .
 
+# Copy the rest of the application source
+RUN mkdir -p /hdp-runner/build/compiled_cairo
+RUN cp /hdp-cairo/build/hdp.json /hdp-runner/build/compiled_cairo/hdp.json
+
 # Set environment variables for parameters
 ENV TASKS=""
 ENV DATALAKES=""
