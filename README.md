@@ -25,7 +25,7 @@ The Data Processor CLI serves as an essential tool for developers working with C
 
 ```bash
 # Install with cargo
-❯ cargo install --git https://github.com/HerodotusDev/hdp --tag v0.2.5 --locked --force
+❯ cargo install --git https://github.com/HerodotusDev/hdp --tag v0.2.6 --locked --force
 ```
 
 ### Build from source
@@ -217,6 +217,8 @@ docker-compose build
 
 docker-compose up
 ```
+
+For those looking for an already built Docker image, you can pull it from [here](https://hub.docker.com/r/dataprocessor/hdp-runner).
 
 ## License
 
