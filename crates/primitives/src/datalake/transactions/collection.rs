@@ -29,7 +29,7 @@ impl FromStr for TransactionsCollectionType {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TransactionsCollection {
     Transactions(TransactionField),
     TranasactionReceipts(TransactionReceiptField),

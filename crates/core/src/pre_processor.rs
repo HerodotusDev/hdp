@@ -6,7 +6,6 @@ use crate::compiler::datalake_compute::DatalakeComputeCompilationResults;
 use crate::compiler::module::ModuleCompilerConfig;
 use crate::compiler::Compiler;
 use alloy::dyn_abi::DynSolValue;
-use alloy::hex;
 use alloy::primitives::{Bytes, Keccak256, B256, U256};
 use alloy_merkle_tree::standard_binary_tree::StandardMerkleTree;
 use anyhow::{bail, Ok, Result};
@@ -63,13 +62,12 @@ impl PreProcessor {
 
     pub async fn process_from_serialized(
         &self,
-        batched_datalakes: String,
-        batched_tasks: String,
+        batched_datalakes: Bytes,
+        batched_tasks: Bytes,
     ) -> Result<ProcessedResult> {
-        let bytes_datalake = hex::decode(batched_datalakes)?;
-        let bytes_tasks = hex::decode(batched_tasks)?;
         // 1. decode the tasks
-        let tasks = BatchedDatalakeCompute::decode(&bytes_datalake, &bytes_tasks)?;
+        let tasks = BatchedDatalakeCompute::decode(&batched_datalakes, &batched_tasks)?;
+        info!("Target tasks: {:#?}", tasks);
         self.process(tasks).await
     }
 

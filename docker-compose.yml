@@ -10,4 +10,4 @@ services:
     volumes:
       - ./input.json:/hdp-runner/input.json
       - ./output.json:/hdp-runner/output.json
-      - ./cairo.zip:/hdp-runner/cairo.zip
+      - ./cairo.pie:/hdp-runner/cairo.pie

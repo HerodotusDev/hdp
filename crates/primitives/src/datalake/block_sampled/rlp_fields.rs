@@ -12,7 +12,7 @@ use crate::{
     datalake::DatalakeField,
 };
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum HeaderField {
     ParentHash,
     OmmerHash,
@@ -230,7 +230,7 @@ impl Display for HeaderField {
 
 // == Account Field ==
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AccountField {
     Nonce,
     Balance,

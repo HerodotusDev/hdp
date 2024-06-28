@@ -30,4 +30,4 @@ ENV RPC_URL=""
 ENV CHAIN_ID=""
 
 # Command to run the Rust binary with user-specified parameters
-CMD ["bash", "-c", "hdp run $TASKS $DATALAKES $RPC_URL $CHAIN_ID -c /hdp-runner/input.json -o /hdp-runner/output.json -p /hdp-runner/cairo.zip"]
+CMD ["bash", "-c", "hdp run $TASKS $DATALAKES $RPC_URL $CHAIN_ID -c /hdp-runner/input.json -o /hdp-runner/output.json -p /hdp-runner/cairo.pie"]

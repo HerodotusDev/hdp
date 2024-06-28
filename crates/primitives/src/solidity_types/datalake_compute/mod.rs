@@ -65,6 +65,7 @@ impl BatchedDatalakeComputeCodecs for BatchedDatalakeCompute {
         // decode datalakes and tasks
         let decoded_datalakes = BatchedDatalakeEnvelope::decode(serialized_datalakes)?;
         let decoded_computes = BatchedComputation::decode(serialized_computes)?;
+
         // check if the number of datalakes and tasks are the same
         if decoded_datalakes.len() != decoded_computes.len() {
             return Err(anyhow::anyhow!(

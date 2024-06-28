@@ -206,6 +206,18 @@ After implementing your new function, it's crucial to verify its functionality:
 - **Create Unit Tests**: Add tests in the corresponding test file in the `tests` directory. Ensure your tests cover all new logic to maintain stability and reliability.
 - **Test for Integer Types**: Pay special attention to functions that handle integer types, ensuring they correctly process and output values fitting within a `bytes32` length, reflecting Ethereum's data type constraints.
 
+### Local Run
+
+To run HDP in a stable environment locally, you need to have `cairo-run` installed with the necessary tools in the correct path and locate the compiled Cairo program. If these steps sound tricky to you, just use the Docker image.
+
+To mount in a container environment, you need to create empty `input.json`, `output.json`, and `cairo.pie` files in the root directory of the host machine before running it.
+
+```sh
+docker-compose build
+
+docker-compose up
+```
+
 ## License
 
 `hdp` is licensed under the [GNU General Public License v3.0](./LICENSE).

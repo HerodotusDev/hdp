@@ -1,7 +1,4 @@
-use std::str::FromStr;
-
 use super::collection::BlockSampledCollection;
-use anyhow::Result;
 
 /// [`BlockSampledDatalake`] is a struct that represents a block sampled datalake.
 /// It contains the block range, the sampled property, and the increment.
@@ -23,14 +20,14 @@ impl BlockSampledDatalake {
     pub fn new(
         block_range_start: u64,
         block_range_end: u64,
-        sampled_property: String,
+        sampled_property: BlockSampledCollection,
         increment: u64,
-    ) -> Result<Self> {
-        Ok(Self {
+    ) -> Self {
+        Self {
             block_range_start,
             block_range_end,
-            sampled_property: BlockSampledCollection::from_str(&sampled_property)?,
+            sampled_property,
             increment,
-        })
+        }
     }
 }

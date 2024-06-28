@@ -24,9 +24,12 @@ mod tests {
         let encoded_block_sample_datalake = hex::decode("000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000009eb0f600000000000000000000000000000000000000000000000000000000009eb100000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000002010f000000000000000000000000000000000000000000000000000000000000").unwrap();
         let decoded_datalake =
             BlockSampledDatalake::decode(&encoded_block_sample_datalake).unwrap();
-        let block_datalake =
-            BlockSampledDatalake::new(10399990, 10400000, "header.base_fee_per_gas".to_string(), 1)
-                .unwrap();
+        let block_datalake = BlockSampledDatalake::new(
+            10399990,
+            10400000,
+            "header.base_fee_per_gas".parse().unwrap(),
+            1,
+        );
         assert_eq!(
             decoded_datalake.encode().unwrap(),
             block_datalake.encode().unwrap()
@@ -53,9 +56,12 @@ mod tests {
         let encoded_block_sample_datalake = hex::decode("000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000009d2a6000000000000000000000000000000000000000000000000000000000009eb100000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000002010f000000000000000000000000000000000000000000000000000000000000").unwrap();
         let decoded_datalake: BlockSampledDatalake =
             BlockSampledDatalake::decode(&encoded_block_sample_datalake).unwrap();
-        let block_datalake =
-            BlockSampledDatalake::new(10300000, 10400000, "header.base_fee_per_gas".to_string(), 1)
-                .unwrap();
+        let block_datalake = BlockSampledDatalake::new(
+            10300000,
+            10400000,
+            "header.base_fee_per_gas".parse().unwrap(),
+            1,
+        );
 
         assert_eq!(
             decoded_datalake.encode().unwrap(),
@@ -86,10 +92,12 @@ mod tests {
         let block_datalake = BlockSampledDatalake::new(
             10399990,
             10400000,
-            "account.0x7b2f05ce9ae365c3dbf30657e2dc6449989e83d6.nonce".to_string(),
+            "account.0x7b2f05ce9ae365c3dbf30657e2dc6449989e83d6.nonce"
+                .parse()
+                .unwrap(),
             1,
-        )
-        .unwrap();
+        );
+
         assert_eq!(decoded_datalake, block_datalake);
         assert_eq!(
             decoded_datalake.encode().unwrap(),
@@ -118,10 +126,11 @@ mod tests {
         let block_datalake = BlockSampledDatalake::new(
             4952100,
             4952103,
-            "account.0x0a4de450feb156a2a51ed159b2fb99da26e5f3a3.nonce".to_string(),
+            "account.0x0a4de450feb156a2a51ed159b2fb99da26e5f3a3.nonce"
+                .parse()
+                .unwrap(),
             1,
-        )
-        .unwrap();
+        );
         let serialized = block_datalake.encode().unwrap();
         assert_eq!(serialized, encoded_block_sample_datalake);
         assert_eq!(decoded_datalake, block_datalake);
@@ -153,9 +162,9 @@ mod tests {
         let block_datalake = BlockSampledDatalake::new(
             10399990,
             10400000,
-            "storage.0x7b2f05ce9ae365c3dbf30657e2dc6449989e83d6.0x00000000000000000000000000000000000000000000000000000000000000ff".to_string(),
+            "storage.0x7b2f05ce9ae365c3dbf30657e2dc6449989e83d6.0x00000000000000000000000000000000000000000000000000000000000000ff".parse().unwrap(),
             1,
-        ).unwrap();
+        );
         assert_eq!(decoded_datalake, block_datalake);
         assert_eq!(
             decoded_datalake.encode().unwrap(),

@@ -73,7 +73,7 @@ impl Processor {
     pub async fn process(
         &self,
         requset: ProcessedResult,
-        pie_path: String,
+        pie_path: PathBuf,
     ) -> Result<ProcessedResult> {
         // generate input file from fetch points
         // 1. fetch proofs from provider by using fetch points
@@ -88,7 +88,7 @@ impl Processor {
         // 3. pass the input file to the runner
         let input_string = serde_json::to_string_pretty(&requset.as_cairo_format())
             .expect("Failed to serialize module class");
-        let result = self.runner.run(input_string, PathBuf::from(pie_path))?;
+        let result = self.runner.run(input_string, pie_path)?;
 
         let pr = self.build_legacy_output_file(requset, result)?;
 

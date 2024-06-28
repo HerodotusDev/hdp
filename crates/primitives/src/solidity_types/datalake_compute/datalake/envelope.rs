@@ -38,6 +38,7 @@ impl Codecs for BatchedDatalakeEnvelope {
     fn decode(encoded: &[u8]) -> Result<Vec<DatalakeEnvelope>> {
         let datalakes_type: DynSolType = "bytes[]".parse()?;
         let serialized_datalakes = datalakes_type.abi_decode(encoded)?;
+
         let mut decoded_datalakes = Vec::new();
 
         if let Some(datalakes) = serialized_datalakes.as_array() {
@@ -93,7 +94,7 @@ mod tests {
     use crate::datalake::{
         block_sampled::{AccountField, BlockSampledCollection, BlockSampledDatalake, HeaderField},
         envelope::BatchedDatalakes,
-        transactions::TransactionsInBlockDatalake,
+        transactions::{IncludedTypes, TransactionsCollection, TransactionsInBlockDatalake},
     };
     use alloy::{hex, primitives::Address};
     use std::str::FromStr;
@@ -129,10 +130,12 @@ mod tests {
         let block_datalake = BlockSampledDatalake::new(
             4952100,
             4952103,
-            "account.0x0a4de450feb156a2a51ed159b2fb99da26e5f3a3.nonce".to_string(),
+            "account.0x0a4de450feb156a2a51ed159b2fb99da26e5f3a3.nonce"
+                .parse()
+                .unwrap(),
             1,
-        )
-        .unwrap();
+        );
+
         let datalakes = vec![DatalakeEnvelope::BlockSampled(block_datalake.clone())];
         assert_eq!(datalakes.len(), 1);
         for datalake in datalakes.clone() {
@@ -162,10 +165,12 @@ mod tests {
     #[test]
     fn test_block_massive_datalake_decoder() {
         let batched_block_datalake = hex::decode("0x00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000001800000000000000000000000000000000000000000000000000000000000000280000000000000000000000000000000000000000000000000000000000000038000000000000000000000000000000000000000000000000000000000000000e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000009ead1800000000000000000000000000000000000000000000000000000000009eb100000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000002010f00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000009ead1800000000000000000000000000000000000000000000000000000000009eb100000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000002010f00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000009ead1800000000000000000000000000000000000000000000000000000000009eb100000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000002010f00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000009ead1800000000000000000000000000000000000000000000000000000000009eb100000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000002010f000000000000000000000000000000000000000000000000000000000000").unwrap();
-        let datalake_massive_block = DatalakeEnvelope::BlockSampled(
-            BlockSampledDatalake::new(10399000, 10400000, "header.base_fee_per_gas".to_string(), 1)
-                .unwrap(),
-        );
+        let datalake_massive_block = DatalakeEnvelope::BlockSampled(BlockSampledDatalake::new(
+            10399000,
+            10400000,
+            "header.base_fee_per_gas".parse().unwrap(),
+            1,
+        ));
 
         let batched_datalakes = vec![
             datalake_massive_block.clone(),
@@ -183,23 +188,21 @@ mod tests {
     fn test_transaction_datalakes_encoder() {
         let transaction_datalake1 = TransactionsInBlockDatalake::new(
             100000,
-            "tx.nonce".to_string(),
+            TransactionsCollection::from_str("tx.nonce").unwrap(),
             1,
             100,
             1,
-            &[0, 0, 1, 1],
-        )
-        .unwrap();
+            IncludedTypes::from(&[0, 0, 1, 1]),
+        );
 
         let transaction_datalake2 = TransactionsInBlockDatalake::new(
             100000,
-            "tx.access_list".to_string(),
+            TransactionsCollection::from_str("tx.access_list").unwrap(),
             1,
             100,
             1,
-            &[0, 0, 1, 1],
-        )
-        .unwrap();
+            IncludedTypes::from(&[0, 0, 1, 1]),
+        );
 
         let datalakes = vec![
             DatalakeEnvelope::Transactions(transaction_datalake1),
@@ -218,23 +221,21 @@ mod tests {
 
         let transaction_datalake1 = TransactionsInBlockDatalake::new(
             100000,
-            "tx.nonce".to_string(),
+            TransactionsCollection::from_str("tx.nonce").unwrap(),
             1,
             100,
             1,
-            &[0, 0, 1, 1],
-        )
-        .unwrap();
+            IncludedTypes::from(&[0, 0, 1, 1]),
+        );
 
         let transaction_datalake2 = TransactionsInBlockDatalake::new(
             100000,
-            "tx.access_list".to_string(),
+            TransactionsCollection::from_str("tx.access_list").unwrap(),
             1,
             100,
             1,
-            &[0, 0, 1, 1],
-        )
-        .unwrap();
+            IncludedTypes::from(&[0, 0, 1, 1]),
+        );
 
         assert_eq!(
             decoded_datalake[0],
@@ -250,23 +251,21 @@ mod tests {
     fn test_transaction_datalakes_encoder_receipt() {
         let transaction_datalake1 = TransactionsInBlockDatalake::new(
             100000,
-            "tx_receipt.success".to_string(),
+            TransactionsCollection::from_str("tx_receipt.success").unwrap(),
             1,
             100,
             1,
-            &[0, 0, 1, 1],
-        )
-        .unwrap();
+            IncludedTypes::from(&[0, 0, 1, 1]),
+        );
 
         let transaction_datalake2 = TransactionsInBlockDatalake::new(
             100000,
-            "tx_receipt.bloom".to_string(),
+            TransactionsCollection::from_str("tx_receipt.bloom").unwrap(),
             1,
             100,
             1,
-            &[0, 0, 1, 1],
-        )
-        .unwrap();
+            IncludedTypes::from(&[0, 0, 1, 1]),
+        );
 
         let datalakes = vec![
             DatalakeEnvelope::Transactions(transaction_datalake1),
@@ -285,23 +284,21 @@ mod tests {
 
         let transaction_datalake1 = TransactionsInBlockDatalake::new(
             100000,
-            "tx_receipt.success".to_string(),
+            TransactionsCollection::from_str("tx_receipt.success").unwrap(),
             1,
             100,
             1,
-            &[0, 0, 1, 1],
-        )
-        .unwrap();
+            IncludedTypes::from(&[0, 0, 1, 1]),
+        );
 
         let transaction_datalake2 = TransactionsInBlockDatalake::new(
             100000,
-            "tx_receipt.bloom".to_string(),
+            TransactionsCollection::from_str("tx_receipt.bloom").unwrap(),
             1,
             100,
             1,
-            &[0, 0, 1, 1],
-        )
-        .unwrap();
+            IncludedTypes::from(&[0, 0, 1, 1]),
+        );
 
         assert_eq!(
             decoded_datalake[0],

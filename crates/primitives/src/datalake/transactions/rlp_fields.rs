@@ -6,7 +6,7 @@ use eth_trie_proofs::{tx::ConsensusTx, tx_receipt::ConsensusTxReceipt};
 
 use crate::datalake::DatalakeField;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TransactionField {
     // ===== Transaction fields =====
     Nonce,
@@ -206,7 +206,7 @@ impl Display for TransactionField {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TransactionReceiptField {
     Success,
     CumulativeGasUsed,

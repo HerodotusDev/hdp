@@ -7,7 +7,7 @@ use crate::datalake::{DatalakeCollection, DatalakeField};
 
 use super::rlp_fields::{AccountField, HeaderField};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum BlockSampledCollection {
     Header(HeaderField),
     Account(Address, AccountField),

@@ -39,6 +39,7 @@ impl Runner {
             .arg("--cairo_pie_output")
             .arg(cairo_pie_file_path)
             .arg("--print_output")
+            .arg("--print_info")
             .stdout(Stdio::piped())
             .spawn()?;
 
@@ -71,6 +72,11 @@ impl Runner {
 
     /// Parse the output of the run command
     fn parse_run(&self, output: String) -> Result<(Vec<U256>, B256)> {
+        let number_of_steps = Regex::new(r"Number of steps: (\d+)").unwrap();
+        if let Some(number_of_steps_caps) = number_of_steps.captures(&output) {
+            let number_of_steps = number_of_steps_caps[1].parse::<usize>()?;
+            info!("Number of steps: {:#?}", number_of_steps);
+        }
         let task_result_re = Regex::new(r"Task Result\((\d+)\): (\S+)").unwrap();
         let mut task_results = vec![];
         for caps in task_result_re.captures_iter(&output) {
