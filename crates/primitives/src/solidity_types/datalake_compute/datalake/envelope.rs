@@ -94,7 +94,10 @@ mod tests {
     use crate::datalake::{
         block_sampled::{AccountField, BlockSampledCollection, BlockSampledDatalake, HeaderField},
         envelope::BatchedDatalakes,
-        transactions::{IncludedTypes, TransactionsCollection, TransactionsInBlockDatalake},
+        transactions::{
+            IncludedTypes, TransactionField, TransactionReceiptField, TransactionsCollection,
+            TransactionsInBlockDatalake,
+        },
     };
     use alloy::{hex, primitives::Address};
     use std::str::FromStr;
@@ -188,7 +191,7 @@ mod tests {
     fn test_transaction_datalakes_encoder() {
         let transaction_datalake1 = TransactionsInBlockDatalake::new(
             100000,
-            TransactionsCollection::from_str("tx.nonce").unwrap(),
+            TransactionsCollection::Transactions(TransactionField::Nonce),
             1,
             100,
             1,
@@ -197,7 +200,7 @@ mod tests {
 
         let transaction_datalake2 = TransactionsInBlockDatalake::new(
             100000,
-            TransactionsCollection::from_str("tx.access_list").unwrap(),
+            TransactionsCollection::Transactions(TransactionField::AccessList),
             1,
             100,
             1,
@@ -221,7 +224,7 @@ mod tests {
 
         let transaction_datalake1 = TransactionsInBlockDatalake::new(
             100000,
-            TransactionsCollection::from_str("tx.nonce").unwrap(),
+            TransactionsCollection::Transactions(TransactionField::Nonce),
             1,
             100,
             1,
@@ -230,7 +233,7 @@ mod tests {
 
         let transaction_datalake2 = TransactionsInBlockDatalake::new(
             100000,
-            TransactionsCollection::from_str("tx.access_list").unwrap(),
+            TransactionsCollection::Transactions(TransactionField::AccessList),
             1,
             100,
             1,
@@ -251,7 +254,7 @@ mod tests {
     fn test_transaction_datalakes_encoder_receipt() {
         let transaction_datalake1 = TransactionsInBlockDatalake::new(
             100000,
-            TransactionsCollection::from_str("tx_receipt.success").unwrap(),
+            TransactionsCollection::TranasactionReceipts(TransactionReceiptField::Success),
             1,
             100,
             1,
@@ -260,7 +263,7 @@ mod tests {
 
         let transaction_datalake2 = TransactionsInBlockDatalake::new(
             100000,
-            TransactionsCollection::from_str("tx_receipt.bloom").unwrap(),
+            TransactionsCollection::TranasactionReceipts(TransactionReceiptField::Bloom),
             1,
             100,
             1,
@@ -284,7 +287,7 @@ mod tests {
 
         let transaction_datalake1 = TransactionsInBlockDatalake::new(
             100000,
-            TransactionsCollection::from_str("tx_receipt.success").unwrap(),
+            TransactionsCollection::TranasactionReceipts(TransactionReceiptField::Success),
             1,
             100,
             1,
@@ -293,7 +296,7 @@ mod tests {
 
         let transaction_datalake2 = TransactionsInBlockDatalake::new(
             100000,
-            TransactionsCollection::from_str("tx_receipt.bloom").unwrap(),
+            TransactionsCollection::TranasactionReceipts(TransactionReceiptField::Bloom),
             1,
             100,
             1,
