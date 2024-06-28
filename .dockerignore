@@ -1,0 +1,32 @@
+# Ignore Dockerfiles
+Dockerfile
+Dockerfile.*
+*.dockerfile
+
+# Ignore Docker Compose files
+docker-compose.yml
+docker-compose.override.yml
+
+# Ignore Docker volumes
+/docker-volumes/
+/docker-data/
+
+# Ignore Docker build directories
+/docker_build/
+
+# Ignore target directory
+target
+
+# Ignore environment variables
+.env*
+
+# Ignore Python virtual environments
+venv/
+
+# Ignore specific tools directory
+tools/
+
+# Ignore specific directories and files
+hdp-cairo/
+build/
+*.pie
