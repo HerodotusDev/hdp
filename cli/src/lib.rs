@@ -1,6 +1,5 @@
-pub mod command;
+pub mod commands;
 pub mod common;
 pub mod interactive;
-pub mod run;
 
-pub use run::run;
+pub use common::run;

@@ -14,13 +14,6 @@ use hdp_primitives::{
     },
 };
 
-/// Parse bytes from hex string
-fn parse_bytes(arg: &str) -> Result<Bytes, String> {
-    hex::decode(arg)
-        .map(Bytes::from)
-        .map_err(|e| format!("Failed to parse bytes: {}", e))
-}
-
 /// Simple Herodotus Data Processor CLI to handle tasks and datalakes
 #[derive(Debug, Parser)]
 #[command(name = "hdp")]
@@ -154,4 +147,11 @@ pub enum DataLakeCommands {
         #[arg(value_delimiter = ',')]
         included_types: IncludedTypes,
     },
+}
+
+/// Parse bytes from hex string
+fn parse_bytes(arg: &str) -> Result<Bytes, String> {
+    hex::decode(arg)
+        .map(Bytes::from)
+        .map_err(|e| format!("Failed to parse bytes: {}", e))
 }

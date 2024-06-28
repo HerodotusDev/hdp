@@ -3,7 +3,17 @@ use alloy::{
     transports::http::reqwest::Url,
 };
 use anyhow::Result;
-use hdp_primitives::processed_types::cairo_format::AsCairoFormat;
+use hdp_primitives::{
+    datalake::{
+        block_sampled::BlockSampledDatalake, compute::Computation, envelope::DatalakeEnvelope,
+        transactions::TransactionsInBlockDatalake, DatalakeCompute,
+    },
+    processed_types::cairo_format::AsCairoFormat,
+    solidity_types::{
+        datalake_compute::BatchedDatalakeCompute,
+        traits::{BatchedDatalakeComputeCodecs, DatalakeComputeCodecs},
+    },
+};
 use hdp_provider::evm::provider::EvmProviderConfig;
 use std::{fs, path::PathBuf};
 use tracing_subscriber::FmtSubscriber;
@@ -18,7 +28,10 @@ use hdp_core::{
 
 use tracing::{info, Level};
 
-use crate::command::HDPCli;
+use crate::{
+    commands::{DataLakeCommands, HDPCli, HDPCliCommands},
+    interactive,
+};
 
 /// Initialize the CLI
 pub fn init_cli() -> Result<HDPCli> {
@@ -30,6 +43,106 @@ pub fn init_cli() -> Result<HDPCli> {
     let cli = HDPCli::parse();
     dotenv::dotenv().ok();
     Ok(cli)
+}
+
+pub async fn run() -> anyhow::Result<()> {
+    let start_run = std::time::Instant::now();
+    let cli = init_cli()?;
+    match cli.command {
+        HDPCliCommands::Start => {
+            interactive::run_interactive().await?;
+        }
+        HDPCliCommands::Encode {
+            allow_run,
+            rpc_url,
+            chain_id,
+            output_file,
+            cairo_input,
+            pie_file,
+            aggregate_fn_id,
+            aggregate_fn_ctx,
+            command,
+        } => {
+            let datalake = match command {
+                DataLakeCommands::BlockSampled {
+                    block_range_start,
+                    block_range_end,
+                    sampled_property,
+                    increment,
+                } => DatalakeEnvelope::BlockSampled(BlockSampledDatalake::new(
+                    block_range_start,
+                    block_range_end,
+                    sampled_property,
+                    increment,
+                )),
+                DataLakeCommands::TransactionsInBlock {
+                    target_block,
+                    sampled_property,
+                    start_index,
+                    end_index,
+                    increment,
+                    included_types,
+                } => DatalakeEnvelope::Transactions(TransactionsInBlockDatalake::new(
+                    target_block,
+                    sampled_property,
+                    start_index,
+                    end_index,
+                    increment,
+                    included_types,
+                )),
+            };
+            let (encoded_datalakes, encoded_computes) = vec![DatalakeCompute::new(
+                datalake,
+                Computation::new(aggregate_fn_id, aggregate_fn_ctx),
+            )]
+            .encode()?;
+
+            // if allow_run is true, then run the evaluator
+            if allow_run {
+                handle_run(
+                    Some(Bytes::from(encoded_computes)),
+                    Some(Bytes::from(encoded_datalakes)),
+                    rpc_url,
+                    chain_id,
+                    output_file,
+                    cairo_input,
+                    pie_file,
+                )
+                .await?
+            }
+        }
+        HDPCliCommands::Decode { tasks, datalakes } => {
+            let decoded_tasks = BatchedDatalakeCompute::decode(&datalakes, &tasks)?;
+            info!("Decoded tasks: {:#?}", decoded_tasks);
+        }
+        HDPCliCommands::DecodeOne { task, datalake } => {
+            let decoded_task = DatalakeCompute::decode(&datalake, &task)?;
+            info!("Decoded task: {:#?}", decoded_task);
+        }
+        HDPCliCommands::Run {
+            tasks,
+            datalakes,
+            rpc_url,
+            chain_id,
+            output_file,
+            cairo_input,
+            pie_file,
+        } => {
+            handle_run(
+                tasks,
+                datalakes,
+                rpc_url,
+                chain_id,
+                output_file,
+                cairo_input,
+                pie_file,
+            )
+            .await?
+        }
+    }
+    let duration_run = start_run.elapsed();
+    info!("HDP Cli Finished in: {:?}", duration_run);
+    Ok(())
 }
 
 pub async fn handle_run(
