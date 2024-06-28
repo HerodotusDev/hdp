@@ -53,7 +53,7 @@ pub async fn run() -> anyhow::Result<()> {
             interactive::run_interactive().await?;
         }
         HDPCliCommands::Encode {
-            allow_run,
+            allow_process,
             rpc_url,
             chain_id,
             output_file,
@@ -103,8 +103,8 @@ pub async fn run() -> anyhow::Result<()> {
             info!("Encoded datalakes: {:#?}", encoded_datalakes_string);
             info!("Encoded computes: {:#?}", encoded_computes_string);
 
-            // if allow_run is true, then run the evaluator
-            if allow_run {
+            // if allow_process is true, then run the processor
+            if allow_process {
                 handle_run(
                     Some(encoded_computes_string),
                     Some(encoded_datalakes_string),

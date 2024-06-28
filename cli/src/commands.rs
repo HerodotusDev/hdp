@@ -14,7 +14,6 @@ use hdp_primitives::{
     },
 };
 
-/// Simple Herodotus Data Processor CLI to handle tasks and datalakes
 #[derive(Debug, Parser)]
 #[command(name = "hdp")]
 #[command(version, about, long_about = None)]
@@ -27,12 +26,12 @@ pub struct HDPCli {
 pub enum HDPCliCommands {
     /// New to the HDP CLI? Start here!
     Start,
-    ///  Encode the task and datalake in batched format test purposes
+    /// Encode the compute and datalake in batch and allow to proceed
     #[command(arg_required_else_help = true)]
     Encode {
-        /// Decide if want to run evaluator as follow step or not (default: false)
+        /// Decide to run processor. (default: false)
         #[arg(short, long, action = clap::ArgAction::SetTrue)]
-        allow_run: bool,
+        allow_process: bool,
 
         /// The aggregate function id e.g. "sum", "min", "avg"
         aggregate_fn_id: AggregationFunction,
@@ -44,30 +43,36 @@ pub enum HDPCliCommands {
         #[command(subcommand)]
         command: DataLakeCommands,
 
-        /// The RPC URL to fetch the data
+        /// The RPC URL to fetch the datalake
         rpc_url: Option<Url>,
 
-        /// The chain id to fetch the data
+        /// The chain id to fetch the datalake
         chain_id: Option<ChainId>,
 
-        /// Path to the file to save the input.json in cairo format
+        /// Path to save output file after pre-process, this is the input file for processor
+        ///
+        /// This will trigger pre-processing step
         #[arg(short, long)]
         cairo_input: Option<PathBuf>,
 
-        /// Path to the file to save the output result
+        /// Path to save output file after process
+        ///
+        /// This will trigger processing(=pie generation) step
         #[arg(short, long, requires("cairo_input"))]
         output_file: Option<PathBuf>,
 
-        /// Path to pie file
+        /// Path to save pie file
+        ///
+        /// This will trigger processing(=pie generation) step
         #[arg(short, long, requires("cairo_input"))]
         pie_file: Option<PathBuf>,
     },
-    /// Decode batch tasks and datalakes
+    /// Decode batch computes and datalakes
     ///
-    /// Note: Batch tasks and datalakes should be encoded in bytes[] format
+    /// Note: Batch computes and datalakes should be encoded in bytes[] format
     #[command(arg_required_else_help = true)]
     Decode {
-        /// Batched tasks bytes
+        /// Batched computes bytes
         #[arg(value_parser = parse_bytes)]
         tasks: Bytes,
         /// Batched datalakes bytes
@@ -75,7 +80,7 @@ pub enum HDPCliCommands {
         datalakes: Bytes,
     },
 
-    /// Decode one task and one datalake (not batched format)
+    /// Decode one compute and one datalake (not batched format)
     #[command(arg_required_else_help = true)]
     DecodeOne {
         #[arg(value_parser = parse_bytes)]
@@ -83,9 +88,9 @@ pub enum HDPCliCommands {
         #[arg(value_parser = parse_bytes)]
         datalake: Bytes,
     },
-    /// Run the evaluator
+    /// Run from encoded compute and datalake
     Run {
-        /// Batched tasks bytes
+        /// Batched computes bytes
         #[arg(value_parser = parse_bytes)]
         tasks: Option<Bytes>,
         /// Batched datalakes bytes
@@ -96,15 +101,21 @@ pub enum HDPCliCommands {
         /// The chain id to fetch the data
         chain_id: Option<ChainId>,
 
-        /// Path to the file to save the input.json in cairo format
+        /// Path to save output file after pre-process, this is the input file for processor
+        ///
+        /// This will trigger pre-processing step
         #[arg(short, long)]
         cairo_input: Option<PathBuf>,
 
-        /// Path to the file to save the output result
+        /// Path to save output file after process
+        ///
+        /// This will trigger processing(=pie generation) step
         #[arg(short, long, requires("cairo_input"))]
         output_file: Option<PathBuf>,
 
-        /// Path to pie file
+        /// Path to save pie file
+        ///
+        /// This will trigger processing(=pie generation) step
         #[arg(short, long, requires("cairo_input"))]
         pie_file: Option<PathBuf>,
     },
@@ -112,13 +123,12 @@ pub enum HDPCliCommands {
 
 #[derive(Subcommand, Clone, Debug, PartialEq, Eq)]
 pub enum DataLakeCommands {
-    ///  Encode the block sampled data lake for test purposes
     #[command(arg_required_else_help = true)]
     #[command(short_flag = 'b')]
     BlockSampled {
-        /// Block number range start
+        /// Block number range start (inclusive)
         block_range_start: BlockNumber,
-        /// Block number range end
+        /// Block number range end (inclusive)
         block_range_end: BlockNumber,
         /// Sampled property e.g. "header.number", "account.0xaccount.balance", "storage.0xcontract.0xstoragekey"
         sampled_property: BlockSampledCollection,
@@ -127,7 +137,6 @@ pub enum DataLakeCommands {
         increment: u64,
     },
 
-    /// Encode the transactions data lake for test purposes
     #[command(arg_required_else_help = true)]
     #[command(short_flag = 't')]
     TransactionsInBlock {
@@ -137,13 +146,15 @@ pub enum DataLakeCommands {
         /// Fields from transaction: "chain_id", "gas_price"... etc
         /// Fields from transaction receipt: "cumulative_gas_used".. etc
         sampled_property: TransactionsCollection,
-        /// Start index of transactions range
+        /// Start index of transactions range (inclusive)
         start_index: TxIndex,
-        /// End index of transactions range
+        /// End index of transactions range (exclusive)
         end_index: TxIndex,
-        /// Increment number of transactions in the block
+        /// Increment number of transaction indexes in the block
         increment: u64,
         /// Filter out the specific type of Txs
+        /// Each byte represents a type of transaction to be included in the datalake
+        /// e.g 1,0,1,0 -> include legacy, exclude eip2930, include eip1559, exclude eip4844
         included_types: IncludedTypes,
     },
 }
