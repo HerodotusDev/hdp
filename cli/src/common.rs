@@ -97,11 +97,17 @@ pub async fn run() -> anyhow::Result<()> {
             )]
             .encode()?;
 
+            let encoded_datalakes_string = Bytes::from(encoded_datalakes);
+            let encoded_computes_string = Bytes::from(encoded_computes);
+
+            info!("Encoded datalakes: {:#?}", encoded_datalakes_string);
+            info!("Encoded computes: {:#?}", encoded_computes_string);
+
             // if allow_run is true, then run the evaluator
             if allow_run {
                 handle_run(
-                    Some(Bytes::from(encoded_computes)),
-                    Some(Bytes::from(encoded_datalakes)),
+                    Some(encoded_computes_string),
+                    Some(encoded_datalakes_string),
                     rpc_url,
                     chain_id,
                     output_file,
