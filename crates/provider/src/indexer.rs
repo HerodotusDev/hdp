@@ -41,8 +41,7 @@ pub enum IndexerError {
 ///
 /// How to use:
 /// ```rust
-/// use hdp_provider::indexer::Indexer;
-/// use hdp_provider::errors::IndexerError;
+/// use hdp_provider::indexer::{Indexer, IndexerError};
 ///
 /// async fn call_indexer(chain_id: u64, block_range_start: u64, block_range_end: u64) -> Result<(), IndexerError> {
 ///     let indexer = Indexer::new(chain_id);

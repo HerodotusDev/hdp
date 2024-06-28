@@ -1,0 +1,11 @@
+services:
+  runner:
+    build:
+      context: .
+      dockerfile: ./runner.dockerfile
+    env_file:
+      - .env
+    volumes:
+      - ./input.json:/hdp-runner/input.json
+      - ./output.json:/hdp-runner/output.json
+      - ./cairo.pie:/hdp-runner/cairo.pie

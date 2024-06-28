@@ -6,11 +6,14 @@ mod integration_test {
         pre_processor::{PreProcessor, PreProcessorConfig},
         processor::Processor,
     };
-    use hdp_primitives::datalake::{
-        block_sampled::{BlockSampledCollection, BlockSampledDatalake, HeaderField},
-        compute::Computation,
-        envelope::DatalakeEnvelope,
-        DatalakeCompute,
+    use hdp_primitives::{
+        aggregate_fn::AggregationFunction,
+        datalake::{
+            block_sampled::{BlockSampledCollection, BlockSampledDatalake, HeaderField},
+            compute::Computation,
+            envelope::DatalakeEnvelope,
+            DatalakeCompute,
+        },
     };
 
     use hdp_provider::evm::provider::EvmProviderConfig;
@@ -56,7 +59,7 @@ mod integration_test {
 
         let tasks = vec![
             DatalakeCompute {
-                compute: Computation::new("min", None),
+                compute: Computation::new(AggregationFunction::MIN, None),
                 datalake: DatalakeEnvelope::BlockSampled(BlockSampledDatalake {
                     block_range_start: 10001,
                     block_range_end: 10005,
@@ -65,7 +68,7 @@ mod integration_test {
                 }),
             },
             DatalakeCompute {
-                compute: Computation::new("avg", None),
+                compute: Computation::new(AggregationFunction::AVG, None),
                 datalake: DatalakeEnvelope::BlockSampled(BlockSampledDatalake {
                     block_range_start: 10003,
                     block_range_end: 10004,
@@ -81,7 +84,7 @@ mod integration_test {
 
         let start_process = std::time::Instant::now();
         let processed_result = processor
-            .process(preprocessed_result, PIE_PATH.to_string())
+            .process(preprocessed_result, PathBuf::from(PIE_PATH))
             .await
             .unwrap();
         let processor_end_process = start_process.elapsed();

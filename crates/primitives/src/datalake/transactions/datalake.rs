@@ -5,6 +5,7 @@
 //! Example: `TransactionsInBlockDatalake { target_block: 100, sampled_property: "tx.to", increment: 1 }`
 //! represents all transactions in block 100 with a `tx.to` property sampled with an increment of 1.
 
+use std::num::ParseIntError;
 use std::str::FromStr;
 
 use alloy::consensus::TxType;
@@ -32,20 +33,20 @@ pub struct TransactionsInBlockDatalake {
 impl TransactionsInBlockDatalake {
     pub fn new(
         target_block: u64,
-        sampled_property: String,
+        sampled_property: TransactionsCollection,
         start_index: u64,
         end_index: u64,
         increment: u64,
-        included_types: &[u8],
-    ) -> Result<Self> {
-        Ok(Self {
+        included_types: IncludedTypes,
+    ) -> Self {
+        Self {
             target_block,
-            sampled_property: TransactionsCollection::from_str(&sampled_property)?,
+            sampled_property,
             start_index,
             end_index,
             increment,
-            included_types: IncludedTypes::from(included_types),
-        })
+            included_types,
+        }
     }
 }
 
@@ -57,7 +58,7 @@ impl TransactionsInBlockDatalake {
 /// 1: EIP-2930
 /// 2: EIP-1559
 /// 3: EIP-4844
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IncludedTypes {
     inner: [u8; 4],
 }
@@ -94,6 +95,23 @@ impl IncludedTypes {
         let mut inner = [0; 4];
         inner.copy_from_slice(&bytes[28..32]);
         Self { inner }
+    }
+}
+
+impl FromStr for IncludedTypes {
+    type Err = ParseIntError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let included_types: Vec<u8> = s
+            .split(',')
+            .map(|x| x.parse())
+            .collect::<Result<Vec<_>, _>>()?;
+
+        if included_types.len() != 4 {
+            panic!("Included types must be 4 bytes long");
+        }
+
+        Ok(IncludedTypes::from(&included_types))
     }
 }
 

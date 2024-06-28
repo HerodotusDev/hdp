@@ -124,10 +124,10 @@ mod tests {
     fn test_compute_decoder() {
         // Note: all task's datalake is None
         let original_tasks: BatchedComputation = vec![
-            Computation::new("avg", None),
-            Computation::new("sum", None),
-            Computation::new("min", None),
-            Computation::new("max", None),
+            Computation::new(AggregationFunction::AVG, None),
+            Computation::new(AggregationFunction::SUM, None),
+            Computation::new(AggregationFunction::MIN, None),
+            Computation::new(AggregationFunction::MAX, None),
         ];
 
         let encoded_tasks = original_tasks.encode().unwrap();
@@ -162,7 +162,7 @@ mod tests {
     #[test]
     fn test_task_with_ctx_serialize() {
         let task = Computation::new(
-            "count",
+            AggregationFunction::COUNT,
             Some(FunctionContext::new(
                 Operator::GreaterThanOrEqual,
                 U256::from(100),
@@ -186,7 +186,7 @@ mod tests {
     #[test]
     fn test_task_without_ctx_serialize() {
         // AVG
-        let task = Computation::new("avg", None);
+        let task = Computation::new(AggregationFunction::AVG, None);
 
         let inner_task = Computation {
             aggregate_fn_id: AggregationFunction::AVG,
@@ -201,7 +201,7 @@ mod tests {
         let deserialized = Computation::decode(&serialized_bytes).unwrap();
         assert_eq!(task, deserialized);
         // MIN
-        let task = Computation::new("min", None);
+        let task = Computation::new(AggregationFunction::MIN, None);
 
         let inner_task = Computation {
             aggregate_fn_id: AggregationFunction::MIN,
@@ -220,15 +220,18 @@ mod tests {
     #[test]
     fn test_task_with_datalake() {
         let task = Computation::new(
-            "count",
+            AggregationFunction::COUNT,
             Some(FunctionContext::new(
                 Operator::GreaterThanOrEqual,
                 U256::from(100),
             )),
         );
-        let datalake = DatalakeEnvelope::BlockSampled(
-            BlockSampledDatalake::new(0, 100, "header.base_fee_per_gas".to_string(), 1).unwrap(),
-        );
+        let datalake = DatalakeEnvelope::BlockSampled(BlockSampledDatalake::new(
+            0,
+            100,
+            "header.base_fee_per_gas".parse().unwrap(),
+            1,
+        ));
         let task_with_datalake = DatalakeCompute::new(datalake, task);
 
         let serialized = task_with_datalake.encode().unwrap();

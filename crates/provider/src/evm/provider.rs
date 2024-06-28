@@ -34,7 +34,7 @@ const DEFAULT_MAX_REQUESTS: u64 = 100;
 #[derive(Error, Debug)]
 pub enum ProviderError {
     /// Error when the query is invalid
-    #[error("Out of bound: requested index: {0}, length: {1}")]
+    #[error("Transaction index out of bound: requested index: {0}, length: {1}")]
     OutOfBoundRequestError(u64, u64),
 
     /// Error when the MMR meta is mismatched among range of requested blocks
