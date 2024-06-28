@@ -25,7 +25,7 @@ The Data Processor CLI serves as an essential tool for developers working with C
 
 ```bash
 # Install with cargo
-❯ cargo install --git https://github.com/HerodotusDev/hdp --tag v0.2.5 --locked --force
+❯ cargo install --git https://github.com/HerodotusDev/hdp --tag v0.2.6 --locked --force
 ```
 
 ### Build from source
