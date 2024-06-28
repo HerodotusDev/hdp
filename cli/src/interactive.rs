@@ -1,4 +1,7 @@
-use alloy::{primitives::U256, transports::http::reqwest::Url};
+use alloy::{
+    primitives::{Bytes, U256},
+    transports::http::reqwest::Url,
+};
 use anyhow::bail;
 use hdp_primitives::{
     aggregate_fn::{integer::Operator, FunctionContext},
@@ -38,6 +41,8 @@ pub async fn run_interactive() -> anyhow::Result<()> {
 
     let variants = DatalakeType::variants();
     let datalake_opts: Vec<&str> = variants.iter().map(AsRef::as_ref).collect();
+
+    println!("Let's first try to generate encoded datalake and compute! ");
 
     let ans: Result<&str, InquireError> =
         Select::new("Step 1. What's your datalake type?", datalake_opts).prompt();
@@ -248,7 +253,13 @@ pub async fn run_interactive() -> anyhow::Result<()> {
     );
     let (encoded_datalakes, encoded_computes) = vec![target_datalake_compute].encode()?;
 
-    let allow_run: bool = inquire::Confirm::new("Do you want to run the evaluator?")
+    let encoded_datalakes_bytes = Bytes::from(encoded_datalakes);
+    let encoded_computes_bytes = Bytes::from(encoded_computes);
+
+    println!("Encoded datalake: \n{}", encoded_datalakes_bytes);
+    println!("Encoded compute: \n{}", encoded_computes_bytes);
+
+    let allow_run: bool = inquire::Confirm::new("Do you want to run the full processor? Running the processor will generate input for Cairo program and PIE file")
         .with_default(true)
         .prompt()?;
     if allow_run {
@@ -286,8 +297,8 @@ pub async fn run_interactive() -> anyhow::Result<()> {
             .into();
 
         handle_run(
-            Some(encoded_computes.into()),
-            Some(encoded_datalakes.into()),
+            Some(encoded_computes_bytes),
+            Some(encoded_datalakes_bytes),
             rpc_url,
             chain_id,
             Some(output_file),

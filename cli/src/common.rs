@@ -33,18 +33,6 @@ use crate::{
     interactive,
 };
 
-/// Initialize the CLI
-pub fn init_cli() -> Result<HDPCli> {
-    let subscriber = FmtSubscriber::builder()
-        .with_max_level(Level::INFO)
-        .finish();
-
-    tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
-    let cli = HDPCli::parse();
-    dotenv::dotenv().ok();
-    Ok(cli)
-}
-
 pub async fn run() -> anyhow::Result<()> {
     let start_run = std::time::Instant::now();
     let cli = init_cli()?;
@@ -151,6 +139,18 @@ pub async fn run() -> anyhow::Result<()> {
     Ok(())
 }
 
+/// Initialize the CLI
+fn init_cli() -> Result<HDPCli> {
+    let subscriber = FmtSubscriber::builder()
+        .with_max_level(Level::INFO)
+        .finish();
+
+    tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
+    let cli = HDPCli::parse();
+    dotenv::dotenv().ok();
+    Ok(cli)
+}
+
 pub async fn handle_run(
     tasks: Option<Bytes>,
     datalakes: Option<Bytes>,
@@ -187,7 +187,7 @@ pub async fn handle_run(
             .map_err(|e| anyhow::anyhow!("Failed to serialize preprocessor result: {}", e))?;
         if let Some(input_file_path) = cairo_input {
             fs::write(&input_file_path, input_string.clone())
-                .map_err(|e| anyhow::anyhow!("Unable to write file: {}", e))?;
+                .map_err(|e| anyhow::anyhow!("Unable to write input file: {}", e))?;
             info!(
                 "Finished pre processing the data, saved the input file in {}",
                 input_file_path.display()
@@ -205,7 +205,7 @@ pub async fn handle_run(
                 let output_string = serde_json::to_string_pretty(&processor_result)
                     .map_err(|e| anyhow::anyhow!("Failed to serialize processor result: {}", e))?;
                 fs::write(&output_file_path, output_string)
-                    .map_err(|e| anyhow::anyhow!("Unable to write file: {}", e))?;
+                    .map_err(|e| anyhow::anyhow!("Unable to write output file: {}", e))?;
                 info!(
                     "Finished processing the data, saved the output file in {} and pie file in {}",
                     output_file_path.display(),

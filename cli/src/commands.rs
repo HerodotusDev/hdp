@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 use alloy::{
     hex,
     primitives::{BlockNumber, Bytes, ChainId, TxIndex},
@@ -13,6 +11,7 @@ use hdp_primitives::{
         transactions::{IncludedTypes, TransactionsCollection},
     },
 };
+use std::path::PathBuf;
 
 #[derive(Debug, Parser)]
 #[command(name = "hdp")]
@@ -88,7 +87,7 @@ pub enum HDPCliCommands {
         #[arg(value_parser = parse_bytes)]
         datalake: Bytes,
     },
-    /// Run from encoded compute and datalake
+    /// Run from encoded compute and datalake. Usefull for request batch tasks.
     Run {
         /// Batched computes bytes
         #[arg(value_parser = parse_bytes)]
