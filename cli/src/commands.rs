@@ -144,7 +144,6 @@ pub enum DataLakeCommands {
         /// Increment number of transactions in the block
         increment: u64,
         /// Filter out the specific type of Txs
-        #[arg(value_delimiter = ',')]
         included_types: IncludedTypes,
     },
 }
