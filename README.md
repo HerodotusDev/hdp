@@ -218,6 +218,8 @@ docker-compose build
 docker-compose up
 ```
 
+For those looking for an already built Docker image, you can pull it from [here](https://hub.docker.com/r/dataprocessor/hdp-runner).
+
 ## License
 
 `hdp` is licensed under the [GNU General Public License v3.0](./LICENSE).
