@@ -10,5 +10,4 @@ services:
     volumes:
       - ./input.json:/hdp-runner/input.json
       - ./output.json:/hdp-runner/output.json
-      - ./cairo.pie:/hdp-runner/cairo.pie
-    restart: always
+      - ./cairo.zip:/hdp-runner/cairo.zip

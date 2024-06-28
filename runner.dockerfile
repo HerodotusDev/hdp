@@ -17,11 +17,11 @@ RUN LATEST_TAG=$(curl -s https://api.github.com/repos/HerodotusDev/hdp/releases/
     && echo 'export PATH="/root/.cargo/bin:$PATH"' >> /root/.bashrc
 
 # Copy the rest of the application source
-COPY . .
-
-# Copy the rest of the application source
 RUN mkdir -p /hdp-runner/build/compiled_cairo
 RUN cp /hdp-cairo/build/hdp.json /hdp-runner/build/compiled_cairo/hdp.json
+
+# Copy the rest of the application source
+COPY . .
 
 # Set environment variables for parameters
 ENV TASKS=""
@@ -30,4 +30,4 @@ ENV RPC_URL=""
 ENV CHAIN_ID=""
 
 # Command to run the Rust binary with user-specified parameters
-CMD ["bash", "-c", "hdp run -c /hdp-runner/input.json -o /hdp-runner/output.json -p /hdp-runner/cairo.pie $TASKS $DATALAKES $RPC_URL $CHAIN_ID"]
+CMD ["bash", "-c", "hdp run $TASKS $DATALAKES $RPC_URL $CHAIN_ID -c /hdp-runner/input.json -o /hdp-runner/output.json -p /hdp-runner/cairo.zip"]
