@@ -9,16 +9,16 @@ use hdp_primitives::{
     solidity_types::traits::DatalakeComputeCodecs,
     task::datalake::{envelope::DatalakeEnvelope, DatalakeCompute},
 };
-use hdp_provider::evm::provider::{EvmProvider, EvmProviderConfig};
+use hdp_provider::evm::provider::EvmProvider;
 
-use super::{Compilable, CompilationResults, CompileError};
+use super::{Compilable, CompilationResults, CompileConfig, CompileError};
 
 pub mod fetchable;
 
 impl Compilable for Vec<DatalakeCompute> {
     async fn compile(
         &self,
-        provider_config: &EvmProviderConfig,
+        compile_config: &CompileConfig,
     ) -> Result<CompilationResults, CompileError> {
         let mut commit_results_maps = HashMap::new();
         let mut headers: HashSet<ProcessedHeader> = HashSet::new();
@@ -33,7 +33,7 @@ impl Compilable for Vec<DatalakeCompute> {
             let task_commitment = datalake_compute.commit();
             let aggregation_fn = &datalake_compute.compute.aggregate_fn_id;
             let fn_context = datalake_compute.compute.aggregate_fn_ctx.clone();
-            let provider = EvmProvider::new(provider_config.clone());
+            let provider = EvmProvider::new(compile_config.provider.clone());
             match datalake_compute.datalake {
                 DatalakeEnvelope::BlockSampled(ref datalake) => {
                     let compiled_block_sampled = datalake.fetch(provider).await?;

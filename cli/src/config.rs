@@ -1,5 +1,8 @@
-use alloy::primitives::{Bytes, ChainId};
-use starknet::providers::Url;
+use alloy::{
+    primitives::{Bytes, ChainId},
+    transports::http::reqwest::Url,
+};
+
 use std::env;
 use tokio::sync::OnceCell;
 

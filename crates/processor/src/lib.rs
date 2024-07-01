@@ -13,7 +13,7 @@ use hdp_primitives::processed_types::{
 use serde::Serialize;
 use std::path::PathBuf;
 
-use crate::cairo_runner::run::{RunResult, Runner};
+use hdp_cairo_runner::run::{RunResult, Runner};
 
 pub struct Processor {
     runner: Runner,

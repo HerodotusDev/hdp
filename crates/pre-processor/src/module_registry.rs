@@ -2,15 +2,15 @@
 //! It fetch contract class from the StarkNet network and compile it to the casm.
 
 use anyhow::{bail, Result};
-use cairo_lang_starknet_classes::casm_contract_class::CasmContractClass;
+use cairo_lang_starknet_classes::{
+    casm_contract_class::CasmContractClass, contract_class::ContractClass as CairoContractClass,
+};
 use starknet::{
-    core::types::{BlockId, BlockTag, ContractClass},
+    core::types::{BlockId, BlockTag, ContractClass, FlattenedSierraClass},
     providers::{jsonrpc::HttpTransport, JsonRpcClient, Provider, Url},
 };
 use starknet_crypto::FieldElement;
 use tracing::info;
-
-use crate::conversion::flattened_sierra_to_compiled_class;
 
 pub struct ModuleRegistry {
     provider: JsonRpcClient<HttpTransport>,
@@ -48,10 +48,35 @@ impl ModuleRegistry {
     }
 }
 
+/// Convert the given [FlattenedSierraClass] into [CasmContractClass].
+/// Taken from https://github.com/dojoengine/dojo/blob/920500986855fdaf203471ac11900b15dcf6035f/crates/katana/primitives/src/conversion/rpc.rs#L140
+fn flattened_sierra_to_compiled_class(sierra: &FlattenedSierraClass) -> Result<CasmContractClass> {
+    let class = rpc_to_cairo_contract_class(sierra)?;
+    let casm = CasmContractClass::from_contract_class(class, true, usize::MAX)?;
+    Ok(casm)
+}
+
+/// Converts RPC [FlattenedSierraClass] type to Cairo's [CairoContractClass] type.
+/// Taken from https://github.com/dojoengine/dojo/blob/920500986855fdaf203471ac11900b15dcf6035f/crates/katana/primitives/src/conversion/rpc.rs#L187
+fn rpc_to_cairo_contract_class(sierra: &FlattenedSierraClass) -> Result<CairoContractClass> {
+    let value = serde_json::to_value(sierra)?;
+
+    Ok(CairoContractClass {
+        abi: serde_json::from_value(value["abi"].clone()).ok(),
+        sierra_program: serde_json::from_value(value["sierra_program"].clone())?,
+        entry_points_by_type: serde_json::from_value(value["entry_points_by_type"].clone())?,
+        contract_class_version: serde_json::from_value(value["contract_class_version"].clone())?,
+        sierra_program_debug_info: serde_json::from_value(
+            value["sierra_program_debug_info"].clone(),
+        )
+        .ok(),
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::constant::TEST_CONTRACT_CASM;
+    use hdp_primitives::constant::TEST_CONTRACT_CASM;
 
     fn init() -> (ModuleRegistry, FieldElement) {
         let url = Url::parse(

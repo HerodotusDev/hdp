@@ -3,7 +3,10 @@ use alloy::{
     transports::http::reqwest::Url,
 };
 use anyhow::Result;
-use hdp_preprocessor::PreProcessor;
+use hdp_preprocessor::{
+    compile::{module::ModuleCompilerConfig, CompileConfig},
+    PreProcessor,
+};
 use hdp_primitives::{
     processed_types::cairo_format::AsCairoFormat,
     solidity_types::{
@@ -20,12 +23,13 @@ use std::{fs, path::PathBuf};
 use tracing_subscriber::FmtSubscriber;
 
 use clap::Parser;
-use hdp_core::{config::Config, processor::Processor};
+use hdp_processor::Processor;
 
 use tracing::{info, Level};
 
 use crate::{
     commands::{DataLakeCommands, HDPCli, HDPCliCommands},
+    config::Config,
     interactive,
 };
 
@@ -165,12 +169,17 @@ pub async fn handle_run(
         chain_id: config.chain_id,
         max_requests: config.rpc_chunk_size,
     };
-    // let module_config = ModuleCompilerConfig {
-    //     module_registry_rpc_url: url,
-    //     program_path: PathBuf::from(&program_path),
-    // };
+    let module_config = ModuleCompilerConfig {
+        module_registry_rpc_url: url,
+        program_path: PathBuf::from(&program_path),
+    };
 
-    let preprocessor = PreProcessor::new_with_config(provider_config);
+    let compile_config = CompileConfig {
+        provider: provider_config,
+        module: module_config,
+    };
+
+    let preprocessor = PreProcessor::new_with_config(compile_config);
     let result = preprocessor
         .process_from_serialized(config.datalakes.clone(), config.tasks.clone())
         .await?;

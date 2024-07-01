@@ -2,11 +2,11 @@
 resolver = "2"
 members = [
     "cli",
-    "crates/core",
     "crates/primitives",
     "crates/provider",
     "crates/pre-processor",
-    "processor",
+    "crates/processor",
+    "crates/cairo-runner",
 ]
 
 [workspace.package]
@@ -27,9 +27,11 @@ categories = [
 
 [workspace.dependencies]
 hdp-preprocessor = { version = "0.2.5", path = "crates/pre-processor" }
+hdp-processor = { version = "0.2.5", path = "crates/processor" }
 hdp-core = { version = "0.2.5", path = "crates/core" }
 hdp-primitives = { version = "0.2.5", path = "crates/primitives" }
 hdp-provider = { version = "0.2.5", path = "crates/provider" }
+hdp-cairo-runner = { version = "0.2.5", path = "crates/cairo-runner" }
 tokio = { version = "1", features = ["full"] }
 tempfile = "3.10.1"
 alloy-merkle-tree = { version = "0.6.0" }

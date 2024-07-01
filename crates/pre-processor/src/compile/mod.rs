@@ -7,9 +7,11 @@ use hdp_primitives::processed_types::{
     storage::ProcessedStorage, transaction::ProcessedTransaction,
 };
 use hdp_provider::evm::provider::EvmProviderConfig;
+use module::ModuleCompilerConfig;
 use thiserror::Error;
 
 pub mod datalake;
+pub mod module;
 
 #[derive(Error, Debug)]
 pub enum CompileError {
@@ -23,10 +25,15 @@ pub enum CompileError {
     AnyhowError(#[from] anyhow::Error),
 }
 
+pub struct CompileConfig {
+    pub provider: EvmProviderConfig,
+    pub module: ModuleCompilerConfig,
+}
+
 pub trait Compilable {
     fn compile(
         &self,
-        provider_config: &EvmProviderConfig,
+        compile_config: &CompileConfig,
     ) -> impl std::future::Future<Output = Result<CompilationResults, CompileError>> + Send;
 }
 
@@ -50,6 +57,26 @@ pub struct CompilationResults {
 }
 
 impl CompilationResults {
+    pub fn new_without_result(
+        headers: HashSet<ProcessedHeader>,
+        accounts: HashSet<ProcessedAccount>,
+        storages: HashSet<ProcessedStorage>,
+        transactions: HashSet<ProcessedTransaction>,
+        transaction_receipts: HashSet<ProcessedReceipt>,
+        mmr_meta: MMRMeta,
+    ) -> Self {
+        Self {
+            pre_processable: false,
+            commit_results_maps: HashMap::new(),
+            headers,
+            accounts,
+            storages,
+            transactions,
+            transaction_receipts,
+            mmr_meta,
+        }
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         pre_processable: bool,

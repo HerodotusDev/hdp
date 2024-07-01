@@ -1,8 +1,11 @@
 mod integration_test {
     use std::path::PathBuf;
 
-    use hdp_core::processor::Processor;
-    use hdp_preprocessor::PreProcessor;
+    use alloy::transports::http::reqwest::Url;
+    use hdp_preprocessor::{
+        compile::{module::ModuleCompilerConfig, CompileConfig},
+        PreProcessor,
+    };
     use hdp_primitives::{
         aggregate_fn::AggregationFunction,
         task::datalake::{
@@ -12,9 +15,8 @@ mod integration_test {
             DatalakeCompute,
         },
     };
-
+    use hdp_processor::Processor;
     use hdp_provider::evm::provider::EvmProviderConfig;
-    use starknet::providers::Url;
 
     // Non-paid personal alchemy endpoint
     const SEPOLIA_RPC_URL: &str =
@@ -25,17 +27,22 @@ mod integration_test {
     const PIE_PATH: &str = "./cairo.pie";
 
     fn init_preprocessor() -> PreProcessor {
-        // let module_config = ModuleCompilerConfig {
-        //     module_registry_rpc_url: Url::parse(STARKNET_SEPOLIA_RPC).unwrap(),
-        //     program_path: PathBuf::from(PREPROCESS_PROGRAM_PATH),
-        // };
+        let module_config = ModuleCompilerConfig {
+            module_registry_rpc_url: Url::parse(STARKNET_SEPOLIA_RPC).unwrap(),
+            program_path: PathBuf::from(PREPROCESS_PROGRAM_PATH),
+        };
         let provider_config = EvmProviderConfig {
             rpc_url: Url::parse(SEPOLIA_RPC_URL).unwrap(),
             chain_id: 11155111,
             max_requests: 100,
         };
 
-        PreProcessor::new_with_config(provider_config)
+        let compile_config = CompileConfig {
+            provider: provider_config,
+            module: module_config,
+        };
+
+        PreProcessor::new_with_config(compile_config)
     }
 
     fn init_processor() -> Processor {

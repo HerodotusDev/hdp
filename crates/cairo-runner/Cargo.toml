@@ -1,0 +1,24 @@
+[package]
+name = "hdp-cairo-runner"
+version.workspace = true
+edition.workspace = true
+license-file.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+exclude.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+anyhow = { workspace = true }
+hdp-provider = { workspace = true }
+tempfile = { workspace = true }
+tracing = { workspace = true }
+regex = { workspace = true }
+alloy = { workspace = true }
+hdp-primitives = { workspace = true }
+cairo-lang-starknet-classes = { workspace = true }
+serde = { workspace = true }
+serde_with = { workspace = true }
+starknet-crypto = { workspace = true }

@@ -6,7 +6,7 @@ use alloy::dyn_abi::DynSolValue;
 use alloy::primitives::{Bytes, Keccak256, B256, U256};
 use alloy_merkle_tree::standard_binary_tree::StandardMerkleTree;
 use cairo_lang_starknet_classes::casm_contract_class::CasmContractClass;
-use compile::{Compilable, CompilationResults, CompileError};
+use compile::{Compilable, CompilationResults, CompileConfig, CompileError};
 use hdp_primitives::processed_types::datalake_compute::ProcessedDatalakeCompute;
 use hdp_primitives::processed_types::v1_query::ProcessedResult;
 use hdp_primitives::solidity_types::datalake_compute::BatchedDatalakeCompute;
@@ -16,13 +16,13 @@ use hdp_primitives::solidity_types::traits::{
 use hdp_primitives::task::datalake::DatalakeCompute;
 use hdp_primitives::task::module::Module;
 
-use hdp_provider::evm::provider::EvmProviderConfig;
 use hdp_provider::key::FetchKeyEnvelope;
 
 use thiserror::Error;
 use tracing::info;
 
 pub mod compile;
+pub mod module_registry;
 
 #[derive(Error, Debug)]
 pub enum PreProcessorError {
@@ -35,7 +35,7 @@ pub enum PreProcessorError {
 }
 
 pub struct PreProcessor {
-    pub provider_config: EvmProviderConfig,
+    pub compile_config: CompileConfig,
 }
 
 pub struct ExtendedDatalake {
@@ -50,8 +50,8 @@ pub struct ExtendedModule {
 }
 
 impl PreProcessor {
-    pub fn new_with_config(provider_config: EvmProviderConfig) -> Self {
-        Self { provider_config }
+    pub fn new_with_config(compile_config: CompileConfig) -> Self {
+        Self { compile_config }
     }
 
     pub async fn process_from_serialized(
@@ -79,7 +79,7 @@ impl PreProcessor {
 
         // do compile with the tasks
         let compiled_results = tasks
-            .compile(&self.provider_config)
+            .compile(&self.compile_config)
             .await
             .map_err(PreProcessorError::CompileError)?;
 

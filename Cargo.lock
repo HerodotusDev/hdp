@@ -2172,6 +2172,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "hdp-cairo-runner"
+version = "0.2.5"
+dependencies = [
+ "alloy",
+ "anyhow",
+ "cairo-lang-starknet-classes",
+ "hdp-primitives",
+ "hdp-provider",
+ "regex",
+ "serde",
+ "serde_with 2.3.3",
+ "starknet-crypto",
+ "tempfile",
+ "tracing",
+]
+
+[[package]]
 name = "hdp-cli"
 version = "0.2.5"
 dependencies = [
@@ -2179,39 +2196,15 @@ dependencies = [
  "anyhow",
  "clap 4.5.4",
  "dotenv",
- "hdp-core",
  "hdp-preprocessor",
  "hdp-primitives",
+ "hdp-processor",
  "hdp-provider",
  "inquire",
  "serde_json",
  "tokio",
  "tracing",
  "tracing-subscriber",
-]
-
-[[package]]
-name = "hdp-core"
-version = "0.2.5"
-dependencies = [
- "alloy",
- "alloy-merkle-tree",
- "anyhow",
- "cairo-lang-starknet-classes",
- "futures",
- "hdp-preprocessor",
- "hdp-primitives",
- "hdp-provider",
- "lazy_static",
- "regex",
- "serde",
- "serde_json",
- "serde_with 2.3.3",
- "starknet",
- "starknet-crypto",
- "tempfile",
- "tokio",
- "tracing",
 ]
 
 [[package]]
@@ -2222,8 +2215,14 @@ dependencies = [
  "alloy-merkle-tree",
  "anyhow",
  "cairo-lang-starknet-classes",
+ "futures",
+ "hdp-cairo-runner",
  "hdp-primitives",
  "hdp-provider",
+ "serde_json",
+ "starknet",
+ "starknet-crypto",
+ "tempfile",
  "thiserror",
  "tokio",
  "tracing",
@@ -2238,12 +2237,26 @@ dependencies = [
  "anyhow",
  "cairo-lang-starknet-classes",
  "eth-trie-proofs",
+ "lazy_static",
  "rand",
  "serde",
  "serde_json",
  "serde_with 2.3.3",
  "starknet",
  "starknet-crypto",
+]
+
+[[package]]
+name = "hdp-processor"
+version = "0.2.5"
+dependencies = [
+ "alloy",
+ "alloy-merkle-tree",
+ "anyhow",
+ "hdp-cairo-runner",
+ "hdp-primitives",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -3415,10 +3428,6 @@ checksum = "3d1597b0c024618f09a9c3b8655b7e430397a36d23fdafec26d6965e9eec3eba"
 dependencies = [
  "unicode-ident",
 ]
-
-[[package]]
-name = "processor"
-version = "0.2.5"
 
 [[package]]
 name = "proptest"
