@@ -52,6 +52,7 @@ impl Compilable for Vec<Module> {
         let keys: Vec<FetchKeyEnvelope> = cairo_dry_run(program_path, input_string)?;
 
         // 3. call provider using keys
+        // TODO: should spawn multiple provider base on batch of chain id. Probably need to change config around chain id and rpc url
         // TODO: This config cannot handle the situation when calling multiple chain data in one module
         let provider = EvmProvider::new(compile_config.provider.clone());
         let results = provider
