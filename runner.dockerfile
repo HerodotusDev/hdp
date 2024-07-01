@@ -1,4 +1,3 @@
-# Use the base image dataprocessor/hdp-cairo:v0.0.2
 FROM dataprocessor/hdp-cairo:v0.0.4
 
 # Set shell to bash and define working directory
