@@ -28,7 +28,6 @@ categories = [
 [workspace.dependencies]
 hdp-preprocessor = { version = "0.2.5", path = "crates/pre-processor" }
 hdp-processor = { version = "0.2.5", path = "crates/processor" }
-hdp-core = { version = "0.2.5", path = "crates/core" }
 hdp-primitives = { version = "0.2.5", path = "crates/primitives" }
 hdp-provider = { version = "0.2.5", path = "crates/provider" }
 hdp-cairo-runner = { version = "0.2.5", path = "crates/cairo-runner" }

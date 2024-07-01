@@ -18,7 +18,6 @@ use hdp_primitives::{
         transactions::TransactionsInBlockDatalake, DatalakeCompute,
     },
 };
-use hdp_provider::evm::provider::EvmProviderConfig;
 use std::{fs, path::PathBuf};
 use tracing_subscriber::FmtSubscriber;
 
@@ -164,18 +163,14 @@ pub async fn handle_run(
     let url: Url = "http://localhost:3030".parse()?;
     let program_path = "./build/compiled_cairo/hdp.json";
     let config = Config::init(rpc_url, datalakes, tasks, chain_id).await;
-    let provider_config = EvmProviderConfig {
-        rpc_url: config.rpc_url.clone(),
-        chain_id: config.chain_id,
-        max_requests: config.rpc_chunk_size,
-    };
+
     let module_config = ModuleCompilerConfig {
         module_registry_rpc_url: url,
         program_path: PathBuf::from(&program_path),
     };
 
     let compile_config = CompileConfig {
-        provider: provider_config,
+        provider: config.evm_provider.clone(),
         module: module_config,
     };
 

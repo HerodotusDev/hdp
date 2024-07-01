@@ -11,6 +11,7 @@ use thiserror::Error;
 pub mod block_sampled;
 pub mod transactions;
 
+/// Fetchable trait for fetching target datalake related data and proofs from the provider
 pub trait Fetchable {
     fn fetch(
         &self,

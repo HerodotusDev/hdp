@@ -72,7 +72,7 @@ pub struct EvmProvider {
 }
 
 /// EVM provider configuration
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct EvmProviderConfig {
     /// RPC url
     pub rpc_url: Url,

@@ -8,7 +8,7 @@ use serde::Serialize;
 */
 
 #[derive(Serialize)]
-pub struct RunnerInput {
+pub struct RunnerProgramInput {
     /// Batched tasks root of all tasks.
     pub task_root: String,
     /// if every tasks are pre computable, this can be Some
@@ -28,7 +28,7 @@ pub enum InputTask {
     Module(ProcessedModule),
 }
 
-impl RunnerInput {
+impl RunnerProgramInput {
     pub fn new(proofs: ProcessedBlockProofs, task_root: String, tasks: Vec<InputTask>) -> Self {
         Self {
             task_root,

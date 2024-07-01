@@ -6,6 +6,7 @@ use alloy::dyn_abi::DynSolValue;
 use alloy::primitives::{FixedBytes, Keccak256, B256, U256};
 use alloy_merkle_tree::standard_binary_tree::StandardMerkleTree;
 use anyhow::Result;
+use hdp_cairo_runner::cairo_run;
 use hdp_primitives::processed_types::{
     cairo_format::AsCairoFormat, datalake_compute::ProcessedDatalakeCompute,
     v1_query::ProcessedResult,
@@ -13,10 +14,10 @@ use hdp_primitives::processed_types::{
 use serde::Serialize;
 use std::path::PathBuf;
 
-use hdp_cairo_runner::run::{RunResult, Runner};
+use hdp_cairo_runner::run::RunResult;
 
 pub struct Processor {
-    runner: Runner,
+    program_path: PathBuf,
 }
 
 #[derive(Debug, Serialize)]
@@ -66,8 +67,7 @@ impl ProcessorResult {
 
 impl Processor {
     pub fn new(program_path: PathBuf) -> Self {
-        let runner = Runner::new(program_path);
-        Self { runner }
+        Self { program_path }
     }
 
     pub async fn process(
@@ -88,7 +88,7 @@ impl Processor {
         // 3. pass the input file to the runner
         let input_string = serde_json::to_string_pretty(&requset.as_cairo_format())
             .expect("Failed to serialize module class");
-        let result = self.runner.run(input_string, pie_path)?;
+        let result = cairo_run(self.program_path.clone(), input_string, pie_path)?;
 
         let pr = self.build_legacy_output_file(requset, result)?;
 

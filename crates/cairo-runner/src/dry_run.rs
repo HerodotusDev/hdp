@@ -1,15 +1,14 @@
 //!  THIS IS WIP, NOT READY FOR USE
 
-use anyhow::Result;
 use hdp_provider::key::FetchKeyEnvelope;
+use regex::Regex;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use tempfile::NamedTempFile;
 use tracing::info;
 
-use anyhow::bail;
-use regex::Regex;
+use crate::CairoRunnerError;
 
 pub struct DryRunner {
     program_path: PathBuf,
@@ -20,7 +19,7 @@ impl DryRunner {
         Self { program_path }
     }
 
-    fn _run(&self, input_file_path: &Path) -> Result<String> {
+    fn _run(&self, input_file_path: &Path) -> Result<String, CairoRunnerError> {
         let task = Command::new("cairo-run")
             .arg("--program")
             .arg(&self.program_path)
@@ -38,9 +37,9 @@ impl DryRunner {
     }
 
     /// Dry run to return requested values
-    pub fn run(&self, input_string: String) -> Result<Vec<FetchKeyEnvelope>> {
+    pub fn run(&self, input_string: String) -> Result<Vec<FetchKeyEnvelope>, CairoRunnerError> {
         if input_string.is_empty() {
-            bail!("Input file is empty");
+            return Err(CairoRunnerError::EmptyInput);
         }
         let input_file = NamedTempFile::new()?;
         let input_file_path = input_file.path();
@@ -56,7 +55,7 @@ impl DryRunner {
 
     /// Parse the output of the dry run command
     // TODO: This is a temporary implementation, need to handle fetch key vector properly via dumped file
-    fn parse_run(&self, output: String) -> Result<Vec<FetchKeyEnvelope>> {
+    fn parse_run(&self, output: String) -> Result<Vec<FetchKeyEnvelope>, CairoRunnerError> {
         let task_result_re = Regex::new(r"Task Result\((\d+)\): (\S+)").unwrap();
         let mut task_results = vec![];
         for caps in task_result_re.captures_iter(&output) {

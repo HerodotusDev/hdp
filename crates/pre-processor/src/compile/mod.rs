@@ -15,6 +15,8 @@ pub mod module;
 
 #[derive(Error, Debug)]
 pub enum CompileError {
+    #[error("Cairo Runner Error: {0}")]
+    CairoRunnerError(#[from] hdp_cairo_runner::CairoRunnerError),
     #[error("Invalid provider")]
     ProviderError(#[from] hdp_provider::evm::provider::ProviderError),
     #[error("Failed to fetch datalake: {0}")]

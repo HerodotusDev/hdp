@@ -22,3 +22,4 @@ cairo-lang-starknet-classes = { workspace = true }
 serde = { workspace = true }
 serde_with = { workspace = true }
 starknet-crypto = { workspace = true }
+thiserror.workspace = true

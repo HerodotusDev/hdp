@@ -2,17 +2,17 @@ use alloy::{
     primitives::{Bytes, ChainId},
     transports::http::reqwest::Url,
 };
+use hdp_provider::evm::provider::EvmProviderConfig;
 
 use std::env;
 use tokio::sync::OnceCell;
 
 pub static CONFIG: OnceCell<Config> = OnceCell::const_new();
 
+/// Configuration for the CLI
 #[derive(Debug)]
 pub struct Config {
-    pub chain_id: ChainId,
-    pub rpc_url: Url,
-    pub rpc_chunk_size: u64,
+    pub evm_provider: EvmProviderConfig,
     pub datalakes: Bytes,
     pub tasks: Bytes,
 }
@@ -56,9 +56,11 @@ impl Config {
         CONFIG
             .get_or_init(|| async {
                 Config {
-                    chain_id,
-                    rpc_url,
-                    rpc_chunk_size,
+                    evm_provider: EvmProviderConfig {
+                        rpc_url,
+                        chain_id,
+                        max_requests: rpc_chunk_size,
+                    },
                     datalakes,
                     tasks,
                 }

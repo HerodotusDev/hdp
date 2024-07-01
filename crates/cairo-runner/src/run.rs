@@ -1,6 +1,6 @@
 use alloy::primitives::{B256, U256};
-use anyhow::Result;
 use hdp_primitives::processed_types::uint256::Uint256;
+use regex::Regex;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
@@ -8,8 +8,7 @@ use std::str::FromStr;
 use tempfile::NamedTempFile;
 use tracing::info;
 
-use anyhow::bail;
-use regex::Regex;
+use crate::CairoRunnerError;
 
 /// Result of run
 #[derive(Debug)]
@@ -28,7 +27,11 @@ impl Runner {
         Self { program_path }
     }
 
-    fn _run(&self, input_file_path: &Path, cairo_pie_file_path: &Path) -> Result<String> {
+    fn _run(
+        &self,
+        input_file_path: &Path,
+        cairo_pie_file_path: &Path,
+    ) -> Result<String, CairoRunnerError> {
         let task = Command::new("cairo-run")
             .arg("--program")
             .arg(&self.program_path)
@@ -49,9 +52,13 @@ impl Runner {
     }
 
     /// Run the cairo program to return PIE object and results of process
-    pub fn run(&self, input_string: String, pie_file_path: PathBuf) -> Result<RunResult> {
+    pub fn run(
+        &self,
+        input_string: String,
+        pie_file_path: PathBuf,
+    ) -> Result<RunResult, CairoRunnerError> {
         if input_string.is_empty() {
-            bail!("Input file is empty");
+            return Err(CairoRunnerError::EmptyInput);
         }
 
         let input_file = NamedTempFile::new()?;
@@ -71,7 +78,7 @@ impl Runner {
     }
 
     /// Parse the output of the run command
-    fn parse_run(&self, output: String) -> Result<(Vec<U256>, B256)> {
+    fn parse_run(&self, output: String) -> Result<(Vec<U256>, B256), CairoRunnerError> {
         let number_of_steps = Regex::new(r"Number of steps: (\d+)").unwrap();
         if let Some(number_of_steps_caps) = number_of_steps.captures(&output) {
             let number_of_steps = number_of_steps_caps[1].parse::<usize>()?;
@@ -92,7 +99,7 @@ impl Runner {
             let combined_results_root = result_root.to_combined_string();
             Ok((task_results, combined_results_root))
         } else {
-            bail!("Results Root not found");
+            Err(CairoRunnerError::ResultRootNotFound)
         }
     }
 }

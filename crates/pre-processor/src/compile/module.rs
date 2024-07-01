@@ -4,14 +4,13 @@
 
 #![allow(dead_code)]
 
-use std::collections::HashSet;
 use std::path::PathBuf;
 use std::sync::Arc;
 
 use crate::{module_registry::ModuleRegistry, ExtendedModule};
 
 use futures::future::join_all;
-use hdp_cairo_runner::{dry_run::DryRunner, input::dry_run::DryRunnerInput};
+use hdp_cairo_runner::{cairo_dry_run, input::dry_run::DryRunnerProgramInput};
 use hdp_primitives::{processed_types::module::ProcessedModule, task::module::Module};
 use hdp_provider::{evm::provider::EvmProvider, key::FetchKeyEnvelope};
 
@@ -37,7 +36,6 @@ impl Compilable for Vec<Module> {
         let rpc_url = compile_config.module.module_registry_rpc_url.clone();
         let program_path = compile_config.module.program_path.clone();
         let module_registry = ModuleRegistry::new(rpc_url);
-        let pre_runner = DryRunner::new(program_path);
 
         // 1. generate input data required for preprocessor
         info!("Generating input data for preprocessor...");
@@ -51,17 +49,19 @@ impl Compilable for Vec<Module> {
         let input_string =
             serde_json::to_string_pretty(&input).expect("Failed to serialize module class");
 
-        //save into file
+        // save into file
         // fs::write("input.json", input_string.clone()).expect("Unable to write file");
         // 2. run the preprocessor and get the fetch points
         info!("Running preprocessor...");
         info!("Preprocessor completed successfully");
         // hashset from vector
-        let keys: HashSet<FetchKeyEnvelope> = pre_runner.run(input_string)?.into_iter().collect();
+        let keys: Vec<FetchKeyEnvelope> = cairo_dry_run(program_path, input_string)?;
 
         // 3. call provider using keys
         let provider = EvmProvider::new(compile_config.provider.clone());
-        let results = provider.fetch_proofs_from_keys(keys).await?;
+        let results = provider
+            .fetch_proofs_from_keys(keys.into_iter().collect())
+            .await?;
         Ok(CompilationResults::new_without_result(
             results.headers.into_iter().collect(),
             results.accounts.into_iter().collect(),
@@ -116,7 +116,7 @@ pub async fn fetch_modules_class(
 async fn generate_input(
     extended_modules: Vec<ExtendedModule>,
     identified_keys_file: PathBuf,
-) -> Result<DryRunnerInput, CompileError> {
+) -> Result<DryRunnerProgramInput, CompileError> {
     // Collect results, filter out any errors
     let mut collected_results = Vec::new();
     for module in extended_modules {
@@ -124,10 +124,10 @@ async fn generate_input(
         collected_results.push(input_module);
     }
 
-    Ok(DryRunnerInput {
+    Ok(DryRunnerProgramInput::new(
         identified_keys_file,
-        modules: collected_results,
-    })
+        collected_results,
+    ))
 }
 
 pub struct PreProcessResult {
