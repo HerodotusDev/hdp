@@ -32,6 +32,7 @@ pub struct CompileConfig {
     pub module: ModuleCompilerConfig,
 }
 
+/// Compile vector of tasks into compilation results
 pub trait Compilable {
     fn compile(
         &self,

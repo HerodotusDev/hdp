@@ -62,7 +62,6 @@ impl Fetchable for BlockSampledDatalake {
                     .await?;
 
                 let mut account_proofs: Vec<ProcessedMPTProof> = vec![];
-                // let mut encoded_account = "".to_string();
 
                 for block in block_range {
                     let fetched_block = headers_proofs.get(&block).unwrap().clone();

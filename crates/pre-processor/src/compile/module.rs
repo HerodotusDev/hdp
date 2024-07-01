@@ -37,8 +37,8 @@ impl Compilable for Vec<Module> {
         let program_path = compile_config.module.program_path.clone();
         let module_registry = ModuleRegistry::new(rpc_url);
 
-        // 1. generate input data required for preprocessor
-        info!("Generating input data for preprocessor...");
+        // 1. generate input data required for dry run
+        info!("Generating input data for dry run...");
 
         // fetch module class
         let extended_modules = fetch_modules_class(module_registry, self.clone()).await?;
@@ -51,10 +51,8 @@ impl Compilable for Vec<Module> {
 
         // save into file
         // fs::write("input.json", input_string.clone()).expect("Unable to write file");
-        // 2. run the preprocessor and get the fetch points
-        info!("Running preprocessor...");
-        info!("Preprocessor completed successfully");
-        // hashset from vector
+        // 2. run the dry run and get the fetch points
+        info!("Running dry run...");
         let keys: Vec<FetchKeyEnvelope> = cairo_dry_run(program_path, input_string)?;
 
         // 3. call provider using keys
@@ -73,7 +71,7 @@ impl Compilable for Vec<Module> {
     }
 }
 
-pub async fn fetch_modules_class(
+async fn fetch_modules_class(
     module_registry: ModuleRegistry,
     modules: Vec<Module>,
 ) -> Result<Vec<ExtendedModule>, CompileError> {
@@ -128,13 +126,6 @@ async fn generate_input(
         identified_keys_file,
         collected_results,
     ))
-}
-
-pub struct PreProcessResult {
-    /// Fetch points are the values that are required to run the module
-    pub fetch_keys: Vec<FetchKeyEnvelope>,
-    /// Module hash is the hash of the module that is being processed
-    pub modules: Vec<Module>,
 }
 
 #[cfg(test)]
