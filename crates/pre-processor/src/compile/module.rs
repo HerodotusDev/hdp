@@ -56,6 +56,7 @@ impl Compilable for Vec<Module> {
         let keys: Vec<FetchKeyEnvelope> = cairo_dry_run(program_path, input_string)?;
 
         // 3. call provider using keys
+        // TODO: This config cannot handle the situation when calling multiple chain data in one module
         let provider = EvmProvider::new(compile_config.provider.clone());
         let results = provider
             .fetch_proofs_from_keys(keys.into_iter().collect())

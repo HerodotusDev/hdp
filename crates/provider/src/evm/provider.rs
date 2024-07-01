@@ -6,22 +6,15 @@ use alloy::{
 use eth_trie_proofs::{
     tx_receipt_trie::TxReceiptsMptHandler, tx_trie::TxsMptHandler, EthTrieError,
 };
-use hdp_primitives::{
-    block::header::{MMRMetaFromNewIndexer, MMRProofFromNewIndexer},
-    processed_types::block_proofs::ProcessedBlockProofs,
-};
+use hdp_primitives::block::header::{MMRMetaFromNewIndexer, MMRProofFromNewIndexer};
 use itertools::Itertools;
 use reqwest::Url;
-use std::{
-    collections::{HashMap, HashSet},
-    time::Instant,
-};
+use std::{collections::HashMap, time::Instant};
 use thiserror::Error;
 use tracing::info;
 
 use crate::{
     indexer::{Indexer, IndexerError},
-    key::FetchKeyEnvelope,
     types::{FetchedTransactionProof, FetchedTransactionReceiptProof},
 };
 
@@ -64,11 +57,11 @@ pub enum ProviderError {
 #[derive(Clone)]
 pub struct EvmProvider {
     /// Account and storage trie provider
-    rpc_provider: super::rpc::RpcProvider,
+    pub(crate) rpc_provider: super::rpc::RpcProvider,
     /// Header provider
-    header_provider: Indexer,
+    pub(crate) header_provider: Indexer,
     /// transaction url
-    tx_provider_url: Url,
+    pub(crate) tx_provider_url: Url,
 }
 
 /// EVM provider configuration
@@ -107,15 +100,6 @@ impl EvmProvider {
             header_provider,
             tx_provider_url: url,
         }
-    }
-
-    #[allow(unused)]
-    // TODO: not implemented yet for sync with module compiler
-    pub async fn fetch_proofs_from_keys(
-        &self,
-        fetch_keys: HashSet<FetchKeyEnvelope>,
-    ) -> Result<ProcessedBlockProofs, ProviderError> {
-        todo!("Implement fetch_proofs_from_keys")
     }
 
     /// Fetches the header proofs for the given block range.
@@ -206,7 +190,7 @@ impl EvmProvider {
 
     /// Chunks the block range into smaller ranges of 800 blocks.
     /// This is to avoid fetching too many blocks at once from the RPC provider.
-    fn _chunk_block_range(
+    pub(crate) fn _chunk_block_range(
         &self,
         from_block: BlockNumber,
         to_block: BlockNumber,
