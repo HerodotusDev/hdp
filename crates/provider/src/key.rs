@@ -147,10 +147,15 @@ impl TxReceiptMemorizerKey {
 #[derive(Hash, Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 #[serde(tag = "type", content = "key")]
 pub enum FetchKeyEnvelope {
+    #[serde(rename = "HeaderMemorizerKey")]
     Header(HeaderMemorizerKey),
+    #[serde(rename = "AccountMemorizerKey")]
     Account(AccountMemorizerKey),
+    #[serde(rename = "StorageMemorizerKey")]
     Storage(StorageMemorizerKey),
+    #[serde(rename = "TxMemorizerKey")]
     Tx(TxMemorizerKey),
+    #[serde(rename = "TxReceiptMemorizerKey")]
     TxReceipt(TxReceiptMemorizerKey),
 }
 

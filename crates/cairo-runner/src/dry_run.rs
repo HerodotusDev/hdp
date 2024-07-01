@@ -59,3 +59,23 @@ impl DryRunner {
         Ok(fetch_keys)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn init_dry_runner() -> DryRunner {
+        let program_path = PathBuf::from("tests/programs/cairo_runner_test.cairo");
+        DryRunner::new(program_path)
+    }
+
+    #[test]
+    fn test_parse_run() {
+        let dry_runner = init_dry_runner();
+
+        let path: &Path = Path::new("./fixtures/dry_run_output.json");
+
+        let fetch_keys = dry_runner.parse_run(path).unwrap();
+        assert_eq!(fetch_keys.len(), 10);
+    }
+}
