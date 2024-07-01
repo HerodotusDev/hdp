@@ -3,7 +3,7 @@ use std::{fmt::Display, str::FromStr};
 use alloy::primitives::{Address, StorageKey};
 use anyhow::{bail, Result};
 
-use crate::datalake::{DatalakeCollection, DatalakeField};
+use crate::task::datalake::{DatalakeCollection, DatalakeField};
 
 use super::rlp_fields::{AccountField, HeaderField};
 

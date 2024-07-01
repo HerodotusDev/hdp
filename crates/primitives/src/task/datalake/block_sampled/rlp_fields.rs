@@ -9,7 +9,7 @@ use anyhow::{bail, Result};
 
 use crate::{
     block::{account::Account, header::Header},
-    datalake::DatalakeField,
+    task::datalake::DatalakeField,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]

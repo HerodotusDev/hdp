@@ -14,7 +14,7 @@ use crate::{cairo_runner::input::dry_run::DryRunnerInput, module_registry::Modul
 
 use anyhow::{Ok, Result};
 use futures::future::join_all;
-use hdp_primitives::{module::Module, processed_types::module::ProcessedModule};
+use hdp_primitives::{processed_types::module::ProcessedModule, task::module::Module};
 use hdp_provider::key::FetchKeyEnvelope;
 
 use starknet::providers::Url;
@@ -141,7 +141,7 @@ impl ModuleCompiler {
 
 #[cfg(test)]
 mod tests {
-    use hdp_primitives::module::ModuleTag;
+    use hdp_primitives::task::module::ModuleTag;
     use starknet::macros::felt;
 
     use super::*;

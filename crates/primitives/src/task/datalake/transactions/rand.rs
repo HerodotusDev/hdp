@@ -1,6 +1,6 @@
 use rand::distributions::{Distribution, Standard};
 
-use crate::datalake::DatalakeField;
+use crate::task::datalake::DatalakeField;
 
 use super::{TransactionField, TransactionReceiptField, TransactionsCollection};
 

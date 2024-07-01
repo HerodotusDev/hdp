@@ -4,7 +4,7 @@ use alloy::{consensus::Eip658Value, primitives::U256};
 use anyhow::{bail, Result};
 use eth_trie_proofs::{tx::ConsensusTx, tx_receipt::ConsensusTxReceipt};
 
-use crate::datalake::DatalakeField;
+use crate::task::datalake::DatalakeField;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TransactionField {

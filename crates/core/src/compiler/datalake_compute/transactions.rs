@@ -1,13 +1,13 @@
 use alloy::primitives::U256;
 use anyhow::Result;
 use hdp_primitives::{
-    datalake::{
-        transactions::{TransactionsCollection, TransactionsInBlockDatalake},
-        DatalakeField,
-    },
     processed_types::{
         header::ProcessedHeader, mmr::MMRMeta, receipt::ProcessedReceipt,
         transaction::ProcessedTransaction,
+    },
+    task::datalake::{
+        transactions::{TransactionsCollection, TransactionsInBlockDatalake},
+        DatalakeField,
     },
 };
 

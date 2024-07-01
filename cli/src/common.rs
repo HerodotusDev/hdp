@@ -4,14 +4,14 @@ use alloy::{
 };
 use anyhow::Result;
 use hdp_primitives::{
-    datalake::{
-        block_sampled::BlockSampledDatalake, compute::Computation, envelope::DatalakeEnvelope,
-        transactions::TransactionsInBlockDatalake, DatalakeCompute,
-    },
     processed_types::cairo_format::AsCairoFormat,
     solidity_types::{
         datalake_compute::BatchedDatalakeCompute,
         traits::{BatchedDatalakeComputeCodecs, DatalakeComputeCodecs},
+    },
+    task::datalake::{
+        block_sampled::BlockSampledDatalake, compute::Computation, envelope::DatalakeEnvelope,
+        transactions::TransactionsInBlockDatalake, DatalakeCompute,
     },
 };
 use hdp_provider::evm::provider::EvmProviderConfig;

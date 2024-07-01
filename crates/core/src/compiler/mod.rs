@@ -1,6 +1,6 @@
 use anyhow::Result;
 use datalake_compute::DatalakeComputeCompilationResults;
-use hdp_primitives::datalake::DatalakeCompute;
+use hdp_primitives::task::datalake::DatalakeCompute;
 
 use crate::pre_processor::PreProcessorConfig;
 

@@ -6,7 +6,7 @@ use alloy::{
 use clap::{command, Parser, Subcommand};
 use hdp_primitives::{
     aggregate_fn::{AggregationFunction, FunctionContext},
-    datalake::{
+    task::datalake::{
         block_sampled::BlockSampledCollection,
         transactions::{IncludedTypes, TransactionsCollection},
     },

@@ -1,7 +1,7 @@
-use crate::datalake::block_sampled::{BlockSampledCollection, BlockSampledDatalake};
-use crate::datalake::datalake_type::DatalakeType;
-use crate::datalake::DatalakeCollection;
 use crate::solidity_types::traits::DatalakeCodecs;
+use crate::task::datalake::block_sampled::{BlockSampledCollection, BlockSampledDatalake};
+use crate::task::datalake::datalake_type::DatalakeType;
+use crate::task::datalake::DatalakeCollection;
 
 use alloy::primitives::keccak256;
 use alloy::{

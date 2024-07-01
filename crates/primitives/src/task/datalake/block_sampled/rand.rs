@@ -6,7 +6,7 @@ use rand::{
     Rng,
 };
 
-use crate::datalake::DatalakeField;
+use crate::task::datalake::DatalakeField;
 
 use super::{AccountField, BlockSampledCollection, HeaderField};
 

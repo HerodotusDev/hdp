@@ -6,8 +6,8 @@ use anyhow::{bail, Result};
 
 use crate::{
     aggregate_fn::{integer::Operator, AggregationFunction, FunctionContext},
-    datalake::compute::Computation,
     solidity_types::traits::Codecs,
+    task::datalake::compute::Computation,
 };
 
 pub type BatchedComputation = Vec<Computation>;
@@ -111,10 +111,10 @@ impl Codecs for Computation {
 #[cfg(test)]
 mod tests {
     use crate::{
-        datalake::{
+        solidity_types::traits::DatalakeComputeCodecs,
+        task::datalake::{
             block_sampled::BlockSampledDatalake, envelope::DatalakeEnvelope, DatalakeCompute,
         },
-        solidity_types::traits::DatalakeComputeCodecs,
     };
     use alloy::hex::FromHex;
 

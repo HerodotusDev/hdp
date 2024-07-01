@@ -8,7 +8,7 @@ mod integration_test {
     };
     use hdp_primitives::{
         aggregate_fn::AggregationFunction,
-        datalake::{
+        task::datalake::{
             block_sampled::{BlockSampledCollection, BlockSampledDatalake, HeaderField},
             compute::Computation,
             envelope::DatalakeEnvelope,
@@ -53,6 +53,50 @@ mod integration_test {
     #[ignore = "ignore for now"]
     #[tokio::test]
     async fn test_integration_1() {
+        let pre_processor = init_preprocessor();
+        let processor = init_processor();
+        let start_process = std::time::Instant::now();
+
+        let tasks = vec![
+            DatalakeCompute {
+                compute: Computation::new(AggregationFunction::MIN, None),
+                datalake: DatalakeEnvelope::BlockSampled(BlockSampledDatalake {
+                    block_range_start: 10001,
+                    block_range_end: 10005,
+                    increment: 1,
+                    sampled_property: BlockSampledCollection::Header(HeaderField::Number),
+                }),
+            },
+            DatalakeCompute {
+                compute: Computation::new(AggregationFunction::AVG, None),
+                datalake: DatalakeEnvelope::BlockSampled(BlockSampledDatalake {
+                    block_range_start: 10003,
+                    block_range_end: 10004,
+                    increment: 1,
+                    sampled_property: BlockSampledCollection::Header(HeaderField::Number),
+                }),
+            },
+        ];
+
+        let preprocessed_result = pre_processor.process(tasks).await.unwrap();
+        let preprocessor_end_process = start_process.elapsed();
+        println!("Preprocessed result: {:#?}", preprocessed_result);
+
+        let start_process = std::time::Instant::now();
+        let processed_result = processor
+            .process(preprocessed_result, PathBuf::from(PIE_PATH))
+            .await
+            .unwrap();
+        let processor_end_process = start_process.elapsed();
+        println!("Processed result: {:#?}", processed_result);
+
+        println!("Preprocess time: {:?}", preprocessor_end_process);
+        println!("Process time: {:?}", processor_end_process);
+    }
+
+    #[ignore = "ignore for now"]
+    #[tokio::test]
+    async fn test_integration_2() {
         let pre_processor = init_preprocessor();
         let processor = init_processor();
         let start_process = std::time::Instant::now();

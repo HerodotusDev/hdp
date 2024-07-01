@@ -1,12 +1,12 @@
 use hdp_primitives::{
     block::account::Account,
-    datalake::{
-        block_sampled::{BlockSampledCollection, BlockSampledDatalake},
-        DatalakeField,
-    },
     processed_types::{
         account::ProcessedAccount, header::ProcessedHeader, mmr::MMRMeta, mpt::ProcessedMPTProof,
         storage::ProcessedStorage,
+    },
+    task::datalake::{
+        block_sampled::{BlockSampledCollection, BlockSampledDatalake},
+        DatalakeField,
     },
 };
 use serde::{Deserialize, Serialize};
