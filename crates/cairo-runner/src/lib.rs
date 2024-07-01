@@ -11,8 +11,8 @@ pub enum CairoRunnerError {
     #[error("Error while running the cairo program")]
     CairoRunError,
 
-    #[error("Error while parsing the output of the cairo program")]
-    ParseError,
+    #[error("Error while parsing json: {0}")]
+    ParseError(#[from] serde_json::Error),
 
     #[error("Input file is empty")]
     EmptyInput,

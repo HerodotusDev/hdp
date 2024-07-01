@@ -15,6 +15,7 @@ readme = "README.md"
 anyhow.workspace = true
 reqwest.workspace = true
 serde_json.workspace = true
+serde.workspace = true
 hdp-primitives.workspace = true
 tokio.workspace = true
 tracing.workspace = true
