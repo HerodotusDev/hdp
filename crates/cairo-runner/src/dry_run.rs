@@ -1,5 +1,6 @@
 //!  THIS IS WIP, NOT READY FOR USE
 
+use hdp_primitives::constant::DRY_RUN_OUTPUT_FILE;
 use hdp_provider::key::FetchKeyEnvelope;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -43,19 +44,19 @@ impl DryRunner {
         let input_file = NamedTempFile::new()?;
         let input_file_path = input_file.path();
         fs::write(input_file_path, input_string).expect("Failed to write input file");
-        info!("Running dry-runner on cairo-vm...");
         let _ = self._run(input_file_path)?;
 
         // parse output to return dry run result
-        let dry_run_result = self.parse_run(input_file_path)?;
+        let dry_run_result = self.parse_run(&PathBuf::from(DRY_RUN_OUTPUT_FILE))?;
         info!("Dry-runner executed successfully");
         Ok(dry_run_result)
     }
 
     /// Parse the output of the dry run command
     fn parse_run(&self, input_file_path: &Path) -> Result<Vec<FetchKeyEnvelope>, CairoRunnerError> {
-        let fetch_keys: Vec<FetchKeyEnvelope> =
-            serde_json::from_str(&fs::read_to_string(input_file_path)?)?;
+        let output = fs::read_to_string(input_file_path)?;
+        let fetch_keys: Vec<FetchKeyEnvelope> = serde_json::from_str(&output)?;
+        fs::remove_file(input_file_path)?;
         Ok(fetch_keys)
     }
 }

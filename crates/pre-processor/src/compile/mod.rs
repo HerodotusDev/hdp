@@ -1,5 +1,3 @@
-use std::collections::{HashMap, HashSet};
-
 use alloy::primitives::{B256, U256};
 use datalake::fetchable::FetchError;
 use hdp_primitives::processed_types::{
@@ -8,6 +6,7 @@ use hdp_primitives::processed_types::{
 };
 use hdp_provider::evm::provider::EvmProviderConfig;
 use module::ModuleCompilerConfig;
+use std::collections::{HashMap, HashSet};
 use thiserror::Error;
 
 pub mod datalake;

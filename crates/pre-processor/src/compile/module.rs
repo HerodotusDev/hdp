@@ -11,11 +11,11 @@ use crate::{module_registry::ModuleRegistry, ExtendedModule};
 
 use futures::future::join_all;
 use hdp_cairo_runner::{cairo_dry_run, input::dry_run::DryRunnerProgramInput};
+use hdp_primitives::constant::DRY_RUN_OUTPUT_FILE;
 use hdp_primitives::{processed_types::module::ProcessedModule, task::module::Module};
 use hdp_provider::{evm::provider::EvmProvider, key::FetchKeyEnvelope};
 
 use starknet::providers::Url;
-use tempfile::NamedTempFile;
 use tokio::task;
 use tracing::info;
 
@@ -42,15 +42,11 @@ impl Compilable for Vec<Module> {
 
         // fetch module class
         let extended_modules = fetch_modules_class(module_registry, self.clone()).await?;
-
-        // generate temp file
-        let identified_keys_file = NamedTempFile::new().unwrap().path().to_path_buf();
-        let input = generate_input(extended_modules.clone(), identified_keys_file).await?;
+        let input =
+            generate_input(extended_modules.clone(), PathBuf::from(DRY_RUN_OUTPUT_FILE)).await?;
         let input_string =
             serde_json::to_string_pretty(&input).expect("Failed to serialize module class");
 
-        // save into file
-        std::fs::write("input.json", input_string.clone()).expect("Unable to write file");
         // 2. run the dry run and get the fetch points
         info!("Running dry run...");
         let keys: Vec<FetchKeyEnvelope> = cairo_dry_run(program_path, input_string)?;
@@ -143,7 +139,7 @@ mod tests {
 
     #[ignore = "ignore for now"]
     #[tokio::test]
-    async fn test_pre_processor() {
+    async fn test_compile_module() {
         let program_path = "../../build/compiled_cairo/contract_dry_run.json";
 
         let module = Module::from_tag(
@@ -161,14 +157,16 @@ mod tests {
             chain_id: 11155111,
             max_requests: 100,
         };
-        let compiled_result = vec![module.clone()]
+        let compiled_result: CompilationResults = vec![module.clone()]
             .compile(&CompileConfig {
                 provider: provider_config,
                 module: module_config,
             })
             .await
             .unwrap();
-
-        println!("{:?}", compiled_result);
+        assert_eq!(compiled_result.headers.len(), 10);
+        assert_eq!(compiled_result.accounts.len(), 1);
+        let account = compiled_result.accounts.iter().next().unwrap();
+        assert_eq!(account.proofs.len(), 10);
     }
 }
