@@ -5,7 +5,8 @@ use alloy::{
 use anyhow::bail;
 use hdp_primitives::{
     aggregate_fn::{integer::Operator, FunctionContext},
-    datalake::{
+    solidity_types::traits::BatchedDatalakeComputeCodecs,
+    task::datalake::{
         block_sampled::{
             AccountField, BlockSampledCollection, BlockSampledCollectionType, BlockSampledDatalake,
             HeaderField,
@@ -19,7 +20,6 @@ use hdp_primitives::{
         },
         DatalakeCompute,
     },
-    solidity_types::traits::BatchedDatalakeComputeCodecs,
 };
 use inquire::{InquireError, Select};
 use std::{path::PathBuf, str::FromStr};

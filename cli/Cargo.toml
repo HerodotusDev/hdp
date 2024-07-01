@@ -18,7 +18,8 @@ name = "hdp"
 path = "src/main.rs"
 
 [dependencies]
-hdp-core = { workspace = true }
+hdp-preprocessor = { workspace = true }
+hdp-processor = { workspace = true }
 anyhow = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }

@@ -3,33 +3,32 @@ use alloy::{
     transports::http::reqwest::Url,
 };
 use anyhow::Result;
+use hdp_preprocessor::{
+    compile::{module::ModuleCompilerConfig, CompileConfig},
+    PreProcessor,
+};
 use hdp_primitives::{
-    datalake::{
-        block_sampled::BlockSampledDatalake, compute::Computation, envelope::DatalakeEnvelope,
-        transactions::TransactionsInBlockDatalake, DatalakeCompute,
-    },
     processed_types::cairo_format::AsCairoFormat,
     solidity_types::{
         datalake_compute::BatchedDatalakeCompute,
         traits::{BatchedDatalakeComputeCodecs, DatalakeComputeCodecs},
     },
+    task::datalake::{
+        block_sampled::BlockSampledDatalake, compute::Computation, envelope::DatalakeEnvelope,
+        transactions::TransactionsInBlockDatalake, DatalakeCompute,
+    },
 };
-use hdp_provider::evm::provider::EvmProviderConfig;
 use std::{fs, path::PathBuf};
 use tracing_subscriber::FmtSubscriber;
 
 use clap::Parser;
-use hdp_core::{
-    compiler::module::ModuleCompilerConfig,
-    config::Config,
-    pre_processor::{PreProcessor, PreProcessorConfig},
-    processor::Processor,
-};
+use hdp_processor::Processor;
 
 use tracing::{info, Level};
 
 use crate::{
     commands::{DataLakeCommands, HDPCli, HDPCliCommands},
+    config::Config,
     interactive,
 };
 
@@ -164,17 +163,18 @@ pub async fn handle_run(
     let url: Url = "http://localhost:3030".parse()?;
     let program_path = "./build/compiled_cairo/hdp.json";
     let config = Config::init(rpc_url, datalakes, tasks, chain_id).await;
-    let datalake_config = EvmProviderConfig {
-        rpc_url: config.rpc_url.clone(),
-        chain_id: config.chain_id,
-        max_requests: config.rpc_chunk_size,
-    };
+
     let module_config = ModuleCompilerConfig {
         module_registry_rpc_url: url,
         program_path: PathBuf::from(&program_path),
     };
-    let preprocessor_config = PreProcessorConfig::new(datalake_config, module_config);
-    let preprocessor = PreProcessor::new_with_config(preprocessor_config);
+
+    let compile_config = CompileConfig {
+        provider: config.evm_provider.clone(),
+        module: module_config,
+    };
+
+    let preprocessor = PreProcessor::new_with_config(compile_config);
     let result = preprocessor
         .process_from_serialized(config.datalakes.clone(), config.tasks.clone())
         .await?;

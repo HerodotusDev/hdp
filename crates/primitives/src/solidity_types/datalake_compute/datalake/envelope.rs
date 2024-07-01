@@ -1,9 +1,9 @@
 use crate::{
-    datalake::{
+    solidity_types::traits::{Codecs, DatalakeCodecs},
+    task::datalake::{
         block_sampled::BlockSampledDatalake, datalake_type::DatalakeType,
         envelope::DatalakeEnvelope, transactions::TransactionsInBlockDatalake,
     },
-    solidity_types::traits::{Codecs, DatalakeCodecs},
     utils::last_byte_to_u8,
 };
 use alloy::{
@@ -91,7 +91,7 @@ impl DatalakeCodecs for DatalakeEnvelope {
 
 #[cfg(test)]
 mod tests {
-    use crate::datalake::{
+    use crate::task::datalake::{
         block_sampled::{AccountField, BlockSampledCollection, BlockSampledDatalake, HeaderField},
         envelope::BatchedDatalakes,
         transactions::{

@@ -7,7 +7,7 @@ use datalake::envelope::BatchedDatalakeEnvelope;
 
 use crate::{
     aggregate_fn::{integer::Operator, AggregationFunction},
-    datalake::{compute::Computation, envelope::DatalakeEnvelope, DatalakeCompute},
+    task::datalake::{compute::Computation, envelope::DatalakeEnvelope, DatalakeCompute},
 };
 
 use self::compute::BatchedComputation;

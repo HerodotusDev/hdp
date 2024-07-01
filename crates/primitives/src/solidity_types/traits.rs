@@ -1,7 +1,7 @@
 use alloy::primitives::B256;
 use anyhow::Result;
 
-use crate::datalake::datalake_type::DatalakeType;
+use crate::task::datalake::datalake_type::DatalakeType;
 
 /// Define the common trait for datalake
 ///

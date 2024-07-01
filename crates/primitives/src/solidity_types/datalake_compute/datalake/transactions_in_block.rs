@@ -1,10 +1,10 @@
 use crate::{
-    datalake::{
+    solidity_types::traits::DatalakeCodecs,
+    task::datalake::{
         datalake_type::DatalakeType,
         transactions::{IncludedTypes, TransactionsCollection, TransactionsInBlockDatalake},
         DatalakeCollection,
     },
-    solidity_types::traits::DatalakeCodecs,
 };
 use alloy::primitives::keccak256;
 use alloy::{
