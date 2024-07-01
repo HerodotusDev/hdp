@@ -9,14 +9,14 @@ use std::path::PathBuf;
 #[serde_as]
 #[derive(Serialize)]
 pub struct DryRunnerProgramInput {
-    pub identified_keys_file: PathBuf,
+    pub fetch_keys_file_path: PathBuf,
     pub modules: Vec<ProcessedModule>,
 }
 
 impl DryRunnerProgramInput {
-    pub fn new(identified_keys_file: PathBuf, modules: Vec<ProcessedModule>) -> Self {
+    pub fn new(fetch_keys_file_path: PathBuf, modules: Vec<ProcessedModule>) -> Self {
         Self {
-            identified_keys_file,
+            fetch_keys_file_path,
             modules,
         }
     }
