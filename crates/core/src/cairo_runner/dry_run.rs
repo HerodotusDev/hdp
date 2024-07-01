@@ -11,11 +11,11 @@ use tracing::info;
 use anyhow::bail;
 use regex::Regex;
 
-pub struct PreRunner {
+pub struct DryRunner {
     program_path: PathBuf,
 }
 
-impl PreRunner {
+impl DryRunner {
     pub fn new(program_path: PathBuf) -> Self {
         Self { program_path }
     }
@@ -37,7 +37,7 @@ impl PreRunner {
         Ok(output_str.to_string())
     }
 
-    /// Pre run to return requested values
+    /// Dry run to return requested values
     pub fn run(&self, input_string: String) -> Result<Vec<FetchKeyEnvelope>> {
         if input_string.is_empty() {
             bail!("Input file is empty");
@@ -45,12 +45,12 @@ impl PreRunner {
         let input_file = NamedTempFile::new()?;
         let input_file_path = input_file.path();
         fs::write(input_file_path, input_string).expect("Failed to write input file");
-        info!("Running pre-runner on cairo-vm...");
+        info!("Running dry-runner on cairo-vm...");
         let output = self._run(input_file_path)?;
 
         // parse output to return dry run result
         let dry_run_result = self.parse_run(output)?;
-        info!("Pre-runner executed successfully");
+        info!("Dry-runner executed successfully");
         Ok(dry_run_result)
     }
 

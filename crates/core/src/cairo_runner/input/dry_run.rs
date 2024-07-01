@@ -1,5 +1,5 @@
-//! The input for the pre-runner.
-//! This serialized struct will be passed to the pre-runner(cairo-run) as input.json file.
+//! The input for the dry-runner.
+//! This serialized struct will be passed to the dry-runner(cairo-run) as input.json file.
 
 use cairo_lang_starknet_classes::casm_contract_class::CasmContractClass;
 use hdp_primitives::processed_types::module::ProcessedModule;
@@ -10,12 +10,12 @@ use std::path::PathBuf;
 
 #[serde_as]
 #[derive(Serialize)]
-pub struct PreRunnerInput {
+pub struct DryRunnerInput {
     pub identified_keys_file: PathBuf,
     pub modules: Vec<ProcessedModule>,
 }
 
-impl PreRunnerInput {
+impl DryRunnerInput {
     pub fn new(identified_keys_file: PathBuf) -> Self {
         Self {
             identified_keys_file,

@@ -8,9 +8,9 @@ use std::collections::HashSet;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use crate::cairo_runner::pre_run::PreRunner;
+use crate::cairo_runner::dry_run::DryRunner;
 use crate::pre_processor::ExtendedModule;
-use crate::{cairo_runner::input::pre_run::PreRunnerInput, module_registry::ModuleRegistry};
+use crate::{cairo_runner::input::dry_run::DryRunnerInput, module_registry::ModuleRegistry};
 
 use anyhow::{Ok, Result};
 use futures::future::join_all;
@@ -23,7 +23,7 @@ use tokio::task;
 use tracing::info;
 
 pub(crate) struct ModuleCompiler {
-    pre_runner: PreRunner,
+    dry_runner: DryRunner,
     /// Registery provider
     module_registry: Arc<ModuleRegistry>,
 }
@@ -31,7 +31,7 @@ pub(crate) struct ModuleCompiler {
 pub struct ModuleCompilerConfig {
     // rpc url to fetch the module class from starknet
     pub module_registry_rpc_url: Url,
-    // pre-run program path
+    // dry-run program path
     pub program_path: PathBuf,
 }
 
@@ -47,9 +47,9 @@ impl ModuleCompiler {
         let rpc_url = config.module_registry_rpc_url;
         let program_path = config.program_path;
         let module_registry = ModuleRegistry::new(rpc_url);
-        let pre_runner = PreRunner::new(program_path);
+        let dry_runner = DryRunner::new(program_path);
         Self {
-            pre_runner,
+            dry_runner,
             module_registry: Arc::new(module_registry),
         }
     }
@@ -83,7 +83,7 @@ impl ModuleCompiler {
         info!("Preprocessor completed successfully");
         // hashset from vector
         let keys: HashSet<FetchKeyEnvelope> =
-            self.pre_runner.run(input_string)?.into_iter().collect();
+            self.dry_runner.run(input_string)?.into_iter().collect();
         Ok((keys, extended_modules))
     }
 
@@ -124,7 +124,7 @@ impl ModuleCompiler {
         &self,
         extended_modules: Vec<ExtendedModule>,
         identified_keys_file: PathBuf,
-    ) -> Result<PreRunnerInput> {
+    ) -> Result<DryRunnerInput> {
         // Collect results, filter out any errors
         let mut collected_results = Vec::new();
         for module in extended_modules {
@@ -132,7 +132,7 @@ impl ModuleCompiler {
             collected_results.push(input_module);
         }
 
-        Ok(PreRunnerInput {
+        Ok(DryRunnerInput {
             identified_keys_file,
             modules: collected_results,
         })
