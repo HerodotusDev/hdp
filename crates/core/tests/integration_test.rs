@@ -1,11 +1,8 @@
 mod integration_test {
     use std::path::PathBuf;
 
-    use hdp_core::{
-        compiler::module::ModuleCompilerConfig,
-        pre_processor::{PreProcessor, PreProcessorConfig},
-        processor::Processor,
-    };
+    use hdp_core::processor::Processor;
+    use hdp_preprocessor::PreProcessor;
     use hdp_primitives::{
         aggregate_fn::AggregationFunction,
         task::datalake::{
@@ -28,22 +25,17 @@ mod integration_test {
     const PIE_PATH: &str = "./cairo.pie";
 
     fn init_preprocessor() -> PreProcessor {
-        let module_config = ModuleCompilerConfig {
-            module_registry_rpc_url: Url::parse(STARKNET_SEPOLIA_RPC).unwrap(),
-            program_path: PathBuf::from(PREPROCESS_PROGRAM_PATH),
-        };
-        let datalake_config = EvmProviderConfig {
+        // let module_config = ModuleCompilerConfig {
+        //     module_registry_rpc_url: Url::parse(STARKNET_SEPOLIA_RPC).unwrap(),
+        //     program_path: PathBuf::from(PREPROCESS_PROGRAM_PATH),
+        // };
+        let provider_config = EvmProviderConfig {
             rpc_url: Url::parse(SEPOLIA_RPC_URL).unwrap(),
             chain_id: 11155111,
             max_requests: 100,
         };
 
-        let preprocessor_config = PreProcessorConfig {
-            datalake_config,
-            module_config,
-        };
-
-        PreProcessor::new_with_config(preprocessor_config)
+        PreProcessor::new_with_config(provider_config)
     }
 
     fn init_processor() -> Processor {

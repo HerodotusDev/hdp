@@ -18,6 +18,7 @@ name = "hdp"
 path = "src/main.rs"
 
 [dependencies]
+hdp-preprocessor = { workspace = true }
 hdp-core = { workspace = true }
 anyhow = { workspace = true }
 tokio = { workspace = true }

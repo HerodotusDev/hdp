@@ -3,6 +3,7 @@ use alloy::{
     transports::http::reqwest::Url,
 };
 use anyhow::Result;
+use hdp_preprocessor::PreProcessor;
 use hdp_primitives::{
     processed_types::cairo_format::AsCairoFormat,
     solidity_types::{
@@ -19,12 +20,7 @@ use std::{fs, path::PathBuf};
 use tracing_subscriber::FmtSubscriber;
 
 use clap::Parser;
-use hdp_core::{
-    compiler::module::ModuleCompilerConfig,
-    config::Config,
-    pre_processor::{PreProcessor, PreProcessorConfig},
-    processor::Processor,
-};
+use hdp_core::{config::Config, processor::Processor};
 
 use tracing::{info, Level};
 
@@ -164,17 +160,17 @@ pub async fn handle_run(
     let url: Url = "http://localhost:3030".parse()?;
     let program_path = "./build/compiled_cairo/hdp.json";
     let config = Config::init(rpc_url, datalakes, tasks, chain_id).await;
-    let datalake_config = EvmProviderConfig {
+    let provider_config = EvmProviderConfig {
         rpc_url: config.rpc_url.clone(),
         chain_id: config.chain_id,
         max_requests: config.rpc_chunk_size,
     };
-    let module_config = ModuleCompilerConfig {
-        module_registry_rpc_url: url,
-        program_path: PathBuf::from(&program_path),
-    };
-    let preprocessor_config = PreProcessorConfig::new(datalake_config, module_config);
-    let preprocessor = PreProcessor::new_with_config(preprocessor_config);
+    // let module_config = ModuleCompilerConfig {
+    //     module_registry_rpc_url: url,
+    //     program_path: PathBuf::from(&program_path),
+    // };
+
+    let preprocessor = PreProcessor::new_with_config(provider_config);
     let result = preprocessor
         .process_from_serialized(config.datalakes.clone(), config.tasks.clone())
         .await?;

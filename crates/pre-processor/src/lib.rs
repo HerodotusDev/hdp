@@ -2,14 +2,11 @@
 //!  Preprocessor is reponsible for identifying the required values.
 //!  This will be most abstract layer of the preprocessor.
 
-use crate::compiler::datalake_compute::DatalakeComputeCompilationResults;
-use crate::compiler::module::ModuleCompilerConfig;
-use crate::compiler::Compiler;
 use alloy::dyn_abi::DynSolValue;
 use alloy::primitives::{Bytes, Keccak256, B256, U256};
 use alloy_merkle_tree::standard_binary_tree::StandardMerkleTree;
-use anyhow::{bail, Ok, Result};
 use cairo_lang_starknet_classes::casm_contract_class::CasmContractClass;
+use compile::{Compilable, CompilationResults, CompileError};
 use hdp_primitives::processed_types::datalake_compute::ProcessedDatalakeCompute;
 use hdp_primitives::processed_types::v1_query::ProcessedResult;
 use hdp_primitives::solidity_types::datalake_compute::BatchedDatalakeCompute;
@@ -22,25 +19,23 @@ use hdp_primitives::task::module::Module;
 use hdp_provider::evm::provider::EvmProviderConfig;
 use hdp_provider::key::FetchKeyEnvelope;
 
+use thiserror::Error;
 use tracing::info;
 
+pub mod compile;
+
+#[derive(Error, Debug)]
+pub enum PreProcessorError {
+    #[error("Failed to compile the tasks")]
+    CompileError(#[from] CompileError),
+    #[error("Failed to decode the tasks")]
+    DecodeError(#[from] anyhow::Error),
+    #[error("Task commitment not found in compiled results")]
+    TaskCommitmentNotFound,
+}
+
 pub struct PreProcessor {
-    /// compiler
-    compiler: Compiler,
-}
-
-pub struct PreProcessorConfig {
-    pub datalake_config: EvmProviderConfig,
-    pub module_config: ModuleCompilerConfig,
-}
-
-impl PreProcessorConfig {
-    pub fn new(datalake_config: EvmProviderConfig, module_config: ModuleCompilerConfig) -> Self {
-        Self {
-            datalake_config,
-            module_config,
-        }
-    }
+    pub provider_config: EvmProviderConfig,
 }
 
 pub struct ExtendedDatalake {
@@ -55,18 +50,18 @@ pub struct ExtendedModule {
 }
 
 impl PreProcessor {
-    pub fn new_with_config(config: PreProcessorConfig) -> Self {
-        let compiler = Compiler::new(config);
-        Self { compiler }
+    pub fn new_with_config(provider_config: EvmProviderConfig) -> Self {
+        Self { provider_config }
     }
 
     pub async fn process_from_serialized(
         &self,
         batched_datalakes: Bytes,
         batched_tasks: Bytes,
-    ) -> Result<ProcessedResult> {
+    ) -> Result<ProcessedResult, PreProcessorError> {
         // 1. decode the tasks
-        let tasks = BatchedDatalakeCompute::decode(&batched_datalakes, &batched_tasks)?;
+        let tasks = BatchedDatalakeCompute::decode(&batched_datalakes, &batched_tasks)
+            .map_err(PreProcessorError::DecodeError)?;
         info!("Target tasks: {:#?}", tasks);
         self.process(tasks).await
     }
@@ -75,11 +70,19 @@ impl PreProcessor {
     /// First it will generate input structure for preprocessor that need to pass to runner
     /// Then it will run the preprocessor and return the result, fetch points
     /// Fetch points are the values that are required to run the module
-    pub async fn process(&self, tasks: Vec<DatalakeCompute>) -> Result<ProcessedResult> {
+    pub async fn process(
+        &self,
+        tasks: Vec<DatalakeCompute>,
+    ) -> Result<ProcessedResult, PreProcessorError> {
         let task_commitments: Vec<B256> =
             tasks.iter().map(|task| task.commit()).collect::<Vec<_>>();
+
         // do compile with the tasks
-        let compiled_results = self.compiler.compile(&tasks).await?;
+        let compiled_results = tasks
+            .compile(&self.provider_config)
+            .await
+            .map_err(PreProcessorError::CompileError)?;
+
         // do operation if possible
         let (tasks_merkle_tree, results_merkle_tree) =
             self.build_merkle_tree(&compiled_results, task_commitments)?;
@@ -157,9 +160,9 @@ impl PreProcessor {
 
     fn build_merkle_tree(
         &self,
-        compiled_results: &DatalakeComputeCompilationResults,
+        compiled_results: &CompilationResults,
         task_commitments: Vec<B256>,
-    ) -> Result<(StandardMerkleTree, Option<StandardMerkleTree>)> {
+    ) -> Result<(StandardMerkleTree, Option<StandardMerkleTree>), PreProcessorError> {
         let mut tasks_leaves = Vec::new();
         let mut results_leaves = Vec::new();
 
@@ -168,7 +171,7 @@ impl PreProcessor {
                 let compiled_result =
                     match compiled_results.commit_results_maps.get(&task_commitment) {
                         Some(result) => result,
-                        None => bail!("Task commitment not found in compiled results"),
+                        None => Err(PreProcessorError::TaskCommitmentNotFound)?,
                     };
                 let result_commitment =
                     self._raw_result_to_result_commitment(&task_commitment, *compiled_result);

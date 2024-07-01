@@ -1,6 +1,13 @@
 [workspace]
 resolver = "2"
-members = ["cli", "crates/core", "crates/primitives", "crates/provider"]
+members = [
+    "cli",
+    "crates/core",
+    "crates/primitives",
+    "crates/provider",
+    "crates/pre-processor",
+    "processor",
+]
 
 [workspace.package]
 version = "0.2.5"
@@ -19,6 +26,7 @@ categories = [
 ]
 
 [workspace.dependencies]
+hdp-preprocessor = { version = "0.2.5", path = "crates/pre-processor" }
 hdp-core = { version = "0.2.5", path = "crates/core" }
 hdp-primitives = { version = "0.2.5", path = "crates/primitives" }
 hdp-provider = { version = "0.2.5", path = "crates/provider" }

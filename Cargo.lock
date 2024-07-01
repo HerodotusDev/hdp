@@ -2180,6 +2180,7 @@ dependencies = [
  "clap 4.5.4",
  "dotenv",
  "hdp-core",
+ "hdp-preprocessor",
  "hdp-primitives",
  "hdp-provider",
  "inquire",
@@ -2198,6 +2199,7 @@ dependencies = [
  "anyhow",
  "cairo-lang-starknet-classes",
  "futures",
+ "hdp-preprocessor",
  "hdp-primitives",
  "hdp-provider",
  "lazy_static",
@@ -2208,6 +2210,21 @@ dependencies = [
  "starknet",
  "starknet-crypto",
  "tempfile",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "hdp-preprocessor"
+version = "0.2.5"
+dependencies = [
+ "alloy",
+ "alloy-merkle-tree",
+ "anyhow",
+ "cairo-lang-starknet-classes",
+ "hdp-primitives",
+ "hdp-provider",
+ "thiserror",
  "tokio",
  "tracing",
 ]
@@ -3398,6 +3415,10 @@ checksum = "3d1597b0c024618f09a9c3b8655b7e430397a36d23fdafec26d6965e9eec3eba"
 dependencies = [
  "unicode-ident",
 ]
+
+[[package]]
+name = "processor"
+version = "0.2.5"
 
 [[package]]
 name = "proptest"
