@@ -50,7 +50,7 @@ impl Compilable for Vec<Module> {
             serde_json::to_string_pretty(&input).expect("Failed to serialize module class");
 
         // save into file
-        // fs::write("input.json", input_string.clone()).expect("Unable to write file");
+        std::fs::write("input.json", input_string.clone()).expect("Unable to write file");
         // 2. run the dry run and get the fetch points
         info!("Running dry run...");
         let keys: Vec<FetchKeyEnvelope> = cairo_dry_run(program_path, input_string)?;
@@ -138,19 +138,21 @@ mod tests {
     use super::*;
     const SEPOLIA_RPC_URL: &str =
         "https://eth-sepolia.g.alchemy.com/v2/xar76cftwEtqTBWdF4ZFy9n8FLHAETDv";
+    const SN_SEPOLIA_RPC_URL: &str =
+        "https://starknet-sepolia.g.alchemy.com/v2/lINonYKIlp4NH9ZI6wvqJ4HeZj7T4Wm6";
 
     #[ignore = "ignore for now"]
     #[tokio::test]
     async fn test_pre_processor() {
-        let url: &str =
-            "https://starknet-sepolia.g.alchemy.com/v2/lINonYKIlp4NH9ZI6wvqJ4HeZj7T4Wm6";
-        let program_path = "../../build/compiled_cairo/hdp.json";
+        let program_path = "../../build/compiled_cairo/contract_dry_run.json";
 
-        let module = Module::from_tag(ModuleTag::TEST, vec![felt!("1"), felt!("2")]);
-        let module2 = Module::from_tag(ModuleTag::TEST, vec![felt!("1"), felt!("2")]);
+        let module = Module::from_tag(
+            ModuleTag::AccountBalanceExample,
+            vec![felt!("1"), felt!("0")],
+        );
 
         let module_config = ModuleCompilerConfig {
-            module_registry_rpc_url: Url::parse(url).unwrap(),
+            module_registry_rpc_url: Url::parse(SN_SEPOLIA_RPC_URL).unwrap(),
             program_path: PathBuf::from(program_path),
         };
 
@@ -159,7 +161,7 @@ mod tests {
             chain_id: 11155111,
             max_requests: 100,
         };
-        let _ = vec![module.clone(), module2.clone()]
+        let compiled_result = vec![module.clone()]
             .compile(&CompileConfig {
                 provider: provider_config,
                 module: module_config,
@@ -167,6 +169,6 @@ mod tests {
             .await
             .unwrap();
 
-        // TODO: check fetch point
+        println!("{:?}", compiled_result);
     }
 }

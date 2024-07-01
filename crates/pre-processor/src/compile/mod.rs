@@ -40,6 +40,7 @@ pub trait Compilable {
     ) -> impl std::future::Future<Output = Result<CompilationResults, CompileError>> + Send;
 }
 
+#[derive(Debug)]
 pub struct CompilationResults {
     /// flag to check if the aggregation function is pre-processable
     pub pre_processable: bool,
