@@ -76,7 +76,7 @@ fn rpc_to_cairo_contract_class(sierra: &FlattenedSierraClass) -> Result<CairoCon
 #[cfg(test)]
 mod tests {
     use super::*;
-    use hdp_primitives::constant::TEST_CONTRACT_CASM;
+    use hdp_primitives::constant::ACCOUNT_BALANCE_EXAMPLE_CONTRACT;
 
     fn init() -> (ModuleRegistry, FieldElement) {
         let url = Url::parse(
@@ -86,7 +86,7 @@ mod tests {
         let module_registry = ModuleRegistry::new(url);
         // This is test contract class hash
         let class_hash = FieldElement::from_hex_be(
-            "0x054af96825d987ca89cf320f7c5a8031017815d884cff1592e8ff6da309f3ca6",
+            "0x07d6c339c3e2236d2821c1c89d4a0e9027cd6c7e491189e9694a6df7c8f10aae",
         )
         .unwrap();
 
@@ -98,7 +98,7 @@ mod tests {
         let (module_registry, class_hash) = init();
         let casm_from_rpc = module_registry.get_module_class(class_hash).await.unwrap();
 
-        assert_eq!(casm_from_rpc, TEST_CONTRACT_CASM.clone());
+        assert_eq!(casm_from_rpc, ACCOUNT_BALANCE_EXAMPLE_CONTRACT.clone());
     }
 
     #[tokio::test]
@@ -113,6 +113,6 @@ mod tests {
             _ => panic!("cairo1 module should have sierra as class"),
         };
         let casm_from_rpc = flattened_sierra_to_compiled_class(&sierra).unwrap();
-        assert_eq!(casm_from_rpc, TEST_CONTRACT_CASM.clone());
+        assert_eq!(casm_from_rpc, ACCOUNT_BALANCE_EXAMPLE_CONTRACT.clone());
     }
 }
