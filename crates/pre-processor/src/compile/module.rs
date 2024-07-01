@@ -151,11 +151,6 @@ mod tests {
             vec![felt!("1"), felt!("0")],
         );
 
-        let module2 = Module::from_tag(
-            ModuleTag::AccountBalanceExample,
-            vec![felt!("1"), felt!("2")],
-        );
-
         let module_config = ModuleCompilerConfig {
             module_registry_rpc_url: Url::parse(SN_SEPOLIA_RPC_URL).unwrap(),
             program_path: PathBuf::from(program_path),
@@ -166,7 +161,7 @@ mod tests {
             chain_id: 11155111,
             max_requests: 100,
         };
-        let compiled_result = vec![module.clone(), module2.clone()]
+        let compiled_result = vec![module.clone()]
             .compile(&CompileConfig {
                 provider: provider_config,
                 module: module_config,

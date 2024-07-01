@@ -10,14 +10,19 @@ use std::path::PathBuf;
 #[derive(Serialize)]
 pub struct DryRunnerProgramInput {
     pub fetch_keys_file_path: PathBuf,
-    pub modules: Vec<ProcessedModule>,
+    pub module: ProcessedModule,
 }
 
 impl DryRunnerProgramInput {
     pub fn new(fetch_keys_file_path: PathBuf, modules: Vec<ProcessedModule>) -> Self {
+        // TODO: temporary check to ensure only one module is passed
+        if modules.len() != 1 {
+            panic!("DryRunnerProgramInput only supports a single module");
+        }
+        let first_module = modules[0].clone();
         Self {
             fetch_keys_file_path,
-            modules,
+            module: first_module,
         }
     }
 }
