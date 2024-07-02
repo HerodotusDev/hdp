@@ -152,4 +152,39 @@ mod integration_test {
         println!("Preprocess time: {:?}", preprocessor_end_process);
         println!("Process time: {:?}", processor_end_process);
     }
+
+    #[ignore = "ignore for now"]
+    #[tokio::test]
+    async fn test_integration_3() {
+        let pre_processor = init_preprocessor();
+        let processor = init_processor();
+        let start_process = std::time::Instant::now();
+
+        let tasks = vec![TaskEnvelope::Module(Module::from_tag(
+            ModuleTag::AccountBalanceExample,
+            vec![felt!("1"), felt!("0")],
+        ))];
+
+        let preprocessed_result = pre_processor.process(tasks).await.unwrap();
+        let preprocessor_end_process = start_process.elapsed();
+        println!("Preprocessed result: {:#?}", preprocessed_result);
+
+        // write
+        fs::write(
+            "preprocessed_result3.json",
+            serde_json::to_string_pretty(&preprocessed_result.as_cairo_format()).unwrap(),
+        )
+        .expect("Unable to write file");
+
+        let start_process = std::time::Instant::now();
+        let processed_result = processor
+            .process(preprocessed_result, PathBuf::from(PIE_PATH))
+            .await
+            .unwrap();
+        let processor_end_process = start_process.elapsed();
+        println!("Processed result: {:#?}", processed_result);
+
+        println!("Preprocess time: {:?}", preprocessor_end_process);
+        println!("Process time: {:?}", processor_end_process);
+    }
 }
