@@ -150,10 +150,11 @@ impl EvmProvider {
         let duration = start_fetch.elapsed();
         info!("Time taken (Headers Proofs Fetch): {:?}", duration);
 
-        Ok((
-            fetched_headers_proofs,
-            mmr.expect("MMR had not fetched").into(),
-        ))
+        if let Some(fetched_mmr) = mmr {
+            Ok((fetched_headers_proofs, fetched_mmr.into()))
+        } else {
+            Err(ProviderError::MmrNotFound)
+        }
     }
 
     async fn get_accounts_from_keys(
@@ -388,7 +389,7 @@ mod tests {
         "https://eth-sepolia.g.alchemy.com/v2/xar76cftwEtqTBWdF4ZFy9n8FLHAETDv";
 
     #[tokio::test]
-    async fn test_fetch_headers_from_keys() {
+    async fn test_get_proofs_from_header_keys() {
         let target_chain_id = 11155111;
         let provider =
             EvmProvider::new_with_url(Url::parse(SEPOLIA_RPC_URL).unwrap(), target_chain_id);
@@ -402,7 +403,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_get_accounts_from_keys() {
+    async fn test_get_proofs_from_accounts_keys() {
         let target_chain_id = 11155111;
         let provider =
             EvmProvider::new_with_url(Url::parse(SEPOLIA_RPC_URL).unwrap(), target_chain_id);
@@ -426,7 +427,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_complex_query_from_storage_keys() {
+    async fn test_proofs_from_storage_keys() {
         let start_fetch = Instant::now();
         let target_chain_id = 11155111;
         let provider =
@@ -480,7 +481,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_get_txs_from_keys() {
+    async fn test_get_proofs_from_tx_keys() {
         let target_chain_id = 11155111;
         let provider =
             EvmProvider::new_with_url(Url::parse(SEPOLIA_RPC_URL).unwrap(), target_chain_id);

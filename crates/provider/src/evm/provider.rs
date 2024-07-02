@@ -34,6 +34,10 @@ pub enum ProviderError {
     #[error("MMR meta mismatch among range of requested blocks")]
     MismatchedMMRMeta,
 
+    /// Error when the MMR is not found
+    #[error("MMR not found")]
+    MmrNotFound,
+
     /// Error from the [`Indexer`]
     #[error("Failed from indexer")]
     IndexerError(#[from] IndexerError),
@@ -156,7 +160,11 @@ impl EvmProvider {
         let duration = start_fetch.elapsed();
         info!("Time taken (Headers Proofs Fetch): {:?}", duration);
 
-        Ok((mmr.unwrap(), fetched_headers_proofs_with_blocks_map))
+        if let Some(fetched_mmr) = mmr {
+            Ok((fetched_mmr, fetched_headers_proofs_with_blocks_map))
+        } else {
+            Err(ProviderError::MmrNotFound)
+        }
     }
 
     /// Fetches the account proofs for the given block range.
@@ -313,7 +321,7 @@ impl EvmProvider {
                     tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
                     continue;
                 }
-                _ => return Err(ProviderError::EthTrieError(trie_response.err().unwrap())),
+                Err(e) => return Err(ProviderError::EthTrieError(e)),
             }
         }
 
@@ -380,7 +388,7 @@ impl EvmProvider {
                     tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
                     continue;
                 }
-                _ => return Err(ProviderError::EthTrieError(trie_response.err().unwrap())),
+                Err(e) => return Err(ProviderError::EthTrieError(e)),
             }
         }
 
