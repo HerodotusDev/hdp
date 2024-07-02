@@ -9,6 +9,8 @@ use module::ModuleCompilerConfig;
 use std::collections::{HashMap, HashSet};
 use thiserror::Error;
 
+use crate::module_registry::ModuleRegistryError;
+
 pub mod datalake;
 pub mod module;
 
@@ -24,6 +26,8 @@ pub enum CompileError {
     InvalidMMR,
     #[error("Failed from anyhow")]
     AnyhowError(#[from] anyhow::Error),
+    #[error("Error from module registry: {0}")]
+    ModuleRegistryError(#[from] ModuleRegistryError),
 }
 
 pub struct CompileConfig {

@@ -9,17 +9,17 @@ use std::sync::Arc;
 
 use crate::{module_registry::ModuleRegistry, ExtendedModule};
 
-use futures::future::join_all;
 use hdp_cairo_runner::{cairo_dry_run, input::dry_run::DryRunnerProgramInput};
 use hdp_primitives::constant::DRY_RUN_OUTPUT_FILE;
 use hdp_primitives::{processed_types::module::ProcessedModule, task::module::Module};
 use hdp_provider::{evm::provider::EvmProvider, key::FetchKeyEnvelope};
 
 use starknet::providers::Url;
-use tokio::task;
 use tracing::info;
 
 use super::{Compilable, CompilationResults, CompileConfig, CompileError};
+
+pub type BatchedModule = Vec<Module>;
 
 pub struct ModuleCompilerConfig {
     // rpc url to fetch the module class from starknet
@@ -28,32 +28,34 @@ pub struct ModuleCompilerConfig {
     pub program_path: PathBuf,
 }
 
-impl Compilable for Vec<Module> {
+impl Compilable for BatchedModule {
     async fn compile(
         &self,
         compile_config: &CompileConfig,
     ) -> Result<CompilationResults, CompileError> {
+        // 0. initialize the module registry and provider
         let rpc_url = compile_config.module.module_registry_rpc_url.clone();
         let program_path = compile_config.module.program_path.clone();
         let module_registry = ModuleRegistry::new(rpc_url);
 
         // 1. generate input data required for dry run
-        info!("Generating input data for dry run...");
-
-        // fetch module class
-        let extended_modules = fetch_modules_class(module_registry, self.clone()).await?;
-        let input =
-            generate_input(extended_modules.clone(), PathBuf::from(DRY_RUN_OUTPUT_FILE)).await?;
+        info!("1. Generating input data for dry run...");
+        let arc_module_registry = Arc::new(module_registry);
+        let extended_modules = arc_module_registry
+            .get_multiple_module_classes(self.clone())
+            .await?;
+        let input = generate_input(extended_modules, PathBuf::from(DRY_RUN_OUTPUT_FILE)).await?;
         let input_string =
             serde_json::to_string_pretty(&input).expect("Failed to serialize module class");
 
         // 2. run the dry run and get the fetch points
-        info!("Running dry run...");
+        info!("2. Running dry-run... ");
         let keys: Vec<FetchKeyEnvelope> = cairo_dry_run(program_path, input_string)?;
 
         // 3. call provider using keys
         // TODO: should spawn multiple provider base on batch of chain id. Probably need to change config around chain id and rpc url
         // TODO: This config cannot handle the situation when calling multiple chain data in one module
+        info!("3. Fetching proofs from provider...");
         let provider = EvmProvider::new(compile_config.provider.clone());
         let results = provider
             .fetch_proofs_from_keys(keys.into_iter().collect())
@@ -67,45 +69,6 @@ impl Compilable for Vec<Module> {
             results.mmr_meta,
         ))
     }
-}
-
-async fn fetch_modules_class(
-    module_registry: ModuleRegistry,
-    modules: Vec<Module>,
-) -> Result<Vec<ExtendedModule>, CompileError> {
-    let registry = Arc::new(module_registry);
-    // Map each module to an asynchronous task
-    let module_futures: Vec<_> = modules
-        .into_iter()
-        .map(|module| {
-            let module_registry = Arc::clone(&registry);
-            task::spawn(async move {
-                let module_hash = module.class_hash;
-                match module_registry.get_module_class(module_hash).await {
-                    Ok(module_class) => Ok(ExtendedModule {
-                        task: module,
-                        module_class,
-                    }),
-                    Err(e) => Err(e),
-                }
-            })
-        })
-        .collect();
-
-    // Join all tasks and collect their results
-    let results = join_all(module_futures).await;
-
-    // Collect results, filter out any errors
-    let mut collected_results = Vec::new();
-    for result in results {
-        match result {
-            Ok(Ok(module_with_class)) => collected_results.push(module_with_class),
-            Ok(Err(e)) => return Err(CompileError::AnyhowError(e)),
-            Err(e) => return Err(CompileError::AnyhowError(e.into())),
-        }
-    }
-
-    Ok(collected_results)
 }
 
 /// Generate input structure for preprocessor that need to pass to runner
