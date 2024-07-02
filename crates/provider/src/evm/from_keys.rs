@@ -102,7 +102,7 @@ impl EvmProvider {
             ));
         }
         let target_blocks_batch: Vec<Vec<BlockNumber>> = if block_range.len() == 1 {
-            vec![block_range.clone()]
+            vec![block_range]
         } else {
             self._chunk_vec_blocks_for_indexer(block_range)
         };
@@ -150,7 +150,10 @@ impl EvmProvider {
         let duration = start_fetch.elapsed();
         info!("Time taken (Headers Proofs Fetch): {:?}", duration);
 
-        Ok((fetched_headers_proofs, mmr.unwrap().into()))
+        Ok((
+            fetched_headers_proofs,
+            mmr.expect("MMR had not fetched").into(),
+        ))
     }
 
     async fn get_accounts_from_keys(
@@ -175,7 +178,7 @@ impl EvmProvider {
                 ));
             }
             let target_blocks_batch: Vec<Vec<BlockNumber>> = if block_range.len() == 1 {
-                vec![block_range.clone()]
+                vec![block_range]
             } else {
                 self._chunk_vec_blocks_for_mpt(block_range)
             };
@@ -188,11 +191,11 @@ impl EvmProvider {
                     .await?;
 
                 for block in target_blocks {
-                    let account_proof = account_proofs.get(&block).unwrap().clone();
-                    let account_proof = ProcessedMPTProof {
-                        block_number: block,
-                        proof: account_proof.account_proof,
-                    };
+                    let account_proof = account_proofs
+                        .get(&block)
+                        .expect("Target block's account proof had not fetched as response")
+                        .clone();
+                    let account_proof = ProcessedMPTProof::new(block, account_proof.account_proof);
                     account_mpt_proofs.push(account_proof);
                 }
             }
@@ -228,9 +231,8 @@ impl EvmProvider {
                     "Block range is empty".to_string(),
                 ));
             }
-
             let target_blocks_batch: Vec<Vec<BlockNumber>> = if block_range.len() == 1 {
-                vec![block_range.clone()]
+                vec![block_range]
             } else {
                 self._chunk_vec_blocks_for_mpt(block_range)
             };
@@ -244,11 +246,14 @@ impl EvmProvider {
                     .await?;
 
                 for block in target_blocks {
-                    let account_proof_response = storage_proof.get(&block).unwrap().clone();
-                    account_mpt_proofs.push(ProcessedMPTProof {
-                        block_number: block,
-                        proof: account_proof_response.account_proof,
-                    });
+                    let account_proof_response = storage_proof
+                        .get(&block)
+                        .expect("Target block's account proof had not fetched as response")
+                        .clone();
+                    account_mpt_proofs.push(ProcessedMPTProof::new(
+                        block,
+                        account_proof_response.account_proof,
+                    ));
                     storage_mpt_proof.push(ProcessedMPTProof::new(
                         block,
                         account_proof_response.storage_proof[0].proof.clone(),
@@ -283,7 +288,7 @@ impl EvmProvider {
         }
 
         for (block_number, tx_range) in block_to_tx_range {
-            let mut tx_trie_provider = TxsMptHandler::new(self.tx_provider_url.clone()).unwrap();
+            let mut tx_trie_provider = TxsMptHandler::new(self.tx_provider_url.clone())?;
             loop {
                 let trie_response = tx_trie_provider
                     .build_tx_tree_from_block(block_number)
@@ -298,14 +303,13 @@ impl EvmProvider {
                         tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
                         continue;
                     }
-                    _ => return Err(ProviderError::EthTrieError(trie_response.err().unwrap())),
+                    Err(e) => return Err(ProviderError::EthTrieError(e)),
                 }
             }
 
             for tx_index in tx_range {
                 let proof = tx_trie_provider
-                    .get_proof(tx_index)
-                    .unwrap()
+                    .get_proof(tx_index)?
                     .into_iter()
                     .map(Bytes::from)
                     .collect::<Vec<_>>();
@@ -333,7 +337,7 @@ impl EvmProvider {
 
         for (block_number, tx_range) in block_to_tx_range {
             let mut tx_receipt_trie_provider =
-                TxReceiptsMptHandler::new(self.tx_provider_url.clone()).unwrap();
+                TxReceiptsMptHandler::new(self.tx_provider_url.clone())?;
             loop {
                 let trie_response = tx_receipt_trie_provider
                     .build_tx_receipts_tree_from_block(block_number)
@@ -348,14 +352,13 @@ impl EvmProvider {
                         tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
                         continue;
                     }
-                    _ => return Err(ProviderError::EthTrieError(trie_response.err().unwrap())),
+                    Err(e) => return Err(ProviderError::EthTrieError(e)),
                 }
             }
 
             for tx_index in tx_range {
                 let proof = tx_receipt_trie_provider
-                    .get_proof(tx_index)
-                    .unwrap()
+                    .get_proof(tx_index)?
                     .into_iter()
                     .map(Bytes::from)
                     .collect::<Vec<_>>();
@@ -375,12 +378,11 @@ impl EvmProvider {
 
 #[cfg(test)]
 mod tests {
-    use alloy::primitives::address;
-    use reqwest::Url;
-
     use super::*;
     use crate::evm::provider::EvmProvider;
     use crate::key::{AccountMemorizerKey, HeaderMemorizerKey};
+    use alloy::primitives::address;
+    use reqwest::Url;
 
     const SEPOLIA_RPC_URL: &str =
         "https://eth-sepolia.g.alchemy.com/v2/xar76cftwEtqTBWdF4ZFy9n8FLHAETDv";
@@ -411,11 +413,7 @@ mod tests {
                 6127485,
                 target_address,
             )),
-            FetchKeyEnvelope::Account(AccountMemorizerKey::new(
-                target_chain_id,
-                6127486,
-                target_address,
-            )),
+            FetchKeyEnvelope::Account(AccountMemorizerKey::new(target_chain_id, 0, target_address)),
             FetchKeyEnvelope::Account(AccountMemorizerKey::new(
                 target_chain_id,
                 6127487,
@@ -479,5 +477,20 @@ mod tests {
         assert_eq!(proofs.headers.len(), 6);
         assert_eq!(proofs.accounts[0].proofs.len(), 6);
         assert_eq!(proofs.storages[0].proofs.len(), 6);
+    }
+
+    #[tokio::test]
+    async fn test_get_txs_from_keys() {
+        let target_chain_id = 11155111;
+        let provider =
+            EvmProvider::new_with_url(Url::parse(SEPOLIA_RPC_URL).unwrap(), target_chain_id);
+        let keys = vec![
+            FetchKeyEnvelope::Tx(TxMemorizerKey::new(target_chain_id, 1000, 0)),
+            FetchKeyEnvelope::Tx(TxMemorizerKey::new(target_chain_id, 1001, 1)),
+            FetchKeyEnvelope::Tx(TxMemorizerKey::new(target_chain_id, 1000, 2)),
+        ];
+        let proofs = provider.fetch_proofs_from_keys(keys).await.unwrap();
+        assert_eq!(proofs.headers.len(), 2);
+        assert_eq!(proofs.transactions.len(), 3);
     }
 }
