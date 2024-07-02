@@ -61,6 +61,7 @@ impl Compilable for BatchedModule {
         }
 
         let (_, keys) = keys_maps_chain.into_iter().next().unwrap();
+        // TODO: later we can get chain id from the key. For now we just ignore as this not compatible with cairo
         // TODO: should spawn multiple provider base on batch of chain id. Probably need to change config around chain id and rpc url
         // This config cannot handle the situation when calling multiple chain data in one module
         // But as this have not used, for now we can just follow batch's chain id
