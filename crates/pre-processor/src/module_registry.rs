@@ -154,7 +154,7 @@ mod tests {
         let module_registry = ModuleRegistry::new(url);
         // This is test contract class hash
         let class_hash = FieldElement::from_hex_be(
-            "0x07d6c339c3e2236d2821c1c89d4a0e9027cd6c7e491189e9694a6df7c8f10aae",
+            "0x034d4ff54bc5c6cfee6719bfaa94ffa374071e8d656b74823681a955e9033dd9",
         )
         .unwrap();
 
@@ -165,6 +165,11 @@ mod tests {
     async fn test_get_module() {
         let (module_registry, class_hash) = init();
         let casm_from_rpc = module_registry.get_module_class(class_hash).await.unwrap();
+        std::fs::write(
+            "contract.casm",
+            serde_json::to_string_pretty(&casm_from_rpc).unwrap(),
+        )
+        .unwrap();
 
         assert_eq!(casm_from_rpc, ACCOUNT_BALANCE_EXAMPLE_CONTRACT.clone());
     }

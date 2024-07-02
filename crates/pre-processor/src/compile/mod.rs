@@ -140,6 +140,7 @@ impl CompilationResults {
         self.storages.extend(other.storages);
         self.transactions.extend(other.transactions);
         self.transaction_receipts.extend(other.transaction_receipts);
+        self.commit_casm_maps.extend(other.commit_casm_maps);
 
         // overwite default to another value
         if self.mmr_meta == MMRMeta::default() {
