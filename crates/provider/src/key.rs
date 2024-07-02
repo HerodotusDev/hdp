@@ -199,3 +199,16 @@ impl FromStr for FetchKeyEnvelope {
         }
     }
 }
+
+impl FetchKeyEnvelope {
+    /// Get the chain id from the fetch key.
+    pub fn get_chain_id(&self) -> ChainId {
+        match self {
+            FetchKeyEnvelope::Header(key) => key.chain_id,
+            FetchKeyEnvelope::Account(key) => key.chain_id,
+            FetchKeyEnvelope::Storage(key) => key.chain_id,
+            FetchKeyEnvelope::Tx(key) => key.chain_id,
+            FetchKeyEnvelope::TxReceipt(key) => key.chain_id,
+        }
+    }
+}

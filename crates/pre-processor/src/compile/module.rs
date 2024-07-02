@@ -9,6 +9,7 @@ use std::sync::Arc;
 
 use crate::{module_registry::ModuleRegistry, ExtendedModule};
 
+use alloy::primitives::ChainId;
 use hdp_cairo_runner::{cairo_dry_run, input::dry_run::DryRunnerProgramInput};
 use hdp_primitives::constant::DRY_RUN_OUTPUT_FILE;
 use hdp_primitives::{processed_types::module::ProcessedModule, task::module::Module};
@@ -69,6 +70,20 @@ impl Compilable for BatchedModule {
             results.mmr_meta,
         ))
     }
+}
+
+/// Categorize fetch keys by chain id
+/// This is require to initiate multiple provider for different chain id
+fn categrize_fetch_keys_by_chain_id(
+    fetch_keys: Vec<FetchKeyEnvelope>,
+) -> Vec<(ChainId, Vec<FetchKeyEnvelope>)> {
+    let mut chain_id_map = std::collections::HashMap::new();
+    for key in fetch_keys {
+        let chain_id = key.get_chain_id();
+        let keys = chain_id_map.entry(chain_id).or_insert_with(Vec::new);
+        keys.push(key);
+    }
+    chain_id_map.into_iter().collect()
 }
 
 /// Generate input structure for preprocessor that need to pass to runner
