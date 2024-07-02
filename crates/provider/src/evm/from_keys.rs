@@ -27,72 +27,68 @@ impl EvmProvider {
         &self,
         fetch_keys: Vec<FetchKeyEnvelope>,
     ) -> Result<ProcessedBlockProofs, ProviderError> {
-        // categorize fetch keys
-        let mut target_keys_for_header = vec![];
-        let mut target_keys_for_account = vec![];
-        let mut target_keys_for_storage = vec![];
-        let mut target_keys_for_tx = vec![];
-        let mut target_keys_for_tx_receipt = vec![];
+        let mut target_keys_for_header = HashSet::new();
+        let mut target_keys_for_account = HashSet::new();
+        let mut target_keys_for_storage = HashSet::new();
+        let mut target_keys_for_tx = HashSet::new();
+        let mut target_keys_for_tx_receipt = HashSet::new();
         for key in fetch_keys {
             match key {
                 FetchKeyEnvelope::Header(header_key) => {
-                    target_keys_for_header.push(header_key);
+                    target_keys_for_header.insert(header_key);
                 }
                 FetchKeyEnvelope::Account(account_key) => {
-                    target_keys_for_header.push(HeaderMemorizerKey::new(
+                    target_keys_for_header.insert(HeaderMemorizerKey::new(
                         account_key.chain_id,
                         account_key.block_number,
                     ));
-                    target_keys_for_account.push(account_key);
+                    target_keys_for_account.insert(account_key);
                 }
                 FetchKeyEnvelope::Storage(storage_key) => {
-                    target_keys_for_header.push(HeaderMemorizerKey::new(
+                    target_keys_for_header.insert(HeaderMemorizerKey::new(
                         storage_key.chain_id,
                         storage_key.block_number,
                     ));
-                    target_keys_for_account.push(AccountMemorizerKey::new(
+                    target_keys_for_account.insert(AccountMemorizerKey::new(
                         storage_key.chain_id,
                         storage_key.block_number,
                         storage_key.address,
                     ));
-                    target_keys_for_storage.push(storage_key);
+                    target_keys_for_storage.insert(storage_key);
                 }
                 FetchKeyEnvelope::Tx(tx_key) => {
-                    target_keys_for_header.push(HeaderMemorizerKey::new(
+                    target_keys_for_header.insert(HeaderMemorizerKey::new(
                         tx_key.chain_id,
                         tx_key.block_number,
                     ));
-                    target_keys_for_tx.push(tx_key);
+                    target_keys_for_tx.insert(tx_key);
                 }
                 FetchKeyEnvelope::TxReceipt(tx_receipt_key) => {
-                    target_keys_for_header.push(HeaderMemorizerKey::new(
+                    target_keys_for_header.insert(HeaderMemorizerKey::new(
                         tx_receipt_key.chain_id,
                         tx_receipt_key.block_number,
                     ));
-                    target_keys_for_tx_receipt.push(tx_receipt_key);
+                    target_keys_for_tx_receipt.insert(tx_receipt_key);
                 }
             }
         }
 
         // fetch proofs using keys and construct result
-        let (headers, mmr_meta) = self
-            .fetch_headers_from_keys(&target_keys_for_header)
-            .await?;
+        let (headers, mmr_meta) = self.get_headers_from_keys(target_keys_for_header).await?;
         let accounts = self
-            .get_accounts_from_keys(&target_keys_for_account)
+            .get_accounts_from_keys(target_keys_for_account)
             .await?
             .into_iter()
             .collect::<Vec<_>>();
         let storages = self
-            .get_storages_from_keys(&target_keys_for_storage)
+            .get_storages_from_keys(target_keys_for_storage)
             .await?
             .into_iter()
             .collect::<Vec<_>>();
-        let transactions = self.get_txs_from_keys(&target_keys_for_tx).await?;
+        let transactions = self.get_txs_from_keys(target_keys_for_tx).await?;
         let transaction_receipts = self
-            .get_tx_receipts_from_keys(&target_keys_for_tx_receipt)
+            .get_tx_receipts_from_keys(target_keys_for_tx_receipt)
             .await?;
-
         Ok(ProcessedBlockProofs {
             mmr_meta,
             headers: headers.into_iter().collect(),
@@ -103,28 +99,29 @@ impl EvmProvider {
         })
     }
 
-    pub async fn fetch_headers_from_keys(
+    async fn get_headers_from_keys(
         &self,
-        keys: &[HeaderMemorizerKey],
+        keys: HashSet<HeaderMemorizerKey>,
     ) -> Result<(HashSet<ProcessedHeader>, MMRMeta), ProviderError> {
         let start_fetch = Instant::now();
 
-        let start_block = keys.iter().map(|x| x.block_number).min().unwrap();
-        let end_block = keys.iter().map(|x| x.block_number).max().unwrap();
-        let target_blocks_batch: Vec<Vec<BlockNumber>> =
-            self._chunk_block_range(start_block, end_block, 1);
+        let block_range = keys.iter().map(|x| x.block_number).collect::<Vec<_>>();
+        if block_range.is_empty() {
+            return Err(ProviderError::FetchKeyError(
+                "Block range is empty".to_string(),
+            ));
+        }
+        let target_blocks_batch: Vec<Vec<BlockNumber>> = if block_range.len() == 1 {
+            vec![block_range.clone()]
+        } else {
+            self._chunk_vec_blocks_for_indexer(block_range)
+        };
 
-        let mut fetched_headers_proofs_with_blocks_map: HashSet<ProcessedHeader> = HashSet::new();
+        let mut fetched_headers_proofs: HashSet<ProcessedHeader> = HashSet::new();
         let mut mmr = None;
 
         let real_target_blocks = keys.iter().map(|x| x.block_number).collect::<HashSet<_>>();
-
         for target_blocks in target_blocks_batch {
-            // check if all target blocks are in the real target blocks, if not skip the iteration
-            if !target_blocks.iter().all(|x| real_target_blocks.contains(x)) {
-                continue;
-            }
-
             let (start_block, end_block) =
                 (target_blocks[0], target_blocks[target_blocks.len() - 1]);
 
@@ -157,19 +154,20 @@ impl EvmProvider {
                     )
                 });
 
-            fetched_headers_proofs_with_blocks_map.extend(keys_in_real_target_blocks);
+            fetched_headers_proofs.extend(keys_in_real_target_blocks);
         }
 
         let duration = start_fetch.elapsed();
         info!("Time taken (Headers Proofs Fetch): {:?}", duration);
 
-        Ok((fetched_headers_proofs_with_blocks_map, mmr.unwrap().into()))
+        Ok((fetched_headers_proofs, mmr.unwrap().into()))
     }
 
-    pub async fn get_accounts_from_keys(
+    async fn get_accounts_from_keys(
         &self,
-        keys: &[AccountMemorizerKey],
+        keys: HashSet<AccountMemorizerKey>,
     ) -> Result<HashSet<ProcessedAccount>, ProviderError> {
+        let mut fetched_accounts_proofs: HashSet<ProcessedAccount> = HashSet::new();
         let start_fetch = Instant::now();
 
         // group by address
@@ -179,14 +177,18 @@ impl EvmProvider {
             block_range.push(key.block_number);
         }
 
-        let mut result_accounts: HashSet<ProcessedAccount> = HashSet::new();
-
         // loop through each address and fetch storages
         for (address, block_range) in address_to_block_range {
-            let from_block = block_range.iter().min().unwrap();
-            let to_block = block_range.iter().max().unwrap();
-            let target_blocks_batch: Vec<Vec<BlockNumber>> =
-                self._chunk_block_range(*from_block, *to_block, 1);
+            if block_range.is_empty() {
+                return Err(ProviderError::FetchKeyError(
+                    "Block range is empty".to_string(),
+                ));
+            }
+            let target_blocks_batch: Vec<Vec<BlockNumber>> = if block_range.len() == 1 {
+                vec![block_range.clone()]
+            } else {
+                self._chunk_vec_blocks_for_mpt(block_range)
+            };
 
             let mut account_mpt_proofs: Vec<ProcessedMPTProof> = vec![];
             for target_blocks in target_blocks_batch {
@@ -204,18 +206,19 @@ impl EvmProvider {
                     account_mpt_proofs.push(account_proof);
                 }
             }
-            result_accounts.insert(ProcessedAccount::new(address, account_mpt_proofs));
+            fetched_accounts_proofs.insert(ProcessedAccount::new(address, account_mpt_proofs));
         }
         let duration = start_fetch.elapsed();
-        info!("Time taken (Storage Proofs Fetch): {:?}", duration);
+        info!("Time taken (Accounts Proofs Fetch): {:?}", duration);
 
-        Ok(result_accounts)
+        Ok(fetched_accounts_proofs)
     }
 
-    pub async fn get_storages_from_keys(
+    async fn get_storages_from_keys(
         &self,
-        keys: &[StorageMemorizerKey],
+        keys: HashSet<StorageMemorizerKey>,
     ) -> Result<HashSet<ProcessedStorage>, ProviderError> {
+        let mut fetched_storage_proofs: HashSet<ProcessedStorage> = HashSet::new();
         let start_fetch = Instant::now();
 
         // group by address and slot
@@ -227,14 +230,19 @@ impl EvmProvider {
             block_range.push(key.block_number);
         }
 
-        let mut result_storage: HashSet<ProcessedStorage> = HashSet::new();
-
         // loop through each address and fetch storages
         for ((address, storage_slot), block_range) in address_slot_to_block_range {
-            let from_block = block_range.iter().min().unwrap();
-            let to_block = block_range.iter().max().unwrap();
-            let target_blocks_batch: Vec<Vec<BlockNumber>> =
-                self._chunk_block_range(*from_block, *to_block, 1);
+            if block_range.is_empty() {
+                return Err(ProviderError::FetchKeyError(
+                    "Block range is empty".to_string(),
+                ));
+            }
+
+            let target_blocks_batch: Vec<Vec<BlockNumber>> = if block_range.len() == 1 {
+                vec![block_range.clone()]
+            } else {
+                self._chunk_vec_blocks_for_mpt(block_range)
+            };
 
             let mut storage_mpt_proof: Vec<ProcessedMPTProof> = vec![];
             for target_blocks in target_blocks_batch {
@@ -245,14 +253,13 @@ impl EvmProvider {
 
                 for block in target_blocks {
                     let one_block_storage_proof = storage_proof.get(&block).unwrap().clone();
-
                     storage_mpt_proof.push(ProcessedMPTProof::new(
                         block,
                         one_block_storage_proof.storage_proof[0].proof.clone(),
                     ));
                 }
             }
-            result_storage.insert(ProcessedStorage::new(
+            fetched_storage_proofs.insert(ProcessedStorage::new(
                 address,
                 storage_slot,
                 storage_mpt_proof,
@@ -261,14 +268,16 @@ impl EvmProvider {
         let duration = start_fetch.elapsed();
         info!("Time taken (Storage Proofs Fetch): {:?}", duration);
 
-        Ok(result_storage)
+        Ok(fetched_storage_proofs)
     }
 
     pub async fn get_txs_from_keys(
         &self,
-        keys: &[TxMemorizerKey],
+        keys: HashSet<TxMemorizerKey>,
     ) -> Result<Vec<ProcessedTransaction>, ProviderError> {
+        let mut fetched_transactions = vec![];
         let start_fetch = Instant::now();
+
         // group by block number
         let mut block_to_tx_range: HashMap<BlockNumber, Vec<TxIndex>> = HashMap::new();
         for key in keys {
@@ -276,7 +285,6 @@ impl EvmProvider {
             tx_range.push(key.tx_index);
         }
 
-        let mut transactions = vec![];
         for (block_number, tx_range) in block_to_tx_range {
             let mut tx_trie_provider = TxsMptHandler::new(self.tx_provider_url.clone()).unwrap();
             loop {
@@ -305,18 +313,19 @@ impl EvmProvider {
                     .map(Bytes::from)
                     .collect::<Vec<_>>();
 
-                transactions.push(ProcessedTransaction::new(tx_index, block_number, proof));
+                fetched_transactions.push(ProcessedTransaction::new(tx_index, block_number, proof));
             }
         }
         let duration = start_fetch.elapsed();
         info!("Time taken (Transaction Fetch): {:?}", duration);
-        Ok(transactions)
+        Ok(fetched_transactions)
     }
 
     pub async fn get_tx_receipts_from_keys(
         &self,
-        keys: &[TxReceiptMemorizerKey],
+        keys: HashSet<TxReceiptMemorizerKey>,
     ) -> Result<Vec<ProcessedReceipt>, ProviderError> {
+        let mut fetched_transaction_receipts = vec![];
         let start_fetch = Instant::now();
         // group by block number
         let mut block_to_tx_range: HashMap<BlockNumber, Vec<TxIndex>> = HashMap::new();
@@ -325,7 +334,6 @@ impl EvmProvider {
             tx_range.push(key.tx_index);
         }
 
-        let mut fetched_transaction_receipts = vec![];
         for (block_number, tx_range) in block_to_tx_range {
             let mut tx_receipt_trie_provider =
                 TxReceiptsMptHandler::new(self.tx_provider_url.clone()).unwrap();
@@ -420,5 +428,53 @@ mod tests {
         let proofs = provider.fetch_proofs_from_keys(keys).await.unwrap();
         assert_eq!(proofs.accounts[0].proofs.len(), 3);
         assert_eq!(proofs.headers.len(), 3);
+    }
+
+    #[tokio::test]
+    async fn test_complex_query_from_storage_keys() {
+        let start_fetch = Instant::now();
+        let target_chain_id = 11155111;
+        let provider =
+            EvmProvider::new_with_url(Url::parse(SEPOLIA_RPC_URL).unwrap(), target_chain_id);
+        let target_address = address!("7f2c6f930306d3aa736b3a6c6a98f512f74036d4");
+        let target_slot = B256::ZERO;
+        let keys = vec![
+            FetchKeyEnvelope::Storage(StorageMemorizerKey::new(
+                target_chain_id,
+                0,
+                target_address,
+                target_slot,
+            )),
+            FetchKeyEnvelope::Storage(StorageMemorizerKey::new(
+                target_chain_id,
+                6127486,
+                target_address,
+                target_slot,
+            )),
+            FetchKeyEnvelope::Storage(StorageMemorizerKey::new(
+                target_chain_id,
+                6127487,
+                target_address,
+                target_slot,
+            )),
+            FetchKeyEnvelope::Storage(StorageMemorizerKey::new(
+                target_chain_id,
+                4127497,
+                target_address,
+                target_slot,
+            )),
+            FetchKeyEnvelope::Storage(StorageMemorizerKey::new(
+                target_chain_id,
+                4127487,
+                target_address,
+                target_slot,
+            )),
+        ];
+        let proofs = provider.fetch_proofs_from_keys(keys).await.unwrap();
+        let duration = start_fetch.elapsed();
+        println!("Time taken (Total Proofs Fetch): {:?}", duration);
+        assert_eq!(proofs.headers.len(), 5);
+        assert_eq!(proofs.accounts[0].proofs.len(), 5);
+        assert_eq!(proofs.storages[0].proofs.len(), 5);
     }
 }

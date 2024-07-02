@@ -45,6 +45,9 @@ pub enum ProviderError {
     /// Error from [`eth_trie_proofs`]
     #[error("EthTrieError: {0}")]
     EthTrieError(#[from] eth_trie_proofs::EthTrieError),
+
+    #[error("Fetch key error: {0}")]
+    FetchKeyError(String),
 }
 
 /// EVM provider
@@ -190,6 +193,7 @@ impl EvmProvider {
 
     /// Chunks the block range into smaller ranges of 800 blocks.
     /// This is to avoid fetching too many blocks at once from the RPC provider.
+    /// This is meant to use with data lake definition, which have sequential block numbers
     pub(crate) fn _chunk_block_range(
         &self,
         from_block: BlockNumber,
@@ -202,6 +206,47 @@ impl EvmProvider {
             .into_iter()
             .map(|chunk| chunk.collect())
             .collect()
+    }
+
+    /// Chunks the blocks range into smaller ranges of 800 blocks.
+    /// It simply consider the number of blocks in the range and divide it by 800.
+    /// This is targeted for account and storage proofs in optimized way
+    pub(crate) fn _chunk_vec_blocks_for_mpt(
+        &self,
+        blocks: Vec<BlockNumber>,
+    ) -> Vec<Vec<BlockNumber>> {
+        blocks.chunks(800).map(|chunk| chunk.to_vec()).collect()
+    }
+
+    /// Chunks the blocks into smaller ranges of 800 blocks.
+    /// This is targeted for indexer to fetch header proofs in optimized way
+    pub(crate) fn _chunk_vec_blocks_for_indexer(
+        &self,
+        blocks: Vec<BlockNumber>,
+    ) -> Vec<Vec<BlockNumber>> {
+        // Sort the blocks
+        let mut sorted_blocks = blocks.clone();
+        sorted_blocks.sort();
+
+        let mut result: Vec<Vec<BlockNumber>> = Vec::new();
+        let mut current_chunk: Vec<BlockNumber> = Vec::new();
+
+        for &block in sorted_blocks.iter() {
+            // Check if the current chunk is empty or if the difference is within 800 blocks
+            if current_chunk.is_empty() || block - current_chunk[0] <= 800 {
+                current_chunk.push(block);
+            } else {
+                // Push the current chunk to result and start a new chunk
+                result.push(current_chunk);
+                current_chunk = vec![block];
+            }
+        }
+
+        if !current_chunk.is_empty() {
+            result.push(current_chunk);
+        }
+
+        result
     }
 
     /// Fetches the storage proofs for the given block range.
