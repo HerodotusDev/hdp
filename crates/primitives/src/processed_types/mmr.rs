@@ -11,6 +11,17 @@ pub struct MMRMeta {
     pub peaks: Vec<String>,
 }
 
+impl Default for MMRMeta {
+    fn default() -> Self {
+        MMRMeta {
+            id: 0,
+            root: "".to_string(),
+            size: 0,
+            peaks: vec![],
+        }
+    }
+}
+
 impl MMRMeta {
     pub fn new(id: u64, root: String, size: u64, peaks: Vec<String>) -> Self {
         MMRMeta {

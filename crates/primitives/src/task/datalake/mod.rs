@@ -10,7 +10,7 @@ pub mod datalake_type;
 pub mod envelope;
 pub mod transactions;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DatalakeCompute {
     pub datalake: DatalakeEnvelope,
     pub compute: Computation,

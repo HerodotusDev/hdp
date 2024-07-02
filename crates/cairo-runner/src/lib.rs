@@ -1,4 +1,3 @@
-use hdp_provider::key::FetchKeyEnvelope;
 use std::path::PathBuf;
 use thiserror::Error;
 
@@ -47,7 +46,7 @@ pub fn cairo_run(
 pub fn cairo_dry_run(
     program_path: PathBuf,
     input_string: String,
-) -> Result<Vec<FetchKeyEnvelope>, CairoRunnerError> {
+) -> Result<dry_run::DryRunResult, CairoRunnerError> {
     let dry_runner = dry_run::DryRunner::new(program_path);
     dry_runner.run(input_string)
 }

@@ -7,14 +7,10 @@ use alloy::primitives::{FixedBytes, Keccak256, B256, U256};
 use alloy_merkle_tree::standard_binary_tree::StandardMerkleTree;
 use anyhow::Result;
 use hdp_cairo_runner::cairo_run;
-use hdp_primitives::processed_types::{
-    cairo_format::AsCairoFormat, datalake_compute::ProcessedDatalakeCompute,
-    v1_query::ProcessedResult,
-};
+use hdp_primitives::processed_types::cairo_format::AsCairoFormat;
+use hdp_primitives::processed_types::query::ProcessedFullInput;
 use serde::Serialize;
 use std::path::PathBuf;
-
-use hdp_cairo_runner::run::RunResult;
 
 pub struct Processor {
     program_path: PathBuf,
@@ -23,17 +19,17 @@ pub struct Processor {
 #[derive(Debug, Serialize)]
 pub struct ProcessorResult {
     /// leaf of result merkle tree
-    pub task_results: Vec<String>,
+    pub task_results: Vec<B256>,
     /// leaf of task merkle tree
-    pub task_commitments: Vec<String>,
+    pub task_commitments: Vec<B256>,
     /// tasks inclusion proofs
     pub task_inclusion_proofs: Vec<Vec<FixedBytes<32>>>,
     /// results inclusion proofs
     pub results_inclusion_proofs: Vec<Vec<FixedBytes<32>>>,
     /// root of the results merkle tree
-    pub results_root: String,
+    pub results_root: B256,
     /// root of the tasks merkle tree
-    pub tasks_root: String,
+    pub tasks_root: B256,
     /// mmr id
     pub used_mmr_id: u64,
     /// mmr size
@@ -43,12 +39,12 @@ pub struct ProcessorResult {
 impl ProcessorResult {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        task_results: Vec<String>,
-        task_commitments: Vec<String>,
+        task_results: Vec<B256>,
+        task_commitments: Vec<B256>,
         task_inclusion_proofs: Vec<Vec<FixedBytes<32>>>,
         results_inclusion_proofs: Vec<Vec<FixedBytes<32>>>,
-        results_root: String,
-        tasks_root: String,
+        results_root: B256,
+        tasks_root: B256,
         used_mmr_id: u64,
         used_mmr_size: u64,
     ) -> Self {
@@ -72,17 +68,9 @@ impl Processor {
 
     pub async fn process(
         &self,
-        requset: ProcessedResult,
+        requset: ProcessedFullInput,
         pie_path: PathBuf,
-    ) -> Result<ProcessedResult> {
-        // generate input file from fetch points
-        // 1. fetch proofs from provider by using fetch points
-        // TODO: only for module
-        // let proofs = self
-        //     .provider
-        //     .fetch_proofs_from_keys(requset.fetch_keys)
-        //     .await?;
-
+    ) -> Result<ProcessorResult> {
         // 2. generate input struct with proofs and module bytes
         // let input = self.generate_input(requset).await?;
         // 3. pass the input file to the runner
@@ -90,81 +78,87 @@ impl Processor {
             .expect("Failed to serialize module class");
         let result = cairo_run(self.program_path.clone(), input_string, pie_path)?;
 
-        let pr = self.build_legacy_output_file(requset, result)?;
-
-        // let task_commitments: Vec<String> = requset
-        //     .tasks
-        //     .iter()
-        //     .map(|task| task.task_commitment.clone())
-        //     .collect();
-        // let task_inclusion_proofs: Vec<_> = requset
-        //     .tasks
-        //     .iter()
-        //     .map(|task| task.task_proof.clone())
-        //     .collect();
-
-        // let task_root = requset.tasks_root.clone();
-
-        // let (results_tree, result_commitments) =
-        //     self.build_result_merkle_tree(task_commitments.clone(), result.task_results.clone())?;
-        // let results_inclusion_proofs: Vec<_> = result_commitments
-        //     .iter()
-        //     .map(|rc| results_tree.get_proof(&DynSolValue::FixedBytes(*rc, 32)))
-        //     .collect();
-        // let result_root = results_tree.root().to_string();
-        // let mmr = requset.mmr.clone();
-
-        Ok(pr)
-    }
-
-    // TODO: for now, we are using the legacy output file format.
-    fn build_legacy_output_file(
-        &self,
-        requset: ProcessedResult,
-        result: RunResult,
-    ) -> Result<ProcessedResult> {
         let task_commitments: Vec<B256> = requset
             .tasks
             .iter()
-            .map(|task| task.task_commitment)
+            .map(|task| task.get_task_commitment())
             .collect();
-        // let task_inclusion_proofs: Vec<_> = requset
-        //     .tasks
-        //     .iter()
-        //     .map(|task| task.task_proof.clone())
-        //     .collect();
+        let task_inclusion_proofs: Vec<Vec<B256>> = requset
+            .tasks
+            .iter()
+            .map(|task| task.get_task_proof())
+            .collect();
+        let task_root = requset.tasks_root;
 
-        let task_root = requset.tasks_root.clone();
         let (results_tree, result_commitments) =
             self.build_result_merkle_tree(task_commitments.clone(), result.task_results.clone())?;
         let results_inclusion_proofs: Vec<_> = result_commitments
             .iter()
             .map(|rc| results_tree.get_proof(&DynSolValue::FixedBytes(*rc, 32)))
             .collect();
-        let result_root = results_tree.root().to_string();
+        let result_root = results_tree.root();
+        let mmr = requset.proofs.mmr_meta.clone();
 
-        let mut new_tasks: Vec<ProcessedDatalakeCompute> = Vec::new();
-        for (idx, mut task) in requset.tasks.into_iter().enumerate() {
-            let compiled_result = result.task_results[idx];
-            let result_commitment = result_commitments[idx];
-            let result_proof = results_inclusion_proofs[idx].clone();
-            task.update_results(compiled_result, result_commitment, result_proof);
-            new_tasks.push(task.clone());
-        }
-
-        let new_final_processed_result = ProcessedResult {
-            results_root: Some(result_root),
-            tasks_root: task_root,
-            headers: requset.headers,
-            mmr: requset.mmr,
-            accounts: requset.accounts,
-            storages: requset.storages,
-            transactions: requset.transactions,
-            transaction_receipts: requset.transaction_receipts,
-            tasks: new_tasks,
-        };
-        Ok(new_final_processed_result)
+        Ok(ProcessorResult::new(
+            result.task_results.iter().map(|x| B256::from(*x)).collect(),
+            task_commitments,
+            task_inclusion_proofs,
+            results_inclusion_proofs,
+            result_root,
+            task_root,
+            mmr.id,
+            mmr.size,
+        ))
     }
+
+    // // TODO: for now, we are using the legacy output file format.
+    // fn build_legacy_output_file(
+    //     &self,
+    //     requset: ProcessedResult,
+    //     result: RunResult,
+    // ) -> Result<ProcessedResult> {
+    //     let task_commitments: Vec<B256> = requset
+    //         .tasks
+    //         .iter()
+    //         .map(|task| task.task_commitment)
+    //         .collect();
+    //     // let task_inclusion_proofs: Vec<_> = requset
+    //     //     .tasks
+    //     //     .iter()
+    //     //     .map(|task| task.task_proof.clone())
+    //     //     .collect();
+
+    //     let task_root = requset.tasks_root.clone();
+    //     let (results_tree, result_commitments) =
+    //         self.build_result_merkle_tree(task_commitments.clone(), result.task_results.clone())?;
+    //     let results_inclusion_proofs: Vec<_> = result_commitments
+    //         .iter()
+    //         .map(|rc| results_tree.get_proof(&DynSolValue::FixedBytes(*rc, 32)))
+    //         .collect();
+    //     let result_root = results_tree.root().to_string();
+
+    //     let mut new_tasks: Vec<ProcessedDatalakeCompute> = Vec::new();
+    //     for (idx, mut task) in requset.tasks.into_iter().enumerate() {
+    //         let compiled_result = result.task_results[idx];
+    //         let result_commitment = result_commitments[idx];
+    //         let result_proof = results_inclusion_proofs[idx].clone();
+    //         task.update_results(compiled_result, result_commitment, result_proof);
+    //         new_tasks.push(task.clone());
+    //     }
+
+    //     let new_final_processed_result = ProcessedResult {
+    //         results_root: Some(result_root),
+    //         tasks_root: task_root,
+    //         headers: requset.headers,
+    //         mmr: requset.mmr,
+    //         accounts: requset.accounts,
+    //         storages: requset.storages,
+    //         transactions: requset.transactions,
+    //         transaction_receipts: requset.transaction_receipts,
+    //         tasks: new_tasks,
+    //     };
+    //     Ok(new_final_processed_result)
+    // }
 
     fn build_result_merkle_tree(
         &self,
