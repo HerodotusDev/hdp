@@ -18,14 +18,14 @@ pub struct Module {
 }
 
 pub enum ModuleTag {
-    TEST,
+    AccountBalanceExample,
 }
 
 impl Module {
     pub fn from_tag(tag: ModuleTag, inputs: Vec<FieldElement>) -> Self {
         let class_hash = match tag {
-            ModuleTag::TEST => FieldElement::from_hex_be(
-                "0x054af96825d987ca89cf320f7c5a8031017815d884cff1592e8ff6da309f3ca6",
+            ModuleTag::AccountBalanceExample => FieldElement::from_hex_be(
+                "0x07d6c339c3e2236d2821c1c89d4a0e9027cd6c7e491189e9694a6df7c8f10aae",
             ),
         }
         .expect("Invalid module tag");

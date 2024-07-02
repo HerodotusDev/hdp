@@ -6,6 +6,7 @@
 use std::str::FromStr;
 
 use alloy::primitives::{Address, BlockNumber, ChainId, StorageKey};
+use serde::{Deserialize, Serialize};
 
 macro_rules! impl_hash_for_provider_key {
     // Match a struct with an identifier and any number of fields.
@@ -18,44 +19,44 @@ macro_rules! impl_hash_for_provider_key {
     };
 }
 
-impl_hash_for_provider_key!(HeaderProviderKey {
+impl_hash_for_provider_key!(HeaderMemorizerKey {
     chain_id,
     block_number
 });
 
-impl_hash_for_provider_key!(AccountProviderKey {
+impl_hash_for_provider_key!(AccountMemorizerKey {
     chain_id,
     block_number,
     address
 });
 
-impl_hash_for_provider_key!(StorageProviderKey {
+impl_hash_for_provider_key!(StorageMemorizerKey {
     chain_id,
     block_number,
     address,
     key
 });
 
-impl_hash_for_provider_key!(TxProviderKey {
+impl_hash_for_provider_key!(TxMemorizerKey {
     chain_id,
     block_number,
     tx_index
 });
 
-impl_hash_for_provider_key!(TxReceiptProviderKey {
+impl_hash_for_provider_key!(TxReceiptMemorizerKey {
     chain_id,
     block_number,
     tx_index
 });
 
 /// Key for fetching block header from provider.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct HeaderProviderKey {
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct HeaderMemorizerKey {
     pub chain_id: ChainId,
     pub block_number: BlockNumber,
 }
 
-impl HeaderProviderKey {
+impl HeaderMemorizerKey {
     pub fn new(chain_id: ChainId, block_number: BlockNumber) -> Self {
         Self {
             chain_id,
@@ -65,14 +66,14 @@ impl HeaderProviderKey {
 }
 
 /// Key for fetching account from provider.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct AccountProviderKey {
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct AccountMemorizerKey {
     pub chain_id: ChainId,
     pub block_number: BlockNumber,
     pub address: Address,
 }
 
-impl AccountProviderKey {
+impl AccountMemorizerKey {
     pub fn new(chain_id: ChainId, block_number: BlockNumber, address: Address) -> Self {
         Self {
             chain_id,
@@ -83,15 +84,15 @@ impl AccountProviderKey {
 }
 
 /// Key for fetching storage value from provider.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct StorageProviderKey {
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct StorageMemorizerKey {
     pub chain_id: ChainId,
     pub block_number: BlockNumber,
     pub address: Address,
     pub key: StorageKey,
 }
 
-impl StorageProviderKey {
+impl StorageMemorizerKey {
     pub fn new(
         chain_id: ChainId,
         block_number: BlockNumber,
@@ -108,14 +109,14 @@ impl StorageProviderKey {
 }
 
 /// Key for fetching transaction from provider.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct TxProviderKey {
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct TxMemorizerKey {
     pub chain_id: ChainId,
     pub block_number: BlockNumber,
     pub tx_index: u64,
 }
 
-impl TxProviderKey {
+impl TxMemorizerKey {
     pub fn new(chain_id: ChainId, block_number: BlockNumber, tx_index: u64) -> Self {
         Self {
             chain_id,
@@ -126,14 +127,14 @@ impl TxProviderKey {
 }
 
 /// Key for fetching transaction receipt from provider.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct TxReceiptProviderKey {
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct TxReceiptMemorizerKey {
     pub chain_id: ChainId,
     pub block_number: BlockNumber,
     pub tx_index: u64,
 }
 
-impl TxReceiptProviderKey {
+impl TxReceiptMemorizerKey {
     pub fn new(chain_id: ChainId, block_number: BlockNumber, tx_index: u64) -> Self {
         Self {
             chain_id,
@@ -143,13 +144,19 @@ impl TxReceiptProviderKey {
     }
 }
 
-#[derive(Hash, Debug, PartialEq, Eq, Clone)]
+#[derive(Hash, Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
+#[serde(tag = "type", content = "key")]
 pub enum FetchKeyEnvelope {
-    Header(HeaderProviderKey),
-    Account(AccountProviderKey),
-    Storage(StorageProviderKey),
-    Tx(TxProviderKey),
-    TxReceipt(TxReceiptProviderKey),
+    #[serde(rename = "HeaderMemorizerKey")]
+    Header(HeaderMemorizerKey),
+    #[serde(rename = "AccountMemorizerKey")]
+    Account(AccountMemorizerKey),
+    #[serde(rename = "StorageMemorizerKey")]
+    Storage(StorageMemorizerKey),
+    #[serde(rename = "TxMemorizerKey")]
+    Tx(TxMemorizerKey),
+    #[serde(rename = "TxReceiptMemorizerKey")]
+    TxReceipt(TxReceiptMemorizerKey),
 }
 
 // TODO: Temporary implemented from string approach, but need to sync with how bootloader will emit the keys
@@ -166,13 +173,13 @@ impl FromStr for FetchKeyEnvelope {
         let block_number = parts[1].parse()?;
 
         match parts.len() {
-            2 => Ok(FetchKeyEnvelope::Header(HeaderProviderKey {
+            2 => Ok(FetchKeyEnvelope::Header(HeaderMemorizerKey {
                 chain_id,
                 block_number,
             })),
             3 => {
                 let address = parts[2].parse()?;
-                Ok(FetchKeyEnvelope::Account(AccountProviderKey {
+                Ok(FetchKeyEnvelope::Account(AccountMemorizerKey {
                     chain_id,
                     block_number,
                     address,
@@ -181,7 +188,7 @@ impl FromStr for FetchKeyEnvelope {
             4 => {
                 let address = parts[2].parse()?;
                 let key = parts[3].parse()?;
-                Ok(FetchKeyEnvelope::Storage(StorageProviderKey {
+                Ok(FetchKeyEnvelope::Storage(StorageMemorizerKey {
                     chain_id,
                     block_number,
                     address,
@@ -189,6 +196,19 @@ impl FromStr for FetchKeyEnvelope {
                 }))
             }
             _ => anyhow::bail!("Invalid fetch key envelope: {}", s),
+        }
+    }
+}
+
+impl FetchKeyEnvelope {
+    /// Get the chain id from the fetch key.
+    pub fn get_chain_id(&self) -> ChainId {
+        match self {
+            FetchKeyEnvelope::Header(key) => key.chain_id,
+            FetchKeyEnvelope::Account(key) => key.chain_id,
+            FetchKeyEnvelope::Storage(key) => key.chain_id,
+            FetchKeyEnvelope::Tx(key) => key.chain_id,
+            FetchKeyEnvelope::TxReceipt(key) => key.chain_id,
         }
     }
 }

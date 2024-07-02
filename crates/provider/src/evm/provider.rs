@@ -6,22 +6,15 @@ use alloy::{
 use eth_trie_proofs::{
     tx_receipt_trie::TxReceiptsMptHandler, tx_trie::TxsMptHandler, EthTrieError,
 };
-use hdp_primitives::{
-    block::header::{MMRMetaFromNewIndexer, MMRProofFromNewIndexer},
-    processed_types::block_proofs::ProcessedBlockProofs,
-};
+use hdp_primitives::block::header::{MMRMetaFromNewIndexer, MMRProofFromNewIndexer};
 use itertools::Itertools;
 use reqwest::Url;
-use std::{
-    collections::{HashMap, HashSet},
-    time::Instant,
-};
+use std::{collections::HashMap, time::Instant};
 use thiserror::Error;
 use tracing::info;
 
 use crate::{
     indexer::{Indexer, IndexerError},
-    key::FetchKeyEnvelope,
     types::{FetchedTransactionProof, FetchedTransactionReceiptProof},
 };
 
@@ -41,6 +34,10 @@ pub enum ProviderError {
     #[error("MMR meta mismatch among range of requested blocks")]
     MismatchedMMRMeta,
 
+    /// Error when the MMR is not found
+    #[error("MMR not found")]
+    MmrNotFound,
+
     /// Error from the [`Indexer`]
     #[error("Failed from indexer")]
     IndexerError(#[from] IndexerError),
@@ -52,6 +49,9 @@ pub enum ProviderError {
     /// Error from [`eth_trie_proofs`]
     #[error("EthTrieError: {0}")]
     EthTrieError(#[from] eth_trie_proofs::EthTrieError),
+
+    #[error("Fetch key error: {0}")]
+    FetchKeyError(String),
 }
 
 /// EVM provider
@@ -64,11 +64,11 @@ pub enum ProviderError {
 #[derive(Clone)]
 pub struct EvmProvider {
     /// Account and storage trie provider
-    rpc_provider: super::rpc::RpcProvider,
+    pub(crate) rpc_provider: super::rpc::RpcProvider,
     /// Header provider
-    header_provider: Indexer,
+    pub(crate) header_provider: Indexer,
     /// transaction url
-    tx_provider_url: Url,
+    pub(crate) tx_provider_url: Url,
 }
 
 /// EVM provider configuration
@@ -107,15 +107,6 @@ impl EvmProvider {
             header_provider,
             tx_provider_url: url,
         }
-    }
-
-    #[allow(unused)]
-    // TODO: not implemented yet for sync with module compiler
-    pub async fn fetch_proofs_from_keys(
-        &self,
-        fetch_keys: HashSet<FetchKeyEnvelope>,
-    ) -> Result<ProcessedBlockProofs, ProviderError> {
-        todo!("Implement fetch_proofs_from_keys")
     }
 
     /// Fetches the header proofs for the given block range.
@@ -169,7 +160,11 @@ impl EvmProvider {
         let duration = start_fetch.elapsed();
         info!("Time taken (Headers Proofs Fetch): {:?}", duration);
 
-        Ok((mmr.unwrap(), fetched_headers_proofs_with_blocks_map))
+        if let Some(fetched_mmr) = mmr {
+            Ok((fetched_mmr, fetched_headers_proofs_with_blocks_map))
+        } else {
+            Err(ProviderError::MmrNotFound)
+        }
     }
 
     /// Fetches the account proofs for the given block range.
@@ -206,7 +201,8 @@ impl EvmProvider {
 
     /// Chunks the block range into smaller ranges of 800 blocks.
     /// This is to avoid fetching too many blocks at once from the RPC provider.
-    fn _chunk_block_range(
+    /// This is meant to use with data lake definition, which have sequential block numbers
+    pub(crate) fn _chunk_block_range(
         &self,
         from_block: BlockNumber,
         to_block: BlockNumber,
@@ -218,6 +214,47 @@ impl EvmProvider {
             .into_iter()
             .map(|chunk| chunk.collect())
             .collect()
+    }
+
+    /// Chunks the blocks range into smaller ranges of 800 blocks.
+    /// It simply consider the number of blocks in the range and divide it by 800.
+    /// This is targeted for account and storage proofs in optimized way
+    pub(crate) fn _chunk_vec_blocks_for_mpt(
+        &self,
+        blocks: Vec<BlockNumber>,
+    ) -> Vec<Vec<BlockNumber>> {
+        blocks.chunks(800).map(|chunk| chunk.to_vec()).collect()
+    }
+
+    /// Chunks the blocks into smaller ranges of 800 blocks.
+    /// This is targeted for indexer to fetch header proofs in optimized way
+    pub(crate) fn _chunk_vec_blocks_for_indexer(
+        &self,
+        blocks: Vec<BlockNumber>,
+    ) -> Vec<Vec<BlockNumber>> {
+        // Sort the blocks
+        let mut sorted_blocks = blocks.clone();
+        sorted_blocks.sort();
+
+        let mut result: Vec<Vec<BlockNumber>> = Vec::new();
+        let mut current_chunk: Vec<BlockNumber> = Vec::new();
+
+        for &block in sorted_blocks.iter() {
+            // Check if the current chunk is empty or if the difference is within 800 blocks
+            if current_chunk.is_empty() || block - current_chunk[0] <= 800 {
+                current_chunk.push(block);
+            } else {
+                // Push the current chunk to result and start a new chunk
+                result.push(current_chunk);
+                current_chunk = vec![block];
+            }
+        }
+
+        if !current_chunk.is_empty() {
+            result.push(current_chunk);
+        }
+
+        result
     }
 
     /// Fetches the storage proofs for the given block range.
@@ -284,7 +321,7 @@ impl EvmProvider {
                     tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
                     continue;
                 }
-                _ => return Err(ProviderError::EthTrieError(trie_response.err().unwrap())),
+                Err(e) => return Err(ProviderError::EthTrieError(e)),
             }
         }
 
@@ -351,7 +388,7 @@ impl EvmProvider {
                     tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
                     continue;
                 }
-                _ => return Err(ProviderError::EthTrieError(trie_response.err().unwrap())),
+                Err(e) => return Err(ProviderError::EthTrieError(e)),
             }
         }
 

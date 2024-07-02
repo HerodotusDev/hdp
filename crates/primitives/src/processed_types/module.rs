@@ -5,7 +5,7 @@ use starknet::core::serde::unsigned_field_element::UfeHex;
 use starknet_crypto::FieldElement;
 
 #[serde_as]
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct ProcessedModule {
     #[serde_as(as = "Vec<UfeHex>")]
     pub inputs: Vec<FieldElement>,
