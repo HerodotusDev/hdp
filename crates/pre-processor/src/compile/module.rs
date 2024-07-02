@@ -4,6 +4,7 @@
 
 #![allow(dead_code)]
 
+use core::panic;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -14,7 +15,6 @@ use hdp_cairo_runner::{cairo_dry_run, input::dry_run::DryRunnerProgramInput};
 use hdp_primitives::constant::DRY_RUN_OUTPUT_FILE;
 use hdp_primitives::{processed_types::module::ProcessedModule, task::module::Module};
 use hdp_provider::{evm::provider::EvmProvider, key::FetchKeyEnvelope};
-
 use starknet::providers::Url;
 use tracing::info;
 
@@ -54,13 +54,22 @@ impl Compilable for BatchedModule {
         let keys: Vec<FetchKeyEnvelope> = cairo_dry_run(program_path, input_string)?;
 
         // 3. call provider using keys
+        let keys_maps_chain = categrize_fetch_keys_by_chain_id(keys);
+        if keys_maps_chain.len() > 1 {
+            // TODO: This is temporary solution. Need to handle multiple chain id in future
+            panic!("Multiple chain id is not supported yet");
+        }
+
+        let (_, keys) = keys_maps_chain.into_iter().next().unwrap();
         // TODO: should spawn multiple provider base on batch of chain id. Probably need to change config around chain id and rpc url
-        // TODO: This config cannot handle the situation when calling multiple chain data in one module
+        // This config cannot handle the situation when calling multiple chain data in one module
+        // But as this have not used, for now we can just follow batch's chain id
         info!("3. Fetching proofs from provider...");
         let provider = EvmProvider::new(compile_config.provider.clone());
         let results = provider
             .fetch_proofs_from_keys(keys.into_iter().collect())
             .await?;
+
         Ok(CompilationResults::new_without_result(
             results.headers.into_iter().collect(),
             results.accounts.into_iter().collect(),

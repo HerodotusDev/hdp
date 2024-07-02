@@ -1,5 +1,4 @@
 use alloy::primitives::{B256, U256};
-use datalake::fetchable::FetchError;
 use hdp_primitives::processed_types::{
     account::ProcessedAccount, header::ProcessedHeader, mmr::MMRMeta, receipt::ProcessedReceipt,
     storage::ProcessedStorage, transaction::ProcessedTransaction,
@@ -18,14 +17,19 @@ pub mod module;
 pub enum CompileError {
     #[error("Cairo Runner Error: {0}")]
     CairoRunnerError(#[from] hdp_cairo_runner::CairoRunnerError),
+
     #[error("Invalid provider")]
     ProviderError(#[from] hdp_provider::evm::provider::ProviderError),
+
     #[error("Failed to fetch datalake: {0}")]
-    FetchError(#[from] FetchError),
+    FetchError(#[from] datalake::fetchable::FetchError),
+
     #[error("Invalid MMR meta data")]
     InvalidMMR,
-    #[error("Failed from anyhow")]
-    AnyhowError(#[from] anyhow::Error),
+
+    #[error("General error: {0}")]
+    GeneralError(#[from] anyhow::Error),
+
     #[error("Error from module registry: {0}")]
     ModuleRegistryError(#[from] ModuleRegistryError),
 }
