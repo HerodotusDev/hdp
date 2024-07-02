@@ -1,7 +1,13 @@
 //!  THIS IS WIP, NOT READY FOR USE
 
+use alloy::primitives::U256;
 use hdp_primitives::constant::DRY_RUN_OUTPUT_FILE;
+use hdp_primitives::processed_types::uint256::Uint256;
 use hdp_provider::key::FetchKeyEnvelope;
+use serde::{Deserialize, Serialize};
+use serde_with::serde_as;
+use starknet::core::serde::unsigned_field_element::UfeHex;
+use starknet_crypto::FieldElement;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
@@ -9,6 +15,17 @@ use tempfile::NamedTempFile;
 use tracing::info;
 
 use crate::CairoRunnerError;
+
+pub type DryRunResult = Vec<DryRunnedModule>;
+
+#[serde_as]
+#[derive(Serialize, Deserialize)]
+pub struct DryRunnedModule {
+    pub fetch_keys: Vec<FetchKeyEnvelope>,
+    pub result: Uint256,
+    #[serde_as(as = "UfeHex")]
+    pub class_hash: FieldElement,
+}
 
 pub struct DryRunner {
     program_path: PathBuf,
@@ -37,7 +54,7 @@ impl DryRunner {
     }
 
     /// Dry run to return requested values
-    pub fn run(&self, input_string: String) -> Result<Vec<FetchKeyEnvelope>, CairoRunnerError> {
+    pub fn run(&self, input_string: String) -> Result<DryRunResult, CairoRunnerError> {
         if input_string.is_empty() {
             return Err(CairoRunnerError::EmptyInput);
         }
@@ -53,9 +70,9 @@ impl DryRunner {
     }
 
     /// Parse the output of the dry run command
-    fn parse_run(&self, input_file_path: &Path) -> Result<Vec<FetchKeyEnvelope>, CairoRunnerError> {
+    fn parse_run(&self, input_file_path: &Path) -> Result<DryRunResult, CairoRunnerError> {
         let output = fs::read_to_string(input_file_path)?;
-        let fetch_keys: Vec<FetchKeyEnvelope> = serde_json::from_str(&output)?;
+        let fetch_keys: Vec<DryRunnedModule> = serde_json::from_str(&output)?;
         fs::remove_file(input_file_path)?;
         Ok(fetch_keys)
     }

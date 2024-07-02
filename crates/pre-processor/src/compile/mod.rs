@@ -12,6 +12,7 @@ use crate::module_registry::ModuleRegistryError;
 
 pub mod datalake;
 pub mod module;
+pub mod task;
 
 #[derive(Error, Debug)]
 pub enum CompileError {
@@ -108,6 +109,24 @@ impl CompilationResults {
             transactions,
             transaction_receipts,
             mmr_meta,
+        }
+    }
+
+    pub fn extend(&mut self, other: CompilationResults) {
+        self.headers.extend(other.headers);
+        self.accounts.extend(other.accounts);
+        self.storages.extend(other.storages);
+        self.transactions.extend(other.transactions);
+        self.transaction_receipts.extend(other.transaction_receipts);
+        // validation for mmr_meta
+        if self.mmr_meta != other.mmr_meta {
+            // TODO: for now we handle single MMR
+            panic!("Invalid MMR meta data")
+        }
+        self.mmr_meta = other.mmr_meta;
+        self.commit_results_maps.extend(other.commit_results_maps);
+        if !(self.pre_processable && other.pre_processable) {
+            self.pre_processable = false;
         }
     }
 }

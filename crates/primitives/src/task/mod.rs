@@ -9,6 +9,7 @@ pub mod module;
 
 /// [`TaskEnvelope`] is a structure that contains task itself
 /// This structure is used to provide the task to the pre-processor
+#[derive(Clone)]
 pub enum TaskEnvelope {
     DatalakeCompute(DatalakeCompute),
     Module(Module),
@@ -20,5 +21,36 @@ impl TaskEnvelope {
             TaskEnvelope::DatalakeCompute(task) => task.commit(),
             TaskEnvelope::Module(module) => module.commit(),
         }
+    }
+
+    pub fn divide_tasks(tasks: Vec<TaskEnvelope>) -> (Vec<DatalakeCompute>, Vec<Module>) {
+        // Partition the tasks into datalake and module tasks
+        let (datalake_envelopes, module_envelopes): (Vec<_>, Vec<_>) = tasks
+            .into_iter()
+            .partition(|task| matches!(task, TaskEnvelope::DatalakeCompute(_)));
+
+        let datalake_tasks = datalake_envelopes
+            .into_iter()
+            .filter_map(|task| {
+                if let TaskEnvelope::DatalakeCompute(datalake_task) = task {
+                    Some(datalake_task)
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        let module_tasks = module_envelopes
+            .into_iter()
+            .filter_map(|task| {
+                if let TaskEnvelope::Module(module_task) = task {
+                    Some(module_task)
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        (datalake_tasks, module_tasks)
     }
 }

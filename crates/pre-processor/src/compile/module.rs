@@ -5,15 +5,18 @@
 #![allow(dead_code)]
 
 use core::panic;
+use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 
 use crate::{module_registry::ModuleRegistry, ExtendedModule};
 
 use alloy::primitives::ChainId;
+use hdp_cairo_runner::dry_run::DryRunResult;
 use hdp_cairo_runner::{cairo_dry_run, input::dry_run::DryRunnerProgramInput};
 use hdp_primitives::constant::DRY_RUN_OUTPUT_FILE;
-use hdp_primitives::{processed_types::module::ProcessedModule, task::module::Module};
+use hdp_primitives::processed_types::cairo_format;
+use hdp_primitives::task::module::Module;
 use hdp_provider::{evm::provider::EvmProvider, key::FetchKeyEnvelope};
 use starknet::providers::Url;
 use tracing::info;
@@ -45,16 +48,32 @@ impl Compilable for BatchedModule {
         let extended_modules = arc_module_registry
             .get_multiple_module_classes(self.clone())
             .await?;
+        let task_commitments = extended_modules
+            .iter()
+            .map(|module| module.task.commit())
+            .collect::<Vec<_>>();
+
         let input = generate_input(extended_modules, PathBuf::from(DRY_RUN_OUTPUT_FILE)).await?;
         let input_string =
             serde_json::to_string_pretty(&input).expect("Failed to serialize module class");
 
         // 2. run the dry run and get the fetch points
         info!("2. Running dry-run... ");
-        let keys: Vec<FetchKeyEnvelope> = cairo_dry_run(program_path, input_string)?;
+        let keys: DryRunResult = cairo_dry_run(program_path, input_string)?;
+
+        if keys.len() != 1 {
+            // TODO: temporary solution. Need to handle multiple module in future
+            panic!("Multiple Modules are not supported yet");
+        }
+        let dry_runned_module = keys.into_iter().next().unwrap();
+        let mut commit_results_maps = HashMap::new();
+        commit_results_maps.insert(
+            task_commitments[0],
+            dry_runned_module.result.to_combined_string().into(),
+        );
 
         // 3. call provider using keys
-        let keys_maps_chain = categrize_fetch_keys_by_chain_id(keys);
+        let keys_maps_chain = categrize_fetch_keys_by_chain_id(dry_runned_module.fetch_keys);
         if keys_maps_chain.len() > 1 {
             // TODO: This is temporary solution. Need to handle multiple chain id in future
             panic!("Multiple chain id is not supported yet");
@@ -71,7 +90,9 @@ impl Compilable for BatchedModule {
             .fetch_proofs_from_keys(keys.into_iter().collect())
             .await?;
 
-        Ok(CompilationResults::new_without_result(
+        Ok(CompilationResults::new(
+            true,
+            commit_results_maps,
             results.headers.into_iter().collect(),
             results.accounts.into_iter().collect(),
             results.storages.into_iter().collect(),
@@ -104,7 +125,8 @@ async fn generate_input(
     // Collect results, filter out any errors
     let mut collected_results = Vec::new();
     for module in extended_modules {
-        let input_module = ProcessedModule::new(module.task.inputs, module.module_class);
+        let input_module =
+            cairo_format::ProcessedModule::new(module.task.inputs, module.module_class);
         collected_results.push(input_module);
     }
 

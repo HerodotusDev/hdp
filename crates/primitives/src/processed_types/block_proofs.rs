@@ -1,4 +1,4 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use super::{
     account::ProcessedAccount, header::ProcessedHeader, mmr::MMRMeta, receipt::ProcessedReceipt,
@@ -6,7 +6,8 @@ use super::{
 };
 
 /// Provider should fetch all the proofs and rlp values from given keys.
-#[derive(Serialize, Debug)]
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ProcessedBlockProofs {
     pub mmr_meta: MMRMeta,
     pub headers: Vec<ProcessedHeader>,
