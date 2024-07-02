@@ -2205,6 +2205,7 @@ dependencies = [
  "hdp-provider",
  "inquire",
  "serde_json",
+ "starknet",
  "tokio",
  "tracing",
  "tracing-subscriber",

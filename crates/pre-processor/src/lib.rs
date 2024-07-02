@@ -9,6 +9,7 @@ use cairo_lang_starknet_classes::casm_contract_class::CasmContractClass;
 use compile::{Compilable, CompilationResults, CompileConfig, CompileError};
 use hdp_primitives::processed_types::block_proofs::ProcessedBlockProofs;
 use hdp_primitives::processed_types::datalake_compute::ProcessedDatalakeCompute;
+use hdp_primitives::processed_types::module::ProcessedModule;
 use hdp_primitives::processed_types::query::ProcessedFullInput;
 use hdp_primitives::processed_types::task::ProcessedTask;
 use hdp_primitives::solidity_types::datalake_compute::BatchedDatalakeCompute;
@@ -149,7 +150,34 @@ impl PreProcessor {
                     combined_tasks.push(task);
                 }
                 TaskEnvelope::Module(module) => {
-                    todo!("Module task is not implemented yet")
+                    let task_commitment = module.commit();
+                    let compiled_result = compiled_results
+                        .commit_results_maps
+                        .get(&task_commitment)
+                        .unwrap();
+                    let module_class = compiled_results
+                        .commit_casm_maps
+                        .get(&task_commitment)
+                        .unwrap();
+                    let result_commitment =
+                        self._raw_result_to_result_commitment(&task_commitment, *compiled_result);
+                    let result_proof = results_merkle_tree
+                        .as_ref()
+                        .unwrap()
+                        .get_proof(&DynSolValue::FixedBytes(result_commitment, 32));
+                    let task_proof =
+                        tasks_merkle_tree.get_proof(&DynSolValue::FixedBytes(task_commitment, 32));
+                    let processed_module = ProcessedModule::new(
+                        task_commitment,
+                        result_commitment,
+                        task_proof,
+                        result_proof,
+                        module.inputs,
+                        module_class.clone(),
+                    );
+
+                    let task = ProcessedTask::Module(processed_module);
+                    combined_tasks.push(task);
                 }
             }
         }
@@ -163,8 +191,8 @@ impl PreProcessor {
             transaction_receipts: Vec::from_iter(compiled_results.transaction_receipts),
         };
         let processed_result = ProcessedFullInput::new(
-            results_merkle_tree.map(|tree| tree.root().to_string()),
-            task_merkle_root.to_string(),
+            results_merkle_tree.map(|tree| tree.root()),
+            task_merkle_root,
             proofs,
             combined_tasks,
         );

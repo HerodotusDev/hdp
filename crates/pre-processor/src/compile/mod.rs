@@ -1,4 +1,5 @@
 use alloy::primitives::{B256, U256};
+use cairo_lang_starknet_classes::casm_contract_class::CasmContractClass;
 use hdp_primitives::processed_types::{
     account::ProcessedAccount, header::ProcessedHeader, mmr::MMRMeta, receipt::ProcessedReceipt,
     storage::ProcessedStorage, transaction::ProcessedTransaction,
@@ -52,6 +53,8 @@ pub trait Compilable {
 pub struct CompilationResults {
     /// flag to check if the aggregation function is pre-processable
     pub pre_processable: bool,
+    /// task_commitment -> casm_contract_class
+    pub commit_casm_maps: HashMap<B256, CasmContractClass>,
     /// task_commitment -> value
     pub commit_results_maps: HashMap<B256, U256>,
     /// Headers related to the datalake
@@ -68,6 +71,22 @@ pub struct CompilationResults {
     pub mmr_meta: MMRMeta,
 }
 
+impl Default for CompilationResults {
+    fn default() -> Self {
+        Self {
+            pre_processable: true,
+            commit_casm_maps: HashMap::new(),
+            commit_results_maps: HashMap::new(),
+            headers: HashSet::new(),
+            accounts: HashSet::new(),
+            storages: HashSet::new(),
+            transactions: HashSet::new(),
+            transaction_receipts: HashSet::new(),
+            mmr_meta: MMRMeta::default(),
+        }
+    }
+}
+
 impl CompilationResults {
     pub fn new_without_result(
         headers: HashSet<ProcessedHeader>,
@@ -79,6 +98,7 @@ impl CompilationResults {
     ) -> Self {
         Self {
             pre_processable: false,
+            commit_casm_maps: HashMap::new(),
             commit_results_maps: HashMap::new(),
             headers,
             accounts,
@@ -92,6 +112,7 @@ impl CompilationResults {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         pre_processable: bool,
+        commit_casm_maps: HashMap<B256, CasmContractClass>,
         commit_results_maps: HashMap<B256, U256>,
         headers: HashSet<ProcessedHeader>,
         accounts: HashSet<ProcessedAccount>,
@@ -102,6 +123,7 @@ impl CompilationResults {
     ) -> Self {
         Self {
             pre_processable,
+            commit_casm_maps,
             commit_results_maps,
             headers,
             accounts,
@@ -118,12 +140,17 @@ impl CompilationResults {
         self.storages.extend(other.storages);
         self.transactions.extend(other.transactions);
         self.transaction_receipts.extend(other.transaction_receipts);
-        // validation for mmr_meta
-        if self.mmr_meta != other.mmr_meta {
-            // TODO: for now we handle single MMR
-            panic!("Invalid MMR meta data")
+
+        // overwite default to another value
+        if self.mmr_meta == MMRMeta::default() {
+            self.mmr_meta = other.mmr_meta;
+        } else if other.mmr_meta != MMRMeta::default() {
+            // if not default, check if the value is the same
+            if self.mmr_meta != other.mmr_meta {
+                panic!("MMR meta data is not the same");
+            }
         }
-        self.mmr_meta = other.mmr_meta;
+
         self.commit_results_maps.extend(other.commit_results_maps);
         if !(self.pre_processable && other.pre_processable) {
             self.pre_processable = false;

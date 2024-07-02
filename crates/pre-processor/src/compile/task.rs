@@ -8,10 +8,19 @@ impl Compilable for Vec<TaskEnvelope> {
         compile_config: &CompileConfig,
     ) -> Result<CompilationResults, CompileError> {
         let (datalakes, modules) = TaskEnvelope::divide_tasks(self.to_vec());
-        let mut datalake_compile_results = datalakes.compile(compile_config).await?;
-        let module_compile_results = modules.compile(compile_config).await?;
-        datalake_compile_results.extend(module_compile_results);
+        let mut compiled_result = if !datalakes.is_empty() {
+            datalakes.compile(compile_config).await?
+        } else {
+            CompilationResults::default()
+        };
 
-        Ok(datalake_compile_results)
+        let module_compile_result = if !modules.is_empty() {
+            modules.compile(compile_config).await?
+        } else {
+            CompilationResults::default()
+        };
+        compiled_result.extend(module_compile_result);
+
+        Ok(compiled_result)
     }
 }

@@ -81,6 +81,7 @@ impl Compilable for Vec<DatalakeCompute> {
 
         Ok(CompilationResults::new(
             pre_processable,
+            HashMap::new(),
             commit_results_maps,
             headers,
             accounts,

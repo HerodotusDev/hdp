@@ -48,6 +48,11 @@ impl Compilable for BatchedModule {
         let extended_modules = arc_module_registry
             .get_multiple_module_classes(self.clone())
             .await?;
+        let mut commit_casm_maps = HashMap::new();
+        commit_casm_maps.insert(
+            extended_modules[0].task.commit(),
+            extended_modules[0].module_class.clone(),
+        );
         let task_commitments = extended_modules
             .iter()
             .map(|module| module.task.commit())
@@ -92,6 +97,7 @@ impl Compilable for BatchedModule {
 
         Ok(CompilationResults::new(
             true,
+            commit_casm_maps,
             commit_results_maps,
             results.headers.into_iter().collect(),
             results.accounts.into_iter().collect(),

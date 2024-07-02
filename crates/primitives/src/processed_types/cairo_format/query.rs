@@ -1,5 +1,6 @@
 use crate::processed_types::query::ProcessedFullInput as BasedProcessedFullInput;
 use ::serde::Serialize;
+use alloy::primitives::B256;
 
 use super::{AsCairoFormat, ProcessedBlockProofs, ProcessedTask};
 
@@ -8,8 +9,8 @@ impl AsCairoFormat for BasedProcessedFullInput {
 
     fn as_cairo_format(&self) -> Self::Output {
         ProcessedFullInput {
-            task_root: self.tasks_root.clone(),
-            result_root: self.results_root.clone(),
+            task_root: self.tasks_root,
+            result_root: self.results_root,
             proofs: self.proofs.as_cairo_format(),
             tasks: self
                 .tasks
@@ -23,10 +24,10 @@ impl AsCairoFormat for BasedProcessedFullInput {
 #[derive(Serialize)]
 pub struct ProcessedFullInput {
     /// Batched tasks root of all tasks.
-    pub task_root: String,
+    pub task_root: B256,
     /// if every tasks are pre computable, this can be Some
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub result_root: Option<String>,
+    pub result_root: Option<B256>,
     /// Fetched proofs per each fetch point.
     pub proofs: ProcessedBlockProofs,
     /// tasks to be executed.

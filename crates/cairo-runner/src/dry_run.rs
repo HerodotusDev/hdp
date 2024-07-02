@@ -1,6 +1,5 @@
 //!  THIS IS WIP, NOT READY FOR USE
 
-use alloy::primitives::U256;
 use hdp_primitives::constant::DRY_RUN_OUTPUT_FILE;
 use hdp_primitives::processed_types::uint256::Uint256;
 use hdp_provider::key::FetchKeyEnvelope;
