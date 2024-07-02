@@ -49,11 +49,6 @@ impl EvmProvider {
                         storage_key.chain_id,
                         storage_key.block_number,
                     ));
-                    target_keys_for_account.insert(AccountMemorizerKey::new(
-                        storage_key.chain_id,
-                        storage_key.block_number,
-                        storage_key.address,
-                    ));
                     target_keys_for_storage.insert(storage_key);
                 }
                 FetchKeyEnvelope::Tx(tx_key) => {
@@ -75,25 +70,20 @@ impl EvmProvider {
 
         // fetch proofs using keys and construct result
         let (headers, mmr_meta) = self.get_headers_from_keys(target_keys_for_header).await?;
-        let accounts = self
-            .get_accounts_from_keys(target_keys_for_account)
-            .await?
-            .into_iter()
-            .collect::<Vec<_>>();
-        let storages = self
-            .get_storages_from_keys(target_keys_for_storage)
-            .await?
-            .into_iter()
-            .collect::<Vec<_>>();
+        let mut accounts = self.get_accounts_from_keys(target_keys_for_account).await?;
+        let (accounts_from_storage_key, storages) =
+            self.get_storages_from_keys(target_keys_for_storage).await?;
         let transactions = self.get_txs_from_keys(target_keys_for_tx).await?;
         let transaction_receipts = self
             .get_tx_receipts_from_keys(target_keys_for_tx_receipt)
             .await?;
+        accounts.extend(accounts_from_storage_key);
+        let accounts_result: Vec<ProcessedAccount> = accounts.into_iter().collect();
         Ok(ProcessedBlockProofs {
             mmr_meta,
             headers: headers.into_iter().collect(),
-            accounts,
-            storages,
+            accounts: accounts_result,
+            storages: storages.into_iter().collect(),
             transactions,
             transaction_receipts,
         })
@@ -217,7 +207,8 @@ impl EvmProvider {
     async fn get_storages_from_keys(
         &self,
         keys: HashSet<StorageMemorizerKey>,
-    ) -> Result<HashSet<ProcessedStorage>, ProviderError> {
+    ) -> Result<(HashSet<ProcessedAccount>, HashSet<ProcessedStorage>), ProviderError> {
+        let mut fetched_accounts_proofs: HashSet<ProcessedAccount> = HashSet::new();
         let mut fetched_storage_proofs: HashSet<ProcessedStorage> = HashSet::new();
         let start_fetch = Instant::now();
 
@@ -245,6 +236,7 @@ impl EvmProvider {
             };
 
             let mut storage_mpt_proof: Vec<ProcessedMPTProof> = vec![];
+            let mut account_mpt_proofs: Vec<ProcessedMPTProof> = vec![];
             for target_blocks in target_blocks_batch {
                 let storage_proof = self
                     .rpc_provider
@@ -252,13 +244,18 @@ impl EvmProvider {
                     .await?;
 
                 for block in target_blocks {
-                    let one_block_storage_proof = storage_proof.get(&block).unwrap().clone();
+                    let account_proof_response = storage_proof.get(&block).unwrap().clone();
+                    account_mpt_proofs.push(ProcessedMPTProof {
+                        block_number: block,
+                        proof: account_proof_response.account_proof,
+                    });
                     storage_mpt_proof.push(ProcessedMPTProof::new(
                         block,
-                        one_block_storage_proof.storage_proof[0].proof.clone(),
+                        account_proof_response.storage_proof[0].proof.clone(),
                     ));
                 }
             }
+            fetched_accounts_proofs.insert(ProcessedAccount::new(address, account_mpt_proofs));
             fetched_storage_proofs.insert(ProcessedStorage::new(
                 address,
                 storage_slot,
@@ -268,7 +265,7 @@ impl EvmProvider {
         let duration = start_fetch.elapsed();
         info!("Time taken (Storage Proofs Fetch): {:?}", duration);
 
-        Ok(fetched_storage_proofs)
+        Ok((fetched_accounts_proofs, fetched_storage_proofs))
     }
 
     pub async fn get_txs_from_keys(
@@ -469,12 +466,18 @@ mod tests {
                 target_address,
                 target_slot,
             )),
+            FetchKeyEnvelope::Storage(StorageMemorizerKey::new(
+                target_chain_id,
+                4127477,
+                target_address,
+                target_slot,
+            )),
         ];
         let proofs = provider.fetch_proofs_from_keys(keys).await.unwrap();
         let duration = start_fetch.elapsed();
         println!("Time taken (Total Proofs Fetch): {:?}", duration);
-        assert_eq!(proofs.headers.len(), 5);
-        assert_eq!(proofs.accounts[0].proofs.len(), 5);
-        assert_eq!(proofs.storages[0].proofs.len(), 5);
+        assert_eq!(proofs.headers.len(), 6);
+        assert_eq!(proofs.accounts[0].proofs.len(), 6);
+        assert_eq!(proofs.storages[0].proofs.len(), 6);
     }
 }
