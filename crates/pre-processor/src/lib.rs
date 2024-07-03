@@ -5,19 +5,13 @@
 use alloy::dyn_abi::DynSolValue;
 use alloy::primitives::{Bytes, Keccak256, B256, U256};
 use alloy_merkle_tree::standard_binary_tree::StandardMerkleTree;
-use cairo_lang_starknet_classes::casm_contract_class::CasmContractClass;
 use compile::{Compilable, CompilationResults, CompileConfig, CompileError};
 use hdp_primitives::processed_types::block_proofs::ProcessedBlockProofs;
 use hdp_primitives::processed_types::datalake_compute::ProcessedDatalakeCompute;
 use hdp_primitives::processed_types::module::ProcessedModule;
 use hdp_primitives::processed_types::query::ProcessedFullInput;
 use hdp_primitives::processed_types::task::ProcessedTask;
-use hdp_primitives::solidity_types::datalake_compute::BatchedDatalakeCompute;
-use hdp_primitives::solidity_types::traits::{
-    BatchedDatalakeComputeCodecs, DatalakeCodecs, DatalakeComputeCodecs,
-};
-use hdp_primitives::task::module::Module;
-
+use hdp_primitives::solidity_types::traits::{DatalakeCodecs, DatalakeComputeCodecs};
 use hdp_primitives::task::TaskEnvelope;
 
 use thiserror::Error;
@@ -40,34 +34,9 @@ pub struct PreProcessor {
     pub compile_config: CompileConfig,
 }
 
-#[derive(Clone, Debug)]
-pub struct ExtendedModule {
-    pub task: Module,
-    pub module_class: CasmContractClass,
-}
-
 impl PreProcessor {
     pub fn new_with_config(compile_config: CompileConfig) -> Self {
         Self { compile_config }
-    }
-
-    pub async fn process_from_serialized(
-        &self,
-        batched_datalakes: Bytes,
-        batched_tasks: Bytes,
-    ) -> Result<ProcessedFullInput, PreProcessorError> {
-        // 1. decode the tasks
-        let tasks = BatchedDatalakeCompute::decode(&batched_datalakes, &batched_tasks)
-            .map_err(PreProcessorError::DecodeError)?;
-        info!("Target tasks: {:#?}", tasks);
-
-        // wrap into TaskEnvelope
-        // TODO: this is temporary, need to remove this
-        let tasks = tasks
-            .iter()
-            .map(|task| TaskEnvelope::DatalakeCompute(task.clone()))
-            .collect::<Vec<_>>();
-        self.process(tasks).await
     }
 
     /// User request is pass as input of this function,
@@ -150,13 +119,9 @@ impl PreProcessor {
                     combined_tasks.push(task);
                 }
                 TaskEnvelope::Module(module) => {
-                    let task_commitment = module.commit();
+                    let task_commitment = module.task.commit();
                     let compiled_result = compiled_results
                         .commit_results_maps
-                        .get(&task_commitment)
-                        .unwrap();
-                    let module_class = compiled_results
-                        .commit_casm_maps
                         .get(&task_commitment)
                         .unwrap();
                     let result_commitment =
@@ -172,8 +137,8 @@ impl PreProcessor {
                         result_commitment,
                         task_proof,
                         result_proof,
-                        module.inputs,
-                        module_class.clone(),
+                        module.task.inputs,
+                        module.module_class,
                     );
 
                     let task = ProcessedTask::Module(processed_module);

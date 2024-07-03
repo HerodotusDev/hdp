@@ -5,19 +5,16 @@ use cairo_lang_starknet_classes::{
     casm_contract_class::{CasmContractClass, StarknetSierraCompilationError},
     contract_class::ContractClass as CairoContractClass,
 };
-use futures::future::join_all;
-use hdp_primitives::task::module::Module;
+
+use hdp_primitives::task::{module::Module, ExtendedModule};
 use starknet::{
     core::types::{BlockId, BlockTag, ContractClass, FlattenedSierraClass},
     providers::{jsonrpc::HttpTransport, JsonRpcClient, Provider, Url},
 };
 use starknet_crypto::FieldElement;
-use std::{path::PathBuf, sync::Arc};
+use std::path::PathBuf;
 use thiserror::Error;
-use tokio::task;
 use tracing::info;
-
-use crate::ExtendedModule;
 
 #[derive(Error, Debug)]
 pub enum ModuleRegistryError {
@@ -35,6 +32,9 @@ pub enum ModuleRegistryError {
 
     #[error("Tokio join error: {0}")]
     TokioJoinError(#[from] tokio::task::JoinError),
+
+    #[error("Module class source error: {0}")]
+    ClassSourceError(String),
 }
 
 pub struct ModuleRegistry {
@@ -47,61 +47,81 @@ impl ModuleRegistry {
         Self { provider }
     }
 
-    pub async fn get_multiple_module_classes(
-        self: Arc<Self>,
-        modules: Vec<Module>,
-    ) -> Result<Vec<ExtendedModule>, ModuleRegistryError> {
-        // Create an Arc to the ModuleRegistry to be used inside the async blocks
-        let module_registry: Arc<ModuleRegistry> = self;
-
-        // Map each module to an asynchronous task
-        let module_futures: Vec<_> = modules
+    pub async fn get_extended_module_from_class_source_string(
+        &self,
+        class_hash: Option<String>,
+        local_class_path: Option<PathBuf>,
+        module_inputs: Vec<String>,
+    ) -> Result<ExtendedModule, ModuleRegistryError> {
+        let class_hash =
+            class_hash.map(|class_hash| FieldElement::from_hex_be(&class_hash).unwrap());
+        let module_inputs = module_inputs
             .into_iter()
-            .map(|module| {
-                let module_registry = Arc::clone(&module_registry);
-                task::spawn(async move {
-                    let module_hash = module.class_hash;
-                    let module_class = if let Some(ref local_class_path) = module.local_class_path {
-                        module_registry
-                            .get_module_class_from_local_path(local_class_path)
-                            .await?
-                    } else {
-                        module_registry.get_module_class(module_hash).await?
-                    };
-                    Ok(ExtendedModule {
-                        task: module.clone(),
-                        module_class,
-                    }) as Result<ExtendedModule, ModuleRegistryError>
-                })
-            })
+            .map(|input| FieldElement::from_hex_be(&input).unwrap())
             .collect();
-
-        // Join all tasks and collect their results
-        let results = join_all(module_futures).await;
-
-        // Collect results, filter out any errors
-        let mut collected_results = Vec::new();
-        for result in results {
-            let module_with_class = result??;
-            collected_results.push(module_with_class);
-        }
-
-        Ok(collected_results)
+        self.get_extended_module_from_class_source(class_hash, local_class_path, module_inputs)
+            .await
     }
 
-    pub async fn get_module_class_from_local_path(
+    pub async fn get_extended_module_from_class_source(
+        &self,
+        class_hash: Option<FieldElement>,
+        local_class_path: Option<PathBuf>,
+        module_inputs: Vec<FieldElement>,
+    ) -> Result<ExtendedModule, ModuleRegistryError> {
+        if class_hash.is_none() && local_class_path.is_none() {
+            Err(ModuleRegistryError::ClassSourceError(
+                "One of class_hash or local_class_path must be provided".to_string(),
+            ))
+        } else if class_hash.is_some() && local_class_path.is_some() {
+            return Err(ModuleRegistryError::ClassSourceError(
+                "Only one of class_hash or local_class_path must be provided".to_string(),
+            ));
+        } else if class_hash.is_some() {
+            let class_hash = class_hash.unwrap();
+            let module = Module {
+                class_hash,
+                inputs: module_inputs,
+                local_class_path: None,
+            };
+            let extended_module = self.get_module_class(class_hash).await?;
+            Ok(ExtendedModule {
+                task: module,
+                module_class: extended_module,
+            })
+        } else {
+            let local_class_path = local_class_path.unwrap();
+            let (module_class, class_hash) = self
+                .get_module_class_from_local_path(&local_class_path)
+                .await?;
+            let module = Module {
+                class_hash,
+                inputs: module_inputs,
+                local_class_path: Some(local_class_path),
+            };
+            Ok(ExtendedModule {
+                task: module,
+                module_class,
+            })
+        }
+    }
+
+    async fn get_module_class_from_local_path(
         &self,
         local_class_path: &PathBuf,
-    ) -> Result<CasmContractClass, ModuleRegistryError> {
-        let casm = serde_json::from_str(&std::fs::read_to_string(local_class_path).unwrap())?;
+    ) -> Result<(CasmContractClass, FieldElement), ModuleRegistryError> {
+        let casm: CasmContractClass =
+            serde_json::from_str(&std::fs::read_to_string(local_class_path).unwrap())?;
+        let class_hash = casm.compiled_class_hash();
+        let converted_hash = FieldElement::from_bytes_be(&class_hash.to_be_bytes()).unwrap();
         info!(
-            "Contract class fetched successfully from local path: {:?}",
-            local_class_path
+            "Contract class fetched successfully from local path: {:?}, class hash: {}",
+            local_class_path, converted_hash
         );
-        Ok(casm)
+        Ok((casm, converted_hash))
     }
 
-    pub async fn get_module_class(
+    async fn get_module_class(
         &self,
         class_hash: FieldElement,
     ) -> Result<CasmContractClass, ModuleRegistryError> {
@@ -216,25 +236,16 @@ mod tests {
     #[tokio::test]
     async fn test_get_multiple_module_classes() {
         let (module_registry, class_hash) = init();
-        let module = Module {
-            class_hash,
-            inputs: vec![],
-            local_class_path: None,
-        };
-        let arc_registry = Arc::new(module_registry);
-        let extended_modules = arc_registry
-            .get_multiple_module_classes(vec![module.clone(), module.clone()])
+
+        let extended_modules = module_registry
+            .get_extended_module_from_class_source(Some(class_hash), None, vec![])
             .await
             .unwrap();
-        assert_eq!(extended_modules.len(), 2);
-        assert_eq!(extended_modules[0].task, module);
+
+        assert_eq!(extended_modules.task.class_hash, class_hash);
+        assert_eq!(extended_modules.task.inputs, vec![]);
         assert_eq!(
-            extended_modules[0].module_class,
-            ACCOUNT_BALANCE_EXAMPLE_CONTRACT.clone()
-        );
-        assert_eq!(extended_modules[1].task, module);
-        assert_eq!(
-            extended_modules[1].module_class,
+            extended_modules.module_class,
             ACCOUNT_BALANCE_EXAMPLE_CONTRACT.clone()
         );
     }

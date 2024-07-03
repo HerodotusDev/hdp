@@ -1,6 +1,7 @@
 //! Task is a unit of work that can be executed by the processor/pre-processor.
 use crate::solidity_types::traits::DatalakeComputeCodecs;
 use alloy::primitives::B256;
+use cairo_lang_starknet_classes::casm_contract_class::CasmContractClass;
 use datalake::DatalakeCompute;
 use module::Module;
 
@@ -12,18 +13,24 @@ pub mod module;
 #[derive(Clone, Debug)]
 pub enum TaskEnvelope {
     DatalakeCompute(DatalakeCompute),
-    Module(Module),
+    Module(ExtendedModule),
+}
+
+#[derive(Clone, Debug)]
+pub struct ExtendedModule {
+    pub task: Module,
+    pub module_class: CasmContractClass,
 }
 
 impl TaskEnvelope {
     pub fn commit(&self) -> B256 {
         match self {
             TaskEnvelope::DatalakeCompute(task) => task.commit(),
-            TaskEnvelope::Module(module) => module.commit(),
+            TaskEnvelope::Module(module) => module.task.commit(),
         }
     }
 
-    pub fn divide_tasks(tasks: Vec<TaskEnvelope>) -> (Vec<DatalakeCompute>, Vec<Module>) {
+    pub fn divide_tasks(tasks: Vec<TaskEnvelope>) -> (Vec<DatalakeCompute>, Vec<ExtendedModule>) {
         // Partition the tasks into datalake and module tasks
         let (datalake_envelopes, module_envelopes): (Vec<_>, Vec<_>) = tasks
             .into_iter()

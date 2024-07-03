@@ -1,5 +1,5 @@
 use alloy::primitives::{B256, U256};
-use cairo_lang_starknet_classes::casm_contract_class::CasmContractClass;
+
 use hdp_primitives::processed_types::{
     account::ProcessedAccount, header::ProcessedHeader, mmr::MMRMeta, receipt::ProcessedReceipt,
     storage::ProcessedStorage, transaction::ProcessedTransaction,
@@ -53,8 +53,6 @@ pub trait Compilable {
 pub struct CompilationResults {
     /// flag to check if the aggregation function is pre-processable
     pub pre_processable: bool,
-    /// task_commitment -> casm_contract_class
-    pub commit_casm_maps: HashMap<B256, CasmContractClass>,
     /// task_commitment -> value
     pub commit_results_maps: HashMap<B256, U256>,
     /// Headers related to the datalake
@@ -75,7 +73,6 @@ impl Default for CompilationResults {
     fn default() -> Self {
         Self {
             pre_processable: true,
-            commit_casm_maps: HashMap::new(),
             commit_results_maps: HashMap::new(),
             headers: HashSet::new(),
             accounts: HashSet::new(),
@@ -98,7 +95,6 @@ impl CompilationResults {
     ) -> Self {
         Self {
             pre_processable: false,
-            commit_casm_maps: HashMap::new(),
             commit_results_maps: HashMap::new(),
             headers,
             accounts,
@@ -112,7 +108,6 @@ impl CompilationResults {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         pre_processable: bool,
-        commit_casm_maps: HashMap<B256, CasmContractClass>,
         commit_results_maps: HashMap<B256, U256>,
         headers: HashSet<ProcessedHeader>,
         accounts: HashSet<ProcessedAccount>,
@@ -123,7 +118,6 @@ impl CompilationResults {
     ) -> Self {
         Self {
             pre_processable,
-            commit_casm_maps,
             commit_results_maps,
             headers,
             accounts,
@@ -141,7 +135,6 @@ impl CompilationResults {
         self.storages.extend(other.storages);
         self.transactions.extend(other.transactions);
         self.transaction_receipts.extend(other.transaction_receipts);
-        self.commit_casm_maps.extend(other.commit_casm_maps);
         self.commit_results_maps.extend(other.commit_results_maps);
 
         // overwite default to another value

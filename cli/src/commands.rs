@@ -119,16 +119,25 @@ pub enum HDPCliCommands {
         pie_file: Option<PathBuf>,
     },
 
+    /// Local run module with either class hash or local class path
+    // #[command(arg_required_else_help = true)]
+    // #[clap(group(
+    //      ArgGroup::new("class_source")
+    //          .required(true)
+    //          .args(&["class_hash", "local_class_path"]),
+    //  ))]
     LocalRunModule {
-        /// Class hash of the module that deployed on the chain
-        #[arg(required = true)]
-        class_hash: String,
-        /// Local path to the module class
-        #[arg(long, group = "class_source")]
-        local_class_path: Option<PathBuf>,
         /// Inputs for the module
         #[arg(required = true, use_value_delimiter = true)]
         module_inputs: Vec<String>,
+
+        /// Class hash of the module that deployed on the chain
+        #[arg(long, group = "class_source")]
+        class_hash: Option<String>,
+        /// Local path to the module class
+        #[arg(long, group = "class_source")]
+        local_class_path: Option<PathBuf>,
+
         /// The RPC URL to fetch the data
         #[arg(long)]
         rpc_url: Option<Url>,

@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 use crate::compile::datalake::fetchable::Fetchable;
 use hdp_primitives::{
@@ -6,6 +6,7 @@ use hdp_primitives::{
     task::datalake::{envelope::DatalakeEnvelope, DatalakeCompute},
 };
 use hdp_provider::evm::provider::EvmProvider;
+use tracing::info;
 
 use super::{Compilable, CompilationResults, CompileConfig, CompileError};
 
@@ -16,6 +17,7 @@ impl Compilable for DatalakeCompute {
         &self,
         compile_config: &CompileConfig,
     ) -> Result<CompilationResults, CompileError> {
+        info!("target task: {:#?}", self);
         let task_commitment = self.commit();
         let aggregation_fn = &self.compute.aggregate_fn_id;
         let fn_context = &self.compute.aggregate_fn_ctx;
@@ -27,7 +29,6 @@ impl Compilable for DatalakeCompute {
                     .operation(&compiled_block_sampled.values, Some(fn_context.clone()))?;
                 Ok(CompilationResults::new(
                     aggregation_fn.is_pre_processable(),
-                    HashMap::new(),
                     vec![(task_commitment, aggregated_result)]
                         .into_iter()
                         .collect(),
@@ -45,7 +46,6 @@ impl Compilable for DatalakeCompute {
                     .operation(&compiled_tx_datalake.values, Some(fn_context.clone()))?;
                 Ok(CompilationResults::new(
                     aggregation_fn.is_pre_processable(),
-                    HashMap::new(),
                     vec![(task_commitment, aggregated_result)]
                         .into_iter()
                         .collect(),

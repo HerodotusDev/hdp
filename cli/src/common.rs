@@ -5,6 +5,7 @@ use alloy::{
 use anyhow::Result;
 use hdp_preprocessor::{
     compile::{module::ModuleCompilerConfig, CompileConfig},
+    module_registry::ModuleRegistry,
     PreProcessor, PreProcessorError,
 };
 use hdp_primitives::{
@@ -18,7 +19,6 @@ use hdp_primitives::{
             block_sampled::BlockSampledDatalake, compute::Computation, envelope::DatalakeEnvelope,
             transactions::TransactionsInBlockDatalake, DatalakeCompute,
         },
-        module::Module,
         TaskEnvelope,
     },
 };
@@ -179,7 +179,7 @@ fn init_cli() -> Result<HDPCli> {
 
 #[allow(clippy::too_many_arguments)]
 pub async fn module_entry_run(
-    class_hash: String,
+    class_hash: Option<String>,
     local_class_path: Option<PathBuf>,
     module_inputs: Vec<String>,
     rpc_url: Option<Url>,
@@ -192,8 +192,10 @@ pub async fn module_entry_run(
         "https://starknet-sepolia.g.alchemy.com/v2/lINonYKIlp4NH9ZI6wvqJ4HeZj7T4Wm6".parse()?;
 
     let program_path = "./build/compiled_cairo/contract_dry_run.json";
-    let module = Module::new_from_string(class_hash, module_inputs, local_class_path)?;
-
+    let module_registry = ModuleRegistry::new(url.clone());
+    let module = module_registry
+        .get_extended_module_from_class_source_string(class_hash, local_class_path, module_inputs)
+        .await?;
     let tasks = vec![TaskEnvelope::Module(module)];
     let module_config = ModuleCompilerConfig {
         module_registry_rpc_url: url,
@@ -257,7 +259,6 @@ async fn handle_running_tasks(
     cairo_input: Option<PathBuf>,
     pie_file: Option<PathBuf>,
 ) -> Result<()> {
-    info!("Target Tasks: {:#?}", tasks);
     let program_path = "./build/compiled_cairo/hdp.json";
     let preprocessor = PreProcessor::new_with_config(compile_config);
     let result = preprocessor.process(tasks).await?;
