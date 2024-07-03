@@ -1,82 +1,88 @@
 [
   {
-    "key": {
-      "chain_id": 1,
-      "block_number": 6203471,
-      "address": "0x13CB6AE34A13a0977F4d7101eBc24B87Bb23F0d5"
-    },
-    "type": "AccountMemorizerKey"
-  },
-  {
-    "key": {
-      "chain_id": 1,
-      "block_number": 6203472,
-      "address": "0x13CB6AE34A13a0977F4d7101eBc24B87Bb23F0d5"
-    },
-    "type": "AccountMemorizerKey"
-  },
-  {
-    "key": {
-      "chain_id": 1,
-      "block_number": 6203473,
-      "address": "0x13CB6AE34A13a0977F4d7101eBc24B87Bb23F0d5"
-    },
-    "type": "AccountMemorizerKey"
-  },
-  {
-    "key": {
-      "chain_id": 1,
-      "block_number": 6203474,
-      "address": "0x13CB6AE34A13a0977F4d7101eBc24B87Bb23F0d5"
-    },
-    "type": "AccountMemorizerKey"
-  },
-  {
-    "key": {
-      "chain_id": 1,
-      "block_number": 6203475,
-      "address": "0x13CB6AE34A13a0977F4d7101eBc24B87Bb23F0d5"
-    },
-    "type": "AccountMemorizerKey"
-  },
-  {
-    "key": {
-      "chain_id": 1,
-      "block_number": 6203476,
-      "address": "0x13CB6AE34A13a0977F4d7101eBc24B87Bb23F0d5"
-    },
-    "type": "AccountMemorizerKey"
-  },
-  {
-    "key": {
-      "chain_id": 1,
-      "block_number": 6203477,
-      "address": "0x13CB6AE34A13a0977F4d7101eBc24B87Bb23F0d5"
-    },
-    "type": "AccountMemorizerKey"
-  },
-  {
-    "key": {
-      "chain_id": 1,
-      "block_number": 6203478,
-      "address": "0x13CB6AE34A13a0977F4d7101eBc24B87Bb23F0d5"
-    },
-    "type": "AccountMemorizerKey"
-  },
-  {
-    "key": {
-      "chain_id": 1,
-      "block_number": 6203479,
-      "address": "0x13CB6AE34A13a0977F4d7101eBc24B87Bb23F0d5"
-    },
-    "type": "AccountMemorizerKey"
-  },
-  {
-    "key": {
-      "chain_id": 1,
-      "block_number": 6203480,
-      "address": "0x13CB6AE34A13a0977F4d7101eBc24B87Bb23F0d5"
-    },
-    "type": "AccountMemorizerKey"
+    "fetch_keys": [
+      {
+        "key": {
+          "chain_id": 11155111,
+          "block_number": 6203471,
+          "address": "0x13CB6AE34A13a0977F4d7101eBc24B87Bb23F0d5"
+        },
+        "type": "AccountMemorizerKey"
+      },
+      {
+        "key": {
+          "chain_id": 11155111,
+          "block_number": 6203472,
+          "address": "0x13CB6AE34A13a0977F4d7101eBc24B87Bb23F0d5"
+        },
+        "type": "AccountMemorizerKey"
+      },
+      {
+        "key": {
+          "chain_id": 11155111,
+          "block_number": 6203473,
+          "address": "0x13CB6AE34A13a0977F4d7101eBc24B87Bb23F0d5"
+        },
+        "type": "AccountMemorizerKey"
+      },
+      {
+        "key": {
+          "chain_id": 11155111,
+          "block_number": 6203474,
+          "address": "0x13CB6AE34A13a0977F4d7101eBc24B87Bb23F0d5"
+        },
+        "type": "AccountMemorizerKey"
+      },
+      {
+        "key": {
+          "chain_id": 11155111,
+          "block_number": 6203475,
+          "address": "0x13CB6AE34A13a0977F4d7101eBc24B87Bb23F0d5"
+        },
+        "type": "AccountMemorizerKey"
+      },
+      {
+        "key": {
+          "chain_id": 11155111,
+          "block_number": 6203476,
+          "address": "0x13CB6AE34A13a0977F4d7101eBc24B87Bb23F0d5"
+        },
+        "type": "AccountMemorizerKey"
+      },
+      {
+        "key": {
+          "chain_id": 11155111,
+          "block_number": 6203477,
+          "address": "0x13CB6AE34A13a0977F4d7101eBc24B87Bb23F0d5"
+        },
+        "type": "AccountMemorizerKey"
+      },
+      {
+        "key": {
+          "chain_id": 11155111,
+          "block_number": 6203478,
+          "address": "0x13CB6AE34A13a0977F4d7101eBc24B87Bb23F0d5"
+        },
+        "type": "AccountMemorizerKey"
+      },
+      {
+        "key": {
+          "chain_id": 11155111,
+          "block_number": 6203479,
+          "address": "0x13CB6AE34A13a0977F4d7101eBc24B87Bb23F0d5"
+        },
+        "type": "AccountMemorizerKey"
+      },
+      {
+        "key": {
+          "chain_id": 11155111,
+          "block_number": 6203480,
+          "address": "0x13CB6AE34A13a0977F4d7101eBc24B87Bb23F0d5"
+        },
+        "type": "AccountMemorizerKey"
+      }
+    ],
+    "result": { "low": "0x46ae8c413fc16e0", "high": "0x0" },
+    "class_hash": "0x034d4ff54bc5c6cfee6719bfaa94ffa374071e8d656b74823681a955e9033dd9"
   }
 ]

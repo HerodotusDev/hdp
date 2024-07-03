@@ -79,6 +79,8 @@ impl DryRunner {
 
 #[cfg(test)]
 mod tests {
+    use starknet::macros::felt;
+
     use super::*;
 
     fn init_dry_runner() -> DryRunner {
@@ -92,7 +94,17 @@ mod tests {
 
         let path: &Path = Path::new("./fixtures/dry_run_output.json");
 
-        let fetch_keys = dry_runner.parse_run(path).unwrap();
-        assert_eq!(fetch_keys.len(), 10);
+        let modules = dry_runner.parse_run(path).unwrap();
+        assert_eq!(modules.len(), 1);
+        let module = &modules[0];
+        assert_eq!(module.fetch_keys.len(), 10);
+        assert_eq!(
+            module.result,
+            Uint256::from_strs("0x0", "0x46ae8c413fc16e0").unwrap()
+        );
+        assert_eq!(
+            module.class_hash,
+            felt!("0x034d4ff54bc5c6cfee6719bfaa94ffa374071e8d656b74823681a955e9033dd9")
+        )
     }
 }

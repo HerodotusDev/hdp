@@ -165,11 +165,6 @@ mod tests {
     async fn test_get_module() {
         let (module_registry, class_hash) = init();
         let casm_from_rpc = module_registry.get_module_class(class_hash).await.unwrap();
-        std::fs::write(
-            "contract.casm",
-            serde_json::to_string_pretty(&casm_from_rpc).unwrap(),
-        )
-        .unwrap();
 
         assert_eq!(casm_from_rpc, ACCOUNT_BALANCE_EXAMPLE_CONTRACT.clone());
     }
