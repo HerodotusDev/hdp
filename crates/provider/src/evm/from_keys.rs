@@ -70,13 +70,27 @@ impl EvmProvider {
 
         // fetch proofs using keys and construct result
         let (headers, mmr_meta) = self.get_headers_from_keys(target_keys_for_header).await?;
-        let mut accounts = self.get_accounts_from_keys(target_keys_for_account).await?;
-        let (accounts_from_storage_key, storages) =
-            self.get_storages_from_keys(target_keys_for_storage).await?;
-        let transactions = self.get_txs_from_keys(target_keys_for_tx).await?;
-        let transaction_receipts = self
-            .get_tx_receipts_from_keys(target_keys_for_tx_receipt)
-            .await?;
+        let mut accounts = if target_keys_for_account.is_empty() {
+            HashSet::new()
+        } else {
+            self.get_accounts_from_keys(target_keys_for_account).await?
+        };
+        let (accounts_from_storage_key, storages) = if target_keys_for_storage.is_empty() {
+            (HashSet::new(), HashSet::new())
+        } else {
+            self.get_storages_from_keys(target_keys_for_storage).await?
+        };
+        let transactions = if target_keys_for_tx.is_empty() {
+            vec![]
+        } else {
+            self.get_txs_from_keys(target_keys_for_tx).await?
+        };
+        let transaction_receipts = if target_keys_for_tx_receipt.is_empty() {
+            vec![]
+        } else {
+            self.get_tx_receipts_from_keys(target_keys_for_tx_receipt)
+                .await?
+        };
         accounts.extend(accounts_from_storage_key);
         let accounts_result: Vec<ProcessedAccount> = accounts.into_iter().collect();
         Ok(ProcessedBlockProofs {
