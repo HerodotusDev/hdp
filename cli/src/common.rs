@@ -5,7 +5,7 @@ use alloy::{
 use anyhow::Result;
 use hdp_preprocessor::{
     compile::{module::ModuleCompilerConfig, CompileConfig},
-    PreProcessor,
+    PreProcessor, PreProcessorError,
 };
 use hdp_primitives::{
     processed_types::cairo_format::AsCairoFormat,
@@ -13,11 +13,16 @@ use hdp_primitives::{
         datalake_compute::BatchedDatalakeCompute,
         traits::{BatchedDatalakeComputeCodecs, DatalakeComputeCodecs},
     },
-    task::datalake::{
-        block_sampled::BlockSampledDatalake, compute::Computation, envelope::DatalakeEnvelope,
-        transactions::TransactionsInBlockDatalake, DatalakeCompute,
+    task::{
+        datalake::{
+            block_sampled::BlockSampledDatalake, compute::Computation, envelope::DatalakeEnvelope,
+            transactions::TransactionsInBlockDatalake, DatalakeCompute,
+        },
+        module::Module,
+        TaskEnvelope,
     },
 };
+use hdp_provider::evm::provider::EvmProviderConfig;
 use std::{fs, path::PathBuf};
 use tracing_subscriber::FmtSubscriber;
 
@@ -92,7 +97,7 @@ pub async fn run() -> anyhow::Result<()> {
 
             // if allow_process is true, then run the processor
             if allow_process {
-                handle_run(
+                datalake_entry_run(
                     Some(encoded_computes_string),
                     Some(encoded_datalakes_string),
                     rpc_url,
@@ -121,7 +126,7 @@ pub async fn run() -> anyhow::Result<()> {
             cairo_input,
             pie_file,
         } => {
-            handle_run(
+            datalake_entry_run(
                 tasks,
                 datalakes,
                 rpc_url,
@@ -131,6 +136,26 @@ pub async fn run() -> anyhow::Result<()> {
                 pie_file,
             )
             .await?
+        }
+        HDPCliCommands::LocalRunModule {
+            class_hash,
+            module_inputs,
+            rpc_url,
+            chain_id,
+            output_file,
+            cairo_input,
+            pie_file,
+        } => {
+            module_entry_run(
+                class_hash,
+                module_inputs,
+                rpc_url,
+                chain_id,
+                output_file,
+                cairo_input,
+                pie_file,
+            )
+            .await?;
         }
     }
     let duration_run = start_run.elapsed();
@@ -150,7 +175,41 @@ fn init_cli() -> Result<HDPCli> {
     Ok(cli)
 }
 
-pub async fn handle_run(
+pub async fn module_entry_run(
+    class_hash: String,
+    module_inputs: Vec<String>,
+    rpc_url: Option<Url>,
+    chain_id: Option<ChainId>,
+    output_file: Option<PathBuf>,
+    cairo_input: Option<PathBuf>,
+    pie_file: Option<PathBuf>,
+) -> Result<()> {
+    let url: Url =
+        "https://starknet-sepolia.g.alchemy.com/v2/lINonYKIlp4NH9ZI6wvqJ4HeZj7T4Wm6".parse()?;
+
+    let program_path = "./build/compiled_cairo/contract_dry_run.json";
+    let module = Module::new_from_string(class_hash, module_inputs)?;
+
+    let tasks = vec![TaskEnvelope::Module(module)];
+    let module_config = ModuleCompilerConfig {
+        module_registry_rpc_url: url,
+        program_path: PathBuf::from(&program_path),
+    };
+
+    let provider_config = EvmProviderConfig {
+        rpc_url: rpc_url.unwrap(),
+        chain_id: chain_id.unwrap(),
+        max_requests: 100,
+    };
+    let compile_config = CompileConfig {
+        provider: provider_config,
+        module: module_config,
+    };
+    handle_running_tasks(compile_config, tasks, output_file, cairo_input, pie_file).await?;
+    Ok(())
+}
+
+pub async fn datalake_entry_run(
     tasks: Option<Bytes>,
     datalakes: Option<Bytes>,
     rpc_url: Option<Url>,
@@ -159,25 +218,45 @@ pub async fn handle_run(
     cairo_input: Option<PathBuf>,
     pie_file: Option<PathBuf>,
 ) -> Result<()> {
+    let config = Config::init(rpc_url, datalakes, tasks, chain_id).await;
+    // 1. decode the tasks
+    let tasks = BatchedDatalakeCompute::decode(&config.datalakes, &config.tasks)
+        .map_err(PreProcessorError::DecodeError)?;
+
+    // wrap into TaskEnvelope
+    // TODO: this is temporary, need to remove this
+    let tasks = tasks
+        .iter()
+        .map(|task| TaskEnvelope::DatalakeCompute(task.clone()))
+        .collect::<Vec<_>>();
+
     // TODO: module config is not used rn, hard coded url
     let url: Url = "http://localhost:3030".parse()?;
     let program_path = "./build/compiled_cairo/hdp.json";
-    let config = Config::init(rpc_url, datalakes, tasks, chain_id).await;
-
     let module_config = ModuleCompilerConfig {
         module_registry_rpc_url: url,
         program_path: PathBuf::from(&program_path),
     };
-
     let compile_config = CompileConfig {
         provider: config.evm_provider.clone(),
         module: module_config,
     };
+    handle_running_tasks(compile_config, tasks, output_file, cairo_input, pie_file).await?;
 
+    Ok(())
+}
+
+async fn handle_running_tasks(
+    compile_config: CompileConfig,
+    tasks: Vec<TaskEnvelope>,
+    output_file: Option<PathBuf>,
+    cairo_input: Option<PathBuf>,
+    pie_file: Option<PathBuf>,
+) -> Result<()> {
+    info!("Target Tasks: {:#?}", tasks);
+    let program_path = "./build/compiled_cairo/hdp.json";
     let preprocessor = PreProcessor::new_with_config(compile_config);
-    let result = preprocessor
-        .process_from_serialized(config.datalakes.clone(), config.tasks.clone())
-        .await?;
+    let result = preprocessor.process(tasks).await?;
 
     if cairo_input.is_none() {
         info!("Finished pre processing the data");

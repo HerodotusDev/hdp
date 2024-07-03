@@ -25,7 +25,7 @@ use inquire::{InquireError, Select};
 use std::{path::PathBuf, str::FromStr};
 use tracing::error;
 
-use crate::common::handle_run;
+use crate::common::datalake_entry_run;
 
 pub async fn run_interactive() -> anyhow::Result<()> {
     println!("Welcome to Herodotus Data Processor interactive CLI! 🛰️");
@@ -296,7 +296,7 @@ pub async fn run_interactive() -> anyhow::Result<()> {
             .prompt()?
             .into();
 
-        handle_run(
+        datalake_entry_run(
             Some(encoded_computes_bytes),
             Some(encoded_datalakes_bytes),
             rpc_url,

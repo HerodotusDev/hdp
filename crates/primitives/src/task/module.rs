@@ -5,7 +5,7 @@
 use alloy::primitives::{keccak256, Keccak256, B256};
 use serde::Serialize;
 use serde_with::serde_as;
-use starknet::core::serde::unsigned_field_element::UfeHex;
+use starknet::core::{serde::unsigned_field_element::UfeHex, types::FromStrError};
 use starknet_crypto::FieldElement;
 
 #[serde_as]
@@ -30,6 +30,15 @@ impl Module {
         }
         .expect("Invalid module tag");
         Self { class_hash, inputs }
+    }
+
+    pub fn new_from_string(class_hash: String, inputs: Vec<String>) -> Result<Self, FromStrError> {
+        let class_hash = FieldElement::from_hex_be(&class_hash)?;
+        let inputs = inputs
+            .iter()
+            .map(|x| FieldElement::from_hex_be(x))
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(Self { class_hash, inputs })
     }
 
     pub fn new(class_hash: FieldElement, inputs: Vec<FieldElement>) -> Self {

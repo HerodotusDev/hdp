@@ -9,7 +9,7 @@ pub mod module;
 
 /// [`TaskEnvelope`] is a structure that contains task itself
 /// This structure is used to provide the task to the pre-processor
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum TaskEnvelope {
     DatalakeCompute(DatalakeCompute),
     Module(Module),

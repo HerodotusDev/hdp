@@ -118,6 +118,39 @@ pub enum HDPCliCommands {
         #[arg(short, long, requires("cairo_input"))]
         pie_file: Option<PathBuf>,
     },
+
+    LocalRunModule {
+        /// Class hash of the module
+        #[arg(required = true)]
+        class_hash: String,
+        /// Inputs for the module
+        #[arg(required = true, use_value_delimiter = true)]
+        module_inputs: Vec<String>,
+        /// The RPC URL to fetch the data
+        #[arg(long)]
+        rpc_url: Option<Url>,
+        /// The chain id to fetch the data
+        #[arg(long)]
+        chain_id: Option<ChainId>,
+
+        /// Path to save output file after pre-process, this is the input file for processor
+        ///
+        /// This will trigger pre-processing step
+        #[arg(short, long)]
+        cairo_input: Option<PathBuf>,
+
+        /// Path to save output file after process
+        ///
+        /// This will trigger processing(=pie generation) step
+        #[arg(short, long, requires("cairo_input"))]
+        output_file: Option<PathBuf>,
+
+        /// Path to save pie file
+        ///
+        /// This will trigger processing(=pie generation) step
+        #[arg(short, long, requires("cairo_input"))]
+        pie_file: Option<PathBuf>,
+    },
 }
 
 #[derive(Subcommand, Clone, Debug, PartialEq, Eq)]
