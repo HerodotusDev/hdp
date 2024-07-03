@@ -139,6 +139,7 @@ pub async fn run() -> anyhow::Result<()> {
         }
         HDPCliCommands::LocalRunModule {
             class_hash,
+            local_class_path,
             module_inputs,
             rpc_url,
             chain_id,
@@ -148,6 +149,7 @@ pub async fn run() -> anyhow::Result<()> {
         } => {
             module_entry_run(
                 class_hash,
+                local_class_path,
                 module_inputs,
                 rpc_url,
                 chain_id,
@@ -175,8 +177,10 @@ fn init_cli() -> Result<HDPCli> {
     Ok(cli)
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn module_entry_run(
     class_hash: String,
+    local_class_path: Option<PathBuf>,
     module_inputs: Vec<String>,
     rpc_url: Option<Url>,
     chain_id: Option<ChainId>,
@@ -188,7 +192,7 @@ pub async fn module_entry_run(
         "https://starknet-sepolia.g.alchemy.com/v2/lINonYKIlp4NH9ZI6wvqJ4HeZj7T4Wm6".parse()?;
 
     let program_path = "./build/compiled_cairo/contract_dry_run.json";
-    let module = Module::new_from_string(class_hash, module_inputs)?;
+    let module = Module::new_from_string(class_hash, module_inputs, local_class_path)?;
 
     let tasks = vec![TaskEnvelope::Module(module)];
     let module_config = ModuleCompilerConfig {

@@ -2,6 +2,8 @@
 //! It contains the hash and the input.
 //! This is request interface for the preprocessor.
 
+use std::path::PathBuf;
+
 use alloy::primitives::{keccak256, Keccak256, B256};
 use serde::Serialize;
 use serde_with::serde_as;
@@ -15,6 +17,7 @@ pub struct Module {
     pub class_hash: FieldElement,
     #[serde_as(as = "Vec<UfeHex>")]
     pub inputs: Vec<FieldElement>,
+    pub local_class_path: Option<PathBuf>,
 }
 
 pub enum ModuleTag {
@@ -29,20 +32,40 @@ impl Module {
             ),
         }
         .expect("Invalid module tag");
-        Self { class_hash, inputs }
+        Self {
+            class_hash,
+            inputs,
+            local_class_path: None,
+        }
     }
 
-    pub fn new_from_string(class_hash: String, inputs: Vec<String>) -> Result<Self, FromStrError> {
+    pub fn new_from_string(
+        class_hash: String,
+        inputs: Vec<String>,
+        local_class_path: Option<PathBuf>,
+    ) -> Result<Self, FromStrError> {
         let class_hash = FieldElement::from_hex_be(&class_hash)?;
         let inputs = inputs
             .iter()
             .map(|x| FieldElement::from_hex_be(x))
             .collect::<Result<Vec<_>, _>>()?;
-        Ok(Self { class_hash, inputs })
+        Ok(Self {
+            class_hash,
+            inputs,
+            local_class_path,
+        })
     }
 
-    pub fn new(class_hash: FieldElement, inputs: Vec<FieldElement>) -> Self {
-        Self { class_hash, inputs }
+    pub fn new(
+        class_hash: FieldElement,
+        inputs: Vec<FieldElement>,
+        local_class_path: Option<PathBuf>,
+    ) -> Self {
+        Self {
+            class_hash,
+            inputs,
+            local_class_path,
+        }
     }
 
     pub fn get_class_hash(&self) -> FieldElement {

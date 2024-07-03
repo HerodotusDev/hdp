@@ -12,7 +12,7 @@ use starknet::{
     providers::{jsonrpc::HttpTransport, JsonRpcClient, Provider, Url},
 };
 use starknet_crypto::FieldElement;
-use std::sync::Arc;
+use std::{path::PathBuf, sync::Arc};
 use thiserror::Error;
 use tokio::task;
 use tracing::info;
@@ -61,9 +61,15 @@ impl ModuleRegistry {
                 let module_registry = Arc::clone(&module_registry);
                 task::spawn(async move {
                     let module_hash = module.class_hash;
-                    let module_class = module_registry.get_module_class(module_hash).await?;
+                    let module_class = if let Some(ref local_class_path) = module.local_class_path {
+                        module_registry
+                            .get_module_class_from_local_path(local_class_path)
+                            .await?
+                    } else {
+                        module_registry.get_module_class(module_hash).await?
+                    };
                     Ok(ExtendedModule {
-                        task: module,
+                        task: module.clone(),
                         module_class,
                     }) as Result<ExtendedModule, ModuleRegistryError>
                 })
@@ -81,6 +87,18 @@ impl ModuleRegistry {
         }
 
         Ok(collected_results)
+    }
+
+    pub async fn get_module_class_from_local_path(
+        &self,
+        local_class_path: &PathBuf,
+    ) -> Result<CasmContractClass, ModuleRegistryError> {
+        let casm = serde_json::from_str(&std::fs::read_to_string(local_class_path).unwrap())?;
+        info!(
+            "Contract class fetched successfully from local path: {:?}",
+            local_class_path
+        );
+        Ok(casm)
     }
 
     pub async fn get_module_class(
@@ -170,6 +188,17 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_get_module_class_from_local_path() {
+        let (module_registry, _) = init();
+        let _ = module_registry
+            .get_module_class_from_local_path(&PathBuf::from(
+                "../../cairo1_example_contract.compiled_contract_class.json",
+            ))
+            .await
+            .unwrap();
+    }
+
+    #[tokio::test]
     async fn test_flattened_sierra_to_compiled_class() {
         let (module_registry, class_hash) = init();
         let contract_class = module_registry
@@ -190,6 +219,7 @@ mod tests {
         let module = Module {
             class_hash,
             inputs: vec![],
+            local_class_path: None,
         };
         let arc_registry = Arc::new(module_registry);
         let extended_modules = arc_registry

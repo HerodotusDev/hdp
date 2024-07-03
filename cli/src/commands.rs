@@ -120,9 +120,12 @@ pub enum HDPCliCommands {
     },
 
     LocalRunModule {
-        /// Class hash of the module
+        /// Class hash of the module that deployed on the chain
         #[arg(required = true)]
         class_hash: String,
+        /// Local path to the module class
+        #[arg(long, group = "class_source")]
+        local_class_path: Option<PathBuf>,
         /// Inputs for the module
         #[arg(required = true, use_value_delimiter = true)]
         module_inputs: Vec<String>,
