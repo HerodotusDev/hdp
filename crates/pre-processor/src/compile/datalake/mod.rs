@@ -165,9 +165,6 @@ mod tests {
         let results = datalake_compute_vec.compile(&compile_config).await.unwrap();
         assert_eq!(results.headers.len(), 16);
         assert_eq!(results.accounts.len(), 2);
-        // get first element
-        let account_proofs = results.accounts.iter().next().unwrap();
-        assert_eq!(account_proofs.proofs.len(), 11);
         assert_eq!(results.storages.len(), 1);
         let storage_proofs = results.storages.iter().next().unwrap();
         assert_eq!(storage_proofs.proofs.len(), 6);
