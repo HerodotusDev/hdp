@@ -23,7 +23,7 @@ use tracing::info;
 
 use super::{Compilable, CompilationResults, CompileConfig, CompileError};
 
-pub type BatchedModule = Vec<Module>;
+pub type ModuleVec = Vec<Module>;
 
 pub struct ModuleCompilerConfig {
     // rpc url to fetch the module class from starknet
@@ -32,7 +32,7 @@ pub struct ModuleCompilerConfig {
     pub program_path: PathBuf,
 }
 
-impl Compilable for BatchedModule {
+impl Compilable for ModuleVec {
     async fn compile(
         &self,
         compile_config: &CompileConfig,

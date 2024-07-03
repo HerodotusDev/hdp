@@ -134,6 +134,7 @@ impl CompilationResults {
         }
     }
 
+    /// Extend the current compilation results with another compilation results
     pub fn extend(&mut self, other: CompilationResults) {
         self.headers.extend(other.headers);
         self.accounts.extend(other.accounts);
@@ -141,6 +142,7 @@ impl CompilationResults {
         self.transactions.extend(other.transactions);
         self.transaction_receipts.extend(other.transaction_receipts);
         self.commit_casm_maps.extend(other.commit_casm_maps);
+        self.commit_results_maps.extend(other.commit_results_maps);
 
         // overwite default to another value
         if self.mmr_meta == MMRMeta::default() {
@@ -148,11 +150,11 @@ impl CompilationResults {
         } else if other.mmr_meta != MMRMeta::default() {
             // if not default, check if the value is the same
             if self.mmr_meta != other.mmr_meta {
-                panic!("MMR meta data is not the same");
+                panic!("MMR meta data is not the same in one batch");
             }
         }
 
-        self.commit_results_maps.extend(other.commit_results_maps);
+        // if any of the task is not pre-processable, the whole batch is not pre-processable
         if !(self.pre_processable && other.pre_processable) {
             self.pre_processable = false;
         }
