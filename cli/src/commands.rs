@@ -88,6 +88,7 @@ pub enum HDPCliCommands {
         datalake: Bytes,
     },
     /// Run from encoded compute and datalake. Usefull for request batch tasks.
+    #[command(arg_required_else_help = true)]
     Run {
         /// Batched computes bytes
         #[arg(value_parser = parse_bytes)]
@@ -119,22 +120,23 @@ pub enum HDPCliCommands {
         pie_file: Option<PathBuf>,
     },
 
-    /// Local run module with either class hash or local class path
-    // #[command(arg_required_else_help = true)]
-    // #[clap(group(
-    //      ArgGroup::new("class_source")
-    //          .required(true)
-    //          .args(&["class_hash", "local_class_path"]),
-    //  ))]
+    /// Local run module with either class hash deployed on starknet or local class path
+    #[command(arg_required_else_help = true)]
     LocalRunModule {
-        /// Inputs for the module
+        /// Input field elements for the module contract.
+        /// The input field elements should be separated by comma.
         #[arg(required = true, use_value_delimiter = true)]
         module_inputs: Vec<String>,
 
-        /// Class hash of the module that deployed on the chain
+        /// Class hash of the module that deployed on starknet
+        /// This will trigger fetching the class from the starknet
+        /// (Note: either class_hash or local_class_path should be provided)
         #[arg(long, group = "class_source")]
         class_hash: Option<String>,
-        /// Local path to the module class
+
+        /// Local path of the contract class file
+        /// Make sure to have structure match with [CasmContractClass](https://github.com/starkware-libs/cairo/blob/53f7a0d26d5c8a99a8ad6ba07207a762678f2931/crates/cairo-lang-starknet-classes/src/casm_contract_class.rs)
+        /// (Note: either class_hash or local_class_path should be provided)
         #[arg(long, group = "class_source")]
         local_class_path: Option<PathBuf>,
 

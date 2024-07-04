@@ -22,7 +22,6 @@ use hdp_primitives::{
         TaskEnvelope,
     },
 };
-use hdp_provider::evm::provider::EvmProviderConfig;
 use std::{fs, path::PathBuf};
 use tracing_subscriber::FmtSubscriber;
 
@@ -35,6 +34,7 @@ use crate::{
     commands::{DataLakeCommands, HDPCli, HDPCliCommands},
     config::Config,
     interactive,
+    module_config::ModuleConfig,
 };
 
 pub async fn run() -> anyhow::Result<()> {
@@ -188,6 +188,7 @@ pub async fn module_entry_run(
     cairo_input: Option<PathBuf>,
     pie_file: Option<PathBuf>,
 ) -> Result<()> {
+    let config = ModuleConfig::init(rpc_url, chain_id).await;
     let url: Url =
         "https://starknet-sepolia.g.alchemy.com/v2/lINonYKIlp4NH9ZI6wvqJ4HeZj7T4Wm6".parse()?;
 
@@ -202,11 +203,7 @@ pub async fn module_entry_run(
         program_path: PathBuf::from(&program_path),
     };
 
-    let provider_config = EvmProviderConfig {
-        rpc_url: rpc_url.unwrap(),
-        chain_id: chain_id.unwrap(),
-        max_requests: 100,
-    };
+    let provider_config = config.evm_provider.clone();
     let compile_config = CompileConfig {
         provider: provider_config,
         module: module_config,

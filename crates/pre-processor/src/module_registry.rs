@@ -111,7 +111,11 @@ impl ModuleRegistry {
         local_class_path: &PathBuf,
     ) -> Result<(CasmContractClass, FieldElement), ModuleRegistryError> {
         let casm: CasmContractClass =
-            serde_json::from_str(&std::fs::read_to_string(local_class_path).unwrap())?;
+            serde_json::from_str(&std::fs::read_to_string(local_class_path).map_err(|_| {
+                ModuleRegistryError::ClassSourceError(
+                    "Local class path is not a valid JSON file".to_string(),
+                )
+            })?)?;
         let class_hash = casm.compiled_class_hash();
         let converted_hash = FieldElement::from_bytes_be(&class_hash.to_be_bytes()).unwrap();
         info!(
