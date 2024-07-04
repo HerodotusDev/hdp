@@ -48,23 +48,23 @@ pub enum HDPCliCommands {
         /// The chain id to fetch the datalake
         chain_id: Option<ChainId>,
 
-        /// Path to save output file after pre-process, this is the input file for processor
+        /// Path to save output file after pre-processing.
         ///
         /// This will trigger pre-processing step
         #[arg(short, long)]
-        cairo_input: Option<PathBuf>,
+        pre_processor_output: Option<PathBuf>,
 
         /// Path to save output file after process
         ///
         /// This will trigger processing(=pie generation) step
-        #[arg(short, long, requires("cairo_input"))]
+        #[arg(short, long, requires("pre_processor_output"))]
         output_file: Option<PathBuf>,
 
         /// Path to save pie file
         ///
         /// This will trigger processing(=pie generation) step
-        #[arg(short, long, requires("cairo_input"))]
-        pie_file: Option<PathBuf>,
+        #[arg(short, long, requires("pre_processor_output"))]
+        cairo_pie_file: Option<PathBuf>,
     },
     /// Decode batch computes and datalakes
     ///
@@ -101,23 +101,23 @@ pub enum HDPCliCommands {
         /// The chain id to fetch the data
         chain_id: Option<ChainId>,
 
-        /// Path to save output file after pre-process, this is the input file for processor
+        /// Path to save output file after pre-processing.
         ///
         /// This will trigger pre-processing step
         #[arg(short, long)]
-        cairo_input: Option<PathBuf>,
+        pre_processor_output: Option<PathBuf>,
 
         /// Path to save output file after process
         ///
         /// This will trigger processing(=pie generation) step
-        #[arg(short, long, requires("cairo_input"))]
+        #[arg(short, long, requires("pre_processor_output"))]
         output_file: Option<PathBuf>,
 
         /// Path to save pie file
         ///
         /// This will trigger processing(=pie generation) step
-        #[arg(short, long, requires("cairo_input"))]
-        pie_file: Option<PathBuf>,
+        #[arg(short, long, requires("pre_processor_output"))]
+        cairo_pie_file: Option<PathBuf>,
     },
 
     /// Local run module with either class hash deployed on starknet or local class path
@@ -164,23 +164,23 @@ pub enum HDPCliCommands {
         #[arg(long, requires("class_hash"))]
         module_registry_rpc_url: Option<Url>,
 
-        /// Path to save output file after pre-process, this is the input file for processor
+        /// Path to save output file after pre-processing.
         ///
         /// This will trigger pre-processing step
         #[arg(short, long)]
-        cairo_input: Option<PathBuf>,
+        pre_processor_output: Option<PathBuf>,
 
         /// Path to save output file after process
         ///
         /// This will trigger processing(=pie generation) step
-        #[arg(short, long, requires("cairo_input"))]
+        #[arg(short, long, requires("pre_processor_output"))]
         output_file: Option<PathBuf>,
 
         /// Path to save pie file
         ///
         /// This will trigger processing(=pie generation) step
-        #[arg(short, long, requires("cairo_input"))]
-        pie_file: Option<PathBuf>,
+        #[arg(short, long, requires("pre_processor_output"))]
+        cairo_pie_file: Option<PathBuf>,
     },
 }
 
