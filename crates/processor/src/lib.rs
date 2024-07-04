@@ -11,7 +11,7 @@ use hdp_primitives::processed_types::cairo_format::AsCairoFormat;
 use hdp_primitives::processed_types::query::ProcessedFullInput;
 use serde::Serialize;
 use std::path::PathBuf;
-use tracing::info;
+use tracing::{debug, info};
 
 pub struct Processor {
     program_path: PathBuf,
@@ -121,10 +121,9 @@ impl Processor {
         let mut results_leaves = Vec::new();
         let mut results_commitments = Vec::new();
         for (task_commitment, task_result) in task_commitments.iter().zip(task_results.iter()) {
-            dbg!(
+            debug!(
                 "building result merkle tree | task_commitment: {:?}, task_result: {:?}",
-                task_commitment,
-                task_result
+                task_commitment, task_result
             );
             let result_commitment =
                 self._raw_result_to_result_commitment(task_commitment, task_result);

@@ -15,7 +15,7 @@ use hdp_primitives::solidity_types::traits::{DatalakeCodecs, DatalakeComputeCode
 use hdp_primitives::task::TaskEnvelope;
 
 use thiserror::Error;
-use tracing::info;
+use tracing::{debug, info};
 
 pub mod compile;
 pub mod module_registry;
@@ -180,14 +180,13 @@ impl PreProcessor {
                         Some(result) => result,
                         None => Err(PreProcessorError::TaskCommitmentNotFound)?,
                     };
-                dbg!(
+                debug!(
                     "building result merkle tree | task_commitment: {:?}, compiled_result: {:?}",
-                    task_commitment,
-                    compiled_result
+                    task_commitment, compiled_result
                 );
                 let result_commitment =
                     self._raw_result_to_result_commitment(&task_commitment, *compiled_result);
-                dbg!("result_commitment: {:?}", result_commitment);
+                debug!("result_commitment: {:?}", result_commitment);
                 results_leaves.push(DynSolValue::FixedBytes(result_commitment, 32));
             }
             tasks_leaves.push(DynSolValue::FixedBytes(task_commitment, 32));

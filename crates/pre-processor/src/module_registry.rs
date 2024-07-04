@@ -69,60 +69,55 @@ impl ModuleRegistry {
         local_class_path: Option<PathBuf>,
         module_inputs: Vec<FieldElement>,
     ) -> Result<ExtendedModule, ModuleRegistryError> {
-        if class_hash.is_none() && local_class_path.is_none() {
-            Err(ModuleRegistryError::ClassSourceError(
-                "One of class_hash or local_class_path must be provided".to_string(),
-            ))
-        } else if class_hash.is_some() && local_class_path.is_some() {
+        if class_hash.is_some() && local_class_path.is_some() {
             return Err(ModuleRegistryError::ClassSourceError(
                 "Only one of class_hash or local_class_path must be provided".to_string(),
             ));
-        } else if class_hash.is_some() {
-            let class_hash = class_hash.unwrap();
-            let module = Module {
-                class_hash,
-                inputs: module_inputs,
-                local_class_path: None,
-            };
-            let extended_module = self.get_module_class(class_hash).await?;
-            Ok(ExtendedModule {
-                task: module,
-                module_class: extended_module,
-            })
-        } else {
-            let local_class_path = local_class_path.unwrap();
-            let (module_class, class_hash) = self
-                .get_module_class_from_local_path(&local_class_path)
-                .await?;
-            let module = Module {
-                class_hash,
-                inputs: module_inputs,
-                local_class_path: Some(local_class_path),
-            };
-            Ok(ExtendedModule {
-                task: module,
-                module_class,
-            })
         }
+
+        let casm = if let Some(ref local_class_path) = local_class_path {
+            self.get_module_class_from_local_path(local_class_path)
+                .await?
+        } else if let Some(class_hash) = class_hash {
+            self.get_module_class(class_hash).await?
+        } else {
+            return Err(ModuleRegistryError::ClassSourceError(
+                "One of class_hash or local_class_path must be provided".to_string(),
+            ));
+        };
+
+        let class_hash = casm.compiled_class_hash();
+        let converted_hash = FieldElement::from_bytes_be(&class_hash.to_be_bytes()).unwrap();
+        info!("Program Hash: {:?}", converted_hash);
+
+        let module = Module {
+            class_hash: converted_hash,
+            inputs: module_inputs,
+            local_class_path,
+        };
+
+        Ok(ExtendedModule {
+            task: module,
+            module_class: casm,
+        })
     }
 
     async fn get_module_class_from_local_path(
         &self,
         local_class_path: &PathBuf,
-    ) -> Result<(CasmContractClass, FieldElement), ModuleRegistryError> {
+    ) -> Result<CasmContractClass, ModuleRegistryError> {
         let casm: CasmContractClass =
             serde_json::from_str(&std::fs::read_to_string(local_class_path).map_err(|_| {
                 ModuleRegistryError::ClassSourceError(
                     "Local class path is not a valid JSON file".to_string(),
                 )
             })?)?;
-        let class_hash = casm.compiled_class_hash();
-        let converted_hash = FieldElement::from_bytes_be(&class_hash.to_be_bytes()).unwrap();
+
         info!(
-            "Contract class fetched successfully from local path: {:?}, class hash: {}",
-            local_class_path, converted_hash
+            "Contract class fetched successfully from local path: {:?}",
+            local_class_path
         );
-        Ok((casm, converted_hash))
+        Ok(casm)
     }
 
     async fn get_module_class(
@@ -130,7 +125,7 @@ impl ModuleRegistry {
         class_hash: FieldElement,
     ) -> Result<CasmContractClass, ModuleRegistryError> {
         info!(
-            "Fetching contract class from module registry... Class hash: {}",
+            "Fetching contract class from module registry... Contract Class Hash: {}",
             class_hash
         );
         let contract_class = self
