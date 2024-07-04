@@ -13,6 +13,7 @@ use hdp_primitives::processed_types::cairo_format;
 use hdp_primitives::task::ExtendedModule;
 use hdp_provider::{evm::provider::EvmProvider, key::FetchKeyEnvelope};
 use starknet::providers::Url;
+use starknet_crypto::FieldElement;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use tracing::info;
@@ -47,6 +48,13 @@ impl Compilable for ModuleVec {
         // 2. run the dry run and get the fetch points
         info!("2. Running dry-run... ");
         let keys: DryRunResult = cairo_dry_run(program_path, input_string)?;
+
+        println!("class hash from keys: {:#?}", keys[0].class_hash);
+        println!("class hash from task: {:#?}", self[0].task.class_hash);
+        println!(
+            "class hash from task: {:#?}",
+            FieldElement::from_bytes_be(&self[0].module_class.compiled_class_hash().to_be_bytes())
+        );
 
         if keys.len() != 1 {
             // TODO: temporary solution. Need to handle multiple module in future

@@ -59,7 +59,8 @@ impl DryRunner {
         }
         let input_file = NamedTempFile::new()?;
         let input_file_path = input_file.path();
-        fs::write(input_file_path, input_string).expect("Failed to write input file");
+        fs::write(input_file_path, input_string.clone()).expect("Failed to write input file");
+        fs::write("dry_run_input.json", input_string).expect("Failed to write input file");
         let _ = self._run(input_file_path)?;
 
         // parse output to return dry run result
@@ -72,7 +73,7 @@ impl DryRunner {
     fn parse_run(&self, input_file_path: &Path) -> Result<DryRunResult, CairoRunnerError> {
         let output = fs::read_to_string(input_file_path)?;
         let fetch_keys: Vec<DryRunnedModule> = serde_json::from_str(&output)?;
-        fs::remove_file(input_file_path)?;
+        // fs::remove_file(input_file_path)?;
         Ok(fetch_keys)
     }
 }
@@ -84,8 +85,22 @@ mod tests {
     use super::*;
 
     fn init_dry_runner() -> DryRunner {
-        let program_path = PathBuf::from("tests/programs/cairo_runner_test.cairo");
+        let program_path = PathBuf::from("../../build/compiled_cairo/contract_dry_run.json");
         DryRunner::new(program_path)
+    }
+
+    #[test]
+    fn test_dry_run() {
+        let dry_runner = init_dry_runner();
+        let input = fs::read_to_string("./fixtures/dry_run_input.json").unwrap();
+        let result = dry_runner.run(input).unwrap();
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].fetch_keys.len(), 3);
+        assert_eq!(result[0].result, Uint256::from_strs("0x0", "0x0").unwrap());
+        assert_eq!(
+            result[0].class_hash,
+            felt!("0xc8580f74b6e6e04d8073602ad0c0d55538b56bf8307fefebb6b65b1bbf2a27")
+        );
     }
 
     #[test]
@@ -97,14 +112,11 @@ mod tests {
         let modules = dry_runner.parse_run(path).unwrap();
         assert_eq!(modules.len(), 1);
         let module = &modules[0];
-        assert_eq!(module.fetch_keys.len(), 10);
-        assert_eq!(
-            module.result,
-            Uint256::from_strs("0x0", "0x46ae8c413fc16e0").unwrap()
-        );
+        assert_eq!(module.fetch_keys.len(), 3);
+        assert_eq!(module.result, Uint256::from_strs("0x0", "0x0").unwrap());
         assert_eq!(
             module.class_hash,
-            felt!("0x034d4ff54bc5c6cfee6719bfaa94ffa374071e8d656b74823681a955e9033dd9")
+            felt!("0xc8580f74b6e6e04d8073602ad0c0d55538b56bf8307fefebb6b65b1bbf2a27")
         )
     }
 }

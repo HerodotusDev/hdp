@@ -6,7 +6,7 @@ pub const DRY_RUN_OUTPUT_FILE: &str = "dry_run_output.json";
 lazy_static! {
     pub static ref ACCOUNT_BALANCE_EXAMPLE_CONTRACT: CasmContractClass =
         read_compiled_class_artifact(include_str!(
-            "../contracts/compiled/account_balance_example.json"
+            "../../contracts/account_balance_example.compiled_contract_class.json"
         ));
 }
 

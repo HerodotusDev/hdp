@@ -1,26 +1,139 @@
 {
   "prime": "0x800000000000011000000000000000000000000000000000000000000000001",
-  "compiler_version": "2.6.3",
+  "compiler_version": "2.6.4",
   "bytecode": [
     "0xa0680017fff8000",
     "0x7",
     "0x482680017ffa8000",
-    "0x100000000000000000000000000000000",
+    "0xfffffffffffffffffffffffffffff6f0",
     "0x400280007ff97fff",
     "0x10780017fff7fff",
-    "0x73",
+    "0x11d",
     "0x4825800180007ffa",
-    "0x0",
+    "0x910",
     "0x400280007ff97fff",
     "0x480a7ffc7fff8000",
     "0x480a7ffd7fff8000",
     "0x1104800180018000",
-    "0x7b",
+    "0x125",
     "0x482680017ff98000",
     "0x1",
     "0x20680017fff7ffa",
-    "0x5a",
+    "0x104",
     "0x48307ff880007ff9",
+    "0x20680017fff7fff",
+    "0x4",
+    "0x10780017fff7fff",
+    "0xa",
+    "0x482480017ff78000",
+    "0x1",
+    "0x48127ff77fff8000",
+    "0x480680017fff8000",
+    "0x0",
+    "0x48127ff47fff8000",
+    "0x10780017fff7fff",
+    "0x8",
+    "0x48127ff77fff8000",
+    "0x48127ff77fff8000",
+    "0x480680017fff8000",
+    "0x1",
+    "0x480680017fff8000",
+    "0x0",
+    "0x20680017fff7ffe",
+    "0xde",
+    "0x480080007fff8000",
+    "0xa0680017fff8000",
+    "0x12",
+    "0x4824800180007ffe",
+    "0x100000000",
+    "0x4844800180008002",
+    "0x8000000000000110000000000000000",
+    "0x4830800080017ffe",
+    "0x480080007ff57fff",
+    "0x482480017ffe8000",
+    "0xefffffffffffffde00000000ffffffff",
+    "0x480080017ff37fff",
+    "0x400080027ff27ffb",
+    "0x402480017fff7ffb",
+    "0xffffffffffffffffffffffffffffffff",
+    "0x20680017fff7fff",
+    "0xc9",
+    "0x402780017fff7fff",
+    "0x1",
+    "0x400080007ff87ffe",
+    "0x482480017ffe8000",
+    "0xffffffffffffffffffffffff00000000",
+    "0x400080017ff77fff",
+    "0x482480017ff78000",
+    "0x2",
+    "0x48307ff880007ff9",
+    "0x20680017fff7fff",
+    "0x4",
+    "0x10780017fff7fff",
+    "0xa",
+    "0x482480017ff78000",
+    "0x1",
+    "0x48127ff77fff8000",
+    "0x480680017fff8000",
+    "0x0",
+    "0x48127ff47fff8000",
+    "0x10780017fff7fff",
+    "0x8",
+    "0x48127ff77fff8000",
+    "0x48127ff77fff8000",
+    "0x480680017fff8000",
+    "0x1",
+    "0x480680017fff8000",
+    "0x0",
+    "0x20680017fff7ffe",
+    "0x9b",
+    "0x480080007fff8000",
+    "0xa0680017fff8000",
+    "0x12",
+    "0x4824800180007ffe",
+    "0x100000000",
+    "0x4844800180008002",
+    "0x8000000000000110000000000000000",
+    "0x4830800080017ffe",
+    "0x480080007ff57fff",
+    "0x482480017ffe8000",
+    "0xefffffffffffffde00000000ffffffff",
+    "0x480080017ff37fff",
+    "0x400080027ff27ffb",
+    "0x402480017fff7ffb",
+    "0xffffffffffffffffffffffffffffffff",
+    "0x20680017fff7fff",
+    "0x86",
+    "0x402780017fff7fff",
+    "0x1",
+    "0x400080007ff87ffe",
+    "0x482480017ffe8000",
+    "0xffffffffffffffffffffffff00000000",
+    "0x400080017ff77fff",
+    "0x482480017ff78000",
+    "0x2",
+    "0x48307ff880007ff9",
+    "0x20680017fff7fff",
+    "0x4",
+    "0x10780017fff7fff",
+    "0xa",
+    "0x482480017ff78000",
+    "0x1",
+    "0x48127ff77fff8000",
+    "0x480680017fff8000",
+    "0x0",
+    "0x480080007ff48000",
+    "0x10780017fff7fff",
+    "0x8",
+    "0x48127ff77fff8000",
+    "0x48127ff77fff8000",
+    "0x480680017fff8000",
+    "0x1",
+    "0x480680017fff8000",
+    "0x0",
+    "0x20680017fff7ffe",
+    "0x5b",
+    "0x48307ffc80007ffd",
     "0x20680017fff7fff",
     "0x4",
     "0x10780017fff7fff",
@@ -30,8 +143,8 @@
     "0x480680017fff8000",
     "0x496e70757420746f6f206c6f6e6720666f7220617267756d656e7473",
     "0x400080007ffe7fff",
-    "0x48127ffc7fff8000",
-    "0x48127fd17fff8000",
+    "0x48127ff77fff8000",
+    "0x48127fba7fff8000",
     "0x480a7ffb7fff8000",
     "0x480680017fff8000",
     "0x1",
@@ -40,36 +153,37 @@
     "0x1",
     "0x208b7fff7fff7ffe",
     "0x1104800180018000",
-    "0x2ec",
+    "0x305",
     "0x482480017fff8000",
-    "0x2eb",
+    "0x304",
     "0x480080007fff8000",
     "0xa0680017fff8000",
     "0x9",
-    "0x4824800180007fcf",
-    "0x32a",
+    "0x4824800180007fb8",
+    "0xa0a",
     "0x482480017fff8000",
     "0x100000000000000000000000000000000",
-    "0x400080007ff77fff",
+    "0x400080007ff27fff",
     "0x10780017fff7fff",
-    "0x2a",
-    "0x4824800180007fcf",
-    "0x32a",
-    "0x400080007ff87fff",
-    "0x482480017ff88000",
+    "0x2b",
+    "0x4824800180007fb8",
+    "0xa0a",
+    "0x400080007ff37fff",
+    "0x482480017ff38000",
     "0x1",
     "0x48127ffe7fff8000",
     "0x480a7ffb7fff8000",
+    "0x48127fe47fff8000",
+    "0x48127fec7fff8000",
     "0x480680017fff8000",
     "0x0",
     "0x480680017fff8000",
     "0x0",
-    "0x480680017fff8000",
-    "0x0",
-    "0x48127ff07fff8000",
-    "0x48127ff07fff8000",
+    "0x48127fd87fff8000",
+    "0x48127fd87fff8000",
+    "0x48127fef7fff8000",
     "0x1104800180018000",
-    "0xfa",
+    "0x132",
     "0x20680017fff7ffc",
     "0xf",
     "0x40780017fff7fff",
@@ -98,9 +212,65 @@
     "0x480680017fff8000",
     "0x4f7574206f6620676173",
     "0x400080007ffe7fff",
-    "0x482480017ff58000",
+    "0x482480017ff08000",
     "0x1",
-    "0x48127fca7fff8000",
+    "0x48127fb37fff8000",
+    "0x480a7ffb7fff8000",
+    "0x480680017fff8000",
+    "0x1",
+    "0x48127ffa7fff8000",
+    "0x482480017ff98000",
+    "0x1",
+    "0x208b7fff7fff7ffe",
+    "0x40780017fff7fff",
+    "0x1",
+    "0x480680017fff8000",
+    "0x4661696c656420746f20646573657269616c697a6520706172616d202334",
+    "0x400080007ffe7fff",
+    "0x48127ff87fff8000",
+    "0x48127fbb7fff8000",
+    "0x480a7ffb7fff8000",
+    "0x480680017fff8000",
+    "0x1",
+    "0x48127ffa7fff8000",
+    "0x482480017ff98000",
+    "0x1",
+    "0x208b7fff7fff7ffe",
+    "0x482480017ff28000",
+    "0x3",
+    "0x10780017fff7fff",
+    "0x5",
+    "0x40780017fff7fff",
+    "0x8",
+    "0x48127ff27fff8000",
+    "0x40780017fff7fff",
+    "0x1",
+    "0x480680017fff8000",
+    "0x4661696c656420746f20646573657269616c697a6520706172616d202333",
+    "0x400080007ffe7fff",
+    "0x48127ffd7fff8000",
+    "0x48127fbb7fff8000",
+    "0x480a7ffb7fff8000",
+    "0x480680017fff8000",
+    "0x1",
+    "0x48127ffa7fff8000",
+    "0x482480017ff98000",
+    "0x1",
+    "0x208b7fff7fff7ffe",
+    "0x482480017ff28000",
+    "0x3",
+    "0x10780017fff7fff",
+    "0x5",
+    "0x40780017fff7fff",
+    "0x8",
+    "0x48127ff27fff8000",
+    "0x40780017fff7fff",
+    "0x1",
+    "0x480680017fff8000",
+    "0x4661696c656420746f20646573657269616c697a6520706172616d202332",
+    "0x400080007ffe7fff",
+    "0x48127ffd7fff8000",
+    "0x48127fc47fff8000",
     "0x480a7ffb7fff8000",
     "0x480680017fff8000",
     "0x1",
@@ -320,65 +490,48 @@
     "0x208b7fff7fff7ffe",
     "0xa0680017fff8000",
     "0x7",
-    "0x482680017ff78000",
-    "0xffffffffffffffffffffffffffff9fc0",
-    "0x400280007ff67fff",
+    "0x482680017ff58000",
+    "0xffffffffffffffffffffffffffffa196",
+    "0x400280007ff47fff",
     "0x10780017fff7fff",
-    "0xd2",
-    "0x4825800180007ff7",
-    "0x6040",
-    "0x400280007ff67fff",
-    "0x480680017fff8000",
-    "0xa",
-    "0x48317fff80017ff9",
+    "0xb2",
+    "0x4825800180007ff5",
+    "0x5e6a",
+    "0x400280007ff47fff",
+    "0x48297ff880017ff7",
     "0xa0680017fff7fff",
     "0x7",
     "0x482480017fff8000",
     "0x100000000000000000000000000000000",
-    "0x400280017ff67fff",
+    "0x400280017ff47fff",
     "0x10780017fff7fff",
     "0xd",
-    "0x400280017ff67fff",
-    "0x482680017ff68000",
+    "0x400280017ff47fff",
+    "0x482680017ff48000",
     "0x2",
-    "0x48127ffb7fff8000",
-    "0x480a7ff87fff8000",
+    "0x48127ffc7fff8000",
+    "0x480a7ff67fff8000",
     "0x480680017fff8000",
     "0x0",
-    "0x480a7ffa7fff8000",
-    "0x480a7ffb7fff8000",
     "0x480a7ff97fff8000",
+    "0x480a7ffa7fff8000",
+    "0x480a7ff77fff8000",
     "0x208b7fff7fff7ffe",
-    "0x480680017fff8000",
-    "0x5ea84f",
-    "0xa0680017fff8000",
-    "0x8",
-    "0x48287ff97ffe8000",
-    "0x4824800180007fff",
-    "0x100000000",
-    "0x400280027ff67fff",
-    "0x10780017fff7fff",
-    "0x9f",
-    "0x48287ff97ffe8001",
-    "0x4824800180007fff",
-    "0xffffffffffffffffffffffff00000000",
-    "0x400280027ff67ffe",
-    "0x482680017ff68000",
-    "0x3",
-    "0x48127ff67fff8000",
-    "0x480a7ff87fff8000",
+    "0x482680017ff48000",
+    "0x2",
+    "0x48127ffb7fff8000",
+    "0x480a7ff67fff8000",
+    "0x480a7ffb7fff8000",
     "0x480a7ffc7fff8000",
-    "0x480a7ffd7fff8000",
     "0x480680017fff8000",
     "0xaa36a7",
-    "0x48127ff97fff8000",
-    "0x480680017fff8000",
-    "0x13cb6ae34a13a0977f4d7101ebc24b87bb23f0d5",
+    "0x480a7ff77fff8000",
+    "0x480a7ffd7fff8000",
     "0x1104800180018000",
-    "0xb0",
+    "0xa1",
     "0x20680017fff7ffd",
-    "0x82",
-    "0x48327fff7ffb8001",
+    "0x84",
+    "0x48327fff7ffa8001",
     "0xa0680017fff7fff",
     "0x7",
     "0x4824800180007fff",
@@ -401,7 +554,7 @@
     "0x48127ffe7fff8000",
     "0x480680017fff8000",
     "0x1",
-    "0x48327ff87ffa8001",
+    "0x48327ff87ff98001",
     "0xa0680017fff7fff",
     "0x7",
     "0x4824800180007fff",
@@ -446,18 +599,18 @@
     "0x480680017fff8000",
     "0x1",
     "0x20680017fff7fff",
-    "0x2d",
+    "0x2f",
     "0x480680017fff8000",
     "0x1",
     "0xa0680017fff8000",
     "0x8",
-    "0x48327ffe7ff98000",
+    "0x48327ffe7ff78000",
     "0x4824800180007fff",
     "0x100000000",
     "0x400080007ff87fff",
     "0x10780017fff7fff",
-    "0x12",
-    "0x48327ffe7ff98001",
+    "0x14",
+    "0x48327ffe7ff78001",
     "0x4824800180007fff",
     "0xffffffffffffffffffffffff00000000",
     "0x400080007ff87ffe",
@@ -466,12 +619,14 @@
     "0x48127fe57fff8000",
     "0x48127fe57fff8000",
     "0x48127ffc7fff8000",
-    "0x48127ff57fff8000",
-    "0x48127ff57fff8000",
+    "0x480a7ff87fff8000",
+    "0x48127ff47fff8000",
+    "0x48127ff47fff8000",
+    "0x480a7ffb7fff8000",
     "0x480a7ffc7fff8000",
     "0x480a7ffd7fff8000",
     "0x1104800180018000",
-    "0x800000000000010ffffffffffffffffffffffffffffffffffffffffffffff69",
+    "0x800000000000010ffffffffffffffffffffffffffffffffffffffffffffff78",
     "0x208b7fff7fff7ffe",
     "0x40780017fff7fff",
     "0x1",
@@ -519,29 +674,12 @@
     "0x40780017fff7fff",
     "0x1",
     "0x480680017fff8000",
-    "0x7533325f616464204f766572666c6f77",
-    "0x400080007ffe7fff",
-    "0x482680017ff68000",
-    "0x3",
-    "0x48127ff47fff8000",
-    "0x480a7ff87fff8000",
-    "0x480680017fff8000",
-    "0x1",
-    "0x480680017fff8000",
-    "0x0",
-    "0x48127ff97fff8000",
-    "0x482480017ff88000",
-    "0x1",
-    "0x208b7fff7fff7ffe",
-    "0x40780017fff7fff",
-    "0x1",
-    "0x480680017fff8000",
     "0x4f7574206f6620676173",
     "0x400080007ffe7fff",
-    "0x482680017ff68000",
+    "0x482680017ff48000",
     "0x1",
-    "0x480a7ff77fff8000",
-    "0x480a7ff87fff8000",
+    "0x480a7ff57fff8000",
+    "0x480a7ff67fff8000",
     "0x480680017fff8000",
     "0x1",
     "0x480680017fff8000",
@@ -788,880 +926,430 @@
     "0x1",
     "0x208b7fff7fff7ffe"
   ],
-  "bytecode_segment_lengths": [
-    135,
-    181,
-    232,
-    237
-  ],
+  "bytecode_segment_lengths": [305, 181, 200, 237],
   "hints": [
     [
       0,
       [
         {
           "TestLessThanOrEqual": {
-            "lhs": {
-              "Immediate": "0x0"
-            },
-            "rhs": {
-              "Deref": {
-                "register": "FP",
-                "offset": -6
-              }
-            },
-            "dst": {
-              "register": "AP",
-              "offset": 0
-            }
+            "lhs": { "Immediate": "0x910" },
+            "rhs": { "Deref": { "register": "FP", "offset": -6 } },
+            "dst": { "register": "AP", "offset": 0 }
           }
         }
       ]
     ],
     [
-      23,
-      [
-        {
-          "AllocSegment": {
-            "dst": {
-              "register": "AP",
-              "offset": 0
-            }
-          }
-        }
-      ]
-    ],
-    [
-      42,
-      [
-        {
-          "TestLessThanOrEqual": {
-            "lhs": {
-              "Immediate": "0x32a"
-            },
-            "rhs": {
-              "Deref": {
-                "register": "AP",
-                "offset": -48
-              }
-            },
-            "dst": {
-              "register": "AP",
-              "offset": 0
-            }
-          }
-        }
-      ]
-    ],
-    [
-      70,
-      [
-        {
-          "AllocSegment": {
-            "dst": {
-              "register": "AP",
-              "offset": 0
-            }
-          }
-        }
-      ]
-    ],
-    [
-      91,
-      [
-        {
-          "AllocSegment": {
-            "dst": {
-              "register": "AP",
-              "offset": 0
-            }
-          }
-        }
-      ]
-    ],
-    [
-      106,
-      [
-        {
-          "AllocSegment": {
-            "dst": {
-              "register": "AP",
-              "offset": 0
-            }
-          }
-        }
-      ]
-    ],
-    [
-      120,
-      [
-        {
-          "AllocSegment": {
-            "dst": {
-              "register": "AP",
-              "offset": 0
-            }
-          }
-        }
-      ]
-    ],
-    [
-      316,
-      [
-        {
-          "TestLessThanOrEqual": {
-            "lhs": {
-              "Immediate": "0x6040"
-            },
-            "rhs": {
-              "Deref": {
-                "register": "FP",
-                "offset": -9
-              }
-            },
-            "dst": {
-              "register": "AP",
-              "offset": 0
-            }
-          }
-        }
-      ]
-    ],
-    [
-      329,
-      [
-        {
-          "TestLessThan": {
-            "lhs": {
-              "Deref": {
-                "register": "AP",
-                "offset": 0
-              }
-            },
-            "rhs": {
-              "Immediate": "0x100000000"
-            },
-            "dst": {
-              "register": "AP",
-              "offset": -1
-            }
-          }
-        }
-      ]
-    ],
-    [
-      349,
+      40,
       [
         {
           "TestLessThan": {
             "lhs": {
               "BinOp": {
                 "op": "Add",
-                "a": {
-                  "register": "AP",
-                  "offset": -1
-                },
-                "b": {
-                  "Deref": {
-                    "register": "FP",
-                    "offset": -7
-                  }
-                }
+                "a": { "register": "AP", "offset": -1 },
+                "b": { "Immediate": "0x0" }
               }
             },
-            "rhs": {
-              "Immediate": "0x100000000"
-            },
-            "dst": {
-              "register": "AP",
-              "offset": 0
-            }
+            "rhs": { "Immediate": "0x100000000" },
+            "dst": { "register": "AP", "offset": 0 }
           }
         }
       ]
     ],
     [
-      377,
+      44,
       [
         {
-          "TestLessThan": {
-            "lhs": {
-              "Deref": {
-                "register": "AP",
-                "offset": 0
-              }
-            },
-            "rhs": {
-              "Immediate": "0x100000000000000000000000000000000"
-            },
-            "dst": {
-              "register": "AP",
-              "offset": -1
-            }
+          "LinearSplit": {
+            "value": { "Deref": { "register": "AP", "offset": -1 } },
+            "scalar": { "Immediate": "0x8000000000000110000000000000000" },
+            "max_x": { "Immediate": "0xfffffffffffffffffffffffffffffffe" },
+            "x": { "register": "AP", "offset": 0 },
+            "y": { "register": "AP", "offset": 1 }
           }
         }
       ]
     ],
     [
-      400,
-      [
-        {
-          "TestLessThan": {
-            "lhs": {
-              "Deref": {
-                "register": "AP",
-                "offset": 0
-              }
-            },
-            "rhs": {
-              "Immediate": "0x100000000000000000000000000000000"
-            },
-            "dst": {
-              "register": "AP",
-              "offset": -1
-            }
-          }
-        }
-      ]
-    ],
-    [
-      420,
-      [
-        {
-          "TestLessThan": {
-            "lhs": {
-              "Deref": {
-                "register": "AP",
-                "offset": 0
-              }
-            },
-            "rhs": {
-              "Immediate": "0x100000000000000000000000000000000"
-            },
-            "dst": {
-              "register": "AP",
-              "offset": -1
-            }
-          }
-        }
-      ]
-    ],
-    [
-      447,
+      86,
       [
         {
           "TestLessThan": {
             "lhs": {
               "BinOp": {
                 "op": "Add",
-                "a": {
-                  "register": "FP",
-                  "offset": -7
-                },
-                "b": {
-                  "Deref": {
-                    "register": "AP",
-                    "offset": -1
-                  }
-                }
+                "a": { "register": "AP", "offset": -1 },
+                "b": { "Immediate": "0x0" }
               }
             },
-            "rhs": {
-              "Immediate": "0x100000000"
-            },
-            "dst": {
-              "register": "AP",
-              "offset": 0
-            }
+            "rhs": { "Immediate": "0x100000000" },
+            "dst": { "register": "AP", "offset": 0 }
           }
         }
       ]
     ],
     [
-      471,
+      90,
       [
         {
-          "AllocSegment": {
-            "dst": {
-              "register": "AP",
-              "offset": 0
-            }
+          "LinearSplit": {
+            "value": { "Deref": { "register": "AP", "offset": -1 } },
+            "scalar": { "Immediate": "0x8000000000000110000000000000000" },
+            "max_x": { "Immediate": "0xfffffffffffffffffffffffffffffffe" },
+            "x": { "register": "AP", "offset": 0 },
+            "y": { "register": "AP", "offset": 1 }
           }
         }
       ]
     ],
+    [136, [{ "AllocSegment": { "dst": { "register": "AP", "offset": 0 } } }]],
     [
-      488,
+      155,
       [
         {
-          "AllocSegment": {
-            "dst": {
-              "register": "AP",
-              "offset": 0
-            }
+          "TestLessThanOrEqual": {
+            "lhs": { "Immediate": "0xa0a" },
+            "rhs": { "Deref": { "register": "AP", "offset": -71 } },
+            "dst": { "register": "AP", "offset": 0 }
           }
         }
       ]
     ],
+    [184, [{ "AllocSegment": { "dst": { "register": "AP", "offset": 0 } } }]],
+    [205, [{ "AllocSegment": { "dst": { "register": "AP", "offset": 0 } } }]],
+    [220, [{ "AllocSegment": { "dst": { "register": "AP", "offset": 0 } } }]],
+    [241, [{ "AllocSegment": { "dst": { "register": "AP", "offset": 0 } } }]],
+    [262, [{ "AllocSegment": { "dst": { "register": "AP", "offset": 0 } } }]],
+    [276, [{ "AllocSegment": { "dst": { "register": "AP", "offset": 0 } } }]],
+    [290, [{ "AllocSegment": { "dst": { "register": "AP", "offset": 0 } } }]],
     [
-      514,
+      486,
       [
         {
-          "AllocSegment": {
-            "dst": {
-              "register": "AP",
-              "offset": 0
-            }
+          "TestLessThanOrEqual": {
+            "lhs": { "Immediate": "0x5e6a" },
+            "rhs": { "Deref": { "register": "FP", "offset": -11 } },
+            "dst": { "register": "AP", "offset": 0 }
           }
         }
       ]
     ],
     [
-      531,
+      497,
       [
         {
-          "AllocSegment": {
-            "dst": {
-              "register": "AP",
-              "offset": 0
-            }
+          "TestLessThan": {
+            "lhs": { "Deref": { "register": "AP", "offset": 0 } },
+            "rhs": { "Immediate": "0x100000000" },
+            "dst": { "register": "AP", "offset": -1 }
           }
         }
       ]
     ],
     [
-      550,
+      530,
+      [
+        {
+          "TestLessThan": {
+            "lhs": { "Deref": { "register": "AP", "offset": 0 } },
+            "rhs": { "Immediate": "0x100000000000000000000000000000000" },
+            "dst": { "register": "AP", "offset": -1 }
+          }
+        }
+      ]
+    ],
+    [
+      553,
+      [
+        {
+          "TestLessThan": {
+            "lhs": { "Deref": { "register": "AP", "offset": 0 } },
+            "rhs": { "Immediate": "0x100000000000000000000000000000000" },
+            "dst": { "register": "AP", "offset": -1 }
+          }
+        }
+      ]
+    ],
+    [
+      573,
+      [
+        {
+          "TestLessThan": {
+            "lhs": { "Deref": { "register": "AP", "offset": 0 } },
+            "rhs": { "Immediate": "0x100000000000000000000000000000000" },
+            "dst": { "register": "AP", "offset": -1 }
+          }
+        }
+      ]
+    ],
+    [
+      600,
       [
         {
           "TestLessThan": {
             "lhs": {
-              "Deref": {
-                "register": "AP",
-                "offset": -1
+              "BinOp": {
+                "op": "Add",
+                "a": { "register": "FP", "offset": -9 },
+                "b": { "Deref": { "register": "AP", "offset": -1 } }
               }
             },
+            "rhs": { "Immediate": "0x100000000" },
+            "dst": { "register": "AP", "offset": 0 }
+          }
+        }
+      ]
+    ],
+    [626, [{ "AllocSegment": { "dst": { "register": "AP", "offset": 0 } } }]],
+    [643, [{ "AllocSegment": { "dst": { "register": "AP", "offset": 0 } } }]],
+    [669, [{ "AllocSegment": { "dst": { "register": "AP", "offset": 0 } } }]],
+    [
+      688,
+      [
+        {
+          "TestLessThan": {
+            "lhs": { "Deref": { "register": "AP", "offset": -1 } },
             "rhs": {
               "Immediate": "0x800000000000000000000000000000000000000000000000000000000000000"
             },
-            "dst": {
-              "register": "AP",
-              "offset": 4
-            }
+            "dst": { "register": "AP", "offset": 4 }
           }
         }
       ]
     ],
     [
-      554,
+      692,
       [
         {
           "LinearSplit": {
-            "value": {
-              "Deref": {
-                "register": "AP",
-                "offset": 3
-              }
-            },
-            "scalar": {
-              "Immediate": "0x110000000000000000"
-            },
-            "max_x": {
-              "Immediate": "0xffffffffffffffffffffffffffffffff"
-            },
-            "x": {
-              "register": "AP",
-              "offset": -2
-            },
-            "y": {
-              "register": "AP",
-              "offset": -1
-            }
+            "value": { "Deref": { "register": "AP", "offset": 3 } },
+            "scalar": { "Immediate": "0x110000000000000000" },
+            "max_x": { "Immediate": "0xffffffffffffffffffffffffffffffff" },
+            "x": { "register": "AP", "offset": -2 },
+            "y": { "register": "AP", "offset": -1 }
           }
         }
       ]
     ],
     [
-      564,
+      702,
       [
         {
           "LinearSplit": {
-            "value": {
-              "Deref": {
-                "register": "AP",
-                "offset": -2
-              }
-            },
-            "scalar": {
-              "Immediate": "0x8000000000000000000000000000000"
-            },
-            "max_x": {
-              "Immediate": "0xffffffffffffffffffffffffffffffff"
-            },
-            "x": {
-              "register": "AP",
-              "offset": -1
-            },
-            "y": {
-              "register": "AP",
-              "offset": 0
-            }
+            "value": { "Deref": { "register": "AP", "offset": -2 } },
+            "scalar": { "Immediate": "0x8000000000000000000000000000000" },
+            "max_x": { "Immediate": "0xffffffffffffffffffffffffffffffff" },
+            "x": { "register": "AP", "offset": -1 },
+            "y": { "register": "AP", "offset": 0 }
           }
         }
       ]
     ],
+    [710, [{ "AllocSegment": { "dst": { "register": "AP", "offset": 0 } } }]],
     [
-      572,
-      [
-        {
-          "AllocSegment": {
-            "dst": {
-              "register": "AP",
-              "offset": 0
-            }
-          }
-        }
-      ]
-    ],
-    [
-      594,
+      732,
       [
         {
           "SystemCall": {
-            "system": {
-              "Deref": {
-                "register": "FP",
-                "offset": -8
-              }
-            }
+            "system": { "Deref": { "register": "FP", "offset": -8 } }
           }
         }
       ]
     ],
     [
-      607,
+      745,
       [
         {
           "TestLessThan": {
-            "lhs": {
-              "Deref": {
-                "register": "AP",
-                "offset": -6
-              }
-            },
-            "rhs": {
-              "Deref": {
-                "register": "AP",
-                "offset": -1
-              }
-            },
-            "dst": {
-              "register": "AP",
-              "offset": 0
-            }
+            "lhs": { "Deref": { "register": "AP", "offset": -6 } },
+            "rhs": { "Deref": { "register": "AP", "offset": -1 } },
+            "dst": { "register": "AP", "offset": 0 }
           }
         }
       ]
     ],
     [
-      619,
+      757,
       [
         {
           "TestLessThan": {
-            "lhs": {
-              "Deref": {
-                "register": "AP",
-                "offset": -1
-              }
-            },
-            "rhs": {
-              "Immediate": "0x100000000000000000000000000000000"
-            },
-            "dst": {
-              "register": "AP",
-              "offset": 0
-            }
+            "lhs": { "Deref": { "register": "AP", "offset": -1 } },
+            "rhs": { "Immediate": "0x100000000000000000000000000000000" },
+            "dst": { "register": "AP", "offset": 0 }
           }
         }
       ]
     ],
     [
-      621,
+      759,
       [
         {
           "DivMod": {
-            "lhs": {
-              "Deref": {
-                "register": "AP",
-                "offset": -2
-              }
-            },
-            "rhs": {
-              "Immediate": "0x100000000000000000000000000000000"
-            },
-            "quotient": {
-              "register": "AP",
-              "offset": 3
-            },
-            "remainder": {
-              "register": "AP",
-              "offset": 4
-            }
+            "lhs": { "Deref": { "register": "AP", "offset": -2 } },
+            "rhs": { "Immediate": "0x100000000000000000000000000000000" },
+            "quotient": { "register": "AP", "offset": 3 },
+            "remainder": { "register": "AP", "offset": 4 }
           }
         }
       ]
     ],
     [
-      645,
+      783,
       [
         {
           "TestLessThan": {
-            "lhs": {
-              "Deref": {
-                "register": "AP",
-                "offset": -2
-              }
-            },
-            "rhs": {
-              "Deref": {
-                "register": "AP",
-                "offset": -1
-              }
-            },
-            "dst": {
-              "register": "AP",
-              "offset": 0
-            }
+            "lhs": { "Deref": { "register": "AP", "offset": -2 } },
+            "rhs": { "Deref": { "register": "AP", "offset": -1 } },
+            "dst": { "register": "AP", "offset": 0 }
           }
         }
       ]
     ],
     [
-      657,
+      795,
       [
         {
           "TestLessThan": {
-            "lhs": {
-              "Deref": {
-                "register": "AP",
-                "offset": -1
-              }
-            },
-            "rhs": {
-              "Immediate": "0x100000000000000000000000000000000"
-            },
-            "dst": {
-              "register": "AP",
-              "offset": 0
-            }
+            "lhs": { "Deref": { "register": "AP", "offset": -1 } },
+            "rhs": { "Immediate": "0x100000000000000000000000000000000" },
+            "dst": { "register": "AP", "offset": 0 }
           }
         }
       ]
     ],
     [
-      659,
+      797,
       [
         {
           "DivMod": {
-            "lhs": {
-              "Deref": {
-                "register": "AP",
-                "offset": -2
-              }
-            },
-            "rhs": {
-              "Immediate": "0x100000000000000000000000000000000"
-            },
-            "quotient": {
-              "register": "AP",
-              "offset": 3
-            },
-            "remainder": {
-              "register": "AP",
-              "offset": 4
-            }
+            "lhs": { "Deref": { "register": "AP", "offset": -2 } },
+            "rhs": { "Immediate": "0x100000000000000000000000000000000" },
+            "quotient": { "register": "AP", "offset": 3 },
+            "remainder": { "register": "AP", "offset": 4 }
           }
         }
       ]
     ],
-    [
-      691,
-      [
-        {
-          "AllocSegment": {
-            "dst": {
-              "register": "AP",
-              "offset": 0
-            }
-          }
-        }
-      ]
-    ],
-    [
-      708,
-      [
-        {
-          "AllocSegment": {
-            "dst": {
-              "register": "AP",
-              "offset": 0
-            }
-          }
-        }
-      ]
-    ],
-    [
-      725,
-      [
-        {
-          "AllocSegment": {
-            "dst": {
-              "register": "AP",
-              "offset": 0
-            }
-          }
-        }
-      ]
-    ],
-    [
-      742,
-      [
-        {
-          "AllocSegment": {
-            "dst": {
-              "register": "AP",
-              "offset": 0
-            }
-          }
-        }
-      ]
-    ],
-    [
-      770,
-      [
-        {
-          "AllocSegment": {
-            "dst": {
-              "register": "AP",
-              "offset": 0
-            }
-          }
-        }
-      ]
-    ]
+    [829, [{ "AllocSegment": { "dst": { "register": "AP", "offset": 0 } } }]],
+    [846, [{ "AllocSegment": { "dst": { "register": "AP", "offset": 0 } } }]],
+    [863, [{ "AllocSegment": { "dst": { "register": "AP", "offset": 0 } } }]],
+    [880, [{ "AllocSegment": { "dst": { "register": "AP", "offset": 0 } } }]],
+    [908, [{ "AllocSegment": { "dst": { "register": "AP", "offset": 0 } } }]]
   ],
   "pythonic_hints": [
+    [0, ["memory[ap + 0] = 2320 <= memory[fp + -6]"]],
+    [40, ["memory[ap + 0] = (memory[ap + -1] + 0) % PRIME < 4294967296"]],
     [
-      0,
+      44,
       [
-        "memory[ap + 0] = 0 <= memory[fp + -6]"
+        "\n(value, scalar) = (memory[ap + -1], 10633823966279327296825105735305134080)\nx = min(value // scalar, 340282366920938463463374607431768211454)\ny = value - x * scalar\nmemory[ap + 0] = x\nmemory[ap + 1] = y\n"
       ]
     ],
+    [86, ["memory[ap + 0] = (memory[ap + -1] + 0) % PRIME < 4294967296"]],
     [
-      23,
+      90,
       [
-        "memory[ap + 0] = segments.add()"
+        "\n(value, scalar) = (memory[ap + -1], 10633823966279327296825105735305134080)\nx = min(value // scalar, 340282366920938463463374607431768211454)\ny = value - x * scalar\nmemory[ap + 0] = x\nmemory[ap + 1] = y\n"
       ]
     ],
+    [136, ["memory[ap + 0] = segments.add()"]],
+    [155, ["memory[ap + 0] = 2570 <= memory[ap + -71]"]],
+    [184, ["memory[ap + 0] = segments.add()"]],
+    [205, ["memory[ap + 0] = segments.add()"]],
+    [220, ["memory[ap + 0] = segments.add()"]],
+    [241, ["memory[ap + 0] = segments.add()"]],
+    [262, ["memory[ap + 0] = segments.add()"]],
+    [276, ["memory[ap + 0] = segments.add()"]],
+    [290, ["memory[ap + 0] = segments.add()"]],
+    [486, ["memory[ap + 0] = 24170 <= memory[fp + -11]"]],
+    [497, ["memory[ap + -1] = memory[ap + 0] < 4294967296"]],
     [
-      42,
-      [
-        "memory[ap + 0] = 810 <= memory[ap + -48]"
-      ]
-    ],
-    [
-      70,
-      [
-        "memory[ap + 0] = segments.add()"
-      ]
-    ],
-    [
-      91,
-      [
-        "memory[ap + 0] = segments.add()"
-      ]
-    ],
-    [
-      106,
-      [
-        "memory[ap + 0] = segments.add()"
-      ]
-    ],
-    [
-      120,
-      [
-        "memory[ap + 0] = segments.add()"
-      ]
-    ],
-    [
-      316,
-      [
-        "memory[ap + 0] = 24640 <= memory[fp + -9]"
-      ]
-    ],
-    [
-      329,
-      [
-        "memory[ap + -1] = memory[ap + 0] < 4294967296"
-      ]
-    ],
-    [
-      349,
-      [
-        "memory[ap + 0] = (memory[ap + -1] + memory[fp + -7]) % PRIME < 4294967296"
-      ]
-    ],
-    [
-      377,
+      530,
       [
         "memory[ap + -1] = memory[ap + 0] < 340282366920938463463374607431768211456"
       ]
     ],
     [
-      400,
+      553,
       [
         "memory[ap + -1] = memory[ap + 0] < 340282366920938463463374607431768211456"
       ]
     ],
     [
-      420,
+      573,
       [
         "memory[ap + -1] = memory[ap + 0] < 340282366920938463463374607431768211456"
       ]
     ],
     [
-      447,
+      600,
       [
-        "memory[ap + 0] = (memory[fp + -7] + memory[ap + -1]) % PRIME < 4294967296"
+        "memory[ap + 0] = (memory[fp + -9] + memory[ap + -1]) % PRIME < 4294967296"
       ]
     ],
+    [626, ["memory[ap + 0] = segments.add()"]],
+    [643, ["memory[ap + 0] = segments.add()"]],
+    [669, ["memory[ap + 0] = segments.add()"]],
     [
-      471,
-      [
-        "memory[ap + 0] = segments.add()"
-      ]
-    ],
-    [
-      488,
-      [
-        "memory[ap + 0] = segments.add()"
-      ]
-    ],
-    [
-      514,
-      [
-        "memory[ap + 0] = segments.add()"
-      ]
-    ],
-    [
-      531,
-      [
-        "memory[ap + 0] = segments.add()"
-      ]
-    ],
-    [
-      550,
+      688,
       [
         "memory[ap + 4] = memory[ap + -1] < 3618502788666131106986593281521497120414687020801267626233049500247285301248"
       ]
     ],
     [
-      554,
+      692,
       [
         "\n(value, scalar) = (memory[ap + 3], 313594649253062377472)\nx = min(value // scalar, 340282366920938463463374607431768211455)\ny = value - x * scalar\nmemory[ap + -2] = x\nmemory[ap + -1] = y\n"
       ]
     ],
     [
-      564,
+      702,
       [
         "\n(value, scalar) = (memory[ap + -2], 10633823966279326983230456482242756608)\nx = min(value // scalar, 340282366920938463463374607431768211455)\ny = value - x * scalar\nmemory[ap + -1] = x\nmemory[ap + 0] = y\n"
       ]
     ],
+    [710, ["memory[ap + 0] = segments.add()"]],
+    [732, ["syscall_handler.syscall(syscall_ptr=memory[fp + -8])"]],
+    [745, ["memory[ap + 0] = memory[ap + -6] < memory[ap + -1]"]],
     [
-      572,
-      [
-        "memory[ap + 0] = segments.add()"
-      ]
-    ],
-    [
-      594,
-      [
-        "syscall_handler.syscall(syscall_ptr=memory[fp + -8])"
-      ]
-    ],
-    [
-      607,
-      [
-        "memory[ap + 0] = memory[ap + -6] < memory[ap + -1]"
-      ]
-    ],
-    [
-      619,
+      757,
       [
         "memory[ap + 0] = memory[ap + -1] < 340282366920938463463374607431768211456"
       ]
     ],
     [
-      621,
+      759,
       [
         "(memory[ap + 3], memory[ap + 4]) = divmod(memory[ap + -2], 340282366920938463463374607431768211456)"
       ]
     ],
+    [783, ["memory[ap + 0] = memory[ap + -2] < memory[ap + -1]"]],
     [
-      645,
-      [
-        "memory[ap + 0] = memory[ap + -2] < memory[ap + -1]"
-      ]
-    ],
-    [
-      657,
+      795,
       [
         "memory[ap + 0] = memory[ap + -1] < 340282366920938463463374607431768211456"
       ]
     ],
     [
-      659,
+      797,
       [
         "(memory[ap + 3], memory[ap + 4]) = divmod(memory[ap + -2], 340282366920938463463374607431768211456)"
       ]
     ],
-    [
-      691,
-      [
-        "memory[ap + 0] = segments.add()"
-      ]
-    ],
-    [
-      708,
-      [
-        "memory[ap + 0] = segments.add()"
-      ]
-    ],
-    [
-      725,
-      [
-        "memory[ap + 0] = segments.add()"
-      ]
-    ],
-    [
-      742,
-      [
-        "memory[ap + 0] = segments.add()"
-      ]
-    ],
-    [
-      770,
-      [
-        "memory[ap + 0] = segments.add()"
-      ]
-    ]
+    [829, ["memory[ap + 0] = segments.add()"]],
+    [846, ["memory[ap + 0] = segments.add()"]],
+    [863, ["memory[ap + 0] = segments.add()"]],
+    [880, ["memory[ap + 0] = segments.add()"]],
+    [908, ["memory[ap + 0] = segments.add()"]]
   ],
   "entry_points_by_type": {
     "EXTERNAL": [
       {
         "selector": "0xe2054f8a912367e38a22ce773328ff8aabf8082c4120bad9ef085e1dbf29a7",
         "offset": 0,
-        "builtins": [
-          "range_check"
-        ]
+        "builtins": ["range_check"]
       }
     ],
     "L1_HANDLER": [],

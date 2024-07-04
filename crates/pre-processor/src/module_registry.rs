@@ -212,7 +212,7 @@ mod tests {
         let (module_registry, _) = init();
         let _ = module_registry
             .get_module_class_from_local_path(&PathBuf::from(
-                "../../cairo1_example_contract.compiled_contract_class.json",
+                "../contracts/account_balance_example.compiled_contract_class.json",
             ))
             .await
             .unwrap();
