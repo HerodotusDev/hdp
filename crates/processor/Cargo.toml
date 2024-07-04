@@ -18,3 +18,4 @@ hdp-primitives = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 hdp-cairo-runner = { workspace = true }
+tracing = { workspace = true }

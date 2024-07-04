@@ -161,8 +161,7 @@ impl PreProcessor {
             proofs,
             combined_tasks,
         );
-        // TODO: from compiler result, generate batch for tree and final result that pass through cairo-runner
-        info!("Preprocessor completed successfully");
+        info!("1️⃣ Preprocessor completed successfully");
         Ok(processed_result)
     }
 
@@ -181,8 +180,14 @@ impl PreProcessor {
                         Some(result) => result,
                         None => Err(PreProcessorError::TaskCommitmentNotFound)?,
                     };
+                dbg!(
+                    "building result merkle tree | task_commitment: {:?}, compiled_result: {:?}",
+                    task_commitment,
+                    compiled_result
+                );
                 let result_commitment =
                     self._raw_result_to_result_commitment(&task_commitment, *compiled_result);
+                dbg!("result_commitment: {:?}", result_commitment);
                 results_leaves.push(DynSolValue::FixedBytes(result_commitment, 32));
             }
             tasks_leaves.push(DynSolValue::FixedBytes(task_commitment, 32));
