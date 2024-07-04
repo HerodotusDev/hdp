@@ -6,6 +6,7 @@ use alloy::dyn_abi::DynSolValue;
 use alloy::primitives::{Bytes, Keccak256, B256, U256};
 use alloy_merkle_tree::standard_binary_tree::StandardMerkleTree;
 use compile::{Compilable, CompilationResults, CompileConfig, CompileError};
+use hdp_primitives::constant::CAIRO_RUN_OUTPUT_FILE;
 use hdp_primitives::processed_types::block_proofs::ProcessedBlockProofs;
 use hdp_primitives::processed_types::datalake_compute::ProcessedDatalakeCompute;
 use hdp_primitives::processed_types::module::ProcessedModule;
@@ -156,12 +157,13 @@ impl PreProcessor {
             transaction_receipts: Vec::from_iter(compiled_results.transaction_receipts),
         };
         let processed_result = ProcessedFullInput::new(
+            CAIRO_RUN_OUTPUT_FILE.into(),
             results_merkle_tree.map(|tree| tree.root()),
             task_merkle_root,
             proofs,
             combined_tasks,
         );
-        info!("1️⃣ Preprocessor completed successfully");
+        info!("1️⃣  Preprocessor completed successfully");
         Ok(processed_result)
     }
 

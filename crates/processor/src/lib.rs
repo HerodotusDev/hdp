@@ -78,7 +78,7 @@ impl Processor {
         let input_string = serde_json::to_string_pretty(&requset.as_cairo_format())
             .expect("Failed to serialize module class");
         let result = cairo_run(self.program_path.clone(), input_string, pie_path)?;
-
+        let cairo_run_output = result.cairo_run_output;
         let task_commitments: Vec<B256> = requset
             .tasks
             .iter()
@@ -91,8 +91,8 @@ impl Processor {
             .collect();
         let task_root = requset.tasks_root;
 
-        let (results_tree, result_commitments) =
-            self.build_result_merkle_tree(task_commitments.clone(), result.task_results.clone())?;
+        let (results_tree, result_commitments) = self
+            .build_result_merkle_tree(task_commitments.clone(), cairo_run_output.results.clone())?;
         let results_inclusion_proofs: Vec<_> = result_commitments
             .iter()
             .map(|rc| results_tree.get_proof(&DynSolValue::FixedBytes(*rc, 32)))
@@ -100,7 +100,11 @@ impl Processor {
         let result_root = results_tree.root();
         let mmr = requset.proofs.mmr_meta.clone();
         let processor_result = ProcessorResult::new(
-            result.task_results.iter().map(|x| B256::from(*x)).collect(),
+            cairo_run_output
+                .results
+                .iter()
+                .map(|x| B256::from(*x))
+                .collect(),
             task_commitments,
             task_inclusion_proofs,
             results_inclusion_proofs,
@@ -109,7 +113,7 @@ impl Processor {
             mmr.id,
             mmr.size,
         );
-        info!("2️⃣ Processor completed successfully");
+        info!("2️⃣  Processor completed successfully");
         Ok(processor_result)
     }
 
