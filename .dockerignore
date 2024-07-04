@@ -30,3 +30,4 @@ tools/
 hdp-cairo/
 build/
 *.pie
+*.json

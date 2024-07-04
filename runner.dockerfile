@@ -1,4 +1,4 @@
-FROM dataprocessor/hdp-cairo:v0.0.4
+FROM dataprocessor/hdp-cairo:v0.0.6
 
 # Set shell to bash and define working directory
 SHELL ["/bin/bash", "-ci"]
