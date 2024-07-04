@@ -141,6 +141,7 @@ pub async fn run() -> anyhow::Result<()> {
             class_hash,
             local_class_path,
             module_inputs,
+            module_registry_rpc_url,
             rpc_url,
             chain_id,
             output_file,
@@ -151,6 +152,7 @@ pub async fn run() -> anyhow::Result<()> {
                 class_hash,
                 local_class_path,
                 module_inputs,
+                module_registry_rpc_url,
                 rpc_url,
                 chain_id,
                 output_file,
@@ -182,24 +184,22 @@ pub async fn module_entry_run(
     class_hash: Option<String>,
     local_class_path: Option<PathBuf>,
     module_inputs: Vec<String>,
+    module_registry_rpc_url: Option<Url>,
     rpc_url: Option<Url>,
     chain_id: Option<ChainId>,
     output_file: Option<PathBuf>,
     cairo_input: Option<PathBuf>,
     pie_file: Option<PathBuf>,
 ) -> Result<()> {
-    let config = ModuleConfig::init(rpc_url, chain_id).await;
-    let url: Url =
-        "https://starknet-sepolia.g.alchemy.com/v2/lINonYKIlp4NH9ZI6wvqJ4HeZj7T4Wm6".parse()?;
-
+    let config = ModuleConfig::init(rpc_url, chain_id, module_registry_rpc_url).await;
     let program_path = "./build/compiled_cairo/contract_dry_run.json";
-    let module_registry = ModuleRegistry::new(url.clone());
+    let module_registry = ModuleRegistry::new(config.module_registry_rpc_url.clone());
     let module = module_registry
         .get_extended_module_from_class_source_string(class_hash, local_class_path, module_inputs)
         .await?;
     let tasks = vec![TaskEnvelope::Module(module)];
     let module_config = ModuleCompilerConfig {
-        module_registry_rpc_url: url,
+        module_registry_rpc_url: config.module_registry_rpc_url.clone(),
         program_path: PathBuf::from(&program_path),
     };
 
