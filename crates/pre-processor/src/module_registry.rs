@@ -88,7 +88,7 @@ impl ModuleRegistry {
 
         let class_hash = casm.compiled_class_hash();
         let converted_hash = FieldElement::from_bytes_be(&class_hash.to_be_bytes()).unwrap();
-        info!("Program Hash: {:?}", converted_hash);
+        info!("Program Hash: {:#?}", converted_hash);
 
         let module = Module {
             class_hash: converted_hash,
@@ -125,7 +125,7 @@ impl ModuleRegistry {
         class_hash: FieldElement,
     ) -> Result<CasmContractClass, ModuleRegistryError> {
         info!(
-            "Fetching contract class from module registry... Contract Class Hash: {}",
+            "Fetching contract class from module registry... Contract Class Hash: {:#?}",
             class_hash
         );
         let contract_class = self

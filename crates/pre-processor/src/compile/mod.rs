@@ -17,6 +17,9 @@ pub mod task;
 
 #[derive(Error, Debug)]
 pub enum CompileError {
+    #[error("Class hash mismatch")]
+    ClassHashMismatch,
+
     #[error("Cairo Runner Error: {0}")]
     CairoRunnerError(#[from] hdp_cairo_runner::CairoRunnerError),
 
