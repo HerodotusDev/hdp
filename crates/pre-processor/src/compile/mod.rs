@@ -34,6 +34,9 @@ pub enum CompileError {
 
     #[error("Error from module registry: {0}")]
     ModuleRegistryError(#[from] ModuleRegistryError),
+
+    #[error("Compilation failed")]
+    CompilationFailed,
 }
 
 pub struct CompileConfig {
@@ -49,7 +52,7 @@ pub trait Compilable {
     ) -> impl std::future::Future<Output = Result<CompilationResults, CompileError>> + Send;
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct CompilationResults {
     /// flag to check if the aggregation function is pre-processable
     pub pre_processable: bool,

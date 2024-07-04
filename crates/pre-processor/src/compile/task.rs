@@ -20,7 +20,10 @@ impl Compilable for Vec<TaskEnvelope> {
             CompilationResults::default()
         };
         compiled_result.extend(module_compile_result);
-
-        Ok(compiled_result)
+        if compiled_result == CompilationResults::default() {
+            Err(CompileError::CompilationFailed)
+        } else {
+            Ok(compiled_result)
+        }
     }
 }

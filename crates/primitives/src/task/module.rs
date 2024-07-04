@@ -80,11 +80,15 @@ impl Module {
         // commit = keccak256(class_hash, keccak256(inputs))
         let input_bytes: Vec<u8> = self.inputs.iter().flat_map(|x| x.to_bytes_be()).collect();
         let commit_input = keccak256(input_bytes);
+        println!("commit_input: {:?}", commit_input);
+        println!("class_hash: {:?}", self.class_hash);
 
         let mut hasher = Keccak256::new();
         hasher.update(self.class_hash.to_bytes_be());
         hasher.update(commit_input);
 
-        hasher.clone().finalize()
+        let task_commit = hasher.clone().finalize();
+        println!("task_commit: {:?}", task_commit);
+        task_commit
     }
 }
