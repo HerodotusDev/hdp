@@ -10,7 +10,7 @@ pub struct CompilerConfig {
 }
 
 impl CompilerConfig {
-    pub fn new_program_path(self, dry_run_program_path: PathBuf) -> Self {
+    pub fn with_dry_run_program_path(self, dry_run_program_path: PathBuf) -> Self {
         Self {
             dry_run_program_path,
             provider_config: self.provider_config,

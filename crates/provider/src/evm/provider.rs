@@ -1,5 +1,5 @@
 use alloy::{
-    primitives::{Address, BlockNumber, Bytes, ChainId, StorageKey, TxIndex},
+    primitives::{Address, BlockNumber, Bytes, StorageKey, TxIndex},
     rpc::types::EIP1186AccountProofResponse,
     transports::{RpcError, TransportErrorKind},
 };
@@ -19,7 +19,7 @@ use crate::{
 };
 
 use super::{
-    config::{EvmProviderConfig, DEFAULT_MAX_REQUESTS},
+    config::EvmProviderConfig,
     rpc::{RpcProvider, RpcProviderError},
 };
 
@@ -71,6 +71,12 @@ pub struct EvmProvider {
     pub(crate) tx_provider_url: Url,
 }
 
+impl Default for EvmProvider {
+    fn default() -> Self {
+        Self::new(EvmProviderConfig::default())
+    }
+}
+
 impl EvmProvider {
     pub fn new(config: EvmProviderConfig) -> Self {
         let rpc_provider = RpcProvider::new(config.rpc_url.clone(), config.max_requests);
@@ -80,17 +86,6 @@ impl EvmProvider {
             rpc_provider,
             header_provider,
             tx_provider_url: config.rpc_url,
-        }
-    }
-
-    pub fn new_with_url(url: Url, chain_id: ChainId) -> Self {
-        let rpc_provider = RpcProvider::new(url.clone(), DEFAULT_MAX_REQUESTS);
-        let header_provider = Indexer::new(chain_id);
-
-        Self {
-            rpc_provider,
-            header_provider,
-            tx_provider_url: url,
         }
     }
 
@@ -421,14 +416,11 @@ mod tests {
     use super::*;
     use alloy::primitives::{address, B256};
 
-    const SEPOLIA_RPC_URL: &str =
-        "https://eth-sepolia.g.alchemy.com/v2/xar76cftwEtqTBWdF4ZFy9n8FLHAETDv";
-
     #[ignore = "too many requests, recommend to run locally"]
     #[tokio::test]
     async fn test_get_2000_range_of_account_proofs() -> Result<(), ProviderError> {
         let start_time = Instant::now();
-        let provider = EvmProvider::new_with_url(Url::parse(SEPOLIA_RPC_URL).unwrap(), 1155511);
+        let provider = EvmProvider::default();
         let target_address = address!("7f2c6f930306d3aa736b3a6c6a98f512f74036d4");
         let response = provider
             .get_range_of_account_proofs(6127485, 6127485 + 2000 - 1, 1, target_address)
@@ -445,7 +437,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_2000_range_of_storage_proofs() -> Result<(), ProviderError> {
         let start_time = Instant::now();
-        let provider = EvmProvider::new_with_url(Url::parse(SEPOLIA_RPC_URL).unwrap(), 11155111);
+        let provider = EvmProvider::default();
         let target_address = address!("75CeC1db9dCeb703200EAa6595f66885C962B920");
         let result = provider
             .get_range_of_storage_proofs(6127485, 6127485 + 2000 - 1, 1, target_address, B256::ZERO)
@@ -462,7 +454,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_2000_range_of_header_proofs() -> Result<(), ProviderError> {
         let start_time = Instant::now();
-        let provider = EvmProvider::new_with_url(Url::parse(SEPOLIA_RPC_URL).unwrap(), 11155111);
+        let provider = EvmProvider::default();
         let (_meta, header_response) = provider
             .get_range_of_header_proofs(6127485, 6127485 + 2000 - 1, 1)
             .await?;
@@ -475,7 +467,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_parallel_4_all_tx_with_proof_from_block() {
-        let provider = EvmProvider::new_with_url(Url::parse(SEPOLIA_RPC_URL).unwrap(), 11155111);
+        let provider = EvmProvider::default();
 
         let task1 = {
             let provider = provider.clone();
@@ -527,7 +519,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_parallel_4_all_tx_receipt_with_proof_from_block() {
-        let provider = EvmProvider::new_with_url(Url::parse(SEPOLIA_RPC_URL).unwrap(), 11155111);
+        let provider = EvmProvider::default();
         let task1 = {
             let provider = provider.clone();
             tokio::spawn(async move {
@@ -579,7 +571,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_error_get_tx_with_proof_from_block() {
-        let provider = EvmProvider::new_with_url(Url::parse(SEPOLIA_RPC_URL).unwrap(), 11155111);
+        let provider = EvmProvider::default();
         let response = provider
             .get_tx_with_proof_from_block(6127485, 0, 2000, 1)
             .await;
@@ -592,7 +584,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_error_get_tx_receipt_with_proof_from_block() {
-        let provider = EvmProvider::new_with_url(Url::parse(SEPOLIA_RPC_URL).unwrap(), 1155511);
+        let provider = EvmProvider::default();
         let response = provider
             .get_tx_receipt_with_proof_from_block(6127485, 0, 2000, 1)
             .await;

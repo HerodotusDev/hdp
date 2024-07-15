@@ -27,8 +27,8 @@ mod integration_test {
     const PIE_PATH: &str = "./cairo.pie";
 
     fn init_preprocessor() -> PreProcessor {
-        let compile_config =
-            CompilerConfig::default().new_program_path(PathBuf::from(DRY_RUN_PROGRAM_PATH));
+        let compile_config = CompilerConfig::default()
+            .with_dry_run_program_path(PathBuf::from(DRY_RUN_PROGRAM_PATH));
 
         PreProcessor::new_with_config(compile_config)
     }

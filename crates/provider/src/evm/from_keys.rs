@@ -397,16 +397,11 @@ mod tests {
     use crate::evm::provider::EvmProvider;
     use crate::key::{AccountMemorizerKey, HeaderMemorizerKey};
     use alloy::primitives::address;
-    use reqwest::Url;
-
-    const SEPOLIA_RPC_URL: &str =
-        "https://eth-sepolia.g.alchemy.com/v2/xar76cftwEtqTBWdF4ZFy9n8FLHAETDv";
 
     #[tokio::test]
     async fn test_get_proofs_from_header_keys() {
         let target_chain_id = 11155111;
-        let provider =
-            EvmProvider::new_with_url(Url::parse(SEPOLIA_RPC_URL).unwrap(), target_chain_id);
+        let provider = EvmProvider::default();
         let keys = vec![
             FetchKeyEnvelope::Header(HeaderMemorizerKey::new(target_chain_id, 1)),
             FetchKeyEnvelope::Header(HeaderMemorizerKey::new(target_chain_id, 2)),
@@ -419,8 +414,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_proofs_from_accounts_keys() {
         let target_chain_id = 11155111;
-        let provider =
-            EvmProvider::new_with_url(Url::parse(SEPOLIA_RPC_URL).unwrap(), target_chain_id);
+        let provider = EvmProvider::default();
         let target_address = address!("7f2c6f930306d3aa736b3a6c6a98f512f74036d4");
         let keys = vec![
             FetchKeyEnvelope::Account(AccountMemorizerKey::new(
@@ -444,8 +438,7 @@ mod tests {
     async fn test_proofs_from_storage_keys() {
         let start_fetch = Instant::now();
         let target_chain_id = 11155111;
-        let provider =
-            EvmProvider::new_with_url(Url::parse(SEPOLIA_RPC_URL).unwrap(), target_chain_id);
+        let provider = EvmProvider::default();
         let target_address = address!("7f2c6f930306d3aa736b3a6c6a98f512f74036d4");
         let target_slot = B256::ZERO;
         let keys = vec![
@@ -497,8 +490,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_proofs_from_tx_keys() {
         let target_chain_id = 11155111;
-        let provider =
-            EvmProvider::new_with_url(Url::parse(SEPOLIA_RPC_URL).unwrap(), target_chain_id);
+        let provider = EvmProvider::default();
         let keys = vec![
             FetchKeyEnvelope::Tx(TxMemorizerKey::new(target_chain_id, 1000, 0)),
             FetchKeyEnvelope::Tx(TxMemorizerKey::new(target_chain_id, 1001, 1)),

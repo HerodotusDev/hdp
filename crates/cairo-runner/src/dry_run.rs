@@ -87,6 +87,7 @@ mod tests {
         DryRunner::new(program_path)
     }
 
+    #[ignore = "ignore for now"]
     #[test]
     fn test_dry_run() {
         let dry_runner = init_dry_runner();

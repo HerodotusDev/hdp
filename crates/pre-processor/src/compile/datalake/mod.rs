@@ -141,7 +141,7 @@ mod tests {
         ];
 
         let compiler_config =
-            CompilerConfig::default().new_program_path(PathBuf::from(program_path));
+            CompilerConfig::default().with_dry_run_program_path(PathBuf::from(program_path));
 
         let results = datalake_compute_vec
             .compile(&compiler_config)
@@ -191,7 +191,7 @@ mod tests {
         ];
 
         let compiler_config =
-            CompilerConfig::default().new_program_path(PathBuf::from(program_path));
+            CompilerConfig::default().with_dry_run_program_path(PathBuf::from(program_path));
         let results = datalake_compute_vec
             .compile(&compiler_config)
             .await

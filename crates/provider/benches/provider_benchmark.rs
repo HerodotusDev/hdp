@@ -1,15 +1,11 @@
 use alloy::primitives::{address, B256};
 use criterion::{criterion_group, criterion_main, Bencher, Criterion};
 use hdp_provider::evm::provider::EvmProvider; // Adjust this import path according to your project structure
-use reqwest::Url;
+
 use tokio::runtime::Runtime;
 
-// Note: this is non-paid alchemy rpc url
-const SEPOLIA_RPC_URL: &str =
-    "https://eth-sepolia.g.alchemy.com/v2/xar76cftwEtqTBWdF4ZFy9n8FLHAETDv";
-
 fn benchmark_header(b: &mut Bencher) {
-    let provider = EvmProvider::new_with_url(Url::parse(SEPOLIA_RPC_URL).unwrap(), 11155111);
+    let provider = EvmProvider::default();
     let rt = Runtime::new().unwrap();
 
     b.iter(|| {
@@ -23,7 +19,7 @@ fn benchmark_header(b: &mut Bencher) {
 }
 
 fn benchmark_account(b: &mut Bencher) {
-    let provider = EvmProvider::new_with_url(Url::parse(SEPOLIA_RPC_URL).unwrap(), 11155111);
+    let provider = EvmProvider::default();
     let target_address = address!("7f2c6f930306d3aa736b3a6c6a98f512f74036d4");
     let rt = Runtime::new().unwrap();
 
@@ -38,7 +34,7 @@ fn benchmark_account(b: &mut Bencher) {
 }
 
 fn benchmark_storage(b: &mut Bencher) {
-    let provider = EvmProvider::new_with_url(Url::parse(SEPOLIA_RPC_URL).unwrap(), 11155111);
+    let provider = EvmProvider::default();
     let target_address = address!("75CeC1db9dCeb703200EAa6595f66885C962B920");
     let storage_key = B256::ZERO;
     let rt = Runtime::new().unwrap();
@@ -54,7 +50,7 @@ fn benchmark_storage(b: &mut Bencher) {
 }
 
 fn benchmark_transaction(b: &mut Bencher) {
-    let provider = EvmProvider::new_with_url(Url::parse(SEPOLIA_RPC_URL).unwrap(), 11155111);
+    let provider = EvmProvider::default();
     let rt = Runtime::new().unwrap();
 
     b.iter(|| {
@@ -68,7 +64,7 @@ fn benchmark_transaction(b: &mut Bencher) {
 }
 
 fn benchmark_transaction_receipt(b: &mut Bencher) {
-    let provider = EvmProvider::new_with_url(Url::parse(SEPOLIA_RPC_URL).unwrap(), 11155111);
+    let provider = EvmProvider::default();
     let rt = Runtime::new().unwrap();
 
     b.iter(|| {
