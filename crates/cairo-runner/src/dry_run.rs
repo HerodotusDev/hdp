@@ -1,6 +1,4 @@
-//!  THIS IS WIP, NOT READY FOR USE
-
-use hdp_primitives::constant::DRY_RUN_OUTPUT_FILE;
+use hdp_primitives::constant::DRY_CAIRO_RUN_OUTPUT_FILE;
 use hdp_primitives::processed_types::uint256::Uint256;
 use hdp_provider::key::FetchKeyEnvelope;
 use serde::{Deserialize, Serialize};
@@ -60,11 +58,10 @@ impl DryRunner {
         let input_file = NamedTempFile::new()?;
         let input_file_path = input_file.path();
         fs::write(input_file_path, input_string.clone()).expect("Failed to write input file");
-        fs::write("dry_run_input.json", input_string).expect("Failed to write input file");
         let _ = self._run(input_file_path)?;
 
         // parse output to return dry run result
-        let dry_run_result = self.parse_run(&PathBuf::from(DRY_RUN_OUTPUT_FILE))?;
+        let dry_run_result = self.parse_run(&PathBuf::from(DRY_CAIRO_RUN_OUTPUT_FILE))?;
         info!("Dry-runner executed successfully");
         Ok(dry_run_result)
     }
@@ -73,7 +70,8 @@ impl DryRunner {
     fn parse_run(&self, input_file_path: &Path) -> Result<DryRunResult, CairoRunnerError> {
         let output = fs::read_to_string(input_file_path)?;
         let fetch_keys: Vec<DryRunnedModule> = serde_json::from_str(&output)?;
-        // fs::remove_file(input_file_path)?;
+        // clean up generated input file after parse
+        fs::remove_file(input_file_path)?;
         Ok(fetch_keys)
     }
 }

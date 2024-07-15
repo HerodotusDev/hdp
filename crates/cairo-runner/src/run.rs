@@ -1,5 +1,5 @@
 use alloy::primitives::{B256, U256};
-use hdp_primitives::constant::CAIRO_RUN_OUTPUT_FILE;
+use hdp_primitives::constant::SOUND_CAIRO_RUN_OUTPUT_FILE;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -72,7 +72,8 @@ impl Runner {
         fs::write(input_file_path, input_string).expect("Failed to write input file");
 
         let output = self._run(input_file_path, &pie_file_path)?;
-        let cairo_run_output = self.parse_run(output, &PathBuf::from(CAIRO_RUN_OUTPUT_FILE))?;
+        let cairo_run_output =
+            self.parse_run(output, &PathBuf::from(SOUND_CAIRO_RUN_OUTPUT_FILE))?;
         info!("Cairo run output: {:#?}", cairo_run_output);
 
         Ok(RunResult {
@@ -96,28 +97,4 @@ impl Runner {
         let cairo_run_output: CairoRunOutput = serde_json::from_str(&cairo_run_output_from_file)?;
         Ok(cairo_run_output)
     }
-}
-
-#[cfg(test)]
-mod tests {
-    // use super::*;
-
-    // #[test]
-    // fn test_parse_run() {
-    //     let program_path = PathBuf::from("../build/compiled_cairo/hdp.json");
-    //     let runner = Runner::new(program_path);
-    //     let output = "Task Result(0): 0x01020304\nResults Root: 0x01020304 0x05060708";
-    //     let (task_results, results_root) = runner.parse_run(output.to_string()).unwrap();
-    //     assert_eq!(task_results.len(), 1);
-    //     assert_eq!(
-    //         task_results[0],
-    //         U256::from_str_radix("01020304", 16).unwrap()
-    //     );
-    //     assert_eq!(
-    //         results_root,
-    //         Uint256::from_strs("05060708", "01020304")
-    //             .unwrap()
-    //             .to_combined_string()
-    //     );
-    // }
 }

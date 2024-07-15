@@ -2,13 +2,11 @@
 //!  Preprocessor is reponsible for identifying the required values.
 //!  This will be most abstract layer of the preprocessor.
 
-#![allow(dead_code)]
-
 use alloy::primitives::ChainId;
 use core::panic;
 use hdp_cairo_runner::dry_run::DryRunResult;
 use hdp_cairo_runner::{cairo_dry_run, input::dry_run::DryRunnerProgramInput};
-use hdp_primitives::constant::DRY_RUN_OUTPUT_FILE;
+use hdp_primitives::constant::DRY_CAIRO_RUN_OUTPUT_FILE;
 use hdp_primitives::processed_types::cairo_format;
 use hdp_primitives::task::ExtendedModule;
 use hdp_provider::{evm::provider::EvmProvider, key::FetchKeyEnvelope};
@@ -40,7 +38,7 @@ impl Compilable for ModuleVec {
             .map(|module| module.task.commit())
             .collect::<Vec<_>>();
 
-        let input = generate_input(self.to_vec(), PathBuf::from(DRY_RUN_OUTPUT_FILE)).await?;
+        let input = generate_input(self.to_vec(), PathBuf::from(DRY_CAIRO_RUN_OUTPUT_FILE)).await?;
         let input_string =
             serde_json::to_string_pretty(&input).expect("Failed to serialize module class");
 
@@ -125,58 +123,4 @@ async fn generate_input(
         identified_keys_file,
         collected_results,
     ))
-}
-
-#[cfg(test)]
-mod tests {
-    // use hdp_primitives::task::module::{Module, ModuleTag};
-    // use hdp_provider::evm::provider::EvmProviderConfig;
-    // use starknet::macros::felt;
-
-    // use crate::module_registry::ModuleRegistry;
-
-    // use super::*;
-    const SEPOLIA_RPC_URL: &str =
-        "https://eth-sepolia.g.alchemy.com/v2/xar76cftwEtqTBWdF4ZFy9n8FLHAETDv";
-    const SN_SEPOLIA_RPC_URL: &str =
-        "https://starknet-sepolia.g.alchemy.com/v2/lINonYKIlp4NH9ZI6wvqJ4HeZj7T4Wm6";
-
-    #[ignore = "ignore for now"]
-    #[tokio::test]
-    async fn test_compile_module() {
-        // let program_path = "../../build/compiled_cairo/contract_dry_run.json";
-
-        // let module = Module::from_tag(
-        //     ModuleTag::AccountBalanceExample,
-        //     vec![felt!("1"), felt!("0")],
-        // );
-
-        // let module_config = ModuleCompilerConfig {
-        //     module_registry_rpc_url: Url::parse(SN_SEPOLIA_RPC_URL).unwrap(),
-        //     program_path: PathBuf::from(program_path),
-        // };
-
-        // let provider_config = EvmProviderConfig {
-        //     rpc_url: Url::parse(SEPOLIA_RPC_URL).unwrap(),
-        //     chain_id: 11155111,
-        //     max_requests: 100,
-        // };
-
-        // let module_regisry = ModuleRegistry::new(Url::parse(SN_SEPOLIA_RPC_URL).unwrap());
-        // let module_class = module_regisry
-        //     .get_module_class(module.tag().to_class_hash())
-        //     .await
-        //     .unwrap();
-        // let compiled_result: CompilationResults = vec![module.clone()]
-        //     .compile(&CompileConfig {
-        //         provider: provider_config,
-        //         module: module_config,
-        //     })
-        //     .await
-        //     .unwrap();
-        // assert_eq!(compiled_result.headers.len(), 10);
-        // assert_eq!(compiled_result.accounts.len(), 1);
-        // let account = compiled_result.accounts.iter().next().unwrap();
-        // assert_eq!(account.proofs.len(), 10);
-    }
 }

@@ -1,4 +1,3 @@
-//!  THIS IS WIP, NOT READY FOR USE
 //!  Preprocessor is reponsible for identifying the required values.
 //!  This will be most abstract layer of the preprocessor.
 
@@ -6,7 +5,7 @@ use alloy::dyn_abi::DynSolValue;
 use alloy::primitives::{Bytes, Keccak256, B256, U256};
 use alloy_merkle_tree::standard_binary_tree::StandardMerkleTree;
 use compile::{Compilable, CompilationResults, CompileConfig, CompileError};
-use hdp_primitives::constant::CAIRO_RUN_OUTPUT_FILE;
+use hdp_primitives::constant::SOUND_CAIRO_RUN_OUTPUT_FILE;
 use hdp_primitives::processed_types::block_proofs::ProcessedBlockProofs;
 use hdp_primitives::processed_types::datalake_compute::ProcessedDatalakeCompute;
 use hdp_primitives::processed_types::module::ProcessedModule;
@@ -157,7 +156,7 @@ impl PreProcessor {
             transaction_receipts: Vec::from_iter(compiled_results.transaction_receipts),
         };
         let processed_result = ProcessedFullInput::new(
-            CAIRO_RUN_OUTPUT_FILE.into(),
+            SOUND_CAIRO_RUN_OUTPUT_FILE.into(),
             results_merkle_tree.map(|tree| tree.root()),
             task_merkle_root,
             proofs,
@@ -213,81 +212,4 @@ impl PreProcessor {
         hasher.update(B256::from(compiled_result));
         hasher.finalize()
     }
-}
-
-#[cfg(test)]
-mod tests {
-    // use super::*;
-    // use hdp_primitives::datalake::block_sampled::{
-    //     BlockSampledCollection, BlockSampledDatalake, HeaderField,
-    // };
-    // use hdp_primitives::datalake::envelope::DatalakeEnvelope;
-    // use hdp_primitives::datalake::task::Computation;
-    // use hdp_primitives::module::{Module, ModuleTag};
-    // use starknet::macros::felt;
-    // use starknet::providers::Url;
-    // use std::path::PathBuf;
-
-    // const STARKNET_SEPOLIA_RPC: &str =
-    //     "https://starknet-sepolia.g.alchemy.com/v2/lINonYKIlp4NH9ZI6wvqJ4HeZj7T4Wm6";
-    // const PREPROCESS_PROGRAM_PATH: &str = "../build/compiled_cairo/hdp.json";
-
-    // #[tokio::test]
-    // async fn test_process_only_datalake() {
-    //     let start_process = std::time::Instant::now();
-    //     let config = PreProcessorConfig {
-    //         module_registry_rpc_url: Url::parse(STARKNET_SEPOLIA_RPC).unwrap(),
-    //         program_path: PathBuf::from("../build/compiled_cairo/hdp.json"),
-    //     };
-    //     let pre_processor = PreProcessor::new_with_config(config);
-
-    //     let tasks = vec![
-    //         TaskEnvelope::DatalakeCompute(DatalakeCompute {
-    //             compute: Computation::new("min", None),
-    //             datalake: DatalakeEnvelope::BlockSampled(BlockSampledDatalake {
-    //                 block_range_start: 1000,
-    //                 block_range_end: 10000,
-    //                 increment: 1,
-    //                 sampled_property: BlockSampledCollection::Header(HeaderField::Number),
-    //             }),
-    //         }),
-    //         TaskEnvelope::DatalakeCompute(DatalakeCompute {
-    //             compute: Computation::new("min", None),
-    //             datalake: DatalakeEnvelope::BlockSampled(BlockSampledDatalake {
-    //                 block_range_start: 1000,
-    //                 block_range_end: 10000,
-    //                 increment: 1,
-    //                 sampled_property: BlockSampledCollection::Header(HeaderField::Number),
-    //             }),
-    //         }),
-    //     ];
-
-    //     let result = pre_processor.process(tasks).await.unwrap();
-
-    //     let end_process = start_process.elapsed();
-    //     println!("Process time: {:?}", end_process);
-    //     assert_eq!(result.fetch_keys.len(), 9000);
-    //     assert_eq!(result.tasks.len(), 2);
-    //     assert!(matches!(&result.tasks[0], ExtendedTask::DatalakeCompute(_)));
-    // }
-
-    // #[tokio::test]
-    // async fn test_process_only_module() {
-    //     let start_process = std::time::Instant::now();
-    //     let config = PreProcessorConfig {
-    //         module_registry_rpc_url: Url::parse(STARKNET_SEPOLIA_RPC).unwrap(),
-    //         program_path: PathBuf::from(PREPROCESS_PROGRAM_PATH),
-    //     };
-    //     let pre_processor = PreProcessor::new_with_config(config);
-
-    //     let module = Module::from_tag(ModuleTag::TEST, vec![felt!("1"), felt!("2")]);
-    //     let tasks = vec![TaskEnvelope::Module(module)];
-
-    //     let result = pre_processor.process(tasks).await.unwrap();
-    //     let end_process = start_process.elapsed();
-    //     println!("Process time: {:?}", end_process);
-    //     assert_eq!(result.fetch_keys.len(), 0);
-    //     assert_eq!(result.tasks.len(), 1);
-    //     assert!(matches!(&result.tasks[0], ExtendedTask::Module(_)));
-    // }
 }

@@ -1,8 +1,10 @@
 use cairo_lang_starknet_classes::casm_contract_class::CasmContractClass;
 use lazy_static::lazy_static;
 
-pub const DRY_RUN_OUTPUT_FILE: &str = "dry_run_output.json";
-pub const CAIRO_RUN_OUTPUT_FILE: &str = "cairo_run_output.json";
+pub const DRY_CAIRO_RUN_OUTPUT_FILE: &str = "dry_run_output.json";
+pub const SOUND_CAIRO_RUN_OUTPUT_FILE: &str = "cairo_run_output.json";
+pub const DEFAULT_DRY_CAIRO_RUN_CAIRO_FILE: &str = "build/compiled_cairo/contract_dry_run.json";
+pub const DEFAULT_SOUND_CAIRO_RUN_CAIRO_FILE: &str = "build/compiled_cairo/hdp.json";
 
 lazy_static! {
     pub static ref ACCOUNT_BALANCE_EXAMPLE_CONTRACT: CasmContractClass =
