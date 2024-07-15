@@ -99,7 +99,7 @@ mod tests {
         assert_eq!(result[0].result, Uint256::from_strs("0x0", "0x0").unwrap());
         assert_eq!(
             result[0].class_hash,
-            felt!("0xc8580f74b6e6e04d8073602ad0c0d55538b56bf8307fefebb6b65b1bbf2a27")
+            felt!("0x04df21eb479ae4416fbdc00abab6fab43bff0b8083be4d1fd8602c8fbfbd2274")
         );
     }
 
