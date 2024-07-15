@@ -191,7 +191,7 @@ mod tests {
         let module_registry = ModuleRegistry::new(url);
         // This is test contract class hash
         let class_hash = FieldElement::from_hex_be(
-            "0x034d4ff54bc5c6cfee6719bfaa94ffa374071e8d656b74823681a955e9033dd9",
+            "0x02aacf92216d1ae71fbdaf3f41865c08f32317b37be18d8c136d442e94cdd823",
         )
         .unwrap();
 
@@ -241,7 +241,13 @@ mod tests {
             .await
             .unwrap();
 
-        assert_eq!(extended_modules.task.class_hash, class_hash);
+        assert_eq!(
+            extended_modules.task.class_hash,
+            FieldElement::from_hex_be(
+                "0x04df21eb479ae4416fbdc00abab6fab43bff0b8083be4d1fd8602c8fbfbd2274"
+            )
+            .unwrap()
+        );
         assert_eq!(extended_modules.task.inputs, vec![]);
         assert_eq!(
             extended_modules.module_class,
