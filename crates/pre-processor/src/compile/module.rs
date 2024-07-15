@@ -10,29 +10,22 @@ use hdp_primitives::constant::DRY_CAIRO_RUN_OUTPUT_FILE;
 use hdp_primitives::processed_types::cairo_format;
 use hdp_primitives::task::ExtendedModule;
 use hdp_provider::{evm::provider::EvmProvider, key::FetchKeyEnvelope};
-use starknet::providers::Url;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use tracing::info;
 
-use super::{Compilable, CompilationResults, CompileConfig, CompileError};
+use super::config::CompilerConfig;
+use super::{Compilable, CompilationResults, CompileError};
 
 pub type ModuleVec = Vec<ExtendedModule>;
-
-pub struct ModuleCompilerConfig {
-    // rpc url to fetch the module class from starknet
-    pub module_registry_rpc_url: Url,
-    // pre-run program path
-    pub program_path: PathBuf,
-}
 
 impl Compilable for ModuleVec {
     async fn compile(
         &self,
-        compile_config: &CompileConfig,
+        compile_config: &CompilerConfig,
     ) -> Result<CompilationResults, CompileError> {
         info!("target task: {:#?}", self[0].task);
-        let program_path = compile_config.module.program_path.clone();
+        let dry_run_program_path = compile_config.dry_run_program_path.clone();
         let task_commitments = self
             .iter()
             .map(|module| module.task.commit())
@@ -44,7 +37,7 @@ impl Compilable for ModuleVec {
 
         // 2. run the dry run and get the fetch points
         info!("2. Running dry-run... ");
-        let keys: DryRunResult = cairo_dry_run(program_path, input_string)?;
+        let keys: DryRunResult = cairo_dry_run(dry_run_program_path, input_string)?;
 
         if keys[0].class_hash != self[0].task.class_hash {
             return Err(CompileError::ClassHashMismatch);
@@ -74,7 +67,7 @@ impl Compilable for ModuleVec {
         // This config cannot handle the situation when calling multiple chain data in one module
         // But as this have not used, for now we can just follow batch's chain id
         info!("3. Fetching proofs from provider...");
-        let provider = EvmProvider::new(compile_config.provider.clone());
+        let provider = EvmProvider::new(compile_config.provider_config.clone());
         let results = provider
             .fetch_proofs_from_keys(keys.into_iter().collect())
             .await?;

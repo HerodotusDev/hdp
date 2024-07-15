@@ -2,7 +2,7 @@ use alloy::{
     primitives::{Bytes, ChainId},
     transports::http::reqwest::Url,
 };
-use hdp_provider::evm::provider::EvmProviderConfig;
+use hdp_provider::evm::config::EvmProviderConfig;
 
 use std::env;
 use tokio::sync::OnceCell;

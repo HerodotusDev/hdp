@@ -1,9 +1,7 @@
 mod integration_test {
     use alloy::transports::http::reqwest::Url;
     use hdp_preprocessor::{
-        compile::{module::ModuleCompilerConfig, CompileConfig},
-        module_registry::ModuleRegistry,
-        PreProcessor,
+        compile::config::CompilerConfig, module_registry::ModuleRegistry, PreProcessor,
     };
     use hdp_primitives::{
         aggregate_fn::AggregationFunction,
@@ -19,13 +17,9 @@ mod integration_test {
         },
     };
     use hdp_processor::Processor;
-    use hdp_provider::evm::provider::EvmProviderConfig;
 
     use std::{fs, path::PathBuf};
 
-    // Non-paid personal alchemy endpoint
-    const SEPOLIA_RPC_URL: &str =
-        "https://eth-sepolia.g.alchemy.com/v2/xar76cftwEtqTBWdF4ZFy9n8FLHAETDv";
     const STARKNET_SEPOLIA_RPC: &str =
         "https://starknet-sepolia.g.alchemy.com/v2/lINonYKIlp4NH9ZI6wvqJ4HeZj7T4Wm6";
     const DRY_RUN_PROGRAM_PATH: &str = "../build/compiled_cairo/contract_dry_run.json";
@@ -33,20 +27,8 @@ mod integration_test {
     const PIE_PATH: &str = "./cairo.pie";
 
     fn init_preprocessor() -> PreProcessor {
-        let module_config = ModuleCompilerConfig {
-            module_registry_rpc_url: Url::parse(STARKNET_SEPOLIA_RPC).unwrap(),
-            program_path: PathBuf::from(DRY_RUN_PROGRAM_PATH),
-        };
-        let provider_config = EvmProviderConfig {
-            rpc_url: Url::parse(SEPOLIA_RPC_URL).unwrap(),
-            chain_id: 11155111,
-            max_requests: 100,
-        };
-
-        let compile_config = CompileConfig {
-            provider: provider_config,
-            module: module_config,
-        };
+        let compile_config =
+            CompilerConfig::default().new_program_path(PathBuf::from(DRY_RUN_PROGRAM_PATH));
 
         PreProcessor::new_with_config(compile_config)
     }

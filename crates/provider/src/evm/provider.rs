@@ -18,10 +18,10 @@ use crate::{
     types::{FetchedTransactionProof, FetchedTransactionReceiptProof},
 };
 
-use super::rpc::{RpcProvider, RpcProviderError};
-
-/// This is optimal max number of requests to send in parallel when using non-paid alchemy rpc url
-const DEFAULT_MAX_REQUESTS: u64 = 100;
+use super::{
+    config::{EvmProviderConfig, DEFAULT_MAX_REQUESTS},
+    rpc::{RpcProvider, RpcProviderError},
+};
 
 /// Error from [`EvmProvider`]
 #[derive(Error, Debug)]
@@ -69,21 +69,6 @@ pub struct EvmProvider {
     pub(crate) header_provider: Indexer,
     /// transaction url
     pub(crate) tx_provider_url: Url,
-}
-
-/// EVM provider configuration
-#[derive(Clone, Debug)]
-pub struct EvmProviderConfig {
-    /// RPC url
-    pub rpc_url: Url,
-    /// Chain id
-    pub chain_id: u64,
-    /// Max number of requests to send in parallel
-    ///
-    /// For default, it is set to 100
-    /// For archive node, recommend to set it to 1000
-    /// This will effect fetch speed of account, storage proofs
-    pub max_requests: u64,
 }
 
 impl EvmProvider {

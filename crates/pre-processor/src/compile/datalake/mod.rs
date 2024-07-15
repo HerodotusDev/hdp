@@ -8,20 +8,20 @@ use hdp_primitives::{
 use hdp_provider::evm::provider::EvmProvider;
 use tracing::info;
 
-use super::{Compilable, CompilationResults, CompileConfig, CompileError};
+use super::{config::CompilerConfig, Compilable, CompilationResults, CompileError};
 
 pub mod fetchable;
 
 impl Compilable for DatalakeCompute {
     async fn compile(
         &self,
-        compile_config: &CompileConfig,
+        compile_config: &CompilerConfig,
     ) -> Result<CompilationResults, CompileError> {
         info!("target task: {:#?}", self);
         let task_commitment = self.commit();
         let aggregation_fn = &self.compute.aggregate_fn_id;
         let fn_context = &self.compute.aggregate_fn_ctx;
-        let provider = EvmProvider::new(compile_config.provider.clone());
+        let provider = EvmProvider::new(compile_config.provider_config.clone());
         match self.datalake {
             DatalakeEnvelope::BlockSampled(ref datalake) => {
                 let compiled_block_sampled = datalake.fetch(provider).await?;
@@ -66,7 +66,7 @@ pub type DatalakeComputeVec = Vec<DatalakeCompute>;
 impl Compilable for DatalakeComputeVec {
     async fn compile(
         &self,
-        compile_config: &CompileConfig,
+        compile_config: &CompilerConfig,
     ) -> Result<CompilationResults, CompileError> {
         let mut final_results = CompilationResults::default();
 
@@ -97,17 +97,8 @@ mod tests {
             },
         },
     };
-    use hdp_provider::evm::provider::EvmProviderConfig;
-    use starknet::providers::Url;
-
-    use crate::compile::module::ModuleCompilerConfig;
 
     use super::*;
-
-    const SEPOLIA_RPC_URL: &str =
-        "https://eth-sepolia.g.alchemy.com/v2/xar76cftwEtqTBWdF4ZFy9n8FLHAETDv";
-    const SN_SEPOLIA_RPC_URL: &str =
-        "https://starknet-sepolia.g.alchemy.com/v2/lINonYKIlp4NH9ZI6wvqJ4HeZj7T4Wm6";
 
     #[tokio::test]
     async fn test_compile_block_sampled_datalake_compute_vec() {
@@ -149,20 +140,13 @@ mod tests {
             },
         ];
 
-        let module_config = ModuleCompilerConfig {
-            module_registry_rpc_url: Url::parse(SN_SEPOLIA_RPC_URL).unwrap(),
-            program_path: PathBuf::from(program_path),
-        };
-        let provider_config = EvmProviderConfig {
-            rpc_url: Url::parse(SEPOLIA_RPC_URL).unwrap(),
-            chain_id: 11155111,
-            max_requests: 100,
-        };
-        let compile_config = CompileConfig {
-            provider: provider_config,
-            module: module_config,
-        };
-        let results = datalake_compute_vec.compile(&compile_config).await.unwrap();
+        let compiler_config =
+            CompilerConfig::default().new_program_path(PathBuf::from(program_path));
+
+        let results = datalake_compute_vec
+            .compile(&compiler_config)
+            .await
+            .unwrap();
         assert_eq!(results.headers.len(), 16);
         assert_eq!(results.accounts.len(), 2);
         assert_eq!(results.storages.len(), 1);
@@ -206,20 +190,12 @@ mod tests {
             },
         ];
 
-        let module_config = ModuleCompilerConfig {
-            module_registry_rpc_url: Url::parse(SN_SEPOLIA_RPC_URL).unwrap(),
-            program_path: PathBuf::from(program_path),
-        };
-        let provider_config = EvmProviderConfig {
-            rpc_url: Url::parse(SEPOLIA_RPC_URL).unwrap(),
-            chain_id: 11155111,
-            max_requests: 100,
-        };
-        let compile_config = CompileConfig {
-            provider: provider_config,
-            module: module_config,
-        };
-        let results = datalake_compute_vec.compile(&compile_config).await.unwrap();
+        let compiler_config =
+            CompilerConfig::default().new_program_path(PathBuf::from(program_path));
+        let results = datalake_compute_vec
+            .compile(&compiler_config)
+            .await
+            .unwrap();
         assert_eq!(results.headers.len(), 2);
         assert_eq!(results.accounts.len(), 0);
         assert_eq!(results.storages.len(), 0);

@@ -4,7 +4,8 @@
 use alloy::dyn_abi::DynSolValue;
 use alloy::primitives::{Bytes, Keccak256, B256, U256};
 use alloy_merkle_tree::standard_binary_tree::StandardMerkleTree;
-use compile::{Compilable, CompilationResults, CompileConfig, CompileError};
+use compile::config::CompilerConfig;
+use compile::{Compilable, CompilationResults, CompileError};
 use hdp_primitives::constant::SOUND_CAIRO_RUN_OUTPUT_FILE;
 use hdp_primitives::processed_types::block_proofs::ProcessedBlockProofs;
 use hdp_primitives::processed_types::datalake_compute::ProcessedDatalakeCompute;
@@ -31,11 +32,11 @@ pub enum PreProcessorError {
 }
 
 pub struct PreProcessor {
-    pub compile_config: CompileConfig,
+    pub compile_config: CompilerConfig,
 }
 
 impl PreProcessor {
-    pub fn new_with_config(compile_config: CompileConfig) -> Self {
+    pub fn new_with_config(compile_config: CompilerConfig) -> Self {
         Self { compile_config }
     }
 

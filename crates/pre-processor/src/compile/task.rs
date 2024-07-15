@@ -1,11 +1,11 @@
 use hdp_primitives::task::TaskEnvelope;
 
-use super::{Compilable, CompilationResults, CompileConfig, CompileError};
+use super::{config::CompilerConfig, Compilable, CompilationResults, CompileError};
 
 impl Compilable for Vec<TaskEnvelope> {
     async fn compile(
         &self,
-        compile_config: &CompileConfig,
+        compile_config: &CompilerConfig,
     ) -> Result<CompilationResults, CompileError> {
         let (datalakes, modules) = TaskEnvelope::divide_tasks(self.to_vec());
         let mut compiled_result = if !datalakes.is_empty() {

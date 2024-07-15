@@ -4,11 +4,11 @@ use alloy::{
 };
 use anyhow::Result;
 use hdp_preprocessor::{
-    compile::{module::ModuleCompilerConfig, CompileConfig},
-    module_registry::ModuleRegistry,
-    PreProcessor, PreProcessorError,
+    compile::config::CompilerConfig, module_registry::ModuleRegistry, PreProcessor,
+    PreProcessorError,
 };
 use hdp_primitives::{
+    constant::DEFAULT_DRY_CAIRO_RUN_CAIRO_FILE,
     processed_types::cairo_format::AsCairoFormat,
     solidity_types::{
         datalake_compute::BatchedDatalakeCompute,
@@ -198,15 +198,11 @@ pub async fn module_entry_run(
         .get_extended_module_from_class_source_string(class_hash, local_class_path, module_inputs)
         .await?;
     let tasks = vec![TaskEnvelope::Module(module)];
-    let module_config = ModuleCompilerConfig {
-        module_registry_rpc_url: config.module_registry_rpc_url.clone(),
-        program_path: PathBuf::from(&program_path),
-    };
 
     let provider_config = config.evm_provider.clone();
-    let compile_config = CompileConfig {
-        provider: provider_config,
-        module: module_config,
+    let compile_config = CompilerConfig {
+        dry_run_program_path: PathBuf::from(&program_path),
+        provider_config,
     };
     handle_running_tasks(
         compile_config,
@@ -240,16 +236,9 @@ pub async fn datalake_entry_run(
         .map(|task| TaskEnvelope::DatalakeCompute(task.clone()))
         .collect::<Vec<_>>();
 
-    // TODO: module config is not used rn, hard coded url
-    let url: Url = "http://localhost:3030".parse()?;
-    let program_path = "./build/compiled_cairo/hdp.json";
-    let module_config = ModuleCompilerConfig {
-        module_registry_rpc_url: url,
-        program_path: PathBuf::from(&program_path),
-    };
-    let compile_config = CompileConfig {
-        provider: config.evm_provider.clone(),
-        module: module_config,
+    let compile_config = CompilerConfig {
+        dry_run_program_path: PathBuf::from(&DEFAULT_DRY_CAIRO_RUN_CAIRO_FILE),
+        provider_config: config.evm_provider.clone(),
     };
     handle_running_tasks(
         compile_config,
@@ -264,14 +253,14 @@ pub async fn datalake_entry_run(
 }
 
 async fn handle_running_tasks(
-    compile_config: CompileConfig,
+    compiler_config: CompilerConfig,
     tasks: Vec<TaskEnvelope>,
     pre_processor_output: Option<PathBuf>,
     output_file: Option<PathBuf>,
     cairo_pie_file: Option<PathBuf>,
 ) -> Result<()> {
     let program_path = "./build/compiled_cairo/hdp.json";
-    let preprocessor = PreProcessor::new_with_config(compile_config);
+    let preprocessor = PreProcessor::new_with_config(compiler_config);
     let result = preprocessor.process(tasks).await?;
 
     if pre_processor_output.is_none() {

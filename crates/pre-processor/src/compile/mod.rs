@@ -1,16 +1,17 @@
 use alloy::primitives::{B256, U256};
 
+use config::CompilerConfig;
 use hdp_primitives::processed_types::{
     account::ProcessedAccount, header::ProcessedHeader, mmr::MMRMeta, receipt::ProcessedReceipt,
     storage::ProcessedStorage, transaction::ProcessedTransaction,
 };
-use hdp_provider::evm::provider::EvmProviderConfig;
-use module::ModuleCompilerConfig;
+
 use std::collections::{HashMap, HashSet};
 use thiserror::Error;
 
 use crate::module_registry::ModuleRegistryError;
 
+pub mod config;
 pub mod datalake;
 pub mod module;
 pub mod task;
@@ -42,16 +43,11 @@ pub enum CompileError {
     CompilationFailed,
 }
 
-pub struct CompileConfig {
-    pub provider: EvmProviderConfig,
-    pub module: ModuleCompilerConfig,
-}
-
 /// Compile vector of tasks into compilation results
 pub trait Compilable {
     fn compile(
         &self,
-        compile_config: &CompileConfig,
+        compile_config: &CompilerConfig,
     ) -> impl std::future::Future<Output = Result<CompilationResults, CompileError>> + Send;
 }
 
