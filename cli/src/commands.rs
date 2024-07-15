@@ -89,7 +89,7 @@ pub enum HDPCliCommands {
     },
     /// Run from encoded compute and datalake. Usefull for request batch tasks.
     #[command(arg_required_else_help = true)]
-    Run {
+    RunDatalake {
         /// Batched computes bytes
         #[arg(value_parser = parse_bytes)]
         tasks: Option<Bytes>,
@@ -120,9 +120,9 @@ pub enum HDPCliCommands {
         cairo_pie_file: Option<PathBuf>,
     },
 
-    /// Local run module with either class hash deployed on starknet or local class path
+    /// Run module with either class hash deployed on starknet or local class path
     #[command(arg_required_else_help = true)]
-    LocalRunModule {
+    RunModule {
         /// Input field elements for the module contract.
         /// The input field elements should be separated by comma.
         ///

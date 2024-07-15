@@ -8,6 +8,7 @@ use alloy_merkle_tree::standard_binary_tree::StandardMerkleTree;
 use anyhow::Result;
 use hdp_cairo_runner::cairo_run;
 use hdp_primitives::processed_types::cairo_format::AsCairoFormat;
+use hdp_primitives::processed_types::mmr::MMRMeta;
 use hdp_primitives::processed_types::query::ProcessedFullInput;
 use serde::Serialize;
 use std::path::PathBuf;
@@ -33,10 +34,7 @@ pub struct ProcessorResult {
     pub results_root: B256,
     /// root of the tasks merkle tree
     pub tasks_root: B256,
-    /// mmr id
-    pub used_mmr_id: u64,
-    /// mmr size
-    pub used_mmr_size: u64,
+    pub mmr_metas: Vec<MMRMeta>,
 }
 
 impl ProcessorResult {
@@ -49,8 +47,7 @@ impl ProcessorResult {
         results_inclusion_proofs: Vec<Vec<FixedBytes<32>>>,
         results_root: B256,
         tasks_root: B256,
-        used_mmr_id: u64,
-        used_mmr_size: u64,
+        mmr_metas: Vec<MMRMeta>,
     ) -> Self {
         Self {
             raw_results,
@@ -60,8 +57,7 @@ impl ProcessorResult {
             results_inclusion_proofs,
             results_root,
             tasks_root,
-            used_mmr_id,
-            used_mmr_size,
+            mmr_metas,
         }
     }
 }
@@ -102,7 +98,6 @@ impl Processor {
             .map(|rc| results_tree.get_proof(&DynSolValue::FixedBytes(*rc, 32)))
             .collect();
         let result_root = results_tree.root();
-        let mmr = requset.proofs.mmr_metas[0].clone();
         let processor_result = ProcessorResult::new(
             cairo_run_output
                 .results
@@ -115,8 +110,7 @@ impl Processor {
             results_inclusion_proofs,
             result_root,
             task_root,
-            mmr.id,
-            mmr.size,
+            requset.proofs.mmr_metas,
         );
         info!("2️⃣  Processor completed successfully");
         Ok(processor_result)

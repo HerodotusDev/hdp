@@ -117,7 +117,7 @@ pub async fn run() -> anyhow::Result<()> {
             let decoded_task = DatalakeCompute::decode(&datalake, &task)?;
             info!("Decoded task: {:#?}", decoded_task);
         }
-        HDPCliCommands::Run {
+        HDPCliCommands::RunDatalake {
             tasks,
             datalakes,
             rpc_url,
@@ -137,7 +137,7 @@ pub async fn run() -> anyhow::Result<()> {
             )
             .await?
         }
-        HDPCliCommands::LocalRunModule {
+        HDPCliCommands::RunModule {
             class_hash,
             local_class_path,
             module_inputs,
