@@ -68,7 +68,7 @@ pub struct CompilationResults {
     /// Transaction receipts related to the datalake
     pub transaction_receipts: HashSet<ProcessedReceipt>,
     /// MMR meta data related to the headers
-    pub mmr_meta: MMRMeta,
+    pub mmr_metas: HashSet<MMRMeta>,
 }
 
 impl Default for CompilationResults {
@@ -81,7 +81,7 @@ impl Default for CompilationResults {
             storages: HashSet::new(),
             transactions: HashSet::new(),
             transaction_receipts: HashSet::new(),
-            mmr_meta: MMRMeta::default(),
+            mmr_metas: HashSet::new(),
         }
     }
 }
@@ -93,7 +93,7 @@ impl CompilationResults {
         storages: HashSet<ProcessedStorage>,
         transactions: HashSet<ProcessedTransaction>,
         transaction_receipts: HashSet<ProcessedReceipt>,
-        mmr_meta: MMRMeta,
+        mmr_metas: HashSet<MMRMeta>,
     ) -> Self {
         Self {
             pre_processable: false,
@@ -103,7 +103,7 @@ impl CompilationResults {
             storages,
             transactions,
             transaction_receipts,
-            mmr_meta,
+            mmr_metas,
         }
     }
 
@@ -116,7 +116,7 @@ impl CompilationResults {
         storages: HashSet<ProcessedStorage>,
         transactions: HashSet<ProcessedTransaction>,
         transaction_receipts: HashSet<ProcessedReceipt>,
-        mmr_meta: MMRMeta,
+        mmr_metas: HashSet<MMRMeta>,
     ) -> Self {
         Self {
             pre_processable,
@@ -126,7 +126,7 @@ impl CompilationResults {
             storages,
             transactions,
             transaction_receipts,
-            mmr_meta,
+            mmr_metas,
         }
     }
 
@@ -138,16 +138,7 @@ impl CompilationResults {
         self.transactions.extend(other.transactions);
         self.transaction_receipts.extend(other.transaction_receipts);
         self.commit_results_maps.extend(other.commit_results_maps);
-
-        // overwite default to another value
-        if self.mmr_meta == MMRMeta::default() {
-            self.mmr_meta = other.mmr_meta;
-        } else if other.mmr_meta != MMRMeta::default() {
-            // if not default, check if the value is the same
-            if self.mmr_meta != other.mmr_meta {
-                panic!("MMR meta data is not the same in one batch");
-            }
-        }
+        self.mmr_metas.extend(other.mmr_metas);
 
         // if any of the task is not pre-processable, the whole batch is not pre-processable
         if !(self.pre_processable && other.pre_processable) {

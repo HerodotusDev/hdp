@@ -149,7 +149,7 @@ impl PreProcessor {
         }
 
         let proofs = ProcessedBlockProofs {
-            mmr_meta: compiled_results.mmr_meta,
+            mmr_metas: Vec::from_iter(compiled_results.mmr_metas),
             headers: Vec::from_iter(compiled_results.headers),
             accounts: Vec::from_iter(compiled_results.accounts),
             storages: Vec::from_iter(compiled_results.storages),

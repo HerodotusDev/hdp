@@ -37,7 +37,7 @@ impl Compilable for DatalakeCompute {
                     compiled_block_sampled.storages,
                     HashSet::new(),
                     HashSet::new(),
-                    compiled_block_sampled.mmr_meta,
+                    compiled_block_sampled.mmr_metas,
                 ))
             }
             DatalakeEnvelope::Transactions(ref datalake) => {
@@ -54,7 +54,7 @@ impl Compilable for DatalakeCompute {
                     HashSet::new(),
                     compiled_tx_datalake.transactions,
                     compiled_tx_datalake.transaction_receipts,
-                    compiled_tx_datalake.mmr_meta,
+                    compiled_tx_datalake.mmr_metas,
                 ))
             }
         }
@@ -154,7 +154,7 @@ mod tests {
         assert_eq!(storage_proofs.proofs.len(), 6);
         assert_eq!(results.transactions.len(), 0);
         assert_eq!(results.transaction_receipts.len(), 0);
-        assert_eq!(results.mmr_meta.id, 27);
+        assert_eq!(results.mmr_metas.len(), 1);
     }
 
     #[tokio::test]
@@ -201,6 +201,6 @@ mod tests {
         assert_eq!(results.storages.len(), 0);
         assert_eq!(results.transactions.len(), 10);
         assert_eq!(results.transaction_receipts.len(), 11);
-        assert_eq!(results.mmr_meta.id, 27);
+        assert_eq!(results.mmr_metas.len(), 1);
     }
 }

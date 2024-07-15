@@ -102,7 +102,7 @@ impl Processor {
             .map(|rc| results_tree.get_proof(&DynSolValue::FixedBytes(*rc, 32)))
             .collect();
         let result_root = results_tree.root();
-        let mmr = requset.proofs.mmr_meta.clone();
+        let mmr = requset.proofs.mmr_metas[0].clone();
         let processor_result = ProcessorResult::new(
             cairo_run_output
                 .results

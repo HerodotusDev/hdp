@@ -53,7 +53,7 @@ pub enum IndexerError {
 #[derive(Clone)]
 pub struct Indexer {
     client: Client,
-    chain_id: u64,
+    pub chain_id: u64,
 }
 
 #[derive(Debug)]

@@ -69,7 +69,7 @@ impl EvmProvider {
         }
 
         // fetch proofs using keys and construct result
-        let (headers, mmr_meta) = self.get_headers_from_keys(target_keys_for_header).await?;
+        let (headers, mmr_metas) = self.get_headers_from_keys(target_keys_for_header).await?;
         let mut accounts = if target_keys_for_account.is_empty() {
             HashSet::new()
         } else {
@@ -94,7 +94,7 @@ impl EvmProvider {
         accounts.extend(accounts_from_storage_key);
         let accounts_result: Vec<ProcessedAccount> = accounts.into_iter().collect();
         Ok(ProcessedBlockProofs {
-            mmr_meta,
+            mmr_metas,
             headers: headers.into_iter().collect(),
             accounts: accounts_result,
             storages: storages.into_iter().collect(),
@@ -106,7 +106,7 @@ impl EvmProvider {
     async fn get_headers_from_keys(
         &self,
         keys: HashSet<HeaderMemorizerKey>,
-    ) -> Result<(HashSet<ProcessedHeader>, MMRMeta), ProviderError> {
+    ) -> Result<(HashSet<ProcessedHeader>, Vec<MMRMeta>), ProviderError> {
         let start_fetch = Instant::now();
 
         let block_range = keys.iter().map(|x| x.block_number).collect::<Vec<_>>();
@@ -121,8 +121,9 @@ impl EvmProvider {
             self._chunk_vec_blocks_for_indexer(block_range)
         };
 
+        let chain_id = keys.iter().next().unwrap().chain_id;
         let mut fetched_headers_proofs: HashSet<ProcessedHeader> = HashSet::new();
-        let mut mmr = None;
+        let mut mmrs = HashSet::new();
 
         let real_target_blocks = keys.iter().map(|x| x.block_number).collect::<HashSet<_>>();
         for target_blocks in target_blocks_batch {
@@ -133,17 +134,6 @@ impl EvmProvider {
                 .header_provider
                 .get_headers_proof(start_block, end_block)
                 .await?;
-
-            // validate MMR among range of blocks
-            match mmr {
-                None => {
-                    mmr = Some(indexer_response.mmr_meta);
-                }
-                Some(ref existing_mmr) if existing_mmr != &indexer_response.mmr_meta => {
-                    return Err(ProviderError::MismatchedMMRMeta);
-                }
-                _ => {}
-            }
 
             // filter only the keys that are in the real target blocks
             let keys_in_real_target_blocks = indexer_response
@@ -159,13 +149,17 @@ impl EvmProvider {
                 });
 
             fetched_headers_proofs.extend(keys_in_real_target_blocks);
+            let fetched_mmr = indexer_response.mmr_meta;
+            let mmr_meta = MMRMeta::from_indexer(fetched_mmr, chain_id);
+            mmrs.insert(mmr_meta);
         }
 
         let duration = start_fetch.elapsed();
         info!("Time taken (Headers Proofs Fetch): {:?}", duration);
 
-        if let Some(fetched_mmr) = mmr {
-            Ok((fetched_headers_proofs, fetched_mmr.into()))
+        if !mmrs.is_empty() {
+            let vec_mmrs = mmrs.into_iter().collect::<Vec<_>>();
+            Ok((fetched_headers_proofs, vec_mmrs))
         } else {
             Err(ProviderError::MmrNotFound)
         }

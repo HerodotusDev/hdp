@@ -6,10 +6,13 @@ use alloy::{
 use eth_trie_proofs::{
     tx_receipt_trie::TxReceiptsMptHandler, tx_trie::TxsMptHandler, EthTrieError,
 };
-use hdp_primitives::block::header::{MMRMetaFromNewIndexer, MMRProofFromNewIndexer};
+use hdp_primitives::{block::header::MMRProofFromNewIndexer, processed_types::mmr::MMRMeta};
 use itertools::Itertools;
 use reqwest::Url;
-use std::{collections::HashMap, time::Instant};
+use std::{
+    collections::{HashMap, HashSet},
+    time::Instant,
+};
 use thiserror::Error;
 use tracing::info;
 
@@ -102,7 +105,7 @@ impl EvmProvider {
         increment: u64,
     ) -> Result<
         (
-            MMRMetaFromNewIndexer,
+            HashSet<MMRMeta>,
             HashMap<BlockNumber, MMRProofFromNewIndexer>,
         ),
         ProviderError,
@@ -113,7 +116,7 @@ impl EvmProvider {
             self._chunk_block_range(from_block, to_block, increment);
 
         let mut fetched_headers_proofs_with_blocks_map = HashMap::new();
-        let mut mmr = None;
+        let mut mmrs = HashSet::new();
 
         for target_blocks in target_blocks_batch {
             let (start_block, end_block) =
@@ -124,24 +127,16 @@ impl EvmProvider {
                 .get_headers_proof(start_block, end_block)
                 .await?;
 
-            // validate MMR among range of blocks
-            match mmr {
-                None => {
-                    mmr = Some(indexer_response.mmr_meta);
-                }
-                Some(ref existing_mmr) if existing_mmr != &indexer_response.mmr_meta => {
-                    return Err(ProviderError::MismatchedMMRMeta);
-                }
-                _ => {}
-            }
             fetched_headers_proofs_with_blocks_map.extend(indexer_response.headers);
+            let fetched_mmr = indexer_response.mmr_meta;
+            let mmr_meta = MMRMeta::from_indexer(fetched_mmr, self.header_provider.chain_id);
+            mmrs.insert(mmr_meta);
         }
 
         let duration = start_fetch.elapsed();
         info!("Time taken (Headers Proofs Fetch): {:?}", duration);
-
-        if let Some(fetched_mmr) = mmr {
-            Ok((fetched_mmr, fetched_headers_proofs_with_blocks_map))
+        if !mmrs.is_empty() {
+            Ok((mmrs, fetched_headers_proofs_with_blocks_map))
         } else {
             Err(ProviderError::MmrNotFound)
         }

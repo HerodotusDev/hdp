@@ -9,7 +9,7 @@ use super::{
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ProcessedBlockProofs {
-    pub mmr_meta: MMRMeta,
+    pub mmr_metas: Vec<MMRMeta>,
     pub headers: Vec<ProcessedHeader>,
     pub accounts: Vec<ProcessedAccount>,
     pub storages: Vec<ProcessedStorage>,

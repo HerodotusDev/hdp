@@ -14,7 +14,7 @@ impl AsCairoFormat for BaseProcessedBlockProofs {
 
     fn as_cairo_format(&self) -> Self::Output {
         ProcessedBlockProofs {
-            mmr_meta: self.mmr_meta.clone(),
+            mmr_metas: self.mmr_metas.clone(),
             headers: self
                 .headers
                 .iter()
@@ -46,7 +46,7 @@ impl AsCairoFormat for BaseProcessedBlockProofs {
 
 #[derive(Serialize)]
 pub struct ProcessedBlockProofs {
-    pub mmr_meta: MMRMeta,
+    pub mmr_metas: Vec<MMRMeta>,
     pub headers: Vec<ProcessedHeader>,
     pub accounts: Vec<ProcessedAccount>,
     pub storages: Vec<ProcessedStorage>,

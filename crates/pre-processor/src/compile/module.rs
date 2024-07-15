@@ -1,4 +1,3 @@
-//!  THIS IS WIP, NOT READY FOR USE
 //!  Preprocessor is reponsible for identifying the required values.
 //!  This will be most abstract layer of the preprocessor.
 
@@ -80,7 +79,7 @@ impl Compilable for ModuleVec {
             results.storages.into_iter().collect(),
             results.transactions.into_iter().collect(),
             results.transaction_receipts.into_iter().collect(),
-            results.mmr_meta,
+            results.mmr_metas.into_iter().collect(),
         ))
     }
 }
