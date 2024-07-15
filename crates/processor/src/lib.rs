@@ -19,8 +19,10 @@ pub struct Processor {
 
 #[derive(Debug, Serialize)]
 pub struct ProcessorResult {
+    /// raw results of the module
+    pub raw_results: Vec<B256>,
     /// leaf of result merkle tree
-    pub task_results: Vec<B256>,
+    pub results_commitments: Vec<B256>,
     /// leaf of task merkle tree
     pub task_commitments: Vec<B256>,
     /// tasks inclusion proofs
@@ -40,7 +42,8 @@ pub struct ProcessorResult {
 impl ProcessorResult {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        task_results: Vec<B256>,
+        raw_results: Vec<B256>,
+        results_commitments: Vec<B256>,
         task_commitments: Vec<B256>,
         task_inclusion_proofs: Vec<Vec<FixedBytes<32>>>,
         results_inclusion_proofs: Vec<Vec<FixedBytes<32>>>,
@@ -50,7 +53,8 @@ impl ProcessorResult {
         used_mmr_size: u64,
     ) -> Self {
         Self {
-            task_results,
+            raw_results,
+            results_commitments,
             task_commitments,
             task_inclusion_proofs,
             results_inclusion_proofs,
@@ -105,6 +109,7 @@ impl Processor {
                 .iter()
                 .map(|x| B256::from(*x))
                 .collect(),
+            result_commitments,
             task_commitments,
             task_inclusion_proofs,
             results_inclusion_proofs,
