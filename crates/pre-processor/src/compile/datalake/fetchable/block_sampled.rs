@@ -29,7 +29,6 @@ impl Fetchable for BlockSampledDatalake {
                 self.increment,
             )
             .await?;
-
         let mut headers: HashSet<ProcessedHeader> = HashSet::new();
         let mut accounts: HashSet<ProcessedAccount> = HashSet::new();
         let mut storages: HashSet<ProcessedStorage> = HashSet::new();

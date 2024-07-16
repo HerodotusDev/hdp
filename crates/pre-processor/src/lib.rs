@@ -5,7 +5,7 @@ use alloy::dyn_abi::DynSolValue;
 use alloy::primitives::{Bytes, Keccak256, B256, U256};
 use alloy_merkle_tree::standard_binary_tree::StandardMerkleTree;
 use compile::config::CompilerConfig;
-use compile::{Compilable, CompilationResults, CompileError};
+use compile::{Compilable, CompilationResult, CompileError};
 use hdp_primitives::constant::SOUND_CAIRO_RUN_OUTPUT_FILE;
 use hdp_primitives::processed_types::block_proofs::ProcessedBlockProofs;
 use hdp_primitives::processed_types::datalake_compute::ProcessedDatalakeCompute;
@@ -169,7 +169,7 @@ impl PreProcessor {
 
     fn build_merkle_tree(
         &self,
-        compiled_results: &CompilationResults,
+        compiled_results: &CompilationResult,
         tasks_commitments: Vec<B256>,
     ) -> Result<(StandardMerkleTree, Option<StandardMerkleTree>), PreProcessorError> {
         let mut tasks_leaves = Vec::new();

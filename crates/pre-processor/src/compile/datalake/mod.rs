@@ -8,7 +8,7 @@ use hdp_primitives::{
 use hdp_provider::evm::provider::EvmProvider;
 use tracing::info;
 
-use super::{config::CompilerConfig, Compilable, CompilationResults, CompileError};
+use super::{config::CompilerConfig, Compilable, CompilationResult, CompileError};
 
 pub mod fetchable;
 
@@ -16,7 +16,7 @@ impl Compilable for DatalakeCompute {
     async fn compile(
         &self,
         compile_config: &CompilerConfig,
-    ) -> Result<CompilationResults, CompileError> {
+    ) -> Result<CompilationResult, CompileError> {
         info!("target task: {:#?}", self);
         let task_commitment = self.commit();
         let aggregation_fn = &self.compute.aggregate_fn_id;
@@ -27,7 +27,7 @@ impl Compilable for DatalakeCompute {
                 let compiled_block_sampled = datalake.fetch(provider).await?;
                 let aggregated_result = aggregation_fn
                     .operation(&compiled_block_sampled.values, Some(fn_context.clone()))?;
-                Ok(CompilationResults::new(
+                Ok(CompilationResult::new(
                     aggregation_fn.is_pre_processable(),
                     vec![(task_commitment, aggregated_result)]
                         .into_iter()
@@ -44,7 +44,7 @@ impl Compilable for DatalakeCompute {
                 let compiled_tx_datalake = datalake.fetch(provider).await?;
                 let aggregated_result = aggregation_fn
                     .operation(&compiled_tx_datalake.values, Some(fn_context.clone()))?;
-                Ok(CompilationResults::new(
+                Ok(CompilationResult::new(
                     aggregation_fn.is_pre_processable(),
                     vec![(task_commitment, aggregated_result)]
                         .into_iter()
@@ -67,8 +67,8 @@ impl Compilable for DatalakeComputeVec {
     async fn compile(
         &self,
         compile_config: &CompilerConfig,
-    ) -> Result<CompilationResults, CompileError> {
-        let mut final_results = CompilationResults::default();
+    ) -> Result<CompilationResult, CompileError> {
+        let mut final_results = CompilationResult::default();
 
         for datalake_compute in self {
             let current_results = datalake_compute.compile(compile_config).await?;

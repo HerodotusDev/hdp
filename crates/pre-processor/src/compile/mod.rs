@@ -48,11 +48,11 @@ pub trait Compilable {
     fn compile(
         &self,
         compile_config: &CompilerConfig,
-    ) -> impl std::future::Future<Output = Result<CompilationResults, CompileError>> + Send;
+    ) -> impl std::future::Future<Output = Result<CompilationResult, CompileError>> + Send;
 }
 
 #[derive(Debug, PartialEq)]
-pub struct CompilationResults {
+pub struct CompilationResult {
     /// flag to check if the aggregation function is pre-processable
     pub pre_processable: bool,
     /// task_commitment -> value
@@ -71,7 +71,7 @@ pub struct CompilationResults {
     pub mmr_metas: HashSet<MMRMeta>,
 }
 
-impl Default for CompilationResults {
+impl Default for CompilationResult {
     fn default() -> Self {
         Self {
             pre_processable: true,
@@ -86,7 +86,7 @@ impl Default for CompilationResults {
     }
 }
 
-impl CompilationResults {
+impl CompilationResult {
     pub fn new_without_result(
         headers: HashSet<ProcessedHeader>,
         accounts: HashSet<ProcessedAccount>,
@@ -131,7 +131,7 @@ impl CompilationResults {
     }
 
     /// Extend the current compilation results with another compilation results
-    pub fn extend(&mut self, other: CompilationResults) {
+    pub fn extend(&mut self, other: CompilationResult) {
         self.headers.extend(other.headers);
         self.accounts.extend(other.accounts);
         self.storages.extend(other.storages);

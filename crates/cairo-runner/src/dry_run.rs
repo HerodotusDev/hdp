@@ -57,7 +57,7 @@ impl DryRunner {
         }
         let input_file = NamedTempFile::new()?;
         let input_file_path = input_file.path();
-        fs::write(input_file_path, input_string.clone()).expect("Failed to write input file");
+        fs::write(input_file_path, input_string).expect("Failed to write input file");
         let _ = self._run(input_file_path)?;
 
         // parse output to return dry run result

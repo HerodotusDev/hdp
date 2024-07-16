@@ -14,7 +14,7 @@ use std::path::PathBuf;
 use tracing::info;
 
 use super::config::CompilerConfig;
-use super::{Compilable, CompilationResults, CompileError};
+use super::{Compilable, CompilationResult, CompileError};
 
 pub type ModuleVec = Vec<ExtendedModule>;
 
@@ -22,7 +22,7 @@ impl Compilable for ModuleVec {
     async fn compile(
         &self,
         compile_config: &CompilerConfig,
-    ) -> Result<CompilationResults, CompileError> {
+    ) -> Result<CompilationResult, CompileError> {
         info!("target task: {:#?}", self[0].task);
         let dry_run_program_path = compile_config.dry_run_program_path.clone();
         let tasks_commitments = self
@@ -71,7 +71,7 @@ impl Compilable for ModuleVec {
             .fetch_proofs_from_keys(keys.into_iter().collect())
             .await?;
 
-        Ok(CompilationResults::new(
+        Ok(CompilationResult::new(
             true,
             commit_results_maps,
             results.headers.into_iter().collect(),
