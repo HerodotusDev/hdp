@@ -29,6 +29,7 @@ use clap::Parser;
 use hdp_processor::Processor;
 
 use tracing::{info, Level};
+use hdp_primitives::constant::DEFAULT_SOUND_CAIRO_RUN_CAIRO_FILE;
 
 use crate::{
     commands::{DataLakeCommands, HDPCli, HDPCliCommands},
@@ -192,7 +193,7 @@ pub async fn module_entry_run(
     cairo_pie_file: Option<PathBuf>,
 ) -> Result<()> {
     let config = ModuleConfig::init(rpc_url, chain_id, module_registry_rpc_url).await;
-    let program_path = "./build/compiled_cairo/contract_dry_run.json";
+    let program_path = "~/hdp-cairo/build/contract_dry_run.json";
     let module_registry = ModuleRegistry::new(config.module_registry_rpc_url.clone());
     let module = module_registry
         .get_extended_module_from_class_source_string(class_hash, local_class_path, module_inputs)
@@ -201,7 +202,7 @@ pub async fn module_entry_run(
 
     let provider_config = config.evm_provider.clone();
     let compile_config = CompilerConfig {
-        dry_run_program_path: PathBuf::from(&program_path),
+        dry_run_program_path: PathBuf::from(&DEFAULT_DRY_CAIRO_RUN_CAIRO_FILE),
         provider_config,
     };
     handle_running_tasks(
@@ -259,7 +260,7 @@ async fn handle_running_tasks(
     output_file: Option<PathBuf>,
     cairo_pie_file: Option<PathBuf>,
 ) -> Result<()> {
-    let program_path = "./build/compiled_cairo/hdp.json";
+    let program_path = "~/hdp-cairo/build/hdp.json";
     let preprocessor = PreProcessor::new_with_config(compiler_config);
     let result = preprocessor.process(tasks).await?;
 
@@ -284,7 +285,7 @@ async fn handle_running_tasks(
                     .ok_or_else(|| anyhow::anyhow!("Output file path should be specified"))?;
                 let pie_file_path = cairo_pie_file
                     .ok_or_else(|| anyhow::anyhow!("PIE path should be specified"))?;
-                let processor = Processor::new(PathBuf::from(program_path));
+                let processor = Processor::new(PathBuf::from(&DEFAULT_SOUND_CAIRO_RUN_CAIRO_FILE));
                 let processor_result = processor.process(result, pie_file_path.clone()).await?;
                 let output_string = serde_json::to_string_pretty(&processor_result)
                     .map_err(|e| anyhow::anyhow!("Failed to serialize processor result: {}", e))?;
