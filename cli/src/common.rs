@@ -8,7 +8,7 @@ use hdp_preprocessor::{
     PreProcessorError,
 };
 use hdp_primitives::{
-    constant::DEFAULT_DRY_CAIRO_RUN_CAIRO_FILE,
+    constant::{DEFAULT_DRY_CAIRO_RUN_CAIRO_FILE, DEFAULT_SOUND_CAIRO_RUN_CAIRO_FILE},
     processed_types::cairo_format::AsCairoFormat,
     solidity_types::{
         datalake_compute::BatchedDatalakeCompute,
@@ -22,6 +22,7 @@ use hdp_primitives::{
         TaskEnvelope,
     },
 };
+use hdp_provider::evm::config::EvmProviderConfig;
 use std::{fs, path::PathBuf};
 use tracing_subscriber::FmtSubscriber;
 
@@ -48,7 +49,7 @@ pub async fn run() -> anyhow::Result<()> {
             allow_process,
             rpc_url,
             chain_id,
-            pre_processor_output,
+            preprocessor_output_file,
             output_file,
             cairo_pie_file,
             aggregate_fn_id,
@@ -102,7 +103,7 @@ pub async fn run() -> anyhow::Result<()> {
                     Some(encoded_datalakes_string),
                     rpc_url,
                     chain_id,
-                    pre_processor_output,
+                    preprocessor_output_file,
                     output_file,
                     cairo_pie_file,
                 )
@@ -122,7 +123,7 @@ pub async fn run() -> anyhow::Result<()> {
             datalakes,
             rpc_url,
             chain_id,
-            pre_processor_output,
+            preprocessor_output_file,
             output_file,
             cairo_pie_file,
         } => {
@@ -131,7 +132,7 @@ pub async fn run() -> anyhow::Result<()> {
                 datalakes,
                 rpc_url,
                 chain_id,
-                pre_processor_output,
+                preprocessor_output_file,
                 output_file,
                 cairo_pie_file,
             )
@@ -144,7 +145,7 @@ pub async fn run() -> anyhow::Result<()> {
             module_registry_rpc_url,
             rpc_url,
             chain_id,
-            pre_processor_output,
+            preprocessor_output_file,
             output_file,
             cairo_pie_file,
         } => {
@@ -155,7 +156,7 @@ pub async fn run() -> anyhow::Result<()> {
                 module_registry_rpc_url,
                 rpc_url,
                 chain_id,
-                pre_processor_output,
+                preprocessor_output_file,
                 output_file,
                 cairo_pie_file,
             )
@@ -187,27 +188,23 @@ pub async fn module_entry_run(
     module_registry_rpc_url: Option<Url>,
     rpc_url: Option<Url>,
     chain_id: Option<ChainId>,
-    pre_processor_output: Option<PathBuf>,
+    preprocessor_output_file: Option<PathBuf>,
     output_file: Option<PathBuf>,
     cairo_pie_file: Option<PathBuf>,
 ) -> Result<()> {
     let config = ModuleConfig::init(rpc_url, chain_id, module_registry_rpc_url).await;
-    let program_path = "./build/compiled_cairo/contract_dry_run.json";
     let module_registry = ModuleRegistry::new(config.module_registry_rpc_url.clone());
     let module = module_registry
         .get_extended_module_from_class_source_string(class_hash, local_class_path, module_inputs)
         .await?;
+    // TODO: for now, we only support one task if its a module
     let tasks = vec![TaskEnvelope::Module(module)];
-
     let provider_config = config.evm_provider.clone();
-    let compile_config = CompilerConfig {
-        dry_run_program_path: PathBuf::from(&program_path),
-        provider_config,
-    };
+
     handle_running_tasks(
-        compile_config,
+        provider_config,
         tasks,
-        pre_processor_output,
+        preprocessor_output_file,
         output_file,
         cairo_pie_file,
     )
@@ -225,52 +222,46 @@ pub async fn datalake_entry_run(
     cairo_pie_file: Option<PathBuf>,
 ) -> Result<()> {
     let config = Config::init(rpc_url, datalakes, tasks, chain_id).await;
-    // 1. decode the tasks
     let tasks = BatchedDatalakeCompute::decode(&config.datalakes, &config.tasks)
         .map_err(PreProcessorError::DecodeError)?;
-
-    // wrap into TaskEnvelope
-    // TODO: this is temporary, need to remove this
     let tasks = tasks
-        .iter()
-        .map(|task| TaskEnvelope::DatalakeCompute(task.clone()))
+        .into_iter()
+        .map(TaskEnvelope::DatalakeCompute)
         .collect::<Vec<_>>();
 
-    let compile_config = CompilerConfig {
-        dry_run_program_path: PathBuf::from(&DEFAULT_DRY_CAIRO_RUN_CAIRO_FILE),
-        provider_config: config.evm_provider.clone(),
-    };
     handle_running_tasks(
-        compile_config,
+        config.evm_provider.clone(),
         tasks,
         pre_processor_output,
         output_file,
         cairo_pie_file,
     )
     .await?;
-
     Ok(())
 }
 
 async fn handle_running_tasks(
-    compiler_config: CompilerConfig,
+    evm_config: EvmProviderConfig,
     tasks: Vec<TaskEnvelope>,
-    pre_processor_output: Option<PathBuf>,
+    pre_processor_output_file: Option<PathBuf>,
     output_file: Option<PathBuf>,
     cairo_pie_file: Option<PathBuf>,
 ) -> Result<()> {
-    let program_path = "./build/compiled_cairo/hdp.json";
+    let compiler_config = CompilerConfig {
+        dry_run_program_path: PathBuf::from(&DEFAULT_DRY_CAIRO_RUN_CAIRO_FILE),
+        provider_config: evm_config,
+    };
     let preprocessor = PreProcessor::new_with_config(compiler_config);
-    let result = preprocessor.process(tasks).await?;
+    let preprocessor_result = preprocessor.process(tasks).await?;
 
-    if pre_processor_output.is_none() {
+    if pre_processor_output_file.is_none() {
         info!("Finished pre processing the data");
         Ok(())
     } else {
-        let input_string = serde_json::to_string_pretty(&result.as_cairo_format())
+        let input_string = serde_json::to_string_pretty(&preprocessor_result.as_cairo_format())
             .map_err(|e| anyhow::anyhow!("Failed to serialize preprocessor result: {}", e))?;
-        if let Some(input_file_path) = pre_processor_output {
-            fs::write(&input_file_path, input_string.clone())
+        if let Some(input_file_path) = pre_processor_output_file {
+            fs::write(&input_file_path, input_string)
                 .map_err(|e| anyhow::anyhow!("Unable to write input file: {}", e))?;
             info!(
                 "Finished pre processing the data, saved the input file in {}",
@@ -284,12 +275,18 @@ async fn handle_running_tasks(
                     .ok_or_else(|| anyhow::anyhow!("Output file path should be specified"))?;
                 let pie_file_path = cairo_pie_file
                     .ok_or_else(|| anyhow::anyhow!("PIE path should be specified"))?;
-                let processor = Processor::new(PathBuf::from(program_path));
-                let processor_result = processor.process(result, pie_file_path.clone()).await?;
-                let output_string = serde_json::to_string_pretty(&processor_result)
-                    .map_err(|e| anyhow::anyhow!("Failed to serialize processor result: {}", e))?;
-                fs::write(&output_file_path, output_string)
-                    .map_err(|e| anyhow::anyhow!("Unable to write output file: {}", e))?;
+                let processor = Processor::new(PathBuf::from(DEFAULT_SOUND_CAIRO_RUN_CAIRO_FILE));
+                let processor_result = processor
+                    .process(preprocessor_result, &pie_file_path)
+                    .await?;
+                fs::write(
+                    &output_file_path,
+                    serde_json::to_string_pretty(&processor_result).map_err(|e| {
+                        anyhow::anyhow!("Failed to serialize processor result: {}", e)
+                    })?,
+                )
+                .map_err(|e| anyhow::anyhow!("Unable to write output file: {}", e))?;
+
                 info!(
                     "Finished processing the data, saved the output file in {} and pie file in {}",
                     output_file_path.display(),

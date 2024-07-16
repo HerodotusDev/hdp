@@ -1,16 +1,16 @@
 use std::path::PathBuf;
 
-use crate::processed_types::query::ProcessedFullInput as BasedProcessedFullInput;
+use crate::processed_types::query::ProcessorInput as BasedProcessorInput;
 use ::serde::Serialize;
 use alloy::primitives::B256;
 
 use super::{AsCairoFormat, ProcessedBlockProofs, ProcessedTask};
 
-impl AsCairoFormat for BasedProcessedFullInput {
-    type Output = ProcessedFullInput;
+impl AsCairoFormat for BasedProcessorInput {
+    type Output = ProcessorInput;
 
     fn as_cairo_format(&self) -> Self::Output {
-        ProcessedFullInput {
+        ProcessorInput {
             cairo_run_output_path: self.cairo_run_output_path.clone(),
             task_root: self.tasks_root,
             result_root: self.results_root,
@@ -25,7 +25,7 @@ impl AsCairoFormat for BasedProcessedFullInput {
 }
 
 #[derive(Serialize)]
-pub struct ProcessedFullInput {
+pub struct ProcessorInput {
     /// Path to the directory where the cairo-run output will be stored.
     pub cairo_run_output_path: PathBuf,
     /// Batched tasks root of all tasks.

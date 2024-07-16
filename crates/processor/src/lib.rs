@@ -9,7 +9,7 @@ use anyhow::Result;
 use hdp_cairo_runner::cairo_run;
 use hdp_primitives::processed_types::cairo_format::AsCairoFormat;
 use hdp_primitives::processed_types::mmr::MMRMeta;
-use hdp_primitives::processed_types::query::ProcessedFullInput;
+use hdp_primitives::processed_types::query::ProcessorInput;
 use serde::Serialize;
 use std::path::PathBuf;
 use tracing::{debug, info};
@@ -34,6 +34,7 @@ pub struct ProcessorResult {
     pub results_root: B256,
     /// root of the tasks merkle tree
     pub tasks_root: B256,
+    /// mmr metas related to processed tasks
     pub mmr_metas: Vec<MMRMeta>,
 }
 
@@ -69,15 +70,13 @@ impl Processor {
 
     pub async fn process(
         &self,
-        requset: ProcessedFullInput,
-        pie_path: PathBuf,
+        requset: ProcessorInput,
+        pie_path: &PathBuf,
     ) -> Result<ProcessorResult> {
-        // 2. generate input struct with proofs and module bytes
-        // let input = self.generate_input(requset).await?;
-        // 3. pass the input file to the runner
+        // 1. pass the input file to the runner
         let input_string = serde_json::to_string_pretty(&requset.as_cairo_format())
             .expect("Failed to serialize module class");
-        let result = cairo_run(self.program_path.clone(), input_string, pie_path)?;
+        let result = cairo_run(&self.program_path, input_string, pie_path)?;
         let cairo_run_output = result.cairo_run_output;
         let tasks_commitments: Vec<B256> = requset
             .tasks

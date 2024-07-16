@@ -29,8 +29,10 @@ pub struct Runner {
 }
 
 impl Runner {
-    pub fn new(program_path: PathBuf) -> Self {
-        Self { program_path }
+    pub fn new(program_path: &Path) -> Self {
+        Self {
+            program_path: program_path.to_path_buf(),
+        }
     }
 
     fn _run(
@@ -61,7 +63,7 @@ impl Runner {
     pub fn run(
         &self,
         input_string: String,
-        pie_file_path: PathBuf,
+        pie_file_path: &PathBuf,
     ) -> Result<RunResult, CairoRunnerError> {
         if input_string.is_empty() {
             return Err(CairoRunnerError::EmptyInput);
@@ -71,7 +73,7 @@ impl Runner {
         let input_file_path = input_file.path();
         fs::write(input_file_path, input_string).expect("Failed to write input file");
 
-        let output = self._run(input_file_path, &pie_file_path)?;
+        let output = self._run(input_file_path, pie_file_path)?;
         let cairo_run_output =
             self.parse_run(output, &PathBuf::from(SOUND_CAIRO_RUN_OUTPUT_FILE))?;
         info!("Cairo run output: {:#?}", cairo_run_output);

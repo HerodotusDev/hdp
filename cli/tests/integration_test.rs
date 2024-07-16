@@ -78,7 +78,7 @@ mod integration_test {
 
         let start_process = std::time::Instant::now();
         let processed_result = processor
-            .process(preprocessed_result, PathBuf::from(PIE_PATH))
+            .process(preprocessed_result, &PathBuf::from(PIE_PATH))
             .await
             .unwrap();
         let processor_end_process = start_process.elapsed();
@@ -124,7 +124,7 @@ mod integration_test {
 
         let start_process = std::time::Instant::now();
         let processed_result = processor
-            .process(preprocessed_result, PathBuf::from(PIE_PATH))
+            .process(preprocessed_result, &PathBuf::from(PIE_PATH))
             .await
             .unwrap();
         let processor_end_process = start_process.elapsed();
@@ -174,7 +174,7 @@ mod integration_test {
 
         let start_process = std::time::Instant::now();
         let processed_result = processor
-            .process(preprocessed_result, PathBuf::from(PIE_PATH))
+            .process(preprocessed_result, &PathBuf::from(PIE_PATH))
             .await
             .unwrap();
         let processor_end_process = start_process.elapsed();

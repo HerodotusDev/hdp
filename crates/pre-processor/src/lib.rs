@@ -10,7 +10,7 @@ use hdp_primitives::constant::SOUND_CAIRO_RUN_OUTPUT_FILE;
 use hdp_primitives::processed_types::block_proofs::ProcessedBlockProofs;
 use hdp_primitives::processed_types::datalake_compute::ProcessedDatalakeCompute;
 use hdp_primitives::processed_types::module::ProcessedModule;
-use hdp_primitives::processed_types::query::ProcessedFullInput;
+use hdp_primitives::processed_types::query::ProcessorInput;
 use hdp_primitives::processed_types::task::ProcessedTask;
 use hdp_primitives::solidity_types::traits::{DatalakeCodecs, DatalakeComputeCodecs};
 use hdp_primitives::task::TaskEnvelope;
@@ -47,7 +47,7 @@ impl PreProcessor {
     pub async fn process(
         &self,
         tasks: Vec<TaskEnvelope>,
-    ) -> Result<ProcessedFullInput, PreProcessorError> {
+    ) -> Result<ProcessorInput, PreProcessorError> {
         let tasks_commitments: Vec<B256> =
             tasks.iter().map(|task| task.commit()).collect::<Vec<_>>();
 
@@ -156,7 +156,7 @@ impl PreProcessor {
             transactions: Vec::from_iter(compiled_results.transactions),
             transaction_receipts: Vec::from_iter(compiled_results.transaction_receipts),
         };
-        let processed_result = ProcessedFullInput::new(
+        let processed_result = ProcessorInput::new(
             SOUND_CAIRO_RUN_OUTPUT_FILE.into(),
             results_merkle_tree.map(|tree| tree.root()),
             task_merkle_root,

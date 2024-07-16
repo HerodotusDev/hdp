@@ -6,7 +6,7 @@ use alloy::primitives::B256;
 use super::{block_proofs::ProcessedBlockProofs, task::ProcessedTask};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct ProcessedFullInput {
+pub struct ProcessorInput {
     /// Path to the directory where the cairo-run output will be stored.
     pub cairo_run_output_path: PathBuf,
     // U256 type
@@ -18,7 +18,7 @@ pub struct ProcessedFullInput {
     pub tasks: Vec<ProcessedTask>,
 }
 
-impl ProcessedFullInput {
+impl ProcessorInput {
     pub fn new(
         cairo_run_output_path: PathBuf,
         results_root: Option<B256>,

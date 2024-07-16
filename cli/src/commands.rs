@@ -52,7 +52,7 @@ pub enum HDPCliCommands {
         ///
         /// This will trigger pre-processing step
         #[arg(short, long)]
-        pre_processor_output: Option<PathBuf>,
+        preprocessor_output_file: Option<PathBuf>,
 
         /// Path to save output file after process
         ///
@@ -105,7 +105,7 @@ pub enum HDPCliCommands {
         ///
         /// This will trigger pre-processing step
         #[arg(short, long)]
-        pre_processor_output: Option<PathBuf>,
+        preprocessor_output_file: Option<PathBuf>,
 
         /// Path to save output file after process
         ///
@@ -168,7 +168,7 @@ pub enum HDPCliCommands {
         ///
         /// This will trigger pre-processing step
         #[arg(short, long)]
-        pre_processor_output: Option<PathBuf>,
+        preprocessor_output_file: Option<PathBuf>,
 
         /// Path to save output file after process
         ///
