@@ -1,28 +1,23 @@
-use alloy::{
-    primitives::{Bytes, ChainId},
-    transports::http::reqwest::Url,
-};
+use alloy::{primitives::ChainId, transports::http::reqwest::Url};
 use hdp_provider::evm::config::EvmProviderConfig;
 
 use std::env;
 use tokio::sync::OnceCell;
 
-pub static CONFIG: OnceCell<Config> = OnceCell::const_new();
+pub static MODULE_CONFIG: OnceCell<ModuleConfig> = OnceCell::const_new();
 
 /// Configuration for the CLI
 #[derive(Debug)]
-pub struct Config {
+pub struct ModuleConfig {
     pub evm_provider: EvmProviderConfig,
-    pub datalakes: Bytes,
-    pub tasks: Bytes,
+    pub module_registry_rpc_url: Url,
 }
 
-impl Config {
+impl ModuleConfig {
     pub async fn init(
         cli_rpc_url: Option<Url>,
-        cli_datalakes: Option<Bytes>,
-        cli_tasks: Option<Bytes>,
         cli_chain_id: Option<ChainId>,
+        cli_module_registry_rpc_url: Option<Url>,
     ) -> &'static Self {
         let chain_id = cli_chain_id.unwrap_or_else(|| {
             env::var("CHAIN_ID")
@@ -40,29 +35,22 @@ impl Config {
             .unwrap_or_else(|_| "40".to_string())
             .parse()
             .expect("RPC_CHUNK_SIZE must be a number");
-        let datalakes = cli_datalakes.unwrap_or_else(|| {
-            env::var("DATALAKES")
-                .expect("DATALAKES must be set")
+        let module_registry_rpc_url = cli_module_registry_rpc_url.unwrap_or_else(|| {
+            env::var("MODULE_REGISTRY_RPC_URL")
+                .expect("MODULE_REGISTRY_RPC_URL must be set")
                 .parse()
-                .expect("DATALAKES must be a valid hex string")
-        });
-        let tasks = cli_tasks.unwrap_or_else(|| {
-            env::var("TASKS")
-                .expect("TASKS must be set")
-                .parse()
-                .expect("TASKS must be a valid hex string")
+                .expect("MODULE_REGISTRY_RPC_URL must be a valid URL")
         });
 
-        CONFIG
+        MODULE_CONFIG
             .get_or_init(|| async {
-                Config {
+                ModuleConfig {
                     evm_provider: EvmProviderConfig {
                         rpc_url,
                         chain_id,
                         max_requests: rpc_chunk_size,
                     },
-                    datalakes,
-                    tasks,
+                    module_registry_rpc_url,
                 }
             })
             .await

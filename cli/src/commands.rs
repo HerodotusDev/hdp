@@ -48,23 +48,23 @@ pub enum HDPCliCommands {
         /// The chain id to fetch the datalake
         chain_id: Option<ChainId>,
 
-        /// Path to save output file after pre-process, this is the input file for processor
+        /// Path to save output file after pre-processing.
         ///
         /// This will trigger pre-processing step
         #[arg(short, long)]
-        cairo_input: Option<PathBuf>,
+        preprocessor_output_file: Option<PathBuf>,
 
         /// Path to save output file after process
         ///
         /// This will trigger processing(=pie generation) step
-        #[arg(short, long, requires("cairo_input"))]
+        #[arg(short, long, requires("pre_processor_output"))]
         output_file: Option<PathBuf>,
 
         /// Path to save pie file
         ///
         /// This will trigger processing(=pie generation) step
-        #[arg(short, long, requires("cairo_input"))]
-        pie_file: Option<PathBuf>,
+        #[arg(short, long, requires("pre_processor_output"))]
+        cairo_pie_file: Option<PathBuf>,
     },
     /// Decode batch computes and datalakes
     ///
@@ -88,7 +88,8 @@ pub enum HDPCliCommands {
         datalake: Bytes,
     },
     /// Run from encoded compute and datalake. Usefull for request batch tasks.
-    Run {
+    #[command(arg_required_else_help = true)]
+    RunDatalake {
         /// Batched computes bytes
         #[arg(value_parser = parse_bytes)]
         tasks: Option<Bytes>,
@@ -100,23 +101,86 @@ pub enum HDPCliCommands {
         /// The chain id to fetch the data
         chain_id: Option<ChainId>,
 
-        /// Path to save output file after pre-process, this is the input file for processor
+        /// Path to save output file after pre-processing.
         ///
         /// This will trigger pre-processing step
         #[arg(short, long)]
-        cairo_input: Option<PathBuf>,
+        preprocessor_output_file: Option<PathBuf>,
 
         /// Path to save output file after process
         ///
         /// This will trigger processing(=pie generation) step
-        #[arg(short, long, requires("cairo_input"))]
+        #[arg(short, long, requires("pre_processor_output"))]
         output_file: Option<PathBuf>,
 
         /// Path to save pie file
         ///
         /// This will trigger processing(=pie generation) step
-        #[arg(short, long, requires("cairo_input"))]
-        pie_file: Option<PathBuf>,
+        #[arg(short, long, requires("pre_processor_output"))]
+        cairo_pie_file: Option<PathBuf>,
+    },
+
+    /// Run module with either class hash deployed on starknet or local class path
+    #[command(arg_required_else_help = true)]
+    RunModule {
+        /// Input field elements for the module contract.
+        /// The input field elements should be separated by comma.
+        ///
+        /// e.g. "0x1234,0xabcd"
+        #[arg(required = true, use_value_delimiter = true)]
+        module_inputs: Vec<String>,
+
+        /// Class hash of the module that deployed on starknet.
+        /// This will trigger fetching the class from the starknet.
+        ///
+        /// (Note: either class_hash or local_class_path should be provided)
+        #[arg(long, group = "class_source")]
+        class_hash: Option<String>,
+
+        /// Local path of the contract class file.
+        /// Make sure to have structure match with [CasmContractClass](https://github.com/starkware-libs/cairo/blob/53f7a0d26d5c8a99a8ad6ba07207a762678f2931/crates/cairo-lang-starknet-classes/src/casm_contract_class.rs)
+        ///
+        /// (Note: either class_hash or local_class_path should be provided)
+        #[arg(long, group = "class_source")]
+        local_class_path: Option<PathBuf>,
+
+        /// The RPC URL to fetch the data.
+        ///
+        /// Can be overwritten by `RPC_URL` environment variable.
+        #[arg(long)]
+        rpc_url: Option<Url>,
+
+        /// The chain id to fetch the data.
+        ///
+        /// Can be overwritten by `CHAIN_ID` environment variable
+        #[arg(long)]
+        chain_id: Option<ChainId>,
+
+        /// Module registry starknet rpc url, This is used to fetch the class from the module registry
+        ///
+        /// (Note: This is only used when the class is provided by `class_hash`)
+        ///
+        /// Can be overwritten by `MODULE_REGISTRY_RPC_URL` environment variable
+        #[arg(long, requires("class_hash"))]
+        module_registry_rpc_url: Option<Url>,
+
+        /// Path to save output file after pre-processing.
+        ///
+        /// This will trigger pre-processing step
+        #[arg(short, long)]
+        preprocessor_output_file: Option<PathBuf>,
+
+        /// Path to save output file after process
+        ///
+        /// This will trigger processing(=pie generation) step
+        #[arg(short, long, requires("pre_processor_output"))]
+        output_file: Option<PathBuf>,
+
+        /// Path to save pie file
+        ///
+        /// This will trigger processing(=pie generation) step
+        #[arg(short, long, requires("pre_processor_output"))]
+        cairo_pie_file: Option<PathBuf>,
     },
 }
 

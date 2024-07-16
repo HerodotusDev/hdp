@@ -1,7 +1,7 @@
 use hdp_primitives::{
     block::account::Account,
     processed_types::{
-        account::ProcessedAccount, header::ProcessedHeader, mmr::MMRMeta, mpt::ProcessedMPTProof,
+        account::ProcessedAccount, header::ProcessedHeader, mpt::ProcessedMPTProof,
         storage::ProcessedStorage,
     },
     task::datalake::{
@@ -22,14 +22,13 @@ impl Fetchable for BlockSampledDatalake {
     async fn fetch(&self, provider: EvmProvider) -> Result<FetchedDatalake, FetchError> {
         let mut aggregation_set: Vec<U256> = Vec::new();
 
-        let (mmr_meta, headers_proofs) = provider
+        let (mmr_metas, headers_proofs) = provider
             .get_range_of_header_proofs(
                 self.block_range_start,
                 self.block_range_end,
                 self.increment,
             )
             .await?;
-        let mmr_meta = MMRMeta::from(mmr_meta);
         let mut headers: HashSet<ProcessedHeader> = HashSet::new();
         let mut accounts: HashSet<ProcessedAccount> = HashSet::new();
         let mut storages: HashSet<ProcessedStorage> = HashSet::new();
@@ -132,7 +131,7 @@ impl Fetchable for BlockSampledDatalake {
             storages,
             transactions: HashSet::new(),
             transaction_receipts: HashSet::new(),
-            mmr_meta,
+            mmr_metas,
         })
     }
 }

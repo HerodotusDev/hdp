@@ -39,5 +39,5 @@ pub struct FetchedDatalake {
     /// Transaction receipts related to the datalake
     pub transaction_receipts: HashSet<ProcessedReceipt>,
     /// MMR meta data related to the headers
-    pub mmr_meta: MMRMeta,
+    pub mmr_metas: HashSet<MMRMeta>,
 }

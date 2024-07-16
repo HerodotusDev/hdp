@@ -4,7 +4,7 @@ use crate::key::{
     AccountMemorizerKey, FetchKeyEnvelope, HeaderMemorizerKey, StorageMemorizerKey, TxMemorizerKey,
     TxReceiptMemorizerKey,
 };
-use alloy::primitives::{Address, BlockNumber, Bytes, TxIndex, B256};
+use alloy::primitives::{Address, BlockNumber, Bytes, ChainId, TxIndex, B256};
 use alloy::transports::{RpcError, TransportErrorKind};
 use eth_trie_proofs::tx_receipt_trie::TxReceiptsMptHandler;
 use eth_trie_proofs::tx_trie::TxsMptHandler;
@@ -21,66 +21,125 @@ use std::collections::{HashMap, HashSet};
 use std::time::Instant;
 use tracing::info;
 
+#[derive(Debug, Default)]
+/// This is keys that are categorized into different subsets of keys.
+pub struct CategorizedFetchKeys {
+    pub headers: HashSet<HeaderMemorizerKey>,
+    pub accounts: HashSet<AccountMemorizerKey>,
+    pub storage: HashSet<StorageMemorizerKey>,
+    pub txs: HashSet<TxMemorizerKey>,
+    pub tx_receipts: HashSet<TxReceiptMemorizerKey>,
+}
+
+impl CategorizedFetchKeys {
+    pub fn new(
+        headers: HashSet<HeaderMemorizerKey>,
+        accounts: HashSet<AccountMemorizerKey>,
+        storage: HashSet<StorageMemorizerKey>,
+        txs: HashSet<TxMemorizerKey>,
+        tx_receipts: HashSet<TxReceiptMemorizerKey>,
+    ) -> Self {
+        Self {
+            headers,
+            accounts,
+            storage,
+            txs,
+            tx_receipts,
+        }
+    }
+}
+
+/// Categorize fetch keys
+/// This is require to initiate multiple provider for different chain and fetch keys types
+pub fn categorize_fetch_keys(
+    fetch_keys: Vec<FetchKeyEnvelope>,
+) -> Vec<(ChainId, CategorizedFetchKeys)> {
+    let mut chain_id_map: HashMap<u64, CategorizedFetchKeys> = std::collections::HashMap::new();
+
+    for key in fetch_keys {
+        let chain_id = key.get_chain_id();
+        let target_categorized_fetch_keys = chain_id_map.entry(chain_id).or_default();
+
+        match key {
+            FetchKeyEnvelope::Header(header_key) => {
+                target_categorized_fetch_keys.headers.insert(header_key);
+            }
+            FetchKeyEnvelope::Account(account_key) => {
+                target_categorized_fetch_keys
+                    .headers
+                    .insert(HeaderMemorizerKey::new(
+                        account_key.chain_id,
+                        account_key.block_number,
+                    ));
+                target_categorized_fetch_keys.accounts.insert(account_key);
+            }
+            FetchKeyEnvelope::Storage(storage_key) => {
+                target_categorized_fetch_keys
+                    .headers
+                    .insert(HeaderMemorizerKey::new(
+                        storage_key.chain_id,
+                        storage_key.block_number,
+                    ));
+                target_categorized_fetch_keys.storage.insert(storage_key);
+            }
+            FetchKeyEnvelope::Tx(tx_key) => {
+                target_categorized_fetch_keys
+                    .headers
+                    .insert(HeaderMemorizerKey::new(
+                        tx_key.chain_id,
+                        tx_key.block_number,
+                    ));
+                target_categorized_fetch_keys.txs.insert(tx_key);
+            }
+            FetchKeyEnvelope::TxReceipt(tx_receipt_key) => {
+                target_categorized_fetch_keys
+                    .headers
+                    .insert(HeaderMemorizerKey::new(
+                        tx_receipt_key.chain_id,
+                        tx_receipt_key.block_number,
+                    ));
+                target_categorized_fetch_keys
+                    .tx_receipts
+                    .insert(tx_receipt_key);
+            }
+        }
+    }
+    chain_id_map.into_iter().collect()
+}
+
 impl EvmProvider {
     /// This is the public entry point of provider.  
     pub async fn fetch_proofs_from_keys(
         &self,
-        fetch_keys: Vec<FetchKeyEnvelope>,
+        fetch_keys: CategorizedFetchKeys,
     ) -> Result<ProcessedBlockProofs, ProviderError> {
-        let mut target_keys_for_header = HashSet::new();
-        let mut target_keys_for_account = HashSet::new();
-        let mut target_keys_for_storage = HashSet::new();
-        let mut target_keys_for_tx = HashSet::new();
-        let mut target_keys_for_tx_receipt = HashSet::new();
-        for key in fetch_keys {
-            match key {
-                FetchKeyEnvelope::Header(header_key) => {
-                    target_keys_for_header.insert(header_key);
-                }
-                FetchKeyEnvelope::Account(account_key) => {
-                    target_keys_for_header.insert(HeaderMemorizerKey::new(
-                        account_key.chain_id,
-                        account_key.block_number,
-                    ));
-                    target_keys_for_account.insert(account_key);
-                }
-                FetchKeyEnvelope::Storage(storage_key) => {
-                    target_keys_for_header.insert(HeaderMemorizerKey::new(
-                        storage_key.chain_id,
-                        storage_key.block_number,
-                    ));
-                    target_keys_for_storage.insert(storage_key);
-                }
-                FetchKeyEnvelope::Tx(tx_key) => {
-                    target_keys_for_header.insert(HeaderMemorizerKey::new(
-                        tx_key.chain_id,
-                        tx_key.block_number,
-                    ));
-                    target_keys_for_tx.insert(tx_key);
-                }
-                FetchKeyEnvelope::TxReceipt(tx_receipt_key) => {
-                    target_keys_for_header.insert(HeaderMemorizerKey::new(
-                        tx_receipt_key.chain_id,
-                        tx_receipt_key.block_number,
-                    ));
-                    target_keys_for_tx_receipt.insert(tx_receipt_key);
-                }
-            }
-        }
-
         // fetch proofs using keys and construct result
-        let (headers, mmr_meta) = self.get_headers_from_keys(target_keys_for_header).await?;
-        let mut accounts = self.get_accounts_from_keys(target_keys_for_account).await?;
-        let (accounts_from_storage_key, storages) =
-            self.get_storages_from_keys(target_keys_for_storage).await?;
-        let transactions = self.get_txs_from_keys(target_keys_for_tx).await?;
-        let transaction_receipts = self
-            .get_tx_receipts_from_keys(target_keys_for_tx_receipt)
-            .await?;
+        let (headers, mmr_metas) = self.get_headers_from_keys(fetch_keys.headers).await?;
+        let mut accounts = if fetch_keys.accounts.is_empty() {
+            HashSet::new()
+        } else {
+            self.get_accounts_from_keys(fetch_keys.accounts).await?
+        };
+        let (accounts_from_storage_key, storages) = if fetch_keys.storage.is_empty() {
+            (HashSet::new(), HashSet::new())
+        } else {
+            self.get_storages_from_keys(fetch_keys.storage).await?
+        };
+        let transactions = if fetch_keys.txs.is_empty() {
+            vec![]
+        } else {
+            self.get_txs_from_keys(fetch_keys.txs).await?
+        };
+        let transaction_receipts = if fetch_keys.tx_receipts.is_empty() {
+            vec![]
+        } else {
+            self.get_tx_receipts_from_keys(fetch_keys.tx_receipts)
+                .await?
+        };
         accounts.extend(accounts_from_storage_key);
         let accounts_result: Vec<ProcessedAccount> = accounts.into_iter().collect();
         Ok(ProcessedBlockProofs {
-            mmr_meta,
+            mmr_metas,
             headers: headers.into_iter().collect(),
             accounts: accounts_result,
             storages: storages.into_iter().collect(),
@@ -92,7 +151,7 @@ impl EvmProvider {
     async fn get_headers_from_keys(
         &self,
         keys: HashSet<HeaderMemorizerKey>,
-    ) -> Result<(HashSet<ProcessedHeader>, MMRMeta), ProviderError> {
+    ) -> Result<(HashSet<ProcessedHeader>, Vec<MMRMeta>), ProviderError> {
         let start_fetch = Instant::now();
 
         let block_range = keys.iter().map(|x| x.block_number).collect::<Vec<_>>();
@@ -107,8 +166,9 @@ impl EvmProvider {
             self._chunk_vec_blocks_for_indexer(block_range)
         };
 
+        let chain_id = keys.iter().next().unwrap().chain_id;
         let mut fetched_headers_proofs: HashSet<ProcessedHeader> = HashSet::new();
-        let mut mmr = None;
+        let mut mmrs = HashSet::new();
 
         let real_target_blocks = keys.iter().map(|x| x.block_number).collect::<HashSet<_>>();
         for target_blocks in target_blocks_batch {
@@ -119,17 +179,6 @@ impl EvmProvider {
                 .header_provider
                 .get_headers_proof(start_block, end_block)
                 .await?;
-
-            // validate MMR among range of blocks
-            match mmr {
-                None => {
-                    mmr = Some(indexer_response.mmr_meta);
-                }
-                Some(ref existing_mmr) if existing_mmr != &indexer_response.mmr_meta => {
-                    return Err(ProviderError::MismatchedMMRMeta);
-                }
-                _ => {}
-            }
 
             // filter only the keys that are in the real target blocks
             let keys_in_real_target_blocks = indexer_response
@@ -145,13 +194,17 @@ impl EvmProvider {
                 });
 
             fetched_headers_proofs.extend(keys_in_real_target_blocks);
+            let fetched_mmr = indexer_response.mmr_meta;
+            let mmr_meta = MMRMeta::from_indexer(fetched_mmr, chain_id);
+            mmrs.insert(mmr_meta);
         }
 
         let duration = start_fetch.elapsed();
         info!("Time taken (Headers Proofs Fetch): {:?}", duration);
 
-        if let Some(fetched_mmr) = mmr {
-            Ok((fetched_headers_proofs, fetched_mmr.into()))
+        if !mmrs.is_empty() {
+            let vec_mmrs = mmrs.into_iter().collect::<Vec<_>>();
+            Ok((fetched_headers_proofs, vec_mmrs))
         } else {
             Err(ProviderError::MmrNotFound)
         }
@@ -383,30 +436,26 @@ mod tests {
     use crate::evm::provider::EvmProvider;
     use crate::key::{AccountMemorizerKey, HeaderMemorizerKey};
     use alloy::primitives::address;
-    use reqwest::Url;
-
-    const SEPOLIA_RPC_URL: &str =
-        "https://eth-sepolia.g.alchemy.com/v2/xar76cftwEtqTBWdF4ZFy9n8FLHAETDv";
 
     #[tokio::test]
     async fn test_get_proofs_from_header_keys() {
         let target_chain_id = 11155111;
-        let provider =
-            EvmProvider::new_with_url(Url::parse(SEPOLIA_RPC_URL).unwrap(), target_chain_id);
+        let provider = EvmProvider::default();
         let keys = vec![
             FetchKeyEnvelope::Header(HeaderMemorizerKey::new(target_chain_id, 1)),
             FetchKeyEnvelope::Header(HeaderMemorizerKey::new(target_chain_id, 2)),
             FetchKeyEnvelope::Header(HeaderMemorizerKey::new(target_chain_id, 3)),
         ];
-        let proofs = provider.fetch_proofs_from_keys(keys).await.unwrap();
+        let (chain_id, fetched_keys) = categorize_fetch_keys(keys).into_iter().next().unwrap();
+        assert_eq!(chain_id, target_chain_id);
+        let proofs = provider.fetch_proofs_from_keys(fetched_keys).await.unwrap();
         assert_eq!(proofs.headers.len(), 3);
     }
 
     #[tokio::test]
     async fn test_get_proofs_from_accounts_keys() {
         let target_chain_id = 11155111;
-        let provider =
-            EvmProvider::new_with_url(Url::parse(SEPOLIA_RPC_URL).unwrap(), target_chain_id);
+        let provider = EvmProvider::default();
         let target_address = address!("7f2c6f930306d3aa736b3a6c6a98f512f74036d4");
         let keys = vec![
             FetchKeyEnvelope::Account(AccountMemorizerKey::new(
@@ -421,7 +470,9 @@ mod tests {
                 target_address,
             )),
         ];
-        let proofs = provider.fetch_proofs_from_keys(keys).await.unwrap();
+        let (chain_id, fetched_keys) = categorize_fetch_keys(keys).into_iter().next().unwrap();
+        assert_eq!(chain_id, target_chain_id);
+        let proofs = provider.fetch_proofs_from_keys(fetched_keys).await.unwrap();
         assert_eq!(proofs.accounts[0].proofs.len(), 3);
         assert_eq!(proofs.headers.len(), 3);
     }
@@ -430,8 +481,7 @@ mod tests {
     async fn test_proofs_from_storage_keys() {
         let start_fetch = Instant::now();
         let target_chain_id = 11155111;
-        let provider =
-            EvmProvider::new_with_url(Url::parse(SEPOLIA_RPC_URL).unwrap(), target_chain_id);
+        let provider = EvmProvider::default();
         let target_address = address!("7f2c6f930306d3aa736b3a6c6a98f512f74036d4");
         let target_slot = B256::ZERO;
         let keys = vec![
@@ -472,7 +522,9 @@ mod tests {
                 target_slot,
             )),
         ];
-        let proofs = provider.fetch_proofs_from_keys(keys).await.unwrap();
+        let (chain_id, fetched_keys) = categorize_fetch_keys(keys).into_iter().next().unwrap();
+        assert_eq!(chain_id, target_chain_id);
+        let proofs = provider.fetch_proofs_from_keys(fetched_keys).await.unwrap();
         let duration = start_fetch.elapsed();
         println!("Time taken (Total Proofs Fetch): {:?}", duration);
         assert_eq!(proofs.headers.len(), 6);
@@ -483,14 +535,15 @@ mod tests {
     #[tokio::test]
     async fn test_get_proofs_from_tx_keys() {
         let target_chain_id = 11155111;
-        let provider =
-            EvmProvider::new_with_url(Url::parse(SEPOLIA_RPC_URL).unwrap(), target_chain_id);
+        let provider = EvmProvider::default();
         let keys = vec![
             FetchKeyEnvelope::Tx(TxMemorizerKey::new(target_chain_id, 1000, 0)),
             FetchKeyEnvelope::Tx(TxMemorizerKey::new(target_chain_id, 1001, 1)),
             FetchKeyEnvelope::Tx(TxMemorizerKey::new(target_chain_id, 1000, 2)),
         ];
-        let proofs = provider.fetch_proofs_from_keys(keys).await.unwrap();
+        let (chain_id, fetched_keys) = categorize_fetch_keys(keys).into_iter().next().unwrap();
+        assert_eq!(chain_id, target_chain_id);
+        let proofs = provider.fetch_proofs_from_keys(fetched_keys).await.unwrap();
         assert_eq!(proofs.headers.len(), 2);
         assert_eq!(proofs.transactions.len(), 3);
     }

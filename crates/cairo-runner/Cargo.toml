@@ -23,4 +23,5 @@ serde = { workspace = true }
 serde_with = { workspace = true }
 serde_json = { workspace = true }
 starknet-crypto = { workspace = true }
+starknet = { workspace = true }
 thiserror.workspace = true

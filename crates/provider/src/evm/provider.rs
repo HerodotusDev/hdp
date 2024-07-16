@@ -1,15 +1,18 @@
 use alloy::{
-    primitives::{Address, BlockNumber, Bytes, ChainId, StorageKey, TxIndex},
+    primitives::{Address, BlockNumber, Bytes, StorageKey, TxIndex},
     rpc::types::EIP1186AccountProofResponse,
     transports::{RpcError, TransportErrorKind},
 };
 use eth_trie_proofs::{
     tx_receipt_trie::TxReceiptsMptHandler, tx_trie::TxsMptHandler, EthTrieError,
 };
-use hdp_primitives::block::header::{MMRMetaFromNewIndexer, MMRProofFromNewIndexer};
+use hdp_primitives::{block::header::MMRProofFromNewIndexer, processed_types::mmr::MMRMeta};
 use itertools::Itertools;
 use reqwest::Url;
-use std::{collections::HashMap, time::Instant};
+use std::{
+    collections::{HashMap, HashSet},
+    time::Instant,
+};
 use thiserror::Error;
 use tracing::info;
 
@@ -18,10 +21,10 @@ use crate::{
     types::{FetchedTransactionProof, FetchedTransactionReceiptProof},
 };
 
-use super::rpc::{RpcProvider, RpcProviderError};
-
-/// This is optimal max number of requests to send in parallel when using non-paid alchemy rpc url
-const DEFAULT_MAX_REQUESTS: u64 = 100;
+use super::{
+    config::EvmProviderConfig,
+    rpc::{RpcProvider, RpcProviderError},
+};
 
 /// Error from [`EvmProvider`]
 #[derive(Error, Debug)]
@@ -71,19 +74,10 @@ pub struct EvmProvider {
     pub(crate) tx_provider_url: Url,
 }
 
-/// EVM provider configuration
-#[derive(Clone, Debug)]
-pub struct EvmProviderConfig {
-    /// RPC url
-    pub rpc_url: Url,
-    /// Chain id
-    pub chain_id: u64,
-    /// Max number of requests to send in parallel
-    ///
-    /// For default, it is set to 100
-    /// For archive node, recommend to set it to 1000
-    /// This will effect fetch speed of account, storage proofs
-    pub max_requests: u64,
+impl Default for EvmProvider {
+    fn default() -> Self {
+        Self::new(EvmProviderConfig::default())
+    }
 }
 
 impl EvmProvider {
@@ -95,17 +89,6 @@ impl EvmProvider {
             rpc_provider,
             header_provider,
             tx_provider_url: config.rpc_url,
-        }
-    }
-
-    pub fn new_with_url(url: Url, chain_id: ChainId) -> Self {
-        let rpc_provider = RpcProvider::new(url.clone(), DEFAULT_MAX_REQUESTS);
-        let header_provider = Indexer::new(chain_id);
-
-        Self {
-            rpc_provider,
-            header_provider,
-            tx_provider_url: url,
         }
     }
 
@@ -122,7 +105,7 @@ impl EvmProvider {
         increment: u64,
     ) -> Result<
         (
-            MMRMetaFromNewIndexer,
+            HashSet<MMRMeta>,
             HashMap<BlockNumber, MMRProofFromNewIndexer>,
         ),
         ProviderError,
@@ -133,7 +116,7 @@ impl EvmProvider {
             self._chunk_block_range(from_block, to_block, increment);
 
         let mut fetched_headers_proofs_with_blocks_map = HashMap::new();
-        let mut mmr = None;
+        let mut mmrs = HashSet::new();
 
         for target_blocks in target_blocks_batch {
             let (start_block, end_block) =
@@ -144,24 +127,16 @@ impl EvmProvider {
                 .get_headers_proof(start_block, end_block)
                 .await?;
 
-            // validate MMR among range of blocks
-            match mmr {
-                None => {
-                    mmr = Some(indexer_response.mmr_meta);
-                }
-                Some(ref existing_mmr) if existing_mmr != &indexer_response.mmr_meta => {
-                    return Err(ProviderError::MismatchedMMRMeta);
-                }
-                _ => {}
-            }
             fetched_headers_proofs_with_blocks_map.extend(indexer_response.headers);
+            let fetched_mmr = indexer_response.mmr_meta;
+            let mmr_meta = MMRMeta::from_indexer(fetched_mmr, self.header_provider.chain_id);
+            mmrs.insert(mmr_meta);
         }
 
         let duration = start_fetch.elapsed();
         info!("Time taken (Headers Proofs Fetch): {:?}", duration);
-
-        if let Some(fetched_mmr) = mmr {
-            Ok((fetched_mmr, fetched_headers_proofs_with_blocks_map))
+        if !mmrs.is_empty() {
+            Ok((mmrs, fetched_headers_proofs_with_blocks_map))
         } else {
             Err(ProviderError::MmrNotFound)
         }
@@ -436,14 +411,11 @@ mod tests {
     use super::*;
     use alloy::primitives::{address, B256};
 
-    const SEPOLIA_RPC_URL: &str =
-        "https://eth-sepolia.g.alchemy.com/v2/xar76cftwEtqTBWdF4ZFy9n8FLHAETDv";
-
     #[ignore = "too many requests, recommend to run locally"]
     #[tokio::test]
     async fn test_get_2000_range_of_account_proofs() -> Result<(), ProviderError> {
         let start_time = Instant::now();
-        let provider = EvmProvider::new_with_url(Url::parse(SEPOLIA_RPC_URL).unwrap(), 1155511);
+        let provider = EvmProvider::default();
         let target_address = address!("7f2c6f930306d3aa736b3a6c6a98f512f74036d4");
         let response = provider
             .get_range_of_account_proofs(6127485, 6127485 + 2000 - 1, 1, target_address)
@@ -460,7 +432,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_2000_range_of_storage_proofs() -> Result<(), ProviderError> {
         let start_time = Instant::now();
-        let provider = EvmProvider::new_with_url(Url::parse(SEPOLIA_RPC_URL).unwrap(), 11155111);
+        let provider = EvmProvider::default();
         let target_address = address!("75CeC1db9dCeb703200EAa6595f66885C962B920");
         let result = provider
             .get_range_of_storage_proofs(6127485, 6127485 + 2000 - 1, 1, target_address, B256::ZERO)
@@ -477,7 +449,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_2000_range_of_header_proofs() -> Result<(), ProviderError> {
         let start_time = Instant::now();
-        let provider = EvmProvider::new_with_url(Url::parse(SEPOLIA_RPC_URL).unwrap(), 11155111);
+        let provider = EvmProvider::default();
         let (_meta, header_response) = provider
             .get_range_of_header_proofs(6127485, 6127485 + 2000 - 1, 1)
             .await?;
@@ -490,7 +462,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_parallel_4_all_tx_with_proof_from_block() {
-        let provider = EvmProvider::new_with_url(Url::parse(SEPOLIA_RPC_URL).unwrap(), 11155111);
+        let provider = EvmProvider::default();
 
         let task1 = {
             let provider = provider.clone();
@@ -542,7 +514,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_parallel_4_all_tx_receipt_with_proof_from_block() {
-        let provider = EvmProvider::new_with_url(Url::parse(SEPOLIA_RPC_URL).unwrap(), 11155111);
+        let provider = EvmProvider::default();
         let task1 = {
             let provider = provider.clone();
             tokio::spawn(async move {
@@ -594,7 +566,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_error_get_tx_with_proof_from_block() {
-        let provider = EvmProvider::new_with_url(Url::parse(SEPOLIA_RPC_URL).unwrap(), 11155111);
+        let provider = EvmProvider::default();
         let response = provider
             .get_tx_with_proof_from_block(6127485, 0, 2000, 1)
             .await;
@@ -607,7 +579,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_error_get_tx_receipt_with_proof_from_block() {
-        let provider = EvmProvider::new_with_url(Url::parse(SEPOLIA_RPC_URL).unwrap(), 1155511);
+        let provider = EvmProvider::default();
         let response = provider
             .get_tx_receipt_with_proof_from_block(6127485, 0, 2000, 1)
             .await;

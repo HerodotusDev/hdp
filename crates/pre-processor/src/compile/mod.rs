@@ -1,20 +1,26 @@
 use alloy::primitives::{B256, U256};
+
+use config::CompilerConfig;
 use hdp_primitives::processed_types::{
     account::ProcessedAccount, header::ProcessedHeader, mmr::MMRMeta, receipt::ProcessedReceipt,
     storage::ProcessedStorage, transaction::ProcessedTransaction,
 };
-use hdp_provider::evm::provider::EvmProviderConfig;
-use module::ModuleCompilerConfig;
+
 use std::collections::{HashMap, HashSet};
 use thiserror::Error;
 
 use crate::module_registry::ModuleRegistryError;
 
+pub mod config;
 pub mod datalake;
 pub mod module;
+pub mod task;
 
 #[derive(Error, Debug)]
 pub enum CompileError {
+    #[error("Class hash mismatch")]
+    ClassHashMismatch,
+
     #[error("Cairo Runner Error: {0}")]
     CairoRunnerError(#[from] hdp_cairo_runner::CairoRunnerError),
 
@@ -32,23 +38,21 @@ pub enum CompileError {
 
     #[error("Error from module registry: {0}")]
     ModuleRegistryError(#[from] ModuleRegistryError),
-}
 
-pub struct CompileConfig {
-    pub provider: EvmProviderConfig,
-    pub module: ModuleCompilerConfig,
+    #[error("Compilation failed")]
+    CompilationFailed,
 }
 
 /// Compile vector of tasks into compilation results
 pub trait Compilable {
     fn compile(
         &self,
-        compile_config: &CompileConfig,
-    ) -> impl std::future::Future<Output = Result<CompilationResults, CompileError>> + Send;
+        compile_config: &CompilerConfig,
+    ) -> impl std::future::Future<Output = Result<CompilationResult, CompileError>> + Send;
 }
 
-#[derive(Debug)]
-pub struct CompilationResults {
+#[derive(Debug, PartialEq)]
+pub struct CompilationResult {
     /// flag to check if the aggregation function is pre-processable
     pub pre_processable: bool,
     /// task_commitment -> value
@@ -64,17 +68,32 @@ pub struct CompilationResults {
     /// Transaction receipts related to the datalake
     pub transaction_receipts: HashSet<ProcessedReceipt>,
     /// MMR meta data related to the headers
-    pub mmr_meta: MMRMeta,
+    pub mmr_metas: HashSet<MMRMeta>,
 }
 
-impl CompilationResults {
+impl Default for CompilationResult {
+    fn default() -> Self {
+        Self {
+            pre_processable: true,
+            commit_results_maps: HashMap::new(),
+            headers: HashSet::new(),
+            accounts: HashSet::new(),
+            storages: HashSet::new(),
+            transactions: HashSet::new(),
+            transaction_receipts: HashSet::new(),
+            mmr_metas: HashSet::new(),
+        }
+    }
+}
+
+impl CompilationResult {
     pub fn new_without_result(
         headers: HashSet<ProcessedHeader>,
         accounts: HashSet<ProcessedAccount>,
         storages: HashSet<ProcessedStorage>,
         transactions: HashSet<ProcessedTransaction>,
         transaction_receipts: HashSet<ProcessedReceipt>,
-        mmr_meta: MMRMeta,
+        mmr_metas: HashSet<MMRMeta>,
     ) -> Self {
         Self {
             pre_processable: false,
@@ -84,7 +103,7 @@ impl CompilationResults {
             storages,
             transactions,
             transaction_receipts,
-            mmr_meta,
+            mmr_metas,
         }
     }
 
@@ -97,7 +116,7 @@ impl CompilationResults {
         storages: HashSet<ProcessedStorage>,
         transactions: HashSet<ProcessedTransaction>,
         transaction_receipts: HashSet<ProcessedReceipt>,
-        mmr_meta: MMRMeta,
+        mmr_metas: HashSet<MMRMeta>,
     ) -> Self {
         Self {
             pre_processable,
@@ -107,7 +126,23 @@ impl CompilationResults {
             storages,
             transactions,
             transaction_receipts,
-            mmr_meta,
+            mmr_metas,
+        }
+    }
+
+    /// Extend the current compilation results with another compilation results
+    pub fn extend(&mut self, other: CompilationResult) {
+        self.headers.extend(other.headers);
+        self.accounts.extend(other.accounts);
+        self.storages.extend(other.storages);
+        self.transactions.extend(other.transactions);
+        self.transaction_receipts.extend(other.transaction_receipts);
+        self.commit_results_maps.extend(other.commit_results_maps);
+        self.mmr_metas.extend(other.mmr_metas);
+
+        // if any of the task is not pre-processable, the whole batch is not pre-processable
+        if !(self.pre_processable && other.pre_processable) {
+            self.pre_processable = false;
         }
     }
 }

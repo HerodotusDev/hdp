@@ -15,5 +15,6 @@
     "0x55112088a2f7dfaf5d88ce949f3aad7c7d05d6e4eaff4053aebfbed3af885af",
     "0x66c82fce8bfc291095c6c9255b1f7ccf725a1e91e8ae8cd8c43ceb111c21480",
     "0x2e5274895f9cd556bb8dee5b2551e9cda9aa3caa23532f9824abcc62d5ad273"
-  ]
+  ],
+  "chain_id": 11155111
 }

@@ -2,8 +2,7 @@ use alloy::primitives::U256;
 use anyhow::Result;
 use hdp_primitives::{
     processed_types::{
-        header::ProcessedHeader, mmr::MMRMeta, receipt::ProcessedReceipt,
-        transaction::ProcessedTransaction,
+        header::ProcessedHeader, receipt::ProcessedReceipt, transaction::ProcessedTransaction,
     },
     task::datalake::{
         transactions::{TransactionsCollection, TransactionsInBlockDatalake},
@@ -20,10 +19,10 @@ impl Fetchable for TransactionsInBlockDatalake {
     async fn fetch(&self, provider: EvmProvider) -> Result<FetchedDatalake, FetchError> {
         let mut aggregation_set: Vec<U256> = Vec::new();
 
-        let (mmr_meta, headers_proofs) = provider
+        let (mmr_metas, headers_proofs) = provider
             .get_range_of_header_proofs(self.target_block, self.target_block, self.increment)
             .await?;
-        let mmr_meta = MMRMeta::from(mmr_meta);
+
         let mut headers: HashSet<ProcessedHeader> = HashSet::new();
         let mut transactions: HashSet<ProcessedTransaction> = HashSet::new();
         let mut transaction_receipts: HashSet<ProcessedReceipt> = HashSet::new();
@@ -91,7 +90,7 @@ impl Fetchable for TransactionsInBlockDatalake {
             storages: HashSet::new(),
             transactions,
             transaction_receipts,
-            mmr_meta,
+            mmr_metas,
         })
     }
 }
