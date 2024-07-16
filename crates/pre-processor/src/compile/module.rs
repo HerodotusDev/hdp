@@ -1,15 +1,15 @@
 //!  Preprocessor is reponsible for identifying the required values.
 //!  This will be most abstract layer of the preprocessor.
 
-use alloy::primitives::ChainId;
 use core::panic;
 use hdp_cairo_runner::dry_run::DryRunResult;
 use hdp_cairo_runner::{cairo_dry_run, input::dry_run::DryRunnerProgramInput};
 use hdp_primitives::constant::DRY_CAIRO_RUN_OUTPUT_FILE;
 use hdp_primitives::processed_types::cairo_format;
 use hdp_primitives::task::ExtendedModule;
-use hdp_provider::{evm::provider::EvmProvider, key::FetchKeyEnvelope};
-use std::collections::{HashMap, HashSet};
+use hdp_provider::evm::from_keys::categorize_fetch_keys;
+use hdp_provider::evm::provider::EvmProvider;
+use std::collections::HashMap;
 use std::path::PathBuf;
 use tracing::info;
 
@@ -54,7 +54,7 @@ impl Compilable for ModuleVec {
         );
 
         // 3. call provider using keys
-        let keys_maps_chain = categorize_fetch_keys_by_chain_id(dry_runned_module.fetch_keys);
+        let keys_maps_chain = categorize_fetch_keys(dry_runned_module.fetch_keys);
         if keys_maps_chain.len() > 1 {
             // TODO: This is temporary solution. Need to handle multiple chain id in future
             panic!("Multiple chain id is not supported yet");
@@ -67,9 +67,7 @@ impl Compilable for ModuleVec {
         // But as this have not used, for now we can just follow batch's chain id
         info!("3. Fetching proofs from provider...");
         let provider = EvmProvider::new(compile_config.provider_config.clone());
-        let results = provider
-            .fetch_proofs_from_keys(keys.into_iter().collect())
-            .await?;
+        let results = provider.fetch_proofs_from_keys(keys).await?;
 
         Ok(CompilationResult::new(
             true,
@@ -82,20 +80,6 @@ impl Compilable for ModuleVec {
             results.mmr_metas.into_iter().collect(),
         ))
     }
-}
-
-/// Categorize fetch keys by chain id
-/// This is require to initiate multiple provider for different chain id
-fn categorize_fetch_keys_by_chain_id(
-    fetch_keys: Vec<FetchKeyEnvelope>,
-) -> Vec<(ChainId, HashSet<FetchKeyEnvelope>)> {
-    let mut chain_id_map = std::collections::HashMap::new();
-    for key in fetch_keys {
-        let chain_id = key.get_chain_id();
-        let keys = chain_id_map.entry(chain_id).or_insert_with(HashSet::new);
-        keys.insert(key);
-    }
-    chain_id_map.into_iter().collect()
 }
 
 /// Generate input structure for preprocessor that need to pass to runner
