@@ -27,43 +27,43 @@ impl EvmProvider {
         &self,
         fetch_keys: Vec<FetchKeyEnvelope>,
     ) -> Result<ProcessedBlockProofs, ProviderError> {
-        let mut target_keys_for_header = HashSet::new();
-        let mut target_keys_for_account = HashSet::new();
-        let mut target_keys_for_storage = HashSet::new();
-        let mut target_keys_for_tx = HashSet::new();
-        let mut target_keys_for_tx_receipt = HashSet::new();
+        let mut target_keys_for_header = Vec::new();
+        let mut target_keys_for_account = Vec::new();
+        let mut target_keys_for_storage = Vec::new();
+        let mut target_keys_for_tx = Vec::new();
+        let mut target_keys_for_tx_receipt = Vec::new();
         for key in fetch_keys {
             match key {
                 FetchKeyEnvelope::Header(header_key) => {
-                    target_keys_for_header.insert(header_key);
+                    target_keys_for_header.push(header_key);
                 }
                 FetchKeyEnvelope::Account(account_key) => {
-                    target_keys_for_header.insert(HeaderMemorizerKey::new(
+                    target_keys_for_header.push(HeaderMemorizerKey::new(
                         account_key.chain_id,
                         account_key.block_number,
                     ));
-                    target_keys_for_account.insert(account_key);
+                    target_keys_for_account.push(account_key);
                 }
                 FetchKeyEnvelope::Storage(storage_key) => {
-                    target_keys_for_header.insert(HeaderMemorizerKey::new(
+                    target_keys_for_header.push(HeaderMemorizerKey::new(
                         storage_key.chain_id,
                         storage_key.block_number,
                     ));
-                    target_keys_for_storage.insert(storage_key);
+                    target_keys_for_storage.push(storage_key);
                 }
                 FetchKeyEnvelope::Tx(tx_key) => {
-                    target_keys_for_header.insert(HeaderMemorizerKey::new(
+                    target_keys_for_header.push(HeaderMemorizerKey::new(
                         tx_key.chain_id,
                         tx_key.block_number,
                     ));
-                    target_keys_for_tx.insert(tx_key);
+                    target_keys_for_tx.push(tx_key);
                 }
                 FetchKeyEnvelope::TxReceipt(tx_receipt_key) => {
-                    target_keys_for_header.insert(HeaderMemorizerKey::new(
+                    target_keys_for_header.push(HeaderMemorizerKey::new(
                         tx_receipt_key.chain_id,
                         tx_receipt_key.block_number,
                     ));
-                    target_keys_for_tx_receipt.insert(tx_receipt_key);
+                    target_keys_for_tx_receipt.push(tx_receipt_key);
                 }
             }
         }
@@ -105,7 +105,7 @@ impl EvmProvider {
 
     async fn get_headers_from_keys(
         &self,
-        keys: HashSet<HeaderMemorizerKey>,
+        keys: Vec<HeaderMemorizerKey>,
     ) -> Result<(HashSet<ProcessedHeader>, Vec<MMRMeta>), ProviderError> {
         let start_fetch = Instant::now();
 
@@ -121,7 +121,7 @@ impl EvmProvider {
             self._chunk_vec_blocks_for_indexer(block_range)
         };
 
-        let chain_id = keys.iter().next().unwrap().chain_id;
+        let chain_id = keys.first().unwrap().chain_id;
         let mut fetched_headers_proofs: HashSet<ProcessedHeader> = HashSet::new();
         let mut mmrs = HashSet::new();
 
@@ -167,7 +167,7 @@ impl EvmProvider {
 
     async fn get_accounts_from_keys(
         &self,
-        keys: HashSet<AccountMemorizerKey>,
+        keys: Vec<AccountMemorizerKey>,
     ) -> Result<HashSet<ProcessedAccount>, ProviderError> {
         let mut fetched_accounts_proofs: HashSet<ProcessedAccount> = HashSet::new();
         let start_fetch = Instant::now();
@@ -218,7 +218,7 @@ impl EvmProvider {
 
     async fn get_storages_from_keys(
         &self,
-        keys: HashSet<StorageMemorizerKey>,
+        keys: Vec<StorageMemorizerKey>,
     ) -> Result<(HashSet<ProcessedAccount>, HashSet<ProcessedStorage>), ProviderError> {
         let mut fetched_accounts_proofs: HashSet<ProcessedAccount> = HashSet::new();
         let mut fetched_storage_proofs: HashSet<ProcessedStorage> = HashSet::new();
@@ -284,7 +284,7 @@ impl EvmProvider {
 
     pub async fn get_txs_from_keys(
         &self,
-        keys: HashSet<TxMemorizerKey>,
+        keys: Vec<TxMemorizerKey>,
     ) -> Result<Vec<ProcessedTransaction>, ProviderError> {
         let mut fetched_transactions = vec![];
         let start_fetch = Instant::now();
@@ -333,7 +333,7 @@ impl EvmProvider {
 
     pub async fn get_tx_receipts_from_keys(
         &self,
-        keys: HashSet<TxReceiptMemorizerKey>,
+        keys: Vec<TxReceiptMemorizerKey>,
     ) -> Result<Vec<ProcessedReceipt>, ProviderError> {
         let mut fetched_transaction_receipts = vec![];
         let start_fetch = Instant::now();

@@ -9,7 +9,7 @@ use hdp_primitives::constant::DRY_CAIRO_RUN_OUTPUT_FILE;
 use hdp_primitives::processed_types::cairo_format;
 use hdp_primitives::task::ExtendedModule;
 use hdp_provider::{evm::provider::EvmProvider, key::FetchKeyEnvelope};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use tracing::info;
 
@@ -54,7 +54,7 @@ impl Compilable for ModuleVec {
         );
 
         // 3. call provider using keys
-        let keys_maps_chain = categrize_fetch_keys_by_chain_id(dry_runned_module.fetch_keys);
+        let keys_maps_chain = categorize_fetch_keys_by_chain_id(dry_runned_module.fetch_keys);
         if keys_maps_chain.len() > 1 {
             // TODO: This is temporary solution. Need to handle multiple chain id in future
             panic!("Multiple chain id is not supported yet");
@@ -86,14 +86,14 @@ impl Compilable for ModuleVec {
 
 /// Categorize fetch keys by chain id
 /// This is require to initiate multiple provider for different chain id
-fn categrize_fetch_keys_by_chain_id(
+fn categorize_fetch_keys_by_chain_id(
     fetch_keys: Vec<FetchKeyEnvelope>,
-) -> Vec<(ChainId, Vec<FetchKeyEnvelope>)> {
+) -> Vec<(ChainId, HashSet<FetchKeyEnvelope>)> {
     let mut chain_id_map = std::collections::HashMap::new();
     for key in fetch_keys {
         let chain_id = key.get_chain_id();
-        let keys = chain_id_map.entry(chain_id).or_insert_with(Vec::new);
-        keys.push(key);
+        let keys = chain_id_map.entry(chain_id).or_insert_with(HashSet::new);
+        keys.insert(key);
     }
     chain_id_map.into_iter().collect()
 }
