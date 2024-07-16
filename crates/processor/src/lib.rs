@@ -25,7 +25,7 @@ pub struct ProcessorResult {
     /// leaf of result merkle tree
     pub results_commitments: Vec<B256>,
     /// leaf of task merkle tree
-    pub task_commitments: Vec<B256>,
+    pub tasks_commitments: Vec<B256>,
     /// tasks inclusion proofs
     pub task_inclusion_proofs: Vec<Vec<FixedBytes<32>>>,
     /// results inclusion proofs
@@ -42,7 +42,7 @@ impl ProcessorResult {
     pub fn new(
         raw_results: Vec<B256>,
         results_commitments: Vec<B256>,
-        task_commitments: Vec<B256>,
+        tasks_commitments: Vec<B256>,
         task_inclusion_proofs: Vec<Vec<FixedBytes<32>>>,
         results_inclusion_proofs: Vec<Vec<FixedBytes<32>>>,
         results_root: B256,
@@ -52,7 +52,7 @@ impl ProcessorResult {
         Self {
             raw_results,
             results_commitments,
-            task_commitments,
+            tasks_commitments,
             task_inclusion_proofs,
             results_inclusion_proofs,
             results_root,
@@ -79,7 +79,7 @@ impl Processor {
             .expect("Failed to serialize module class");
         let result = cairo_run(self.program_path.clone(), input_string, pie_path)?;
         let cairo_run_output = result.cairo_run_output;
-        let task_commitments: Vec<B256> = requset
+        let tasks_commitments: Vec<B256> = requset
             .tasks
             .iter()
             .map(|task| task.get_task_commitment())
@@ -91,8 +91,10 @@ impl Processor {
             .collect();
         let task_root = requset.tasks_root;
 
-        let (results_tree, result_commitments) = self
-            .build_result_merkle_tree(task_commitments.clone(), cairo_run_output.results.clone())?;
+        let (results_tree, result_commitments) = self.build_result_merkle_tree(
+            tasks_commitments.clone(),
+            cairo_run_output.results.clone(),
+        )?;
         let results_inclusion_proofs: Vec<_> = result_commitments
             .iter()
             .map(|rc| results_tree.get_proof(&DynSolValue::FixedBytes(*rc, 32)))
@@ -105,7 +107,7 @@ impl Processor {
                 .map(|x| B256::from(*x))
                 .collect(),
             result_commitments,
-            task_commitments,
+            tasks_commitments,
             task_inclusion_proofs,
             results_inclusion_proofs,
             result_root,
@@ -118,12 +120,12 @@ impl Processor {
 
     fn build_result_merkle_tree(
         &self,
-        task_commitments: Vec<B256>,
+        tasks_commitments: Vec<B256>,
         task_results: Vec<U256>,
     ) -> Result<(StandardMerkleTree, Vec<FixedBytes<32>>)> {
         let mut results_leaves = Vec::new();
         let mut results_commitments = Vec::new();
-        for (task_commitment, task_result) in task_commitments.iter().zip(task_results.iter()) {
+        for (task_commitment, task_result) in tasks_commitments.iter().zip(task_results.iter()) {
             debug!(
                 "building result merkle tree | task_commitment: {:?}, task_result: {:?}",
                 task_commitment, task_result

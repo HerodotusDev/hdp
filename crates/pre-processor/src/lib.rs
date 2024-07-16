@@ -48,7 +48,7 @@ impl PreProcessor {
         &self,
         tasks: Vec<TaskEnvelope>,
     ) -> Result<ProcessedFullInput, PreProcessorError> {
-        let task_commitments: Vec<B256> =
+        let tasks_commitments: Vec<B256> =
             tasks.iter().map(|task| task.commit()).collect::<Vec<_>>();
 
         // do compile with the tasks
@@ -59,7 +59,7 @@ impl PreProcessor {
 
         // do operation if possible
         let (tasks_merkle_tree, results_merkle_tree) =
-            self.build_merkle_tree(&compiled_results, task_commitments)?;
+            self.build_merkle_tree(&compiled_results, tasks_commitments)?;
 
         // 2. get roots of merkle tree
         let task_merkle_root = tasks_merkle_tree.root();
@@ -170,12 +170,12 @@ impl PreProcessor {
     fn build_merkle_tree(
         &self,
         compiled_results: &CompilationResults,
-        task_commitments: Vec<B256>,
+        tasks_commitments: Vec<B256>,
     ) -> Result<(StandardMerkleTree, Option<StandardMerkleTree>), PreProcessorError> {
         let mut tasks_leaves = Vec::new();
         let mut results_leaves = Vec::new();
 
-        for task_commitment in task_commitments {
+        for task_commitment in tasks_commitments {
             if compiled_results.pre_processable {
                 let compiled_result =
                     match compiled_results.commit_results_maps.get(&task_commitment) {

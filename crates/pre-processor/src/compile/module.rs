@@ -25,7 +25,7 @@ impl Compilable for ModuleVec {
     ) -> Result<CompilationResults, CompileError> {
         info!("target task: {:#?}", self[0].task);
         let dry_run_program_path = compile_config.dry_run_program_path.clone();
-        let task_commitments = self
+        let tasks_commitments = self
             .iter()
             .map(|module| module.task.commit())
             .collect::<Vec<_>>();
@@ -49,7 +49,7 @@ impl Compilable for ModuleVec {
         let dry_runned_module = keys.into_iter().next().unwrap();
         let mut commit_results_maps = HashMap::new();
         commit_results_maps.insert(
-            task_commitments[0],
+            tasks_commitments[0],
             dry_runned_module.result.to_combined_string().into(),
         );
 
