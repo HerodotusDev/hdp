@@ -2,6 +2,7 @@ use std::str::FromStr;
 
 use alloy::primitives::U256;
 use anyhow::{bail, Result};
+use serde::{Deserialize, Serialize};
 
 use super::FunctionContext;
 
@@ -175,7 +176,7 @@ pub fn simple_linear_regression(values: &[U256]) -> Result<U256> {
     Ok(U256::from(0))
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Operator {
     None,
     Equal,

@@ -26,6 +26,7 @@ tracing = { workspace = true }
 hdp-provider = { workspace = true }
 hdp-primitives = { workspace = true }
 serde_json = { workspace = true }
+serde = { workspace = true }
 starknet = { workspace = true }
 clap = { version = "4.4.4", features = ["derive"] }
 dotenv = "0.15.0"
