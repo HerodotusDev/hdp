@@ -2,16 +2,14 @@
 //! It contains the hash and the input.
 //! This is request interface for the preprocessor.
 
-use std::path::PathBuf;
-
-use alloy::primitives::{keccak256, Keccak256, B256};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use starknet::core::{serde::unsigned_field_element::UfeHex, types::FromStrError};
 use starknet_crypto::FieldElement;
+use std::path::PathBuf;
 
 #[serde_as]
-#[derive(Clone, Debug, Serialize, PartialEq, Eq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Module {
     #[serde_as(as = "UfeHex")]
     pub class_hash: FieldElement,

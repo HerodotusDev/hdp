@@ -134,7 +134,7 @@ mod tests {
     #[test]
     fn test_felt_to_bytes32() {
         let felt = FieldElement::from_str(
-            "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+            "0x034d4ff54bc5c6cfee6719bfaa94ffa374071e8d656b74823681a955e9033dd9",
         )
         .unwrap();
         let bytes32 = felt_to_bytes32(felt);

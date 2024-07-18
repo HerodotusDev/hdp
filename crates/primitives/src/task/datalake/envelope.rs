@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 use super::{
     block_sampled::BlockSampledDatalake, transactions::TransactionsInBlockDatalake,
     DatalakeCollection,
@@ -6,7 +8,8 @@ use super::{
 pub type BatchedDatalakes = Vec<DatalakeEnvelope>;
 
 /// Envelope for datalake
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "type", content = "datalake")]
 pub enum DatalakeEnvelope {
     BlockSampled(BlockSampledDatalake),
     Transactions(TransactionsInBlockDatalake),

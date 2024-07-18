@@ -1,7 +1,10 @@
+use serde::{Deserialize, Serialize};
+
 use crate::aggregate_fn::{AggregationFunction, FunctionContext};
 
 /// [`Computation`] is a structure that contains the aggregate function id and context
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Computation {
     pub aggregate_fn_id: AggregationFunction,
     pub aggregate_fn_ctx: FunctionContext,

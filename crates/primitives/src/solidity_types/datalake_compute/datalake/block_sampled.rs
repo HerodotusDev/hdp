@@ -19,6 +19,7 @@ impl DatalakeCodecs for BlockSampledDatalake {
     /// Encode the block sampled datalake
     fn encode(&self) -> Result<Vec<u8>> {
         let datalake_code: DynSolValue = self.get_datalake_type().to_u8().into();
+        let chain_id: DynSolValue = self.chain_id.into();
         let block_range_start: DynSolValue = self.block_range_start.into();
         let block_range_end: DynSolValue = self.block_range_end.into();
         let sampled_property: DynSolValue = self.sampled_property.serialize()?.into();
@@ -26,6 +27,7 @@ impl DatalakeCodecs for BlockSampledDatalake {
 
         let tuple_value = DynSolValue::Tuple(vec![
             datalake_code,
+            chain_id,
             block_range_start,
             block_range_end,
             increment,
@@ -45,7 +47,7 @@ impl DatalakeCodecs for BlockSampledDatalake {
 
     /// Decode the encoded block sampled datalake
     fn decode(encoded: &[u8]) -> Result<Self> {
-        let abi_type: DynSolType = "(uint256,uint256,uint256,uint256,bytes)".parse()?;
+        let abi_type: DynSolType = "(uint256,uint256,uint256,uint256,uint256,bytes)".parse()?;
         let decoded = abi_type.abi_decode_sequence(encoded)?;
         let value = decoded.as_tuple().unwrap();
         let datalake_code = value[0].as_uint().unwrap().0.to_string().parse::<u8>()?;
@@ -54,16 +56,18 @@ impl DatalakeCodecs for BlockSampledDatalake {
             bail!("Encoded datalake is not a block sample datalake");
         }
 
-        let block_range_start = value[1].as_uint().unwrap().0.to_string().parse::<u64>()?;
-        let block_range_end = value[2].as_uint().unwrap().0.to_string().parse::<u64>()?;
-        let sampled_property = BlockSampledCollection::deserialize(value[4].as_bytes().unwrap())?;
-        let increment = value[3].as_uint().unwrap().0.to_string().parse::<u64>()?;
+        let chain_id = value[1].as_uint().unwrap().0.to_string().parse::<u64>()?;
+        let block_range_start = value[2].as_uint().unwrap().0.to_string().parse::<u64>()?;
+        let block_range_end = value[3].as_uint().unwrap().0.to_string().parse::<u64>()?;
+        let increment = value[4].as_uint().unwrap().0.to_string().parse::<u64>()?;
+        let sampled_property = BlockSampledCollection::deserialize(value[5].as_bytes().unwrap())?;
 
         Ok(Self {
+            chain_id,
             block_range_start,
             block_range_end,
-            sampled_property,
             increment,
+            sampled_property,
         })
     }
 }

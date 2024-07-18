@@ -53,6 +53,12 @@ pub async fn run_interactive() -> anyhow::Result<()> {
             match datalake_type {
                 DatalakeType::BlockSampled => {
                     // ================== Block Sampled Datalake Fields ==================
+                    // 0. Chain ID
+                    let chain_id: u64 = inquire::Text::new("Chain ID")
+                        .with_help_message("What is the chain ID? (Enter to set default)")
+                        .with_default("11155111")
+                        .prompt()?
+                        .parse()?;
                     // 1. Block range start
                     let block_range_start: u64 = inquire::Text::new("Block range start")
                         .with_help_message("What is the block range start? (Enter to set default)")
@@ -117,14 +123,21 @@ pub async fn run_interactive() -> anyhow::Result<()> {
                         }
                     };
                     let block_sampled_datalake = BlockSampledDatalake::new(
+                        chain_id,
                         block_range_start,
                         block_range_end,
-                        BlockSampledCollection::from_str(&sampled_property)?,
                         increment,
+                        BlockSampledCollection::from_str(&sampled_property)?,
                     );
                     DatalakeEnvelope::BlockSampled(block_sampled_datalake)
                 }
                 DatalakeType::TransactionsInBlock => {
+                    // 0. Chain ID
+                    let chain_id: u64 = inquire::Text::new("Chain ID")
+                        .with_help_message("What is the chain ID? (Enter to set default)")
+                        .with_default("11155111")
+                        .prompt()?
+                        .parse()?;
                     let target_block: u64 = inquire::Text::new("Enter target block number")
                         .with_help_message(
                             "What block you target to get transactions? (Enter to set default)",
@@ -193,6 +206,7 @@ pub async fn run_interactive() -> anyhow::Result<()> {
                         }
                     };
                     let transactions_datalake = TransactionsInBlockDatalake::new(
+                        chain_id,
                         target_block,
                         TransactionsCollection::from_str(&sampled_property)?,
                         start_index,

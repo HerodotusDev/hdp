@@ -6,13 +6,15 @@ use std::{fmt::Display, str::FromStr};
 
 use alloy::primitives::U256;
 use anyhow::{bail, Result};
+use serde::{Deserialize, Serialize};
 
 use crate::{
     block::{account::Account, header::Header},
     task::datalake::DatalakeField,
 };
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(try_from = "String")]
 pub enum HeaderField {
     ParentHash,
     OmmerHash,
@@ -201,6 +203,14 @@ impl FromStr for HeaderField {
     }
 }
 
+impl TryFrom<String> for HeaderField {
+    type Error = anyhow::Error;
+
+    fn try_from(value: String) -> Result<Self> {
+        HeaderField::from_str(&value)
+    }
+}
+
 impl Display for HeaderField {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -230,7 +240,8 @@ impl Display for HeaderField {
 
 // == Account Field ==
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(try_from = "String")]
 pub enum AccountField {
     Nonce,
     Balance,
@@ -260,6 +271,14 @@ impl FromStr for AccountField {
             "CODE_HASH" => Ok(AccountField::CodeHash),
             _ => bail!("Unknown account field"),
         }
+    }
+}
+
+impl TryFrom<String> for AccountField {
+    type Error = anyhow::Error;
+
+    fn try_from(value: String) -> Result<Self> {
+        AccountField::from_str(&value)
     }
 }
 

@@ -63,6 +63,7 @@ impl std::fmt::Display for AggregationFunction {
     }
 }
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct FunctionContext {
     pub operator: Operator,
     pub value_to_compare: U256,

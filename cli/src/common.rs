@@ -63,10 +63,11 @@ pub async fn run() -> anyhow::Result<()> {
                     sampled_property,
                     increment,
                 } => DatalakeEnvelope::BlockSampled(BlockSampledDatalake::new(
+                    11155111,
                     block_range_start,
                     block_range_end,
-                    sampled_property,
                     increment,
+                    sampled_property,
                 )),
                 DataLakeCommands::TransactionsInBlock {
                     target_block,
@@ -76,6 +77,7 @@ pub async fn run() -> anyhow::Result<()> {
                     increment,
                     included_types,
                 } => DatalakeEnvelope::Transactions(TransactionsInBlockDatalake::new(
+                    11155111,
                     target_block,
                     sampled_property,
                     start_index,
@@ -161,6 +163,25 @@ pub async fn run() -> anyhow::Result<()> {
                 cairo_pie_file,
             )
             .await?;
+        }
+        HDPCliCommands::Run {
+            request_file,
+            module_registry_rpc_url,
+            rpc_url,
+            chain_id,
+            preprocessor_output_file,
+            output_file,
+            cairo_pie_file,
+        } => {
+            entry_run(
+                request_file,
+                module_registry_rpc_url,
+                rpc_url,
+                chain_id,
+                preprocessor_output_file,
+                output_file,
+                cairo_pie_file,
+            );
         }
     }
     let duration_run = start_run.elapsed();
@@ -298,4 +319,16 @@ async fn handle_running_tasks(
             Err(anyhow::anyhow!("Cairo input path should be specified"))
         }
     }
+}
+
+pub fn entry_run(
+    request_file: PathBuf,
+    module_registry_rpc_url: Option<Url>,
+    rpc_url: Option<Url>,
+    chain_id: Option<ChainId>,
+    pre_processor_output_file: Option<PathBuf>,
+    output_file: Option<PathBuf>,
+    cairo_pie_file: Option<PathBuf>,
+) -> Result<()> {
+    Ok(())
 }

@@ -25,10 +25,11 @@ mod tests {
         let decoded_datalake =
             BlockSampledDatalake::decode(&encoded_block_sample_datalake).unwrap();
         let block_datalake = BlockSampledDatalake::new(
+            11155111,
             10399990,
             10400000,
-            "header.base_fee_per_gas".parse().unwrap(),
             1,
+            "header.base_fee_per_gas".parse().unwrap(),
         );
         assert_eq!(
             decoded_datalake.encode().unwrap(),
@@ -57,10 +58,11 @@ mod tests {
         let decoded_datalake: BlockSampledDatalake =
             BlockSampledDatalake::decode(&encoded_block_sample_datalake).unwrap();
         let block_datalake = BlockSampledDatalake::new(
+            11155111,
             10300000,
             10400000,
-            "header.base_fee_per_gas".parse().unwrap(),
             1,
+            "header.base_fee_per_gas".parse().unwrap(),
         );
 
         assert_eq!(
@@ -90,12 +92,13 @@ mod tests {
         let decoded_datalake =
             BlockSampledDatalake::decode(&encoded_block_sample_datalake).unwrap();
         let block_datalake = BlockSampledDatalake::new(
+            11155111,
             10399990,
             10400000,
+            1,
             "account.0x7b2f05ce9ae365c3dbf30657e2dc6449989e83d6.nonce"
                 .parse()
                 .unwrap(),
-            1,
         );
 
         assert_eq!(decoded_datalake, block_datalake);
@@ -124,12 +127,13 @@ mod tests {
         let decoded_datalake =
             BlockSampledDatalake::decode(&encoded_block_sample_datalake).unwrap();
         let block_datalake = BlockSampledDatalake::new(
+            11155111,
             4952100,
+            1,
             4952103,
             "account.0x0a4de450feb156a2a51ed159b2fb99da26e5f3a3.nonce"
                 .parse()
                 .unwrap(),
-            1,
         );
         let serialized = block_datalake.encode().unwrap();
         assert_eq!(serialized, encoded_block_sample_datalake);
@@ -160,10 +164,11 @@ mod tests {
         let decoded_datalake =
             BlockSampledDatalake::decode(&encoded_block_sample_datalake).unwrap();
         let block_datalake = BlockSampledDatalake::new(
+            11155111,
             10399990,
             10400000,
-            "storage.0x7b2f05ce9ae365c3dbf30657e2dc6449989e83d6.0x00000000000000000000000000000000000000000000000000000000000000ff".parse().unwrap(),
             1,
+            "storage.0x7b2f05ce9ae365c3dbf30657e2dc6449989e83d6.0x00000000000000000000000000000000000000000000000000000000000000ff".parse().unwrap(),
         );
         assert_eq!(decoded_datalake, block_datalake);
         assert_eq!(

@@ -1,6 +1,7 @@
 use std::{fmt::Display, str::FromStr};
 
 use anyhow::{bail, Result};
+use serde::{Deserialize, Serialize};
 
 use crate::task::datalake::{DatalakeCollection, DatalakeField};
 
@@ -29,7 +30,7 @@ impl FromStr for TransactionsCollectionType {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum TransactionsCollection {
     Transactions(TransactionField),
     TranasactionReceipts(TransactionReceiptField),

@@ -182,6 +182,50 @@ pub enum HDPCliCommands {
         #[arg(short, long, requires("pre_processor_output"))]
         cairo_pie_file: Option<PathBuf>,
     },
+    /// Run module with either class hash deployed on starknet or local class path
+    #[command(arg_required_else_help = true)]
+    Run {
+        #[arg(short, long)]
+        request_file: PathBuf,
+
+        /// The RPC URL to fetch the data.
+        ///
+        /// Can be overwritten by `RPC_URL` environment variable.
+        #[arg(long)]
+        rpc_url: Option<Url>,
+
+        /// The chain id to fetch the data.
+        ///
+        /// Can be overwritten by `CHAIN_ID` environment variable
+        #[arg(long)]
+        chain_id: Option<ChainId>,
+
+        /// Module registry starknet rpc url, This is used to fetch the class from the module registry
+        ///
+        /// (Note: This is only used when the class is provided by `class_hash`)
+        ///
+        /// Can be overwritten by `MODULE_REGISTRY_RPC_URL` environment variable
+        #[arg(long, requires("class_hash"))]
+        module_registry_rpc_url: Option<Url>,
+
+        /// Path to save output file after pre-processing.
+        ///
+        /// This will trigger pre-processing step
+        #[arg(short, long)]
+        preprocessor_output_file: Option<PathBuf>,
+
+        /// Path to save output file after process
+        ///
+        /// This will trigger processing(=pie generation) step
+        #[arg(short, long, requires("pre_processor_output"))]
+        output_file: Option<PathBuf>,
+
+        /// Path to save pie file
+        ///
+        /// This will trigger processing(=pie generation) step
+        #[arg(short, long, requires("pre_processor_output"))]
+        cairo_pie_file: Option<PathBuf>,
+    },
 }
 
 #[derive(Subcommand, Clone, Debug, PartialEq, Eq)]

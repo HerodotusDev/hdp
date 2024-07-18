@@ -48,6 +48,7 @@ mod integration_test {
             TaskEnvelope::DatalakeCompute(DatalakeCompute {
                 compute: Computation::new(AggregationFunction::MIN, None),
                 datalake: DatalakeEnvelope::BlockSampled(BlockSampledDatalake {
+                    chain_id: 11155111,
                     block_range_start: 10001,
                     block_range_end: 10005,
                     increment: 1,
@@ -57,6 +58,7 @@ mod integration_test {
             TaskEnvelope::DatalakeCompute(DatalakeCompute {
                 compute: Computation::new(AggregationFunction::AVG, None),
                 datalake: DatalakeEnvelope::BlockSampled(BlockSampledDatalake {
+                    chain_id: 11155111,
                     block_range_start: 10003,
                     block_range_end: 10004,
                     increment: 1,
@@ -99,6 +101,7 @@ mod integration_test {
             TaskEnvelope::DatalakeCompute(DatalakeCompute {
                 compute: Computation::new(AggregationFunction::MIN, None),
                 datalake: DatalakeEnvelope::BlockSampled(BlockSampledDatalake {
+                    chain_id: 11155111,
                     block_range_start: 10001,
                     block_range_end: 10005,
                     increment: 1,

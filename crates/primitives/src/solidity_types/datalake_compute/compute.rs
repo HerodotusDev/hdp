@@ -227,10 +227,11 @@ mod tests {
             )),
         );
         let datalake = DatalakeEnvelope::BlockSampled(BlockSampledDatalake::new(
+            11155111,
             0,
             100,
-            "header.base_fee_per_gas".parse().unwrap(),
             1,
+            "header.base_fee_per_gas".parse().unwrap(),
         ));
         let task_with_datalake = DatalakeCompute::new(datalake, task);
 

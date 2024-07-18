@@ -1,5 +1,6 @@
 use alloy::primitives::U256;
 use anyhow::Result;
+use serde::{Deserialize, Serialize};
 use std::{fmt::Display, str::FromStr};
 
 use self::{compute::Computation, envelope::DatalakeEnvelope};
@@ -10,7 +11,7 @@ pub mod datalake_type;
 pub mod envelope;
 pub mod transactions;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DatalakeCompute {
     pub datalake: DatalakeEnvelope,
     pub compute: Computation,

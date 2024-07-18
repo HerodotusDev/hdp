@@ -11,11 +11,14 @@ use std::str::FromStr;
 use alloy::consensus::TxType;
 use alloy::primitives::U256;
 use anyhow::Result;
+use serde::{Deserialize, Serialize};
 
 use super::TransactionsCollection;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TransactionsInBlockDatalake {
+    pub chain_id: u64,
     // target block number
     pub target_block: u64,
     // start index of transactions range ( default 0 )
@@ -32,6 +35,7 @@ pub struct TransactionsInBlockDatalake {
 
 impl TransactionsInBlockDatalake {
     pub fn new(
+        chain_id: u64,
         target_block: u64,
         sampled_property: TransactionsCollection,
         start_index: u64,
@@ -40,6 +44,7 @@ impl TransactionsInBlockDatalake {
         included_types: IncludedTypes,
     ) -> Self {
         Self {
+            chain_id,
             target_block,
             sampled_property,
             start_index,
@@ -58,7 +63,7 @@ impl TransactionsInBlockDatalake {
 /// 1: EIP-2930
 /// 2: EIP-1559
 /// 3: EIP-4844
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct IncludedTypes {
     inner: [u8; 4],
 }
