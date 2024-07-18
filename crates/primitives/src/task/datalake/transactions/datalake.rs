@@ -65,10 +65,52 @@ impl TransactionsInBlockDatalake {
 /// 3: EIP-4844
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct IncludedTypes {
-    inner: [u8; 4],
+    legacy: bool,
+    eip2930: bool,
+    eip1559: bool,
+    eip4844: bool,
 }
 
 impl IncludedTypes {
+    pub fn to_be_bytes(&self) -> [u8; 4] {
+        let mut bytes = [0; 4];
+        if self.legacy {
+            bytes[0] = 1;
+        }
+        if self.eip2930 {
+            bytes[1] = 1;
+        }
+        if self.eip1559 {
+            bytes[2] = 1;
+        }
+        if self.eip4844 {
+            bytes[3] = 1;
+        }
+        bytes
+    }
+
+    pub fn from_be_bytes(bytes: [u8; 4]) -> Self {
+        let mut included_types = IncludedTypes {
+            legacy: false,
+            eip2930: false,
+            eip1559: false,
+            eip4844: false,
+        };
+        if bytes[0] == 1 {
+            included_types.legacy = true;
+        }
+        if bytes[1] == 1 {
+            included_types.eip2930 = true;
+        }
+        if bytes[2] == 1 {
+            included_types.eip1559 = true;
+        }
+        if bytes[3] == 1 {
+            included_types.eip4844 = true;
+        }
+        included_types
+    }
+
     pub fn from(included_types: &[u8]) -> Self {
         if included_types.len() != 4 {
             panic!("Included types must be 4 bytes long");
@@ -81,17 +123,19 @@ impl IncludedTypes {
         }
         let mut inner = [0; 4];
         inner.copy_from_slice(included_types);
-        Self { inner }
+        Self::from_be_bytes(inner)
     }
 
     pub fn is_included(&self, target_type: TxType) -> bool {
         // check with the index of bytes is either 0 or 1
-        self.inner[target_type as usize] != 0
+        let inner_bytes = self.to_be_bytes();
+        inner_bytes[target_type as usize] != 0
     }
 
     pub fn to_uint256(&self) -> U256 {
         let mut bytes = [0; 32];
-        bytes[28..32].copy_from_slice(&self.inner);
+        let inner_bytes = self.to_be_bytes();
+        bytes[28..32].copy_from_slice(&inner_bytes);
         U256::from_be_bytes(bytes)
     }
 
@@ -99,7 +143,7 @@ impl IncludedTypes {
         let bytes: [u8; 32] = value.to_be_bytes();
         let mut inner = [0; 4];
         inner.copy_from_slice(&bytes[28..32]);
-        Self { inner }
+        Self::from_be_bytes(inner)
     }
 }
 

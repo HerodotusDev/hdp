@@ -12,14 +12,16 @@ pub type BatchedDatalakes = Vec<DatalakeEnvelope>;
 #[serde(tag = "type", content = "datalake")]
 pub enum DatalakeEnvelope {
     BlockSampled(BlockSampledDatalake),
-    Transactions(TransactionsInBlockDatalake),
+    TransactionsInBlock(TransactionsInBlockDatalake),
 }
 
 impl DatalakeEnvelope {
     pub fn get_collection_type(&self) -> Box<dyn DatalakeCollection> {
         match self {
             DatalakeEnvelope::BlockSampled(datalake) => Box::new(datalake.sampled_property.clone()),
-            DatalakeEnvelope::Transactions(datalake) => Box::new(datalake.sampled_property.clone()),
+            DatalakeEnvelope::TransactionsInBlock(datalake) => {
+                Box::new(datalake.sampled_property.clone())
+            }
         }
     }
 }

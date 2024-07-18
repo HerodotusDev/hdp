@@ -23,7 +23,7 @@ impl Codecs for BatchedDatalakeEnvelope {
                 DatalakeEnvelope::BlockSampled(block_sampled_datalake) => {
                     block_sampled_datalake.encode()?
                 }
-                DatalakeEnvelope::Transactions(transactions_datalake) => {
+                DatalakeEnvelope::TransactionsInBlock(transactions_datalake) => {
                     transactions_datalake.encode()?
                 }
             };
@@ -60,7 +60,7 @@ impl DatalakeCodecs for DatalakeEnvelope {
             DatalakeType::BlockSampled => {
                 DatalakeEnvelope::BlockSampled(BlockSampledDatalake::decode(encoded_datalake)?)
             }
-            DatalakeType::TransactionsInBlock => DatalakeEnvelope::Transactions(
+            DatalakeType::TransactionsInBlock => DatalakeEnvelope::TransactionsInBlock(
                 TransactionsInBlockDatalake::decode(encoded_datalake)?,
             ),
         };
@@ -70,21 +70,21 @@ impl DatalakeCodecs for DatalakeEnvelope {
     fn encode(&self) -> Result<Vec<u8>> {
         match self {
             DatalakeEnvelope::BlockSampled(datalake) => datalake.encode(),
-            DatalakeEnvelope::Transactions(datalake) => datalake.encode(),
+            DatalakeEnvelope::TransactionsInBlock(datalake) => datalake.encode(),
         }
     }
 
     fn get_datalake_type(&self) -> DatalakeType {
         match self {
             DatalakeEnvelope::BlockSampled(_) => DatalakeType::BlockSampled,
-            DatalakeEnvelope::Transactions(_) => DatalakeType::TransactionsInBlock,
+            DatalakeEnvelope::TransactionsInBlock(_) => DatalakeType::TransactionsInBlock,
         }
     }
 
     fn commit(&self) -> B256 {
         match self {
             DatalakeEnvelope::BlockSampled(datalake) => datalake.commit(),
-            DatalakeEnvelope::Transactions(datalake) => datalake.commit(),
+            DatalakeEnvelope::TransactionsInBlock(datalake) => datalake.commit(),
         }
     }
 }
@@ -212,8 +212,8 @@ mod tests {
         );
 
         let datalakes = vec![
-            DatalakeEnvelope::Transactions(transaction_datalake1),
-            DatalakeEnvelope::Transactions(transaction_datalake2),
+            DatalakeEnvelope::TransactionsInBlock(transaction_datalake1),
+            DatalakeEnvelope::TransactionsInBlock(transaction_datalake2),
         ];
         let encoded_datalakes = datalakes.encode().unwrap();
 
@@ -248,11 +248,11 @@ mod tests {
 
         assert_eq!(
             decoded_datalake[0],
-            DatalakeEnvelope::Transactions(transaction_datalake1)
+            DatalakeEnvelope::TransactionsInBlock(transaction_datalake1)
         );
         assert_eq!(
             decoded_datalake[1],
-            DatalakeEnvelope::Transactions(transaction_datalake2)
+            DatalakeEnvelope::TransactionsInBlock(transaction_datalake2)
         );
     }
 
@@ -279,8 +279,8 @@ mod tests {
         );
 
         let datalakes = vec![
-            DatalakeEnvelope::Transactions(transaction_datalake1),
-            DatalakeEnvelope::Transactions(transaction_datalake2),
+            DatalakeEnvelope::TransactionsInBlock(transaction_datalake1),
+            DatalakeEnvelope::TransactionsInBlock(transaction_datalake2),
         ];
         let encoded_datalakes = datalakes.encode().unwrap();
 
@@ -315,11 +315,11 @@ mod tests {
 
         assert_eq!(
             decoded_datalake[0],
-            DatalakeEnvelope::Transactions(transaction_datalake1)
+            DatalakeEnvelope::TransactionsInBlock(transaction_datalake1)
         );
         assert_eq!(
             decoded_datalake[1],
-            DatalakeEnvelope::Transactions(transaction_datalake2)
+            DatalakeEnvelope::TransactionsInBlock(transaction_datalake2)
         );
     }
 }

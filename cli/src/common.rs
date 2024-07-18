@@ -36,6 +36,7 @@ use crate::{
     config::Config,
     interactive,
     module_config::ModuleConfig,
+    query::{SubmitBatchQuery, Task},
 };
 
 pub async fn run() -> anyhow::Result<()> {
@@ -76,7 +77,7 @@ pub async fn run() -> anyhow::Result<()> {
                     end_index,
                     increment,
                     included_types,
-                } => DatalakeEnvelope::Transactions(TransactionsInBlockDatalake::new(
+                } => DatalakeEnvelope::TransactionsInBlock(TransactionsInBlockDatalake::new(
                     11155111,
                     target_block,
                     sampled_property,
@@ -168,7 +169,6 @@ pub async fn run() -> anyhow::Result<()> {
             request_file,
             module_registry_rpc_url,
             rpc_url,
-            chain_id,
             preprocessor_output_file,
             output_file,
             cairo_pie_file,
@@ -177,11 +177,11 @@ pub async fn run() -> anyhow::Result<()> {
                 request_file,
                 module_registry_rpc_url,
                 rpc_url,
-                chain_id,
                 preprocessor_output_file,
                 output_file,
                 cairo_pie_file,
-            );
+            )
+            .await?;
         }
     }
     let duration_run = start_run.elapsed();
@@ -321,14 +321,87 @@ async fn handle_running_tasks(
     }
 }
 
-pub fn entry_run(
+pub async fn entry_run(
     request_file: PathBuf,
     module_registry_rpc_url: Option<Url>,
     rpc_url: Option<Url>,
-    chain_id: Option<ChainId>,
     pre_processor_output_file: Option<PathBuf>,
     output_file: Option<PathBuf>,
     cairo_pie_file: Option<PathBuf>,
 ) -> Result<()> {
-    Ok(())
+    let request_context = fs::read_to_string(request_file).unwrap();
+    let parsed: SubmitBatchQuery = serde_json::from_str(&request_context).unwrap();
+    let config = ModuleConfig::init(
+        rpc_url,
+        Some(parsed.delivery_chain_id),
+        module_registry_rpc_url,
+    )
+    .await;
+    let module_registry = ModuleRegistry::new(config.module_registry_rpc_url.clone());
+    let mut task_envelopes = Vec::new();
+    for task in parsed.tasks {
+        match task {
+            Task::DatalakeCompute(task) => {
+                task_envelopes.push(TaskEnvelope::DatalakeCompute(task));
+            }
+            Task::Module(task) => {
+                let module = module_registry
+                    .get_extended_module_from_class_source(Some(task.class_hash), None, task.inputs)
+                    .await?;
+                task_envelopes.push(TaskEnvelope::Module(module));
+            }
+        }
+    }
+    let compiler_config = CompilerConfig {
+        dry_run_program_path: PathBuf::from(&DEFAULT_DRY_CAIRO_RUN_CAIRO_FILE),
+        provider_config: config.evm_provider.clone(),
+    };
+
+    let preprocessor = PreProcessor::new_with_config(compiler_config);
+    let preprocessor_result = preprocessor.process(task_envelopes).await?;
+
+    if pre_processor_output_file.is_none() {
+        info!("Finished pre processing the data");
+        Ok(())
+    } else {
+        let input_string = serde_json::to_string_pretty(&preprocessor_result.as_cairo_format())
+            .map_err(|e| anyhow::anyhow!("Failed to serialize preprocessor result: {}", e))?;
+        if let Some(input_file_path) = pre_processor_output_file {
+            fs::write(&input_file_path, input_string)
+                .map_err(|e| anyhow::anyhow!("Unable to write input file: {}", e))?;
+            info!(
+                "Finished pre processing the data, saved the input file in {}",
+                input_file_path.display()
+            );
+            if output_file.is_none() && cairo_pie_file.is_none() {
+                Ok(())
+            } else {
+                info!("Starting processing the data... ");
+                let output_file_path = output_file
+                    .ok_or_else(|| anyhow::anyhow!("Output file path should be specified"))?;
+                let pie_file_path = cairo_pie_file
+                    .ok_or_else(|| anyhow::anyhow!("PIE path should be specified"))?;
+                let processor = Processor::new(PathBuf::from(DEFAULT_SOUND_CAIRO_RUN_CAIRO_FILE));
+                let processor_result = processor
+                    .process(preprocessor_result, &pie_file_path)
+                    .await?;
+                fs::write(
+                    &output_file_path,
+                    serde_json::to_string_pretty(&processor_result).map_err(|e| {
+                        anyhow::anyhow!("Failed to serialize processor result: {}", e)
+                    })?,
+                )
+                .map_err(|e| anyhow::anyhow!("Unable to write output file: {}", e))?;
+
+                info!(
+                    "Finished processing the data, saved the output file in {} and pie file in {}",
+                    output_file_path.display(),
+                    pie_file_path.display()
+                );
+                Ok(())
+            }
+        } else {
+            Err(anyhow::anyhow!("Cairo input path should be specified"))
+        }
+    }
 }

@@ -194,18 +194,12 @@ pub enum HDPCliCommands {
         #[arg(long)]
         rpc_url: Option<Url>,
 
-        /// The chain id to fetch the data.
-        ///
-        /// Can be overwritten by `CHAIN_ID` environment variable
-        #[arg(long)]
-        chain_id: Option<ChainId>,
-
         /// Module registry starknet rpc url, This is used to fetch the class from the module registry
         ///
         /// (Note: This is only used when the class is provided by `class_hash`)
         ///
         /// Can be overwritten by `MODULE_REGISTRY_RPC_URL` environment variable
-        #[arg(long, requires("class_hash"))]
+        #[arg(short, long)]
         module_registry_rpc_url: Option<Url>,
 
         /// Path to save output file after pre-processing.
@@ -217,13 +211,13 @@ pub enum HDPCliCommands {
         /// Path to save output file after process
         ///
         /// This will trigger processing(=pie generation) step
-        #[arg(short, long, requires("pre_processor_output"))]
+        #[arg(short, long, requires("preprocessor_output_file"))]
         output_file: Option<PathBuf>,
 
         /// Path to save pie file
         ///
         /// This will trigger processing(=pie generation) step
-        #[arg(short, long, requires("pre_processor_output"))]
+        #[arg(short, long, requires("preprocessor_output_file"))]
         cairo_pie_file: Option<PathBuf>,
     },
 }

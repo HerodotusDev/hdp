@@ -40,7 +40,7 @@ impl Compilable for DatalakeCompute {
                     compiled_block_sampled.mmr_metas,
                 ))
             }
-            DatalakeEnvelope::Transactions(ref datalake) => {
+            DatalakeEnvelope::TransactionsInBlock(ref datalake) => {
                 let compiled_tx_datalake = datalake.fetch(provider).await?;
                 let aggregated_result = aggregation_fn
                     .operation(&compiled_tx_datalake.values, Some(fn_context.clone()))?;
@@ -167,7 +167,7 @@ mod tests {
         let datalake_compute_vec = vec![
             DatalakeCompute {
                 compute: Computation::new(AggregationFunction::MIN, None),
-                datalake: DatalakeEnvelope::Transactions(TransactionsInBlockDatalake {
+                datalake: DatalakeEnvelope::TransactionsInBlock(TransactionsInBlockDatalake {
                     chain_id: 11155111,
                     target_block: 6127486,
                     start_index: 0,
@@ -181,7 +181,7 @@ mod tests {
             },
             DatalakeCompute {
                 compute: Computation::new(AggregationFunction::MIN, None),
-                datalake: DatalakeEnvelope::Transactions(TransactionsInBlockDatalake {
+                datalake: DatalakeEnvelope::TransactionsInBlock(TransactionsInBlockDatalake {
                     chain_id: 11155111,
                     target_block: 6127485,
                     start_index: 0,

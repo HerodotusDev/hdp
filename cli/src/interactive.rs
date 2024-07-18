@@ -214,7 +214,7 @@ pub async fn run_interactive() -> anyhow::Result<()> {
                         increment,
                         IncludedTypes::from(&included_types),
                     );
-                    DatalakeEnvelope::Transactions(transactions_datalake)
+                    DatalakeEnvelope::TransactionsInBlock(transactions_datalake)
                 }
             }
         }
