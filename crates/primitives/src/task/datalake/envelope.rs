@@ -9,7 +9,7 @@ pub type BatchedDatalakes = Vec<DatalakeEnvelope>;
 
 /// Envelope for datalake
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "type", content = "datalake")]
+#[serde(tag = "type")]
 pub enum DatalakeEnvelope {
     BlockSampled(BlockSampledDatalake),
     TransactionsInBlock(TransactionsInBlockDatalake),

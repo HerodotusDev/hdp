@@ -120,7 +120,7 @@ pub enum HDPCliCommands {
         cairo_pie_file: Option<PathBuf>,
     },
 
-    /// Run module with either class hash deployed on starknet or local class path
+    /// Run single module with either class hash deployed on starknet or local class path
     #[command(arg_required_else_help = true)]
     RunModule {
         /// Input field elements for the module contract.
@@ -203,10 +203,8 @@ pub enum HDPCliCommands {
         module_registry_rpc_url: Option<Url>,
 
         /// Path to save output file after pre-processing.
-        ///
-        /// This will trigger pre-processing step
         #[arg(short, long)]
-        preprocessor_output_file: Option<PathBuf>,
+        preprocessor_output_file: PathBuf,
 
         /// Path to save output file after process
         ///

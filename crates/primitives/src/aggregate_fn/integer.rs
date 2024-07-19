@@ -209,7 +209,6 @@ impl TryFrom<String> for Operator {
     type Error = anyhow::Error;
 
     fn try_from(value: String) -> Result<Self> {
-        println!("{}", value);
         Operator::from_str(&value)
     }
 }
