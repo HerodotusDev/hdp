@@ -99,3 +99,76 @@ impl BatchedDatalakeComputeCodecs for BatchedDatalakeCompute {
         Ok((encoded_datalakes, encoded_computes))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::str::FromStr;
+
+    use crate::{
+        aggregate_fn::FunctionContext,
+        task::datalake::{
+            block_sampled::{BlockSampledCollection, BlockSampledDatalake},
+            transactions::{IncludedTypes, TransactionsCollection, TransactionsInBlockDatalake},
+        },
+    };
+
+    use super::*;
+
+    #[test]
+    fn test_block_sampled_commit() {
+        let datalake_compute = DatalakeCompute {
+            datalake: DatalakeEnvelope::BlockSampled(BlockSampledDatalake {
+                chain_id: 11155111,
+                block_range_start: 5858987,
+                block_range_end: 5858997,
+                increment: 2,
+                sampled_property: BlockSampledCollection::Header(
+                    crate::task::datalake::block_sampled::HeaderField::ExcessBlobGas,
+                ),
+            }),
+            compute: Computation {
+                aggregate_fn_id: AggregationFunction::SLR,
+                aggregate_fn_ctx: FunctionContext {
+                    operator: Operator::None,
+                    value_to_compare: U256::from_str("10000000").unwrap(),
+                },
+            },
+        };
+
+        assert_eq!(
+            datalake_compute.commit(),
+            B256::from_str("0x8b610552e6badf24b2d4c44ebd7281d64bb9bdcbb229e29d8be53d4917989ee9")
+                .unwrap()
+        )
+    }
+
+    #[test]
+    fn test_transactions_commit() {
+        let datalake_compute = DatalakeCompute {
+            datalake: DatalakeEnvelope::TransactionsInBlock(TransactionsInBlockDatalake {
+                chain_id: 11155111,
+                target_block: 5605816,
+                start_index: 12,
+                end_index: 53,
+                increment: 1,
+                included_types: IncludedTypes::from_be_bytes([0, 0, 1, 1]),
+                sampled_property: TransactionsCollection::TranasactionReceipts(
+                    crate::task::datalake::transactions::TransactionReceiptField::Success,
+                ),
+            }),
+            compute: Computation {
+                aggregate_fn_id: AggregationFunction::SLR,
+                aggregate_fn_ctx: FunctionContext {
+                    operator: Operator::None,
+                    value_to_compare: U256::from_str("50").unwrap(),
+                },
+            },
+        };
+
+        assert_eq!(
+            datalake_compute.commit(),
+            B256::from_str("0x4db0b8b60e30ad6300ad54021c0ee6b250d986b33d07e4a7b28631850b5752ec")
+                .unwrap()
+        )
+    }
+}
