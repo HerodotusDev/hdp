@@ -11,8 +11,7 @@ use hdp_primitives::{
     constant::{DEFAULT_DRY_CAIRO_RUN_CAIRO_FILE, DEFAULT_SOUND_CAIRO_RUN_CAIRO_FILE},
     processed_types::cairo_format::AsCairoFormat,
     solidity_types::{
-        datalake_compute::BatchedDatalakeCompute,
-        traits::{BatchedDatalakeComputeCodecs, DatalakeComputeCodecs},
+        datalake_compute::BatchedDatalakeCompute, traits::BatchedDatalakeComputeCodecs,
     },
     task::{
         datalake::{
@@ -46,7 +45,7 @@ pub async fn run() -> anyhow::Result<()> {
         HDPCliCommands::Start => {
             interactive::run_interactive().await?;
         }
-        HDPCliCommands::Encode {
+        HDPCliCommands::RunDatalake {
             allow_process,
             rpc_url,
             chain_id,
@@ -113,15 +112,7 @@ pub async fn run() -> anyhow::Result<()> {
                 .await?
             }
         }
-        HDPCliCommands::Decode { tasks, datalakes } => {
-            let decoded_tasks = BatchedDatalakeCompute::decode(&datalakes, &tasks)?;
-            info!("Decoded tasks: {:#?}", decoded_tasks);
-        }
-        HDPCliCommands::DecodeOne { task, datalake } => {
-            let decoded_task = DatalakeCompute::decode(&datalake, &task)?;
-            info!("Decoded task: {:#?}", decoded_task);
-        }
-        HDPCliCommands::RunDatalake {
+        HDPCliCommands::RunEncodedDatalake {
             tasks,
             datalakes,
             rpc_url,

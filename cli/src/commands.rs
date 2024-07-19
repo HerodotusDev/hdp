@@ -25,9 +25,9 @@ pub struct HDPCli {
 pub enum HDPCliCommands {
     /// New to the HDP CLI? Start here!
     Start,
-    /// Encode the compute and datalake in batch and allow to proceed
+    /// Run single datalake compute
     #[command(arg_required_else_help = true)]
-    Encode {
+    RunDatalake {
         /// Decide to run processor. (default: false)
         #[arg(short, long, action = clap::ArgAction::SetTrue)]
         allow_process: bool,
@@ -66,30 +66,9 @@ pub enum HDPCliCommands {
         #[arg(short, long, requires("pre_processor_output"))]
         cairo_pie_file: Option<PathBuf>,
     },
-    /// Decode batch computes and datalakes
-    ///
-    /// Note: Batch computes and datalakes should be encoded in bytes[] format
+    /// Run batched encoded compute and datalake in bytes. Usefull for request batch tasks.
     #[command(arg_required_else_help = true)]
-    Decode {
-        /// Batched computes bytes
-        #[arg(value_parser = parse_bytes)]
-        tasks: Bytes,
-        /// Batched datalakes bytes
-        #[arg(value_parser = parse_bytes)]
-        datalakes: Bytes,
-    },
-
-    /// Decode one compute and one datalake (not batched format)
-    #[command(arg_required_else_help = true)]
-    DecodeOne {
-        #[arg(value_parser = parse_bytes)]
-        task: Bytes,
-        #[arg(value_parser = parse_bytes)]
-        datalake: Bytes,
-    },
-    /// Run from encoded compute and datalake. Usefull for request batch tasks.
-    #[command(arg_required_else_help = true)]
-    RunDatalake {
+    RunEncodedDatalake {
         /// Batched computes bytes
         #[arg(value_parser = parse_bytes)]
         tasks: Option<Bytes>,
@@ -185,6 +164,7 @@ pub enum HDPCliCommands {
     /// Run batch of tasks base on request json file
     #[command(arg_required_else_help = true)]
     Run {
+        /// Pass request as json file
         #[arg(short, long)]
         request_file: PathBuf,
 
