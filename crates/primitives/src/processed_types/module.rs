@@ -1,4 +1,4 @@
-use alloy::primitives::B256;
+use alloy::primitives::{Bytes, B256};
 use cairo_lang_starknet_classes::casm_contract_class::CasmContractClass;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
@@ -8,6 +8,8 @@ use starknet_crypto::FieldElement;
 #[serde_as]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ProcessedModule {
+    /// encoded computational task
+    pub encoded_task: Bytes,
     pub task_commitment: B256,
     pub result_commitment: B256,
     pub task_proof: Vec<B256>,
@@ -22,6 +24,7 @@ pub struct ProcessedModule {
 
 impl ProcessedModule {
     pub fn new(
+        encoded_task: Bytes,
         task_commitment: B256,
         result_commitment: B256,
         task_proof: Vec<B256>,
@@ -30,6 +33,7 @@ impl ProcessedModule {
         module_class: CasmContractClass,
     ) -> Self {
         ProcessedModule {
+            encoded_task,
             task_commitment,
             result_commitment,
             task_proof,

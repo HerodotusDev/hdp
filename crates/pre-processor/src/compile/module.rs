@@ -91,7 +91,7 @@ async fn generate_input(
     let mut collected_results = Vec::new();
     for module in extended_modules {
         let input_module =
-            cairo_format::ProcessedModule::new(module.task.inputs, module.module_class);
+            cairo_format::DryRunProcessedModule::new(module.task.inputs, module.module_class);
         collected_results.push(input_module);
     }
 

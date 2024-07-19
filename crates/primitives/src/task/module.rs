@@ -11,6 +11,7 @@ use std::path::PathBuf;
 #[serde_as]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Module {
+    /// Note that this class hash is pure cairo contract's program hash
     #[serde_as(as = "UfeHex")]
     pub class_hash: FieldElement,
     #[serde_as(as = "Vec<UfeHex>")]
@@ -73,15 +74,4 @@ impl Module {
     pub fn get_module_inputs(&self) -> Vec<FieldElement> {
         self.inputs.clone()
     }
-
-    // pub fn commit(&self) -> B256 {
-    //     // commit = keccak256(class_hash, keccak256(inputs))
-    //     let input_bytes: Vec<u8> = self.inputs.iter().flat_map(|x| x.to_bytes_be()).collect();
-    //     let commit_input = keccak256(input_bytes);
-
-    //     let mut hasher = Keccak256::new();
-    //     hasher.update(self.class_hash.to_bytes_be());
-    //     hasher.update(commit_input);
-    //     hasher.clone().finalize()
-    // }
 }

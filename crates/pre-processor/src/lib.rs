@@ -121,6 +121,7 @@ impl PreProcessor {
                 }
                 TaskEnvelope::Module(module) => {
                     let task_commitment = module.task.commit();
+                    let encoded_task = module.task.encode_task();
                     let compiled_result = compiled_results
                         .commit_results_maps
                         .get(&task_commitment)
@@ -134,6 +135,7 @@ impl PreProcessor {
                     let task_proof =
                         tasks_merkle_tree.get_proof(&DynSolValue::FixedBytes(task_commitment, 32));
                     let processed_module = ProcessedModule::new(
+                        Bytes::from(encoded_task),
                         task_commitment,
                         result_commitment,
                         task_proof,

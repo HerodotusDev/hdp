@@ -6,9 +6,8 @@ use alloy::{
 use crate::{task::module::Module, utils::felt_to_bytes32};
 
 impl Module {
-    pub fn commit(&self) -> B256 {
+    pub fn encode_task(&self) -> Vec<u8> {
         let class_hash: DynSolValue = DynSolValue::FixedBytes(felt_to_bytes32(self.class_hash), 32);
-
         let module_inputs: DynSolValue = DynSolValue::FixedArray(
             self.inputs
                 .iter()
@@ -20,7 +19,12 @@ impl Module {
         let offset: DynSolValue = (64).into();
         let module_tuple_value =
             DynSolValue::Tuple(vec![class_hash, offset, input_length, module_inputs]);
-        keccak256(module_tuple_value.abi_encode())
+        module_tuple_value.abi_encode()
+    }
+
+    pub fn commit(&self) -> B256 {
+        let encoded_task = self.encode_task();
+        keccak256(encoded_task)
     }
 }
 
@@ -35,7 +39,7 @@ mod tests {
     pub fn module_encode() {
         let module = Module {
             class_hash: FieldElement::from_hex_be(
-                "0x034d4ff54bc5c6cfee6719bfaa94ffa374071e8d656b74823681a955e9033dd9",
+                "0x00af1333b8346c1ac941efe380f3122a71c1f7cbad19301543712e74f765bfca",
             )
             .unwrap(),
             inputs: vec![
@@ -49,7 +53,7 @@ mod tests {
         let expected_commit = module.commit();
         assert_eq!(
             expected_commit,
-            B256::from_str("0x96ed7a050dc775d5a3091181336837f6d807286150878e16d66df377df2fe89a")
+            B256::from_str("0x879869b6d237b92bfdd3f3f7b76baaa9ebb2a3ad5e8478d12cca258d3def05af")
                 .unwrap()
         );
     }

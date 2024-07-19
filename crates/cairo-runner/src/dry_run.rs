@@ -9,14 +9,14 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use tempfile::NamedTempFile;
-use tracing::info;
+use tracing::{debug, info};
 
 use crate::CairoRunnerError;
 
 pub type DryRunResult = Vec<DryRunnedModule>;
 
 #[serde_as]
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct DryRunnedModule {
     pub fetch_keys: Vec<FetchKeyEnvelope>,
     pub result: Uint256,
@@ -57,7 +57,8 @@ impl DryRunner {
         }
         let input_file = NamedTempFile::new()?;
         let input_file_path = input_file.path();
-        fs::write(input_file_path, input_string).expect("Failed to write input file");
+        fs::write(input_file_path, input_string.clone()).expect("Failed to write input file");
+        fs::write("dry_run_input.json", input_string).expect("Failed to write input file");
         let _ = self._run(input_file_path)?;
 
         // parse output to return dry run result
@@ -70,8 +71,9 @@ impl DryRunner {
     fn parse_run(&self, input_file_path: &Path) -> Result<DryRunResult, CairoRunnerError> {
         let output = fs::read_to_string(input_file_path)?;
         let fetch_keys: Vec<DryRunnedModule> = serde_json::from_str(&output)?;
+        debug!("fetch keys: {:#?}", fetch_keys);
         // clean up generated input file after parse
-        fs::remove_file(input_file_path)?;
+        // fs::remove_file(input_file_path)?;
         Ok(fetch_keys)
     }
 }
