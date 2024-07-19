@@ -36,7 +36,7 @@ fn test_serialize_submit_batch_query_datalake() {
             "compute": {
               "aggregateFnId": "count",
               "aggregateFnCtx" : {
-                "operator":"GreaterThan",
+                "operator":"gt",
                 "valueToCompare": "1000000000000000000"
               }
             }
@@ -64,7 +64,7 @@ fn test_serialize_submit_batch_query_datalake() {
             "compute": {
               "aggregateFnId": "count",
               "aggregateFnCtx" : {
-                "operator":"GreaterThan",
+                "operator":"gt",
                 "valueToCompare": "1000000000000000000"
               }
             }
