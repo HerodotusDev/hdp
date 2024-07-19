@@ -182,7 +182,7 @@ pub enum HDPCliCommands {
         #[arg(short, long, requires("pre_processor_output"))]
         cairo_pie_file: Option<PathBuf>,
     },
-    /// Run module with either class hash deployed on starknet or local class path
+    /// Run batch of tasks base on request json file
     #[command(arg_required_else_help = true)]
     Run {
         #[arg(short, long)]
@@ -209,13 +209,13 @@ pub enum HDPCliCommands {
         /// Path to save output file after process
         ///
         /// This will trigger processing(=pie generation) step
-        #[arg(short, long, requires("preprocessor_output_file"))]
+        #[arg(short, long)]
         output_file: Option<PathBuf>,
 
         /// Path to save pie file
         ///
         /// This will trigger processing(=pie generation) step
-        #[arg(short, long, requires("preprocessor_output_file"))]
+        #[arg(short, long)]
         cairo_pie_file: Option<PathBuf>,
     },
 }

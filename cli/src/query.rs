@@ -32,11 +32,7 @@ fn test_serialize_submit_batch_query_datalake() {
             "sampledProperty": "header.base_fee_per_gas"
           },
           "compute": {
-            "aggregateFnId": "count",
-            "aggregateFnCtx": {
-              "operator": "gt",
-              "valueToCompare": "1000000000000000000"
-            }
+            "aggregateFnId": "avg"
           }
         },
         {
