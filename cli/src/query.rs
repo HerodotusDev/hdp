@@ -11,7 +11,7 @@ pub enum Task {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SubmitBatchQuery {
-    pub delivery_chain_id: u64,
+    pub destination_chain_id: u64,
     pub tasks: Vec<Task>,
 }
 
