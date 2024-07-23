@@ -1,1 +1,32 @@
-[{"fetch_keys": [{"key": {"chain_id": 11155111, "block_number": 5186021, "address": "0x13CB6AE34A13a0977F4d7101eBc24B87Bb23F0d5"}, "type": "AccountMemorizerKey"}, {"key": {"chain_id": 11155111, "block_number": 5186022, "address": "0x13CB6AE34A13a0977F4d7101eBc24B87Bb23F0d5"}, "type": "AccountMemorizerKey"}, {"key": {"chain_id": 11155111, "block_number": 5186023, "address": "0x13CB6AE34A13a0977F4d7101eBc24B87Bb23F0d5"}, "type": "AccountMemorizerKey"}], "result": {"low": "0x0", "high": "0x0"}, "class_hash": "0xaf1333b8346c1ac941efe380f3122a71c1f7cbad19301543712e74f765bfca"}]
+[
+  {
+    "fetch_keys": [
+      {
+        "key": {
+          "chain_id": 11155111,
+          "block_number": 5186021,
+          "address": "0x13CB6AE34A13a0977F4d7101eBc24B87Bb23F0d5"
+        },
+        "type": "AccountMemorizerKey"
+      },
+      {
+        "key": {
+          "chain_id": 11155111,
+          "block_number": 5186022,
+          "address": "0x13CB6AE34A13a0977F4d7101eBc24B87Bb23F0d5"
+        },
+        "type": "AccountMemorizerKey"
+      },
+      {
+        "key": {
+          "chain_id": 11155111,
+          "block_number": 5186023,
+          "address": "0x13CB6AE34A13a0977F4d7101eBc24B87Bb23F0d5"
+        },
+        "type": "AccountMemorizerKey"
+      }
+    ],
+    "result": { "low": "0x0", "high": "0x0" },
+    "program_hash": "0xaf1333b8346c1ac941efe380f3122a71c1f7cbad19301543712e74f765bfca"
+  }
+]
