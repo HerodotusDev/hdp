@@ -1,7 +1,4 @@
-use alloy::{
-    primitives::{Bytes, ChainId},
-    transports::http::reqwest::Url,
-};
+use alloy::{primitives::ChainId, transports::http::reqwest::Url};
 use hdp_provider::evm::config::EvmProviderConfig;
 
 use std::env;
@@ -13,17 +10,10 @@ pub static CONFIG: OnceCell<Config> = OnceCell::const_new();
 #[derive(Debug)]
 pub struct Config {
     pub evm_provider: EvmProviderConfig,
-    pub datalakes: Bytes,
-    pub tasks: Bytes,
 }
 
 impl Config {
-    pub async fn init(
-        cli_rpc_url: Option<Url>,
-        cli_datalakes: Option<Bytes>,
-        cli_tasks: Option<Bytes>,
-        cli_chain_id: Option<ChainId>,
-    ) -> &'static Self {
+    pub async fn init(cli_rpc_url: Option<Url>, cli_chain_id: Option<ChainId>) -> &'static Self {
         let chain_id = cli_chain_id.unwrap_or_else(|| {
             env::var("CHAIN_ID")
                 .expect("CHAIN_ID must be set")
@@ -40,18 +30,6 @@ impl Config {
             .unwrap_or_else(|_| "40".to_string())
             .parse()
             .expect("RPC_CHUNK_SIZE must be a number");
-        let datalakes = cli_datalakes.unwrap_or_else(|| {
-            env::var("DATALAKES")
-                .expect("DATALAKES must be set")
-                .parse()
-                .expect("DATALAKES must be a valid hex string")
-        });
-        let tasks = cli_tasks.unwrap_or_else(|| {
-            env::var("TASKS")
-                .expect("TASKS must be set")
-                .parse()
-                .expect("TASKS must be a valid hex string")
-        });
 
         CONFIG
             .get_or_init(|| async {
@@ -61,8 +39,6 @@ impl Config {
                         chain_id,
                         max_requests: rpc_chunk_size,
                     },
-                    datalakes,
-                    tasks,
                 }
             })
             .await

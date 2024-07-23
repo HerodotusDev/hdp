@@ -6,19 +6,22 @@ use anyhow::bail;
 use hdp_primitives::{
     aggregate_fn::{integer::Operator, FunctionContext},
     solidity_types::traits::BatchedDatalakeComputeCodecs,
-    task::datalake::{
-        block_sampled::{
-            AccountField, BlockSampledCollection, BlockSampledCollectionType, BlockSampledDatalake,
-            HeaderField,
+    task::{
+        datalake::{
+            block_sampled::{
+                AccountField, BlockSampledCollection, BlockSampledCollectionType,
+                BlockSampledDatalake, HeaderField,
+            },
+            compute::Computation,
+            datalake_type::DatalakeType,
+            envelope::DatalakeEnvelope,
+            transactions::{
+                IncludedTypes, TransactionField, TransactionReceiptField, TransactionsCollection,
+                TransactionsCollectionType, TransactionsInBlockDatalake,
+            },
+            DatalakeCompute,
         },
-        compute::Computation,
-        datalake_type::DatalakeType,
-        envelope::DatalakeEnvelope,
-        transactions::{
-            IncludedTypes, TransactionField, TransactionReceiptField, TransactionsCollection,
-            TransactionsCollectionType, TransactionsInBlockDatalake,
-        },
-        DatalakeCompute,
+        TaskEnvelope,
     },
 };
 use inquire::{InquireError, Select};
@@ -265,13 +268,7 @@ pub async fn run_interactive() -> anyhow::Result<()> {
         datalake_envelope,
         Computation::new(aggregate_fn_id.parse()?, aggregate_fn_ctx),
     );
-    let (encoded_datalakes, encoded_computes) = vec![target_datalake_compute].encode()?;
-
-    let encoded_datalakes_bytes = Bytes::from(encoded_datalakes);
-    let encoded_computes_bytes = Bytes::from(encoded_computes);
-
-    println!("Encoded datalake: \n{}", encoded_datalakes_bytes);
-    println!("Encoded compute: \n{}", encoded_computes_bytes);
+    let tasks = vec![TaskEnvelope::DatalakeCompute(target_datalake_compute)];
 
     let allow_run: bool = inquire::Confirm::new("Do you want to run the full processor? Running the processor will generate input for Cairo program and PIE file")
         .with_default(true)
@@ -310,16 +307,16 @@ pub async fn run_interactive() -> anyhow::Result<()> {
             .prompt()?
             .into();
 
-        datalake_entry_run(
-            Some(encoded_computes_bytes),
-            Some(encoded_datalakes_bytes),
-            rpc_url,
-            chain_id,
-            Some(output_file),
-            Some(cairo_input),
-            Some(pie_file),
-        )
-        .await?
+        todo!("implement soon");
+        // handle_running_tasks(
+        //     tasks,
+        //     rpc_url,
+        //     chain_id,
+        //     Some(output_file),
+        //     Some(cairo_input),
+        //     Some(pie_file),
+        // )
+        // .await?
     }
     Ok(())
 }

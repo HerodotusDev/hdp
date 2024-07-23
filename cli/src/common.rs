@@ -1,18 +1,12 @@
-use alloy::{
-    primitives::{Bytes, ChainId},
-    transports::http::reqwest::Url,
-};
+use alloy::{primitives::ChainId, transports::http::reqwest::Url};
 use anyhow::Result;
 use hdp_preprocessor::{
     compile::config::CompilerConfig, module_registry::ModuleRegistry, PreProcessor,
-    PreProcessorError,
 };
 use hdp_primitives::{
+    aggregate_fn::{AggregationFunction, FunctionContext},
     constant::{DEFAULT_DRY_CAIRO_RUN_CAIRO_FILE, DEFAULT_SOUND_CAIRO_RUN_CAIRO_FILE},
     processed_types::cairo_format::AsCairoFormat,
-    solidity_types::{
-        datalake_compute::BatchedDatalakeCompute, traits::BatchedDatalakeComputeCodecs,
-    },
     task::{
         datalake::{
             block_sampled::BlockSampledDatalake, compute::Computation, envelope::DatalakeEnvelope,
@@ -34,7 +28,6 @@ use crate::{
     commands::{DataLakeCommands, HDPCli, HDPCliCommands},
     config::Config,
     interactive,
-    module_config::ModuleConfig,
     query::{SubmitBatchQuery, Task},
 };
 
@@ -54,55 +47,14 @@ pub async fn run() -> anyhow::Result<()> {
             cairo_pie_file,
             aggregate_fn_id,
             aggregate_fn_ctx,
-            command,
+            datalake,
         } => {
-            let datalake = match command {
-                DataLakeCommands::BlockSampled {
-                    block_range_start,
-                    block_range_end,
-                    sampled_property,
-                    increment,
-                } => DatalakeEnvelope::BlockSampled(BlockSampledDatalake::new(
-                    11155111,
-                    block_range_start,
-                    block_range_end,
-                    increment,
-                    sampled_property,
-                )),
-                DataLakeCommands::TransactionsInBlock {
-                    target_block,
-                    sampled_property,
-                    start_index,
-                    end_index,
-                    increment,
-                    included_types,
-                } => DatalakeEnvelope::TransactionsInBlock(TransactionsInBlockDatalake::new(
-                    11155111,
-                    target_block,
-                    sampled_property,
-                    start_index,
-                    end_index,
-                    increment,
-                    included_types,
-                )),
-            };
-            let (encoded_datalakes, encoded_computes) = vec![DatalakeCompute::new(
-                datalake,
-                Computation::new(aggregate_fn_id, aggregate_fn_ctx),
-            )]
-            .encode()?;
-
-            let encoded_datalakes_string = Bytes::from(encoded_datalakes);
-            let encoded_computes_string = Bytes::from(encoded_computes);
-
-            info!("Encoded datalakes: {:#?}", encoded_datalakes_string);
-            info!("Encoded computes: {:#?}", encoded_computes_string);
-
             // if allow_process is true, then run the processor
             if allow_process {
                 datalake_entry_run(
-                    Some(encoded_computes_string),
-                    Some(encoded_datalakes_string),
+                    aggregate_fn_id,
+                    aggregate_fn_ctx,
+                    datalake,
                     rpc_url,
                     chain_id,
                     preprocessor_output_file,
@@ -112,26 +64,7 @@ pub async fn run() -> anyhow::Result<()> {
                 .await?
             }
         }
-        HDPCliCommands::RunEncodedDatalake {
-            tasks,
-            datalakes,
-            rpc_url,
-            chain_id,
-            preprocessor_output_file,
-            output_file,
-            cairo_pie_file,
-        } => {
-            datalake_entry_run(
-                tasks,
-                datalakes,
-                rpc_url,
-                chain_id,
-                preprocessor_output_file,
-                output_file,
-                cairo_pie_file,
-            )
-            .await?
-        }
+
         HDPCliCommands::RunModule {
             class_hash,
             local_class_path,
@@ -199,7 +132,7 @@ pub async fn module_entry_run(
     output_file: Option<PathBuf>,
     cairo_pie_file: Option<PathBuf>,
 ) -> Result<()> {
-    let config = ModuleConfig::init(rpc_url, chain_id).await;
+    let config = Config::init(rpc_url, chain_id).await;
     let module_registry = ModuleRegistry::new();
     let module = module_registry
         .get_extended_module_from_class_source_string(class_hash, local_class_path, module_inputs)
@@ -220,21 +153,50 @@ pub async fn module_entry_run(
 }
 
 pub async fn datalake_entry_run(
-    tasks: Option<Bytes>,
-    datalakes: Option<Bytes>,
+    aggregate_fn_id: AggregationFunction,
+    aggregate_fn_ctx: Option<FunctionContext>,
+    datalake: DataLakeCommands,
     rpc_url: Option<Url>,
     chain_id: Option<ChainId>,
     pre_processor_output: Option<PathBuf>,
     output_file: Option<PathBuf>,
     cairo_pie_file: Option<PathBuf>,
 ) -> Result<()> {
-    let config = Config::init(rpc_url, datalakes, tasks, chain_id).await;
-    let tasks = BatchedDatalakeCompute::decode(&config.datalakes, &config.tasks)
-        .map_err(PreProcessorError::DecodeError)?;
-    let tasks = tasks
-        .into_iter()
-        .map(TaskEnvelope::DatalakeCompute)
-        .collect::<Vec<_>>();
+    let config = Config::init(rpc_url, chain_id).await;
+    let parsed_datalake = match datalake {
+        DataLakeCommands::BlockSampled {
+            block_range_start,
+            block_range_end,
+            sampled_property,
+            increment,
+        } => DatalakeEnvelope::BlockSampled(BlockSampledDatalake::new(
+            11155111,
+            block_range_start,
+            block_range_end,
+            increment,
+            sampled_property,
+        )),
+        DataLakeCommands::TransactionsInBlock {
+            target_block,
+            sampled_property,
+            start_index,
+            end_index,
+            increment,
+            included_types,
+        } => DatalakeEnvelope::TransactionsInBlock(TransactionsInBlockDatalake::new(
+            11155111,
+            target_block,
+            sampled_property,
+            start_index,
+            end_index,
+            increment,
+            included_types,
+        )),
+    };
+    let tasks = vec![TaskEnvelope::DatalakeCompute(DatalakeCompute::new(
+        parsed_datalake,
+        Computation::new(aggregate_fn_id, aggregate_fn_ctx),
+    ))];
 
     handle_running_tasks(
         config.evm_provider.clone(),
@@ -316,7 +278,7 @@ pub async fn entry_run(
 ) -> Result<()> {
     let request_context = fs::read_to_string(request_file).unwrap();
     let parsed: SubmitBatchQuery = serde_json::from_str(&request_context).unwrap();
-    let config = ModuleConfig::init(rpc_url, Some(parsed.destination_chain_id)).await;
+    let config = Config::init(rpc_url, Some(parsed.destination_chain_id)).await;
     let module_registry = ModuleRegistry::new();
     let mut task_envelopes = Vec::new();
     for task in parsed.tasks {

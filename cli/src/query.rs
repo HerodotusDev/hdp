@@ -77,7 +77,7 @@ fn test_serialize_submit_batch_query_module() {
       "tasks": [
         {
             "type": "Module",
-            "program_hash": "0xaf1333b8346c1ac941efe380f3122a71c1f7cbad19301543712e74f765bfca",
+            "programHash": "0xaf1333b8346c1ac941efe380f3122a71c1f7cbad19301543712e74f765bfca",
             "inputs": ["0x4F21E5", "0x4F21E8", "0x13cb6ae34a13a0977f4d7101ebc24b87bb23f0d5"]
         }        
       ]

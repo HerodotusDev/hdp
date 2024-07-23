@@ -40,44 +40,12 @@ pub enum HDPCliCommands {
         aggregate_fn_ctx: Option<FunctionContext>,
 
         #[command(subcommand)]
-        command: DataLakeCommands,
+        datalake: DataLakeCommands,
 
         /// The RPC URL to fetch the datalake
         rpc_url: Option<Url>,
 
         /// The chain id to fetch the datalake
-        chain_id: Option<ChainId>,
-
-        /// Path to save output file after pre-processing.
-        ///
-        /// This will trigger pre-processing step
-        #[arg(short, long)]
-        preprocessor_output_file: Option<PathBuf>,
-
-        /// Path to save output file after process
-        ///
-        /// This will trigger processing(=pie generation) step
-        #[arg(short, long, requires("pre_processor_output"))]
-        output_file: Option<PathBuf>,
-
-        /// Path to save pie file
-        ///
-        /// This will trigger processing(=pie generation) step
-        #[arg(short, long, requires("pre_processor_output"))]
-        cairo_pie_file: Option<PathBuf>,
-    },
-    /// Run batched encoded compute and datalake in bytes. Usefull for request batch tasks.
-    #[command(arg_required_else_help = true)]
-    RunEncodedDatalake {
-        /// Batched computes bytes
-        #[arg(value_parser = parse_bytes)]
-        tasks: Option<Bytes>,
-        /// Batched datalakes bytes
-        #[arg(value_parser = parse_bytes)]
-        datalakes: Option<Bytes>,
-        /// The RPC URL to fetch the data
-        rpc_url: Option<Url>,
-        /// The chain id to fetch the data
         chain_id: Option<ChainId>,
 
         /// Path to save output file after pre-processing.
@@ -220,11 +188,4 @@ pub enum DataLakeCommands {
         /// e.g 1,0,1,0 -> include legacy, exclude eip2930, include eip1559, exclude eip4844
         included_types: IncludedTypes,
     },
-}
-
-/// Parse bytes from hex string
-fn parse_bytes(arg: &str) -> Result<Bytes, String> {
-    hex::decode(arg)
-        .map(Bytes::from)
-        .map_err(|e| format!("Failed to parse bytes: {}", e))
 }
