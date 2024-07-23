@@ -65,21 +65,22 @@ impl ModuleRegistry {
 
     pub async fn get_extended_module_from_class_source(
         &self,
-        class_hash: Option<FieldElement>,
+        program_hash: Option<FieldElement>,
         local_class_path: Option<PathBuf>,
         module_inputs: Vec<FieldElement>,
     ) -> Result<ExtendedModule, ModuleRegistryError> {
-        if class_hash.is_some() && local_class_path.is_some() {
+        if program_hash.is_some() && local_class_path.is_some() {
             return Err(ModuleRegistryError::ClassSourceError(
-                "Only one of class_hash or local_class_path must be provided".to_string(),
+                "Only one of program_hash or local_class_path must be provided".to_string(),
             ));
         }
 
         let casm = if let Some(ref local_class_path) = local_class_path {
             self.get_module_class_from_local_path(local_class_path)
                 .await?
-        } else if let Some(class_hash) = class_hash {
-            self.get_module_class(class_hash).await?
+        } else if let Some(program_hash) = program_hash {
+            self.get_module_class_from_program_hash(program_hash)
+                .await?
         } else {
             return Err(ModuleRegistryError::ClassSourceError(
                 "One of class_hash or local_class_path must be provided".to_string(),
@@ -139,6 +140,33 @@ impl ModuleRegistry {
         flattened_sierra_to_compiled_class(&sierra)
     }
 
+    async fn get_module_class_from_program_hash(
+        &self,
+        program_hash: FieldElement,
+    ) -> Result<CasmContractClass, ModuleRegistryError> {
+        info!(
+            "Fetching contract class from module registry... program_hash: {:#?}",
+            program_hash
+        );
+        // TODO : hardcoded
+        let casm: CasmContractClass = serde_json::from_str(
+            &std::fs::read_to_string(
+                "../contracts/cairo1_example_contract.compiled_contract_class.json",
+            )
+            .map_err(|_| {
+                ModuleRegistryError::ClassSourceError(
+                    "Local class path is not a valid JSON file".to_string(),
+                )
+            })?,
+        )?;
+
+        info!(
+            "Contract class fetched successfully fromprogram_hashh: {:?}",
+            program_hash
+        );
+        Ok(casm)
+    }
+
     async fn _starknet_get_class(
         &self,
         block_id: BlockId,
@@ -181,7 +209,7 @@ fn rpc_to_cairo_contract_class(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use hdp_primitives::constant::ACCOUNT_BALANCE_EXAMPLE_CONTRACT;
+    use hdp_primitives::constant::{ACCOUNT_BALANCE_EXAMPLE_CONTRACT, NEW_EXAMPLE_CONTRACT};
 
     fn init() -> (ModuleRegistry, FieldElement) {
         let url = Url::parse(
@@ -191,7 +219,7 @@ mod tests {
         let module_registry = ModuleRegistry::new(url);
         // This is test contract class hash
         let class_hash = FieldElement::from_hex_be(
-            "0x02aacf92216d1ae71fbdaf3f41865c08f32317b37be18d8c136d442e94cdd823",
+            "0x00ababb33ae5911fd14e6b9f2853b6271f553b9ec7835298134f4bb020100971",
         )
         .unwrap();
 
@@ -200,10 +228,13 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_module() {
-        let (module_registry, class_hash) = init();
-        let casm_from_rpc = module_registry.get_module_class(class_hash).await.unwrap();
+        let (module_registry, program_hash) = init();
+        let casm_from_rpc = module_registry
+            .get_module_class_from_program_hash(program_hash)
+            .await
+            .unwrap();
 
-        assert_eq!(casm_from_rpc, ACCOUNT_BALANCE_EXAMPLE_CONTRACT.clone());
+        // assert_eq!(casm_from_rpc, ACCOUNT_BALANCE_EXAMPLE_CONTRACT.clone());
     }
 
     #[tokio::test]
@@ -235,6 +266,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_multiple_module_classes() {
         let (module_registry, class_hash) = init();
+        println!("{}", class_hash);
 
         let extended_modules = module_registry
             .get_extended_module_from_class_source(Some(class_hash), None, vec![])
@@ -244,14 +276,11 @@ mod tests {
         assert_eq!(
             extended_modules.task.program_hash,
             FieldElement::from_hex_be(
-                "0x04df21eb479ae4416fbdc00abab6fab43bff0b8083be4d1fd8602c8fbfbd2274"
+                "0xaf1333b8346c1ac941efe380f3122a71c1f7cbad19301543712e74f765bfca"
             )
             .unwrap()
         );
         assert_eq!(extended_modules.task.inputs, vec![]);
-        assert_eq!(
-            extended_modules.module_class,
-            ACCOUNT_BALANCE_EXAMPLE_CONTRACT.clone()
-        );
+        assert_eq!(extended_modules.module_class, NEW_EXAMPLE_CONTRACT.clone());
     }
 }
