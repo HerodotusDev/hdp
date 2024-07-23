@@ -10,6 +10,7 @@ use std::path::PathBuf;
 
 #[serde_as]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct Module {
     /// Note that this class hash is pure cairo contract's program hash
     #[serde_as(as = "UfeHex")]
