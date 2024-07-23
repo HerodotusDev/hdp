@@ -56,7 +56,7 @@ impl DatalakeCodecs for TransactionsInBlockDatalake {
     /// Decode the encoded transactions datalake hex string into a [`TransactionsDatalake`]
     fn decode(encoded: &[u8]) -> Result<Self> {
         let abi_type: DynSolType =
-            "(uint256, uint256, uint256, uint256, uint256, uint256, bytes)".parse()?;
+            "(uint256,uint256, uint256, uint256, uint256, uint256, uint256, bytes)".parse()?;
         let decoded = abi_type.abi_decode_sequence(encoded)?;
 
         let value = decoded.as_tuple().unwrap();
