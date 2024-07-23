@@ -337,7 +337,11 @@ pub async fn entry_run(
             }
             Task::Module(task) => {
                 let module = module_registry
-                    .get_extended_module_from_class_source(Some(task.class_hash), None, task.inputs)
+                    .get_extended_module_from_class_source(
+                        Some(task.program_hash),
+                        None,
+                        task.inputs,
+                    )
                     .await?;
                 task_envelopes.push(TaskEnvelope::Module(module));
             }

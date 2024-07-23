@@ -38,7 +38,7 @@ impl Compilable for ModuleVec {
         info!("2. Running dry-run... ");
         let keys: DryRunResult = cairo_dry_run(dry_run_program_path, input_string)?;
 
-        if keys[0].class_hash != self[0].task.class_hash {
+        if keys[0].program_hash != self[0].task.program_hash {
             return Err(CompileError::ClassHashMismatch);
         }
 

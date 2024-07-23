@@ -7,7 +7,8 @@ use crate::{task::module::Module, utils::felt_to_bytes32};
 
 impl Module {
     pub fn encode_task(&self) -> Vec<u8> {
-        let class_hash: DynSolValue = DynSolValue::FixedBytes(felt_to_bytes32(self.class_hash), 32);
+        let class_hash: DynSolValue =
+            DynSolValue::FixedBytes(felt_to_bytes32(self.program_hash), 32);
         let module_inputs: DynSolValue = DynSolValue::FixedArray(
             self.inputs
                 .iter()
@@ -38,7 +39,7 @@ mod tests {
     #[test]
     pub fn module_encode() {
         let module = Module {
-            class_hash: FieldElement::from_hex_be(
+            program_hash: FieldElement::from_hex_be(
                 "0x00af1333b8346c1ac941efe380f3122a71c1f7cbad19301543712e74f765bfca",
             )
             .unwrap(),

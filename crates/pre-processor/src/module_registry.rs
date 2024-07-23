@@ -86,12 +86,12 @@ impl ModuleRegistry {
             ));
         };
 
-        let class_hash = casm.compiled_class_hash();
-        let converted_hash = FieldElement::from_bytes_be(&class_hash.to_be_bytes()).unwrap();
+        let program_hash = casm.compiled_class_hash();
+        let converted_hash = FieldElement::from_bytes_be(&program_hash.to_be_bytes()).unwrap();
         info!("Program Hash: {:#?}", converted_hash);
 
         let module = Module {
-            class_hash: converted_hash,
+            program_hash: converted_hash,
             inputs: module_inputs,
             local_class_path,
         };
@@ -242,7 +242,7 @@ mod tests {
             .unwrap();
 
         assert_eq!(
-            extended_modules.task.class_hash,
+            extended_modules.task.program_hash,
             FieldElement::from_hex_be(
                 "0x04df21eb479ae4416fbdc00abab6fab43bff0b8083be4d1fd8602c8fbfbd2274"
             )
