@@ -136,7 +136,6 @@ pub async fn run() -> anyhow::Result<()> {
             class_hash,
             local_class_path,
             module_inputs,
-            module_registry_rpc_url,
             rpc_url,
             chain_id,
             preprocessor_output_file,
@@ -147,7 +146,6 @@ pub async fn run() -> anyhow::Result<()> {
                 class_hash,
                 local_class_path,
                 module_inputs,
-                module_registry_rpc_url,
                 rpc_url,
                 chain_id,
                 preprocessor_output_file,
@@ -158,7 +156,6 @@ pub async fn run() -> anyhow::Result<()> {
         }
         HDPCliCommands::Run {
             request_file,
-            module_registry_rpc_url,
             rpc_url,
             preprocessor_output_file,
             output_file,
@@ -166,7 +163,6 @@ pub async fn run() -> anyhow::Result<()> {
         } => {
             entry_run(
                 request_file,
-                module_registry_rpc_url,
                 rpc_url,
                 preprocessor_output_file,
                 output_file,
@@ -197,14 +193,13 @@ pub async fn module_entry_run(
     class_hash: Option<String>,
     local_class_path: Option<PathBuf>,
     module_inputs: Vec<String>,
-    module_registry_rpc_url: Option<Url>,
     rpc_url: Option<Url>,
     chain_id: Option<ChainId>,
     preprocessor_output_file: Option<PathBuf>,
     output_file: Option<PathBuf>,
     cairo_pie_file: Option<PathBuf>,
 ) -> Result<()> {
-    let config = ModuleConfig::init(rpc_url, chain_id, module_registry_rpc_url).await;
+    let config = ModuleConfig::init(rpc_url, chain_id).await;
     let module_registry = ModuleRegistry::new();
     let module = module_registry
         .get_extended_module_from_class_source_string(class_hash, local_class_path, module_inputs)
@@ -314,7 +309,6 @@ async fn handle_running_tasks(
 
 pub async fn entry_run(
     request_file: PathBuf,
-    module_registry_rpc_url: Option<Url>,
     rpc_url: Option<Url>,
     pre_processor_output_file: PathBuf,
     output_file: Option<PathBuf>,
@@ -322,12 +316,7 @@ pub async fn entry_run(
 ) -> Result<()> {
     let request_context = fs::read_to_string(request_file).unwrap();
     let parsed: SubmitBatchQuery = serde_json::from_str(&request_context).unwrap();
-    let config = ModuleConfig::init(
-        rpc_url,
-        Some(parsed.destination_chain_id),
-        module_registry_rpc_url,
-    )
-    .await;
+    let config = ModuleConfig::init(rpc_url, Some(parsed.destination_chain_id)).await;
     let module_registry = ModuleRegistry::new();
     let mut task_envelopes = Vec::new();
     for task in parsed.tasks {

@@ -1,5 +1,4 @@
 mod integration_test {
-    use alloy::transports::http::reqwest::Url;
     use hdp_preprocessor::{
         compile::config::CompilerConfig, module_registry::ModuleRegistry, PreProcessor,
     };
@@ -20,8 +19,6 @@ mod integration_test {
 
     use std::{fs, path::PathBuf};
 
-    const STARKNET_SEPOLIA_RPC: &str =
-        "https://starknet-sepolia.g.alchemy.com/v2/lINonYKIlp4NH9ZI6wvqJ4HeZj7T4Wm6";
     const DRY_RUN_PROGRAM_PATH: &str = "../build/compiled_cairo/contract_dry_run.json";
     const PREPROCESS_PROGRAM_PATH: &str = "../build/compiled_cairo/hdp.json";
     const PIE_PATH: &str = "./cairo.pie";
@@ -144,7 +141,6 @@ mod integration_test {
         let processor = init_processor();
         let start_process = std::time::Instant::now();
 
-        let url = Url::parse(STARKNET_SEPOLIA_RPC).unwrap();
         let module_regisry = ModuleRegistry::new();
         let module = module_regisry
             .get_extended_module_from_class_source_string(

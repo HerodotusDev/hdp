@@ -1,16 +1,13 @@
 //! Module registry is a service that provides the ability to fetch modules from the StarkNet network.
 //! It fetch contract class from the StarkNet network and compile it to the casm.
 
-use cairo_lang_starknet_classes::{
-    casm_contract_class::{CasmContractClass, StarknetSierraCompilationError},
-    contract_class::ContractClass as CairoContractClass,
+use cairo_lang_starknet_classes::casm_contract_class::{
+    CasmContractClass, StarknetSierraCompilationError,
 };
 
 use hdp_primitives::task::{module::Module, ExtendedModule};
 use reqwest::Client;
 use serde::Deserialize;
-use serde_json::to_string;
-use starknet::core::types::{BlockId, BlockTag, ContractClass, FlattenedSierraClass};
 use starknet_crypto::FieldElement;
 use std::path::PathBuf;
 use thiserror::Error;
@@ -46,10 +43,15 @@ struct GitHubFileResponse {
     download_url: String,
 }
 
+impl Default for ModuleRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ModuleRegistry {
     pub fn new() -> Self {
         let client = Client::new();
-
         Self { client }
     }
 
@@ -209,7 +211,7 @@ mod tests {
             .await
             .unwrap();
 
-        // assert_eq!(casm_from_rpc, ACCOUNT_BALANCE_EXAMPLE_CONTRACT.clone());
+        assert_eq!(casm_from_rpc, NEW_EXAMPLE_CONTRACT.clone());
     }
 
     #[tokio::test]

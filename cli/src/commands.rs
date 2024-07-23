@@ -135,14 +135,6 @@ pub enum HDPCliCommands {
         #[arg(long)]
         chain_id: Option<ChainId>,
 
-        /// Module registry starknet rpc url, This is used to fetch the class from the module registry
-        ///
-        /// (Note: This is only used when the class is provided by `class_hash`)
-        ///
-        /// Can be overwritten by `MODULE_REGISTRY_RPC_URL` environment variable
-        #[arg(long, requires("class_hash"))]
-        module_registry_rpc_url: Option<Url>,
-
         /// Path to save output file after pre-processing.
         ///
         /// This will trigger pre-processing step
@@ -173,14 +165,6 @@ pub enum HDPCliCommands {
         /// Can be overwritten by `RPC_URL` environment variable.
         #[arg(long)]
         rpc_url: Option<Url>,
-
-        /// Module registry starknet rpc url, This is used to fetch the class from the module registry
-        ///
-        /// (Note: This is only used when the class is provided by `class_hash`)
-        ///
-        /// Can be overwritten by `MODULE_REGISTRY_RPC_URL` environment variable
-        #[arg(short, long)]
-        module_registry_rpc_url: Option<Url>,
 
         /// Path to save output file after pre-processing.
         #[arg(short, long)]
