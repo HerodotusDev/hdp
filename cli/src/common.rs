@@ -324,7 +324,7 @@ pub async fn entry_run(
     let parsed: SubmitBatchQuery = serde_json::from_str(&request_context).unwrap();
     let config = ModuleConfig::init(
         rpc_url,
-        Some(parsed.delivery_chain_id),
+        Some(parsed.destination_chain_id),
         module_registry_rpc_url,
     )
     .await;
