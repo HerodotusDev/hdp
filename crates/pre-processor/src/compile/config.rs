@@ -18,6 +18,7 @@ impl CompilerConfig {
     }
 }
 
+// Default config for the compiler only for testing
 impl Default for CompilerConfig {
     fn default() -> Self {
         let default_provider_config = EvmProviderConfig::default();

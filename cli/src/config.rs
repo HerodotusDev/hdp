@@ -1,4 +1,7 @@
 use alloy::{primitives::ChainId, transports::http::reqwest::Url};
+use hdp_primitives::constant::{
+    DEFAULT_DRY_CAIRO_RUN_CAIRO_FILE, DEFAULT_SOUND_CAIRO_RUN_CAIRO_FILE,
+};
 use hdp_provider::evm::config::EvmProviderConfig;
 
 use std::env;
@@ -10,6 +13,8 @@ pub static CONFIG: OnceCell<Config> = OnceCell::const_new();
 #[derive(Debug)]
 pub struct Config {
     pub evm_provider: EvmProviderConfig,
+    pub dry_run_program_path: String,
+    pub sound_run_program_path: String,
 }
 
 impl Config {
@@ -31,6 +36,16 @@ impl Config {
             .parse()
             .expect("RPC_CHUNK_SIZE must be a number");
 
+        let dry_run_cairo_path: String = env::var("DRY_RUN_CAIRO_PATH")
+            .unwrap_or_else(|_| DEFAULT_DRY_CAIRO_RUN_CAIRO_FILE.to_string())
+            .parse()
+            .expect("DRY_RUN_CAIRO_PATH must be a path to a cairo file");
+
+        let sound_run_cairo_path: String = env::var("SOUND_RUN_CAIRO_PATH")
+            .unwrap_or_else(|_| DEFAULT_SOUND_CAIRO_RUN_CAIRO_FILE.to_string())
+            .parse()
+            .expect("SOUND_RUN_CAIRO_PATH must be a path to a cairo file");
+
         CONFIG
             .get_or_init(|| async {
                 Config {
@@ -39,6 +54,8 @@ impl Config {
                         chain_id,
                         max_requests: rpc_chunk_size,
                     },
+                    dry_run_program_path: dry_run_cairo_path,
+                    sound_run_program_path: sound_run_cairo_path,
                 }
             })
             .await

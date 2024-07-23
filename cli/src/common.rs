@@ -5,7 +5,6 @@ use hdp_preprocessor::{
 };
 use hdp_primitives::{
     aggregate_fn::{AggregationFunction, FunctionContext},
-    constant::{DEFAULT_DRY_CAIRO_RUN_CAIRO_FILE, DEFAULT_SOUND_CAIRO_RUN_CAIRO_FILE},
     processed_types::cairo_format::AsCairoFormat,
     task::{
         datalake::{
@@ -15,7 +14,6 @@ use hdp_primitives::{
         TaskEnvelope,
     },
 };
-use hdp_provider::evm::config::EvmProviderConfig;
 use std::{fs, path::PathBuf};
 use tracing_subscriber::FmtSubscriber;
 
@@ -139,10 +137,9 @@ pub async fn module_entry_run(
         .await?;
     // TODO: for now, we only support one task if its a module
     let tasks = vec![TaskEnvelope::Module(module)];
-    let provider_config = config.evm_provider.clone();
 
     handle_running_tasks(
-        provider_config,
+        config,
         tasks,
         preprocessor_output_file,
         output_file,
@@ -200,7 +197,7 @@ pub async fn datalake_entry_run(
     ))];
 
     handle_running_tasks(
-        config.evm_provider.clone(),
+        config,
         tasks,
         pre_processor_output,
         output_file,
@@ -211,15 +208,15 @@ pub async fn datalake_entry_run(
 }
 
 async fn handle_running_tasks(
-    evm_config: EvmProviderConfig,
+    config: &Config,
     tasks: Vec<TaskEnvelope>,
     pre_processor_output_file: Option<PathBuf>,
     output_file: Option<PathBuf>,
     cairo_pie_file: Option<PathBuf>,
 ) -> Result<()> {
     let compiler_config = CompilerConfig {
-        dry_run_program_path: PathBuf::from(&DEFAULT_DRY_CAIRO_RUN_CAIRO_FILE),
-        provider_config: evm_config,
+        dry_run_program_path: PathBuf::from(config.dry_run_program_path.clone()),
+        provider_config: config.evm_provider.clone(),
     };
     let preprocessor = PreProcessor::new_with_config(compiler_config);
     let preprocessor_result = preprocessor.process(tasks).await?;
@@ -245,7 +242,8 @@ async fn handle_running_tasks(
                     .ok_or_else(|| anyhow::anyhow!("Output file path should be specified"))?;
                 let pie_file_path = cairo_pie_file
                     .ok_or_else(|| anyhow::anyhow!("PIE path should be specified"))?;
-                let processor = Processor::new(PathBuf::from(DEFAULT_SOUND_CAIRO_RUN_CAIRO_FILE));
+                let processor =
+                    Processor::new(PathBuf::from(config.sound_run_program_path.clone()));
                 let processor_result = processor
                     .process(preprocessor_result, &pie_file_path)
                     .await?;
@@ -300,7 +298,7 @@ pub async fn entry_run(
         }
     }
     let compiler_config = CompilerConfig {
-        dry_run_program_path: PathBuf::from(&DEFAULT_DRY_CAIRO_RUN_CAIRO_FILE),
+        dry_run_program_path: PathBuf::from(&config.dry_run_program_path),
         provider_config: config.evm_provider.clone(),
     };
     let preprocessor = PreProcessor::new_with_config(compiler_config);
@@ -321,7 +319,7 @@ pub async fn entry_run(
             output_file.ok_or_else(|| anyhow::anyhow!("Output file path should be specified"))?;
         let pie_file_path =
             cairo_pie_file.ok_or_else(|| anyhow::anyhow!("PIE path should be specified"))?;
-        let processor = Processor::new(PathBuf::from(DEFAULT_SOUND_CAIRO_RUN_CAIRO_FILE));
+        let processor = Processor::new(PathBuf::from(config.sound_run_program_path.clone()));
         let processor_result = processor
             .process(preprocessor_result, &pie_file_path)
             .await?;
