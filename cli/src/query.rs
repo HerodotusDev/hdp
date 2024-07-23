@@ -19,7 +19,7 @@ pub struct SubmitBatchQuery {
 fn test_serialize_submit_batch_query_datalake() {
     let json_data = r#"
     {
-      "deliveryChainId": 11155111,
+      "destinationChainId": 11155111,
       "tasks": [
         {
           "type": "DatalakeCompute",
@@ -73,7 +73,7 @@ fn test_serialize_submit_batch_query_datalake() {
 fn test_serialize_submit_batch_query_module() {
     let json_data = r#"
     {
-      "deliveryChainId": 11155111,
+      "destinationChainId": 11155111,
       "tasks": [
         {
             "type": "Module",
