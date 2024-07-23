@@ -156,9 +156,6 @@ impl ModuleRegistry {
             .await
             .unwrap();
 
-        // Print the raw response text for debugging
-        println!("API Response: {}", response_text);
-
         // Try to deserialize the response into GitHubFileResponse
         let response: Result<GitHubFileResponse, serde_json::Error> =
             serde_json::from_str(&response_text);
@@ -180,7 +177,7 @@ impl ModuleRegistry {
         let casm: CasmContractClass = serde_json::from_str(&file_content)?;
 
         info!(
-            "Contract class fetched successfully fromprogram_hashh: {:?}",
+            "Contract class fetched successfully from program_hashh: {:?}",
             program_hash
         );
         Ok(casm)
