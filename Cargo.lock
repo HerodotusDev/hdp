@@ -2224,6 +2224,8 @@ dependencies = [
  "hdp-cairo-runner",
  "hdp-primitives",
  "hdp-provider",
+ "reqwest 0.11.27",
+ "serde",
  "serde_json",
  "starknet",
  "starknet-crypto",

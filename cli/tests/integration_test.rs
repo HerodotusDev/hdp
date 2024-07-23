@@ -145,7 +145,7 @@ mod integration_test {
         let start_process = std::time::Instant::now();
 
         let url = Url::parse(STARKNET_SEPOLIA_RPC).unwrap();
-        let module_regisry = ModuleRegistry::new(url);
+        let module_regisry = ModuleRegistry::new();
         let module = module_regisry
             .get_extended_module_from_class_source_string(
                 Some(

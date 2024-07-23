@@ -8,7 +8,7 @@ pub const DEFAULT_SOUND_CAIRO_RUN_CAIRO_FILE: &str = "/hdp-cairo/build/hdp.json"
 
 lazy_static! {
     pub static ref NEW_EXAMPLE_CONTRACT: CasmContractClass = read_compiled_class_artifact(
-        include_str!("../../contracts/cairo1_example_contract.compiled_contract_class.json")
+        include_str!("../../contracts/303315878735409585152621956723953983514155411554676628190166215259308689777.json")
     );
 }
 

@@ -205,7 +205,7 @@ pub async fn module_entry_run(
     cairo_pie_file: Option<PathBuf>,
 ) -> Result<()> {
     let config = ModuleConfig::init(rpc_url, chain_id, module_registry_rpc_url).await;
-    let module_registry = ModuleRegistry::new(config.module_registry_rpc_url.clone());
+    let module_registry = ModuleRegistry::new();
     let module = module_registry
         .get_extended_module_from_class_source_string(class_hash, local_class_path, module_inputs)
         .await?;
@@ -328,7 +328,7 @@ pub async fn entry_run(
         module_registry_rpc_url,
     )
     .await;
-    let module_registry = ModuleRegistry::new(config.module_registry_rpc_url.clone());
+    let module_registry = ModuleRegistry::new();
     let mut task_envelopes = Vec::new();
     for task in parsed.tasks {
         match task {

@@ -7,10 +7,10 @@ use cairo_lang_starknet_classes::{
 };
 
 use hdp_primitives::task::{module::Module, ExtendedModule};
-use starknet::{
-    core::types::{BlockId, BlockTag, ContractClass, FlattenedSierraClass},
-    providers::{jsonrpc::HttpTransport, JsonRpcClient, Provider, Url},
-};
+use reqwest::Client;
+use serde::Deserialize;
+use serde_json::to_string;
+use starknet::core::types::{BlockId, BlockTag, ContractClass, FlattenedSierraClass};
 use starknet_crypto::FieldElement;
 use std::path::PathBuf;
 use thiserror::Error;
@@ -38,13 +38,19 @@ pub enum ModuleRegistryError {
 }
 
 pub struct ModuleRegistry {
-    provider: JsonRpcClient<HttpTransport>,
+    client: Client,
+}
+
+#[derive(Deserialize)]
+struct GitHubFileResponse {
+    download_url: String,
 }
 
 impl ModuleRegistry {
-    pub fn new(url: Url) -> Self {
-        let provider = JsonRpcClient::new(HttpTransport::new(url));
-        Self { provider }
+    pub fn new() -> Self {
+        let client = Client::new();
+
+        Self { client }
     }
 
     pub async fn get_extended_module_from_class_source_string(
@@ -121,44 +127,55 @@ impl ModuleRegistry {
         Ok(casm)
     }
 
-    async fn get_module_class(
-        &self,
-        class_hash: FieldElement,
-    ) -> Result<CasmContractClass, ModuleRegistryError> {
-        info!(
-            "Fetching contract class from module registry... Contract Class Hash: {:#?}",
-            class_hash
-        );
-        let contract_class = self
-            ._starknet_get_class(BlockId::Tag(BlockTag::Latest), class_hash)
-            .await?;
-        info!("Contract class fetched successfully");
-        let sierra = match contract_class {
-            ContractClass::Sierra(sierra) => sierra,
-            _ => return Err(ModuleRegistryError::SierraNotFound),
-        };
-        flattened_sierra_to_compiled_class(&sierra)
-    }
-
     async fn get_module_class_from_program_hash(
         &self,
         program_hash: FieldElement,
     ) -> Result<CasmContractClass, ModuleRegistryError> {
         info!(
             "Fetching contract class from module registry... program_hash: {:#?}",
-            program_hash
+            program_hash.to_string()
         );
-        // TODO : hardcoded
-        let casm: CasmContractClass = serde_json::from_str(
-            &std::fs::read_to_string(
-                "../contracts/cairo1_example_contract.compiled_contract_class.json",
-            )
-            .map_err(|_| {
-                ModuleRegistryError::ClassSourceError(
-                    "Local class path is not a valid JSON file".to_string(),
-                )
-            })?,
-        )?;
+
+        let program_hash_key = program_hash.to_string();
+        let branch = "v2-fix";
+        let api_url = format!(
+            "https://api.github.com/repos/HerodotusDev/hdp/contents/crates/contracts/{}.json?ref={}",
+            program_hash_key, branch
+        );
+
+        let response_text = self
+            .client
+            .get(&api_url)
+            .header("User-Agent", "request")
+            .send()
+            .await
+            .unwrap()
+            .text()
+            .await
+            .unwrap();
+
+        // Print the raw response text for debugging
+        println!("API Response: {}", response_text);
+
+        // Try to deserialize the response into GitHubFileResponse
+        let response: Result<GitHubFileResponse, serde_json::Error> =
+            serde_json::from_str(&response_text);
+        let response = match response {
+            Ok(resp) => resp,
+            Err(err) => {
+                eprintln!("Failed to deserialize GitHubFileResponse: {}", err);
+                return Err(ModuleRegistryError::ClassSourceError("fail".to_string()));
+            }
+        };
+        let download_response = self
+            .client
+            .get(&response.download_url)
+            .send()
+            .await
+            .unwrap();
+
+        let file_content = download_response.text().await.unwrap();
+        let casm: CasmContractClass = serde_json::from_str(&file_content)?;
 
         info!(
             "Contract class fetched successfully fromprogram_hashh: {:?}",
@@ -166,57 +183,15 @@ impl ModuleRegistry {
         );
         Ok(casm)
     }
-
-    async fn _starknet_get_class(
-        &self,
-        block_id: BlockId,
-        class_hash: FieldElement,
-    ) -> Result<ContractClass, ModuleRegistryError> {
-        let contract_class = self.provider.get_class(block_id, class_hash).await?;
-        Ok(contract_class)
-    }
-}
-
-/// Convert the given [FlattenedSierraClass] into [CasmContractClass].
-/// Taken from https://github.com/dojoengine/dojo/blob/920500986855fdaf203471ac11900b15dcf6035f/crates/katana/primitives/src/conversion/rpc.rs#L140
-fn flattened_sierra_to_compiled_class(
-    sierra: &FlattenedSierraClass,
-) -> Result<CasmContractClass, ModuleRegistryError> {
-    let class = rpc_to_cairo_contract_class(sierra)?;
-    let casm = CasmContractClass::from_contract_class(class, true, usize::MAX)?;
-    Ok(casm)
-}
-
-/// Converts RPC [FlattenedSierraClass] type to Cairo's [CairoContractClass] type.
-/// Taken from https://github.com/dojoengine/dojo/blob/920500986855fdaf203471ac11900b15dcf6035f/crates/katana/primitives/src/conversion/rpc.rs#L187
-fn rpc_to_cairo_contract_class(
-    sierra: &FlattenedSierraClass,
-) -> Result<CairoContractClass, ModuleRegistryError> {
-    let value = serde_json::to_value(sierra)?;
-
-    Ok(CairoContractClass {
-        abi: serde_json::from_value(value["abi"].clone()).ok(),
-        sierra_program: serde_json::from_value(value["sierra_program"].clone())?,
-        entry_points_by_type: serde_json::from_value(value["entry_points_by_type"].clone())?,
-        contract_class_version: serde_json::from_value(value["contract_class_version"].clone())?,
-        sierra_program_debug_info: serde_json::from_value(
-            value["sierra_program_debug_info"].clone(),
-        )
-        .ok(),
-    })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use hdp_primitives::constant::{ACCOUNT_BALANCE_EXAMPLE_CONTRACT, NEW_EXAMPLE_CONTRACT};
+    use hdp_primitives::constant::NEW_EXAMPLE_CONTRACT;
 
     fn init() -> (ModuleRegistry, FieldElement) {
-        let url = Url::parse(
-            "https://starknet-sepolia.g.alchemy.com/v2/lINonYKIlp4NH9ZI6wvqJ4HeZj7T4Wm6",
-        )
-        .unwrap();
-        let module_registry = ModuleRegistry::new(url);
+        let module_registry = ModuleRegistry::new();
         // This is test contract class hash
         let class_hash = FieldElement::from_hex_be(
             "0x00ababb33ae5911fd14e6b9f2853b6271f553b9ec7835298134f4bb020100971",
@@ -235,32 +210,6 @@ mod tests {
             .unwrap();
 
         // assert_eq!(casm_from_rpc, ACCOUNT_BALANCE_EXAMPLE_CONTRACT.clone());
-    }
-
-    #[tokio::test]
-    async fn test_get_module_class_from_local_path() {
-        let (module_registry, _) = init();
-        let _ = module_registry
-            .get_module_class_from_local_path(&PathBuf::from(
-                "../contracts/account_balance_example.compiled_contract_class.json",
-            ))
-            .await
-            .unwrap();
-    }
-
-    #[tokio::test]
-    async fn test_flattened_sierra_to_compiled_class() {
-        let (module_registry, class_hash) = init();
-        let contract_class = module_registry
-            ._starknet_get_class(BlockId::Tag(BlockTag::Latest), class_hash)
-            .await
-            .unwrap();
-        let sierra = match contract_class {
-            ContractClass::Sierra(sierra) => sierra,
-            _ => panic!("cairo1 module should have sierra as class"),
-        };
-        let casm_from_rpc = flattened_sierra_to_compiled_class(&sierra).unwrap();
-        assert_eq!(casm_from_rpc, ACCOUNT_BALANCE_EXAMPLE_CONTRACT.clone());
     }
 
     #[tokio::test]
