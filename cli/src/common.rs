@@ -66,7 +66,7 @@ pub async fn run() -> anyhow::Result<()> {
         }
 
         HDPCliCommands::RunModule {
-            class_hash,
+            program_hash,
             local_class_path,
             module_inputs,
             rpc_url,
@@ -76,7 +76,7 @@ pub async fn run() -> anyhow::Result<()> {
             cairo_pie_file,
         } => {
             module_entry_run(
-                class_hash,
+                program_hash,
                 local_class_path,
                 module_inputs,
                 rpc_url,
@@ -152,6 +152,7 @@ pub async fn module_entry_run(
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn datalake_entry_run(
     aggregate_fn_id: AggregationFunction,
     aggregate_fn_ctx: Option<FunctionContext>,

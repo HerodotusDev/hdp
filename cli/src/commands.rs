@@ -1,6 +1,5 @@
 use alloy::{
-    hex,
-    primitives::{BlockNumber, Bytes, ChainId, TxIndex},
+    primitives::{BlockNumber, ChainId, TxIndex},
     transports::http::reqwest::Url,
 };
 use clap::{command, Parser, Subcommand};
@@ -77,12 +76,8 @@ pub enum HDPCliCommands {
         #[arg(required = true, use_value_delimiter = true)]
         module_inputs: Vec<String>,
 
-        /// Class hash of the module that deployed on starknet.
-        /// This will trigger fetching the class from the starknet.
-        ///
-        /// (Note: either class_hash or local_class_path should be provided)
         #[arg(long, group = "class_source")]
-        class_hash: Option<String>,
+        program_hash: Option<String>,
 
         /// Local path of the contract class file.
         /// Make sure to have structure match with [CasmContractClass](https://github.com/starkware-libs/cairo/blob/53f7a0d26d5c8a99a8ad6ba07207a762678f2931/crates/cairo-lang-starknet-classes/src/casm_contract_class.rs)
