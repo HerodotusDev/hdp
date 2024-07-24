@@ -26,11 +26,15 @@ pub struct DryRunnedModule {
 
 pub struct DryRunner {
     program_path: PathBuf,
+    output_file_path: Option<PathBuf>,
 }
 
 impl DryRunner {
-    pub fn new(program_path: PathBuf) -> Self {
-        Self { program_path }
+    pub fn new(program_path: PathBuf, output_file_path: Option<PathBuf>) -> Self {
+        Self {
+            program_path,
+            output_file_path,
+        }
     }
 
     fn _run(&self, input_file_path: &Path) -> Result<String, CairoRunnerError> {
@@ -55,10 +59,13 @@ impl DryRunner {
         if input_string.is_empty() {
             return Err(CairoRunnerError::EmptyInput);
         }
-        let input_file = NamedTempFile::new()?;
-        let input_file_path = input_file.path();
-        fs::write(input_file_path, input_string.clone()).expect("Failed to write input file");
-        fs::write("dry_run_input.json", input_string).expect("Failed to write input file");
+
+        let input_file_path = match self.output_file_path {
+            Some(ref output_file_path) => output_file_path,
+            None => &NamedTempFile::new()?.path().to_path_buf(),
+        };
+
+        fs::write(input_file_path, input_string).expect("Failed to write input file");
         let _ = self._run(input_file_path)?;
 
         // parse output to return dry run result
@@ -72,8 +79,6 @@ impl DryRunner {
         let output = fs::read_to_string(input_file_path)?;
         let fetch_keys: Vec<DryRunnedModule> = serde_json::from_str(&output)?;
         info!("fetch keys: {:#?}", fetch_keys);
-        // clean up generated input file after parse
-        // fs::remove_file(input_file_path)?;
         Ok(fetch_keys)
     }
 }
@@ -86,7 +91,7 @@ mod tests {
 
     fn init_dry_runner() -> DryRunner {
         let program_path = PathBuf::from("../../build/compiled_cairo/contract_dry_run.json");
-        DryRunner::new(program_path)
+        DryRunner::new(program_path, None)
     }
 
     #[ignore = "ignore for now"]

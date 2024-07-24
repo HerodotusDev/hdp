@@ -226,6 +226,7 @@ pub async fn handle_running_tasks(
     let compiler_config = CompilerConfig {
         dry_run_program_path: config.dry_run_program_path.clone(),
         provider_config: config.evm_provider.clone(),
+        save_fetch_keys_file: config.save_fetch_keys_file.clone(),
     };
     let preprocessor = PreProcessor::new_with_config(compiler_config);
     let preprocessor_result = preprocessor.process(tasks).await?;
@@ -316,6 +317,7 @@ pub async fn entry_run(
     let compiler_config = CompilerConfig {
         dry_run_program_path: PathBuf::from(&config.dry_run_program_path),
         provider_config: config.evm_provider.clone(),
+        save_fetch_keys_file: config.save_fetch_keys_file.clone(),
     };
     let preprocessor = PreProcessor::new_with_config(compiler_config);
     let preprocessor_result = preprocessor.process(task_envelopes).await?;

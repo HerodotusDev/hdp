@@ -6,6 +6,7 @@ use hdp_provider::evm::config::EvmProviderConfig;
 pub struct CompilerConfig {
     // dry-run program path
     pub dry_run_program_path: PathBuf,
+    pub save_fetch_keys_file: Option<PathBuf>,
     pub provider_config: EvmProviderConfig,
 }
 
@@ -14,6 +15,7 @@ impl CompilerConfig {
         Self {
             dry_run_program_path,
             provider_config: self.provider_config,
+            save_fetch_keys_file: self.save_fetch_keys_file,
         }
     }
 }
@@ -25,6 +27,7 @@ impl Default for CompilerConfig {
         CompilerConfig {
             dry_run_program_path: PathBuf::from(DEFAULT_DRY_CAIRO_RUN_CAIRO_FILE),
             provider_config: default_provider_config,
+            save_fetch_keys_file: None,
         }
     }
 }

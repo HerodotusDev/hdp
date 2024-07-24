@@ -15,7 +15,7 @@ pub struct Config {
     pub evm_provider: EvmProviderConfig,
     pub dry_run_program_path: PathBuf,
     pub sound_run_program_path: PathBuf,
-    pub save_fetch_keys_file: bool,
+    pub save_fetch_keys_file: Option<PathBuf>,
 }
 
 impl Config {
@@ -42,10 +42,8 @@ impl Config {
             .parse()
             .expect("RPC_CHUNK_SIZE must be a number");
 
-        let save_fetch_keys_file: bool = env::var("SAVE_FETCH_KEYS_FILE")
-            .unwrap_or_else(|_| "false".to_string())
-            .parse()
-            .expect("SAVE_FETCH_KEYS_FILE must be a boolean");
+        let save_fetch_keys_file: Option<PathBuf> =
+            env::var("SAVE_FETCH_KEYS_FILE").ok().map(PathBuf::from);
 
         let dry_run_cairo_path: PathBuf = cli_dry_run_cairo_file.unwrap_or_else(|| {
             env::var("DRY_RUN_CAIRO_PATH")
