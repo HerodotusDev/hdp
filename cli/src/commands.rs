@@ -73,7 +73,7 @@ pub enum HDPCliCommands {
         /// The input field elements should be separated by comma.
         ///
         /// e.g. "0x1234,0xabcd"
-        #[arg(required = true, use_value_delimiter = true)]
+        #[arg(long, required = true, use_value_delimiter = true)]
         module_inputs: Vec<String>,
 
         #[arg(long, group = "class_source")]
