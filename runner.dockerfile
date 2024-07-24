@@ -16,8 +16,8 @@ RUN mkdir -p /root/.local/bin && \
 RUN mkdir -p /hdp-runner/build/compiled_cairo
 
 # Copy specific file from the base image
-RUN cp /hdp-cairo/build/hdp.json /hdp-runner/build/compiled_cairo/hdp.json
-RUN cp /hdp-cairo/build/contract_dry_run.json /hdp-runner/build/compiled_cairo/contract_dry_run.json
+RUN cp /hdp-cairo/build/hdp.json /hdp-runner/build/hdp.json
+RUN cp /hdp-cairo/build/contract_dry_run.json /hdp-runner/build/contract_dry_run.json
 
 # Copy the rest of the application source
 COPY . .
@@ -26,4 +26,4 @@ COPY . .
 RUN cargo install --path cli
 
 # Command to run the Rust binary with user-specified parameters
-CMD ["bash", "-c", "source /root/.bashrc && hdp run $TASKS $DATALAKES $RPC_URL $CHAIN_ID -c /hdp-runner/input.json -o /hdp-runner/output.json -p /hdp-runner/cairo.pie"]
+CMD ["bash", "-c", "source /root/.bashrc && hdp run -r /hdp-runner/request.json -p /hdp-runner/input.json -o /hdp-runner/output.json -c /hdp-runner/cairo.pie"]

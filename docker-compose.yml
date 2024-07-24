@@ -9,3 +9,4 @@ services:
       - ./input.json:/hdp-runner/input.json
       - ./output.json:/hdp-runner/output.json
       - ./cairo.pie:/hdp-runner/cairo.pie
+      - ./request.json:/hdp-runner/request.json
