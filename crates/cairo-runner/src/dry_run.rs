@@ -60,11 +60,7 @@ impl DryRunner {
             return Err(CairoRunnerError::EmptyInput);
         }
 
-        let input_file_path = match self.output_file_path {
-            Some(ref output_file_path) => output_file_path,
-            None => &NamedTempFile::new()?.path().to_path_buf(),
-        };
-
+        let input_file_path = &NamedTempFile::new()?.path().to_path_buf();
         fs::write(input_file_path, input_string).expect("Failed to write input file");
         let _ = self._run(input_file_path)?;
 
@@ -78,6 +74,10 @@ impl DryRunner {
     fn parse_run(&self, input_file_path: &Path) -> Result<DryRunResult, CairoRunnerError> {
         let output = fs::read_to_string(input_file_path)?;
         let fetch_keys: Vec<DryRunnedModule> = serde_json::from_str(&output)?;
+        fs::remove_file(DRY_CAIRO_RUN_OUTPUT_FILE).expect("Failed to remove input file");
+        if let Some(ref output_path) = self.output_file_path {
+            fs::write(output_path, output).expect("Failed to write output file");
+        }
         Ok(fetch_keys)
     }
 }
