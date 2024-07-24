@@ -78,7 +78,6 @@ impl DryRunner {
     fn parse_run(&self, input_file_path: &Path) -> Result<DryRunResult, CairoRunnerError> {
         let output = fs::read_to_string(input_file_path)?;
         let fetch_keys: Vec<DryRunnedModule> = serde_json::from_str(&output)?;
-        info!("fetch keys: {:#?}", fetch_keys);
         Ok(fetch_keys)
     }
 }
