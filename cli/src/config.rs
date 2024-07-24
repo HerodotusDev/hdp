@@ -24,6 +24,7 @@ impl Config {
         cli_chain_id: Option<ChainId>,
         cli_dry_run_cairo_file: Option<PathBuf>,
         cli_sound_run_cairo_file: Option<PathBuf>,
+        cli_save_fetch_keys_file: Option<PathBuf>,
     ) -> &'static Self {
         let chain_id = cli_chain_id.unwrap_or_else(|| {
             env::var("CHAIN_ID")
@@ -41,10 +42,8 @@ impl Config {
             .unwrap_or_else(|_| "40".to_string())
             .parse()
             .expect("RPC_CHUNK_SIZE must be a number");
-
-        let save_fetch_keys_file: Option<PathBuf> =
-            env::var("SAVE_FETCH_KEYS_FILE").ok().map(PathBuf::from);
-
+        let save_fetch_keys_file: Option<PathBuf> = cli_save_fetch_keys_file
+            .or_else(|| env::var("SAVE_FETCH_KEYS_FILE").ok().map(PathBuf::from));
         let dry_run_cairo_path: PathBuf = cli_dry_run_cairo_file.unwrap_or_else(|| {
             env::var("DRY_RUN_CAIRO_PATH")
                 .unwrap_or_else(|_| DEFAULT_DRY_CAIRO_RUN_CAIRO_FILE.to_string())

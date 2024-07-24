@@ -64,6 +64,7 @@ pub async fn run() -> anyhow::Result<()> {
         HDPCliCommands::RunModule {
             program_hash,
             local_class_path,
+            save_fetch_keys_file,
             module_inputs,
             rpc_url,
             chain_id,
@@ -76,6 +77,7 @@ pub async fn run() -> anyhow::Result<()> {
             module_entry_run(
                 program_hash,
                 local_class_path,
+                save_fetch_keys_file,
                 module_inputs,
                 rpc_url,
                 chain_id,
@@ -129,6 +131,7 @@ fn init_cli() -> Result<HDPCli> {
 pub async fn module_entry_run(
     class_hash: Option<String>,
     local_class_path: Option<PathBuf>,
+    save_fetch_keys_file: Option<PathBuf>,
     module_inputs: Vec<String>,
     rpc_url: Option<Url>,
     chain_id: Option<ChainId>,
@@ -138,7 +141,14 @@ pub async fn module_entry_run(
     output_file: Option<PathBuf>,
     cairo_pie_file: Option<PathBuf>,
 ) -> Result<()> {
-    let config = Config::init(rpc_url, chain_id, dry_run_cairo_file, sound_run_cairo_file).await;
+    let config = Config::init(
+        rpc_url,
+        chain_id,
+        dry_run_cairo_file,
+        sound_run_cairo_file,
+        save_fetch_keys_file,
+    )
+    .await;
     let module_registry = ModuleRegistry::new();
     let module = module_registry
         .get_extended_module_from_class_source_string(class_hash, local_class_path, module_inputs)
@@ -169,7 +179,7 @@ pub async fn datalake_entry_run(
     output_file: Option<PathBuf>,
     cairo_pie_file: Option<PathBuf>,
 ) -> Result<()> {
-    let config = Config::init(rpc_url, chain_id, None, sound_run_cairo_file).await;
+    let config = Config::init(rpc_url, chain_id, None, sound_run_cairo_file, None).await;
     let parsed_datalake = match datalake {
         DataLakeCommands::BlockSampled {
             block_range_start,
@@ -293,6 +303,7 @@ pub async fn entry_run(
         Some(parsed.destination_chain_id),
         dry_run_cairo_file,
         sound_run_cairo_file,
+        None,
     )
     .await;
     let module_registry = ModuleRegistry::new();

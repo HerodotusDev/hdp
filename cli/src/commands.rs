@@ -86,6 +86,9 @@ pub enum HDPCliCommands {
         #[arg(long, group = "class_source")]
         local_class_path: Option<PathBuf>,
 
+        /// optionally can save keys for module task to file
+        save_fetch_keys_file: Option<PathBuf>,
+
         /// The RPC URL to fetch the data.
         ///
         /// Can be overwritten by `RPC_URL` environment variable.

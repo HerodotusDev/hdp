@@ -290,7 +290,7 @@ pub async fn run_interactive() -> anyhow::Result<()> {
             },
             Err(_) => None,
         };
-        let config = Config::init(rpc_url, chain_id, None, None).await;
+        let config = Config::init(rpc_url, chain_id, None, None, None).await;
         let output_file: PathBuf = inquire::Text::new("Enter Output file path: ")
             .with_default("output.json")
             .prompt()?
