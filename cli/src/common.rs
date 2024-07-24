@@ -41,6 +41,7 @@ pub async fn run() -> anyhow::Result<()> {
             rpc_url,
             chain_id,
             preprocessor_output_file,
+            sound_run_cairo_file,
             output_file,
             cairo_pie_file,
             aggregate_fn_id,
@@ -56,6 +57,7 @@ pub async fn run() -> anyhow::Result<()> {
                     rpc_url,
                     chain_id,
                     preprocessor_output_file,
+                    sound_run_cairo_file,
                     output_file,
                     cairo_pie_file,
                 )
@@ -69,7 +71,9 @@ pub async fn run() -> anyhow::Result<()> {
             module_inputs,
             rpc_url,
             chain_id,
+            dry_run_cairo_file,
             preprocessor_output_file,
+            sound_run_cairo_file,
             output_file,
             cairo_pie_file,
         } => {
@@ -79,7 +83,9 @@ pub async fn run() -> anyhow::Result<()> {
                 module_inputs,
                 rpc_url,
                 chain_id,
+                dry_run_cairo_file,
                 preprocessor_output_file,
+                sound_run_cairo_file,
                 output_file,
                 cairo_pie_file,
             )
@@ -88,14 +94,18 @@ pub async fn run() -> anyhow::Result<()> {
         HDPCliCommands::Run {
             request_file,
             rpc_url,
+            dry_run_cairo_file,
             preprocessor_output_file,
+            sound_run_cairo_file,
             output_file,
             cairo_pie_file,
         } => {
             entry_run(
                 request_file,
                 rpc_url,
+                dry_run_cairo_file,
                 preprocessor_output_file,
+                sound_run_cairo_file,
                 output_file,
                 cairo_pie_file,
             )
@@ -126,11 +136,13 @@ pub async fn module_entry_run(
     module_inputs: Vec<String>,
     rpc_url: Option<Url>,
     chain_id: Option<ChainId>,
+    dry_run_cairo_file: Option<PathBuf>,
     preprocessor_output_file: Option<PathBuf>,
+    sound_run_cairo_file: Option<PathBuf>,
     output_file: Option<PathBuf>,
     cairo_pie_file: Option<PathBuf>,
 ) -> Result<()> {
-    let config = Config::init(rpc_url, chain_id).await;
+    let config = Config::init(rpc_url, chain_id, dry_run_cairo_file, sound_run_cairo_file).await;
     let module_registry = ModuleRegistry::new();
     let module = module_registry
         .get_extended_module_from_class_source_string(class_hash, local_class_path, module_inputs)
@@ -157,10 +169,11 @@ pub async fn datalake_entry_run(
     rpc_url: Option<Url>,
     chain_id: Option<ChainId>,
     pre_processor_output: Option<PathBuf>,
+    sound_run_cairo_file: Option<PathBuf>,
     output_file: Option<PathBuf>,
     cairo_pie_file: Option<PathBuf>,
 ) -> Result<()> {
-    let config = Config::init(rpc_url, chain_id).await;
+    let config = Config::init(rpc_url, chain_id, None, sound_run_cairo_file).await;
     let parsed_datalake = match datalake {
         DataLakeCommands::BlockSampled {
             block_range_start,
@@ -215,7 +228,7 @@ async fn handle_running_tasks(
     cairo_pie_file: Option<PathBuf>,
 ) -> Result<()> {
     let compiler_config = CompilerConfig {
-        dry_run_program_path: PathBuf::from(config.dry_run_program_path.clone()),
+        dry_run_program_path: config.dry_run_program_path.clone(),
         provider_config: config.evm_provider.clone(),
     };
     let preprocessor = PreProcessor::new_with_config(compiler_config);
@@ -242,8 +255,7 @@ async fn handle_running_tasks(
                     .ok_or_else(|| anyhow::anyhow!("Output file path should be specified"))?;
                 let pie_file_path = cairo_pie_file
                     .ok_or_else(|| anyhow::anyhow!("PIE path should be specified"))?;
-                let processor =
-                    Processor::new(PathBuf::from(config.sound_run_program_path.clone()));
+                let processor = Processor::new(config.sound_run_program_path.clone());
                 let processor_result = processor
                     .process(preprocessor_result, &pie_file_path)
                     .await?;
@@ -271,13 +283,21 @@ async fn handle_running_tasks(
 pub async fn entry_run(
     request_file: PathBuf,
     rpc_url: Option<Url>,
+    dry_run_cairo_file: Option<PathBuf>,
     pre_processor_output_file: PathBuf,
+    sound_run_cairo_file: Option<PathBuf>,
     output_file: Option<PathBuf>,
     cairo_pie_file: Option<PathBuf>,
 ) -> Result<()> {
     let request_context = fs::read_to_string(request_file).unwrap();
     let parsed: SubmitBatchQuery = serde_json::from_str(&request_context).unwrap();
-    let config = Config::init(rpc_url, Some(parsed.destination_chain_id)).await;
+    let config = Config::init(
+        rpc_url,
+        Some(parsed.destination_chain_id),
+        dry_run_cairo_file,
+        sound_run_cairo_file,
+    )
+    .await;
     let module_registry = ModuleRegistry::new();
     let mut task_envelopes = Vec::new();
     for task in parsed.tasks {
@@ -319,7 +339,7 @@ pub async fn entry_run(
             output_file.ok_or_else(|| anyhow::anyhow!("Output file path should be specified"))?;
         let pie_file_path =
             cairo_pie_file.ok_or_else(|| anyhow::anyhow!("PIE path should be specified"))?;
-        let processor = Processor::new(PathBuf::from(config.sound_run_program_path.clone()));
+        let processor = Processor::new(config.sound_run_program_path.clone());
         let processor_result = processor
             .process(preprocessor_result, &pie_file_path)
             .await?;

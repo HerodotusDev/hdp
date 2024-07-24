@@ -53,6 +53,9 @@ pub enum HDPCliCommands {
         #[arg(short, long)]
         preprocessor_output_file: Option<PathBuf>,
 
+        #[arg(long)]
+        sound_run_cairo_file: Option<PathBuf>,
+
         /// Path to save output file after process
         ///
         /// This will trigger processing(=pie generation) step
@@ -98,11 +101,17 @@ pub enum HDPCliCommands {
         #[arg(long)]
         chain_id: Option<ChainId>,
 
+        #[arg(long)]
+        dry_run_cairo_file: Option<PathBuf>,
+
         /// Path to save output file after pre-processing.
         ///
         /// This will trigger pre-processing step
         #[arg(short, long)]
         preprocessor_output_file: Option<PathBuf>,
+
+        #[arg(long)]
+        sound_run_cairo_file: Option<PathBuf>,
 
         /// Path to save output file after process
         ///
@@ -129,9 +138,15 @@ pub enum HDPCliCommands {
         #[arg(long)]
         rpc_url: Option<Url>,
 
+        #[arg(long)]
+        dry_run_cairo_file: Option<PathBuf>,
+
         /// Path to save output file after pre-processing.
         #[arg(short, long)]
         preprocessor_output_file: PathBuf,
+
+        #[arg(long)]
+        sound_run_cairo_file: Option<PathBuf>,
 
         /// Path to save output file after process
         ///
