@@ -76,8 +76,7 @@ impl DryRunner {
         let fetch_keys: Vec<DryRunnedModule> = serde_json::from_str(&output)?;
         fs::remove_file(DRY_CAIRO_RUN_OUTPUT_FILE).expect("Failed to remove input file");
         if let Some(ref output_path) = self.output_file_path {
-            fs::write(output_path, serde_json::to_string_pretty(&output).unwrap())
-                .expect("Failed to write output file");
+            fs::write(output_path, &output).expect("Failed to write output file");
         }
         Ok(fetch_keys)
     }
