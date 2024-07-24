@@ -37,7 +37,6 @@ pub async fn run() -> anyhow::Result<()> {
             interactive::run_interactive().await?;
         }
         HDPCliCommands::RunDatalake {
-            allow_process,
             rpc_url,
             chain_id,
             preprocessor_output_file,
@@ -48,21 +47,18 @@ pub async fn run() -> anyhow::Result<()> {
             aggregate_fn_ctx,
             datalake,
         } => {
-            // if allow_process is true, then run the processor
-            if allow_process {
-                datalake_entry_run(
-                    aggregate_fn_id,
-                    aggregate_fn_ctx,
-                    datalake,
-                    rpc_url,
-                    chain_id,
-                    preprocessor_output_file,
-                    sound_run_cairo_file,
-                    output_file,
-                    cairo_pie_file,
-                )
-                .await?
-            }
+            datalake_entry_run(
+                aggregate_fn_id,
+                aggregate_fn_ctx,
+                datalake,
+                rpc_url,
+                chain_id,
+                preprocessor_output_file,
+                sound_run_cairo_file,
+                output_file,
+                cairo_pie_file,
+            )
+            .await?
         }
 
         HDPCliCommands::RunModule {
@@ -220,7 +216,7 @@ pub async fn datalake_entry_run(
     Ok(())
 }
 
-async fn handle_running_tasks(
+pub async fn handle_running_tasks(
     config: &Config,
     tasks: Vec<TaskEnvelope>,
     pre_processor_output_file: Option<PathBuf>,

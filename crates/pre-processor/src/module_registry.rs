@@ -193,7 +193,7 @@ mod tests {
         let module_registry = ModuleRegistry::new();
         // This is test contract class hash
         let class_hash = FieldElement::from_hex_be(
-            "0x00ababb33ae5911fd14e6b9f2853b6271f553b9ec7835298134f4bb020100971",
+            "0xaf1333b8346c1ac941efe380f3122a71c1f7cbad19301543712e74f765bfca",
         )
         .unwrap();
 

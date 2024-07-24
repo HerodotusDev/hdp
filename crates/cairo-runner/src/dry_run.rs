@@ -9,7 +9,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use tempfile::NamedTempFile;
-use tracing::{debug, info};
+use tracing::info;
 
 use crate::CairoRunnerError;
 

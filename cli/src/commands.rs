@@ -27,10 +27,6 @@ pub enum HDPCliCommands {
     /// Run single datalake compute
     #[command(arg_required_else_help = true)]
     RunDatalake {
-        /// Decide to run processor. (default: false)
-        #[arg(short, long, action = clap::ArgAction::SetTrue)]
-        allow_process: bool,
-
         /// The aggregate function id e.g. "sum", "min", "avg"
         aggregate_fn_id: AggregationFunction,
         /// Optional context for applying conditions on the aggregate function "count".
@@ -53,19 +49,20 @@ pub enum HDPCliCommands {
         #[arg(short, long)]
         preprocessor_output_file: Option<PathBuf>,
 
+        /// hdp cairo compiled program. main entry point
         #[arg(long)]
         sound_run_cairo_file: Option<PathBuf>,
 
         /// Path to save output file after process
         ///
         /// This will trigger processing(=pie generation) step
-        #[arg(short, long, requires("pre_processor_output"))]
+        #[arg(short, long, requires("preprocessor_output_file"))]
         output_file: Option<PathBuf>,
 
         /// Path to save pie file
         ///
         /// This will trigger processing(=pie generation) step
-        #[arg(short, long, requires("pre_processor_output"))]
+        #[arg(short, long, requires("preprocessor_output_file"))]
         cairo_pie_file: Option<PathBuf>,
     },
 
@@ -101,6 +98,8 @@ pub enum HDPCliCommands {
         #[arg(long)]
         chain_id: Option<ChainId>,
 
+        /// dry run contract bootloader program.
+        /// only used for module task
         #[arg(long)]
         dry_run_cairo_file: Option<PathBuf>,
 
@@ -110,19 +109,20 @@ pub enum HDPCliCommands {
         #[arg(short, long)]
         preprocessor_output_file: Option<PathBuf>,
 
+        /// hdp cairo compiled program. main entry point
         #[arg(long)]
         sound_run_cairo_file: Option<PathBuf>,
 
         /// Path to save output file after process
         ///
         /// This will trigger processing(=pie generation) step
-        #[arg(short, long, requires("pre_processor_output"))]
+        #[arg(short, long, requires("preprocessor_output_file"))]
         output_file: Option<PathBuf>,
 
         /// Path to save pie file
         ///
         /// This will trigger processing(=pie generation) step
-        #[arg(short, long, requires("pre_processor_output"))]
+        #[arg(short, long, requires("preprocessor_output_file"))]
         cairo_pie_file: Option<PathBuf>,
     },
     /// Run batch of tasks base on request json file
@@ -138,6 +138,8 @@ pub enum HDPCliCommands {
         #[arg(long)]
         rpc_url: Option<Url>,
 
+        /// dry run contract bootloader program.
+        /// only used for module task
         #[arg(long)]
         dry_run_cairo_file: Option<PathBuf>,
 
@@ -145,19 +147,20 @@ pub enum HDPCliCommands {
         #[arg(short, long)]
         preprocessor_output_file: PathBuf,
 
+        /// hdp cairo compiled program. main entry point
         #[arg(long)]
         sound_run_cairo_file: Option<PathBuf>,
 
         /// Path to save output file after process
         ///
         /// This will trigger processing(=pie generation) step
-        #[arg(short, long)]
+        #[arg(short, long, requires("preprocessor_output_file"))]
         output_file: Option<PathBuf>,
 
         /// Path to save pie file
         ///
         /// This will trigger processing(=pie generation) step
-        #[arg(short, long)]
+        #[arg(short, long, requires("preprocessor_output_file"))]
         cairo_pie_file: Option<PathBuf>,
     },
 }

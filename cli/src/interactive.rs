@@ -1,11 +1,7 @@
-use alloy::{
-    primitives::{Bytes, U256},
-    transports::http::reqwest::Url,
-};
+use alloy::{primitives::U256, transports::http::reqwest::Url};
 use anyhow::bail;
 use hdp_primitives::{
     aggregate_fn::{integer::Operator, FunctionContext},
-    solidity_types::traits::BatchedDatalakeComputeCodecs,
     task::{
         datalake::{
             block_sampled::{
@@ -28,7 +24,7 @@ use inquire::{InquireError, Select};
 use std::{path::PathBuf, str::FromStr};
 use tracing::error;
 
-use crate::common::datalake_entry_run;
+use crate::{common::handle_running_tasks, config::Config};
 
 pub async fn run_interactive() -> anyhow::Result<()> {
     println!("Welcome to Herodotus Data Processor interactive CLI! 🛰️");
@@ -294,6 +290,7 @@ pub async fn run_interactive() -> anyhow::Result<()> {
             },
             Err(_) => None,
         };
+        let config = Config::init(rpc_url, chain_id, None, None).await;
         let output_file: PathBuf = inquire::Text::new("Enter Output file path: ")
             .with_default("output.json")
             .prompt()?
@@ -307,16 +304,14 @@ pub async fn run_interactive() -> anyhow::Result<()> {
             .prompt()?
             .into();
 
-        todo!("implement soon");
-        // handle_running_tasks(
-        //     tasks,
-        //     rpc_url,
-        //     chain_id,
-        //     Some(output_file),
-        //     Some(cairo_input),
-        //     Some(pie_file),
-        // )
-        // .await?
+        handle_running_tasks(
+            config,
+            tasks,
+            Some(output_file),
+            Some(cairo_input),
+            Some(pie_file),
+        )
+        .await?
     }
     Ok(())
 }
