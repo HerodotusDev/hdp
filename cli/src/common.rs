@@ -296,8 +296,10 @@ pub async fn entry_run(
     output_file: Option<PathBuf>,
     cairo_pie_file: Option<PathBuf>,
 ) -> Result<()> {
-    let request_context = fs::read_to_string(request_file).unwrap();
-    let parsed: SubmitBatchQuery = serde_json::from_str(&request_context).unwrap();
+    let request_context =
+        fs::read_to_string(request_file).expect("No request file exist in the path");
+    let parsed: SubmitBatchQuery = serde_json::from_str(&request_context)
+        .expect("Invalid format of request. Cannot parse it.");
     let config = Config::init(
         rpc_url,
         Some(parsed.destination_chain_id),
