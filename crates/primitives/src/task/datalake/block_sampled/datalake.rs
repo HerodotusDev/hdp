@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::utils::default_increment;
+
 use super::collection::BlockSampledCollection;
 
 /// [`BlockSampledDatalake`] is a struct that represents a block sampled datalake.
@@ -14,7 +16,8 @@ pub struct BlockSampledDatalake {
     pub block_range_start: u64,
     /// The end of the block range
     pub block_range_end: u64,
-    /// The increment
+    /// The increment. Defaults to 1 if not present.
+    #[serde(default = "default_increment")]
     pub increment: u64,
     /// The sampled property
     pub sampled_property: BlockSampledCollection,

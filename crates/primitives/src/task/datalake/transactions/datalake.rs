@@ -13,6 +13,8 @@ use alloy::primitives::U256;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
+use crate::utils::default_increment;
+
 use super::TransactionsCollection;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -25,7 +27,8 @@ pub struct TransactionsInBlockDatalake {
     pub start_index: u64,
     // end index of transactions range, not included in the range ( default last )
     pub end_index: u64,
-    // increment of transactions
+    // increment of transactions, Defaults to 1 if not present.
+    #[serde(default = "default_increment")]
     pub increment: u64,
     // filter out the specific type of Txs
     pub included_types: IncludedTypes,

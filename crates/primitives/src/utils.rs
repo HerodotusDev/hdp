@@ -50,6 +50,10 @@ pub fn felt_to_bytes32(felt: FieldElement) -> FixedBytes<32> {
     B256::from(felt_bytes)
 }
 
+pub fn default_increment() -> u64 {
+    1
+}
+
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
