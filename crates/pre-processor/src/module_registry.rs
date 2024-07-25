@@ -141,7 +141,7 @@ impl ModuleRegistry {
         let program_hash_key = program_hash.to_string();
         let branch = "v2-fix";
         let api_url = format!(
-            "https://api.github.com/repos/HerodotusDev/hdp/contents/crates/contracts/{}.json?ref={}",
+            "https://api.github.com/repos/HerodotusDev/hdp/contents/module-registery/{}.json?ref={}",
             program_hash_key, branch
         );
 
