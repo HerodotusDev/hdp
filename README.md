@@ -58,61 +58,54 @@ Welcome to Herodotus Data Processor interactive CLI! 🛰️
 
 ## Usage Examples
 
-The following examples demonstrate how to use the HDP CLI to encode various blockchain data elements into a format suitable for processing. Each command highlights a different function of the HDP system, from averaging values to counting values based on specific criteria.
+First locate `.env` file like the one in [example](./.env.example).
 
-Header value with `AVG`:
+Second, run command like below :
 
-```
-hdp encode -a -c {input.file} "avg" -b 4952100 4952110 "header.base_fee_per_gas" 1
-```
-
-Account value with `SUM`:
-
-```
-hdp encode -a -c {input.file} "sum" -b 4952100 4952110 "account.0x7f2c6f930306d3aa736b3a6c6a98f512f74036d4.nonce" 2
-```
-
-Storage value with `AVG`:
-
-```
-hdp encode -a -c {input.file} "avg" -b 5382810 5382820 "storage.0x75CeC1db9dCeb703200EAa6595f66885C962B920.0x0000000000000000000000000000000000000000000000000000000000000002" 1
-```
-
-Account value with `COUNT`:
-
-```
-hdp encode -a -c {input.file} "count" "gt.1000" -b 4952100 4952110 "account.0x7f2c6f930306d3aa736b3a6c6a98f512f74036d4.nonce" 2
-```
-
-After encoding, you can directly run processing tasks using environmental configurations for RPC and Chain ID, as shown below:
+note that this will go though both pre-process -> process step.
 
 ```bash
-# pro tip: run herodotus data processing with `.env`
-hdp run
-
-# run herodotus data processing
-hdp run ${Encoded Task} ${Encoded Datalake} ${Input your RPC Provider -- this example is Etherum Sepolia} ${Input Chain ID that you are target on}
+hdp run -r ${Request file path} -p ${Pre-processor output} -c ${PIE file after process} -o ${Output file after process}
 ```
 
-For a more comprehensive guide on commands available within HDP CLI:
+For a more comprehensive guide on commands available on `hdp run`:
 
 ```console
-❯ hdp --help
-Interact Herodotus Data Processor via CLI
+❯ hdp run --help
+Run batch of tasks base on request json file
 
-Usage: hdp <COMMAND>
-
-Commands:
-  start       New to the HDP CLI? Start here!
-  encode      Encode the task and datalake in batched format test purposes
-  decode      Decode batch tasks and datalakes
-  decode-one  Decode one task and one datalake (not batched format)
-  run         Run the evaluator
-  help        Print this message or the help of the given subcommand(s)
+Usage: hdp run [OPTIONS] --request-file <REQUEST_FILE> --preprocessor-output-file <PREPROCESSOR_OUTPUT_FILE>
 
 Options:
-  -h, --help     Print help
-  -V, --version  Print version
+  -r, --request-file <REQUEST_FILE>
+          Pass request as json file
+
+      --rpc-url <RPC_URL>
+          The RPC URL to fetch the data.
+
+          Can be overwritten by `RPC_URL` environment variable.
+
+      --dry-run-cairo-file <DRY_RUN_CAIRO_FILE>
+          dry run contract bootloader program. only used for module task
+
+  -p, --preprocessor-output-file <PREPROCESSOR_OUTPUT_FILE>
+          Path to save output file after pre-processing
+
+      --sound-run-cairo-file <SOUND_RUN_CAIRO_FILE>
+          hdp cairo compiled program. main entry point
+
+  -o, --output-file <OUTPUT_FILE>
+          Path to save output file after process
+
+          This will trigger processing(=pie generation) step
+
+  -c, --cairo-pie-file <CAIRO_PIE_FILE>
+          Path to save pie file
+
+          This will trigger processing(=pie generation) step
+
+  -h, --help
+          Print help (see a summary with '-h')
 ```
 
 ## Integration Testing
@@ -127,6 +120,12 @@ The core soundness of HDP relies on generating the correct input file and runnin
 
 - **SUM, AVG, MIN, MAX, COUNT**: These functions are supported only for fields with numeric values.
 - **SLR**: Simple linear regression written in Cairo 1. The input array should contain more than 2 elements.
+
+### Context Required Operation
+
+For a practical example of how to implement context-sensitive operations, refer to the implementation of the `COUNT` function. This example shows how to pass and utilize additional context for operations, which can be particularly useful for conditional processing or complex calculations.
+
+During `SLR` computation, we also need a context to use as the target index for computation. Since `SLR` is not supported during the preprocessing step, we simply pass the encoded task that contains the function context, and the Cairo program will handle this computation based on the provided index.
 
 ### Function Support Matrix
 
@@ -179,38 +178,13 @@ _Note: Fields marked with "-" are not applicable for the specified aggregate fun
 cargo make run-ci-flow
 ```
 
-## Defining Your Own Module
-
-For developers interested in extending the functionality of HDP by adding new modules, follow the steps outlined below. This guide assumes a basic understanding of Rust and its module system.
-
-### Getting Started
-
-1. **Module Location**: Start by creating a new module within the `aggregate_fn` directory. You can find this at [aggregation_fn/mod.rs](./crates/primitives/src/aggregate_fn).
-
-2. **Define Enum**: Define your new function as an enum in the [file](./crates/primitives/src/aggregate_fn). Make sure to add match arms for the new enum variants in the implementation.
-
-3. **Handle Data Types**: Depending on the expected input type for your function:
-   - **Integer Inputs**: Use [`U256`](https://docs.rs/alloy-primitives/latest/alloy_primitives/index.html#reexport.U256) for handling large integers compatible with Ethereum's numeric constraints.
-   - **String Inputs**: Use Rust's standard `String` type for text data.
-
-### Context Required Operation
-
-For a practical example of how to implement context-sensitive operations, refer to the implementation of the `COUNT` function. This example shows how to pass and utilize additional context for operations, which can be particularly useful for conditional processing or complex calculations.
-
-During `SLR` computation, we also need a context to use as the target index for computation. Since `SLR` is not supported during the preprocessing step, we simply pass the encoded task that contains the function context, and the Cairo program will handle this computation based on the provided index.
-
-### Testing Your Module
-
-After implementing your new function, it's crucial to verify its functionality:
-
-- **Create Unit Tests**: Add tests in the corresponding test file in the `tests` directory. Ensure your tests cover all new logic to maintain stability and reliability.
-- **Test for Integer Types**: Pay special attention to functions that handle integer types, ensuring they correctly process and output values fitting within a `bytes32` length, reflecting Ethereum's data type constraints.
-
 ### Local Run
 
 To run HDP in a stable environment locally, you need to have `cairo-run` installed with the necessary tools in the correct path and locate the compiled Cairo program. If these steps sound tricky to you, just use the Docker image.
 
 To mount in a container environment, you need to create empty `input.json`, `output.json`, and `cairo.pie` files in the root directory of the host machine before running it.
+
+And locate `requeset.json` file on root that contains intended request format.
 
 ```sh
 docker-compose build
