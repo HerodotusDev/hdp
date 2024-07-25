@@ -95,8 +95,10 @@ impl Runner {
             let number_of_steps = number_of_steps_caps[1].parse::<usize>()?;
             info!("Number of steps: {:#?}", number_of_steps);
         }
-        let cairo_run_output_from_file = fs::read_to_string(cairo_run_output_path)?;
-        let cairo_run_output: CairoRunOutput = serde_json::from_str(&cairo_run_output_from_file)?;
+        let cairo_run_output_from_file = fs::read_to_string(cairo_run_output_path)
+            .expect("Failed to read cairo run output file");
+        let cairo_run_output: CairoRunOutput = serde_json::from_str(&cairo_run_output_from_file)
+            .expect("Failed to parse cairo run output");
         Ok(cairo_run_output)
     }
 }
