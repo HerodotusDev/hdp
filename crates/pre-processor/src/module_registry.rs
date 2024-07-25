@@ -57,17 +57,17 @@ impl ModuleRegistry {
 
     pub async fn get_extended_module_from_class_source_string(
         &self,
-        class_hash: Option<String>,
+        program_hash: Option<String>,
         local_class_path: Option<PathBuf>,
         module_inputs: Vec<String>,
     ) -> Result<ExtendedModule, ModuleRegistryError> {
-        let class_hash =
-            class_hash.map(|class_hash| FieldElement::from_hex_be(&class_hash).unwrap());
+        let program_hash =
+            program_hash.map(|program_hash| FieldElement::from_hex_be(&program_hash).unwrap());
         let module_inputs = module_inputs
             .into_iter()
             .map(|input| FieldElement::from_hex_be(&input).unwrap())
             .collect();
-        self.get_extended_module_from_class_source(class_hash, local_class_path, module_inputs)
+        self.get_extended_module_from_class_source(program_hash, local_class_path, module_inputs)
             .await
     }
 
@@ -91,7 +91,7 @@ impl ModuleRegistry {
                 .await?
         } else {
             return Err(ModuleRegistryError::ClassSourceError(
-                "One of class_hash or local_class_path must be provided".to_string(),
+                "One of program_hash or local_class_path must be provided".to_string(),
             ));
         };
 
@@ -192,12 +192,12 @@ mod tests {
     fn init() -> (ModuleRegistry, FieldElement) {
         let module_registry = ModuleRegistry::new();
         // This is test contract class hash
-        let class_hash = FieldElement::from_hex_be(
-            "0xaf1333b8346c1ac941efe380f3122a71c1f7cbad19301543712e74f765bfca",
+        let program_hash = FieldElement::from_hex_be(
+            "0x64041a339b1edd10de83cf031cfa938645450f971d2527c90d4c2ce68d7d412",
         )
         .unwrap();
 
-        (module_registry, class_hash)
+        (module_registry, program_hash)
     }
 
     #[tokio::test]
@@ -213,18 +213,18 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_multiple_module_classes() {
-        let (module_registry, class_hash) = init();
-        println!("{}", class_hash);
+        let (module_registry, program_hash) = init();
+        println!("{}", program_hash);
 
         let extended_modules = module_registry
-            .get_extended_module_from_class_source(Some(class_hash), None, vec![])
+            .get_extended_module_from_class_source(Some(program_hash), None, vec![])
             .await
             .unwrap();
 
         assert_eq!(
             extended_modules.task.program_hash,
             FieldElement::from_hex_be(
-                "0xaf1333b8346c1ac941efe380f3122a71c1f7cbad19301543712e74f765bfca"
+                "0x64041a339b1edd10de83cf031cfa938645450f971d2527c90d4c2ce68d7d412"
             )
             .unwrap()
         );
