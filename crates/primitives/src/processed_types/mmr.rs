@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::block::header::MMRMetaFromNewIndexer;
+use crate::{block::header::MMRMetaFromNewIndexer, utils::hex_string_to_uint};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub struct MMRMeta {
@@ -24,21 +24,10 @@ impl MMRMeta {
     }
 }
 
-impl From<MMRMeta> for MMRMetaFromNewIndexer {
-    fn from(val: MMRMeta) -> Self {
-        MMRMetaFromNewIndexer {
-            mmr_id: val.id,
-            mmr_root: val.root,
-            mmr_size: val.size,
-            mmr_peaks: val.peaks,
-        }
-    }
-}
-
 impl MMRMeta {
     pub fn from_indexer(val: MMRMetaFromNewIndexer, chain_id: u64) -> Self {
         MMRMeta {
-            id: val.mmr_id,
+            id: hex_string_to_uint(&val.mmr_id),
             root: val.mmr_root,
             size: val.mmr_size,
             peaks: val.mmr_peaks,
