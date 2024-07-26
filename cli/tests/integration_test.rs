@@ -4,6 +4,7 @@ mod integration_test {
     };
     use hdp_primitives::{
         aggregate_fn::AggregationFunction,
+        config::ChainConfig,
         processed_types::cairo_format::AsCairoFormat,
         task::{
             datalake::{
@@ -17,16 +18,29 @@ mod integration_test {
     };
     use hdp_processor::Processor;
 
-    use std::{fs, path::PathBuf};
+    use std::{collections::HashMap, fs, path::PathBuf};
 
-    const DRY_RUN_PROGRAM_PATH: &str = "../build/compiled_cairo/contract_dry_run.json";
     const PREPROCESS_PROGRAM_PATH: &str = "../build/compiled_cairo/hdp.json";
     const PIE_PATH: &str = "./cairo.pie";
 
-    fn init_preprocessor() -> PreProcessor {
-        let compile_config = CompilerConfig::default()
-            .with_dry_run_program_path(PathBuf::from(DRY_RUN_PROGRAM_PATH));
+    fn get_test_config() -> CompilerConfig {
+        let program_path = "../build/compiled_cairo/contract_dry_run.json";
+        let mut provider_config = HashMap::new();
+        let sepolia_config = ChainConfig {
+            rpc_url: "https://eth-sepolia.g.alchemy.com/v2/a-w72ZvoUS0dfMD_LBPAuRzHOlQEhi_m"
+                .to_string(),
+            rpc_chunk_size: 100,
+        };
+        provider_config.insert(11155111, sepolia_config);
+        CompilerConfig {
+            dry_run_program_path: PathBuf::from(program_path),
+            provider_config,
+            save_fetch_keys_file: None,
+        }
+    }
 
+    fn init_preprocessor() -> PreProcessor {
+        let compile_config = get_test_config();
         PreProcessor::new_with_config(compile_config)
     }
 

@@ -44,7 +44,7 @@ pub enum RpcProviderError {
 /// use hdp_provider::evm::rpc::RpcProvider;
 /// use alloy::primitives::Address;
 ///
-/// async fn call_provider(url: Url, chunk_size: u64, block_range_start: u64, block_range_end: u64, increment: u64, address: Address) {
+/// async fn call_provider(url: Url, chunk_size: u32, block_range_start: u64, block_range_end: u64, increment: u64, address: Address) {
 ///         let provider = RpcProvider::new(url, chunk_size);
 ///         let target_block_range = (block_range_start..=block_range_end).collect::<Vec<u64>>();
 ///         let result = provider.get_account_proofs(target_block_range, address).await;
@@ -57,11 +57,11 @@ pub enum RpcProviderError {
 #[derive(Clone)]
 pub struct RpcProvider {
     provider: RootProvider<Http<Client>>,
-    chunk_size: u64,
+    chunk_size: u32,
 }
 
 impl RpcProvider {
-    pub fn new(rpc_url: Url, chunk_size: u64) -> Self {
+    pub fn new(rpc_url: Url, chunk_size: u32) -> Self {
         let provider = RootProvider::new_http(rpc_url);
         Self {
             provider,

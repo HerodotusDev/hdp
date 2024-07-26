@@ -1,8 +1,9 @@
-use alloy::{primitives::U256, transports::http::reqwest::Url};
+use alloy::primitives::U256;
 use anyhow::bail;
 use hdp_preprocessor::module_registry::ModuleRegistry;
 use hdp_primitives::{
     aggregate_fn::{integer::Operator, FunctionContext},
+    config::Config,
     task::{
         datalake::{
             block_sampled::{
@@ -25,7 +26,7 @@ use inquire::{InquireError, Select};
 use std::{path::PathBuf, str::FromStr};
 use tracing::error;
 
-use crate::{common::handle_running_tasks, config::Config};
+use crate::common::handle_running_tasks;
 
 pub async fn run_interactive() -> anyhow::Result<()> {
     println!("Welcome to Herodotus Data Processor interactive CLI! 🛰️");
@@ -328,27 +329,7 @@ pub async fn run_interactive() -> anyhow::Result<()> {
     .with_default(true)
     .prompt()?;
     if allow_run {
-        let rpc_url: Option<Url> = match inquire::Text::new("Enter RPC URL: ")
-            .with_help_message("Skip if you have it in your .env file")
-            .prompt()
-        {
-            Ok(url) => match url.as_str() {
-                "" => None,
-                _ => Some(url.parse()?),
-            },
-            Err(_) => None,
-        };
-        let chain_id: Option<u64> = match inquire::Text::new("Enter Chain ID: ")
-            .with_help_message("Skip if you have it in your .env file")
-            .prompt()
-        {
-            Ok(chain_id) => match chain_id.as_str() {
-                "" => None,
-                _ => Some(chain_id.parse()?),
-            },
-            Err(_) => None,
-        };
-        let config = Config::init(rpc_url, chain_id, None, None, None).await;
+        let config = Config::init(None, None, None).await;
         let output_file: PathBuf = inquire::Text::new("Enter Output file path: ")
             .with_default("output.json")
             .prompt()?

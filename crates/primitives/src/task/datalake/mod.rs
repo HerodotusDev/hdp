@@ -21,6 +21,17 @@ impl DatalakeCompute {
     pub fn new(datalake: DatalakeEnvelope, compute: Computation) -> Self {
         Self { datalake, compute }
     }
+
+    pub fn get_chain_id(&self) -> u64 {
+        match &self.datalake {
+            DatalakeEnvelope::BlockSampled(block_sampled_datalake) => {
+                block_sampled_datalake.chain_id
+            }
+            DatalakeEnvelope::TransactionsInBlock(transactions_in_block_datalake) => {
+                transactions_in_block_datalake.chain_id
+            }
+        }
+    }
 }
 
 pub trait DatalakeCollection {
