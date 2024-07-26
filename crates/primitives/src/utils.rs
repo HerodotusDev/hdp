@@ -50,6 +50,11 @@ pub fn felt_to_bytes32(felt: FieldElement) -> FixedBytes<32> {
     B256::from(felt_bytes)
 }
 
+pub fn hex_string_to_uint(hex_string: &str) -> u64 {
+    let hex_string = hex_string.trim_start_matches("0x");
+    u64::from_str_radix(hex_string, 16).expect("Cannot convert hex string to uint")
+}
+
 pub fn default_increment() -> u64 {
     1
 }
@@ -143,5 +148,12 @@ mod tests {
         .unwrap();
         let bytes32 = felt_to_bytes32(felt);
         assert_eq!(bytes32, felt.to_bytes_be());
+    }
+
+    #[test]
+    fn test_hex_string_to_uint() {
+        let hex_string = "0x1b";
+        let result = hex_string_to_uint(hex_string);
+        assert_eq!(result, 27);
     }
 }

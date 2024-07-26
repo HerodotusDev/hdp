@@ -439,7 +439,7 @@ pub struct MMRDataFromIndexer {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct MMRMetaFromIndexer {
-    pub mmr_id: u64,
+    pub mmr_id: String,
     pub mmr_peaks: Vec<String>,
     pub mmr_root: String,
     pub mmr_size: u64,
@@ -470,7 +470,7 @@ pub struct MMRDataFromNewIndexer {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct MMRMetaFromNewIndexer {
-    pub mmr_id: u64,
+    pub mmr_id: String,
     pub mmr_peaks: Vec<String>,
     pub mmr_root: String,
     pub mmr_size: u64,
