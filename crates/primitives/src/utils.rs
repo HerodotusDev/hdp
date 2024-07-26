@@ -44,6 +44,11 @@ pub fn tx_index_to_tx_key(tx_index: u64) -> String {
     format!("0x{}", hex::encode(binding))
 }
 
+pub fn hex_string_to_uint(hex_string: &str) -> u64 {
+    let hex_string = hex_string.trim_start_matches("0x");
+    u64::from_str_radix(hex_string, 16).expect("Cannot convert hex string to uint")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -121,5 +126,11 @@ mod tests {
         let expected_tx_key = "0x82012f".to_string();
 
         assert_eq!(tx_key, expected_tx_key);
+    }
+    #[test]
+    fn test_hex_string_to_uint() {
+        let hex_string = "0x1b";
+        let result = hex_string_to_uint(hex_string);
+        assert_eq!(result, 27);
     }
 }

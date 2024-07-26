@@ -7,7 +7,7 @@ use alloy::{
 use alloy_rlp::{length_of_length, BufMut, Decodable, Encodable};
 use serde::{Deserialize, Serialize};
 
-use crate::processed_types::mmr::MMRMeta;
+use crate::{processed_types::mmr::MMRMeta, utils::hex_string_to_uint};
 
 // =============================================================================
 // Header (credit: https://github.com/paradigmxyz/reth/blob/main/crates/primitives/src/header.rs#L133)
@@ -441,7 +441,7 @@ pub struct MMRDataFromIndexer {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct MMRMetaFromIndexer {
-    pub mmr_id: u64,
+    pub mmr_id: String,
     pub mmr_peaks: Vec<String>,
     pub mmr_root: String,
     pub mmr_size: u64,
@@ -450,7 +450,7 @@ pub struct MMRMetaFromIndexer {
 impl From<&MMRMetaFromIndexer> for MMRMeta {
     fn from(value: &MMRMetaFromIndexer) -> Self {
         Self {
-            id: value.mmr_id,
+            id: hex_string_to_uint(&value.mmr_id),
             peaks: value.mmr_peaks.clone(),
             root: value.mmr_root.to_string(),
             size: value.mmr_size,
@@ -483,7 +483,7 @@ pub struct MMRDataFromNewIndexer {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct MMRMetaFromNewIndexer {
-    pub mmr_id: u64,
+    pub mmr_id: String,
     pub mmr_peaks: Vec<String>,
     pub mmr_root: String,
     pub mmr_size: u64,
