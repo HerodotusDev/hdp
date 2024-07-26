@@ -5,7 +5,7 @@ use hdp_primitives::{
     solidity_types::traits::DatalakeComputeCodecs,
     task::datalake::{envelope::DatalakeEnvelope, DatalakeCompute},
 };
-use hdp_provider::evm::provider::EvmProvider;
+use hdp_provider::evm::{config::EvmProviderConfig, provider::EvmProvider};
 use tracing::info;
 
 use super::{config::CompilerConfig, Compilable, CompilationResult, CompileError};
@@ -17,11 +17,16 @@ impl Compilable for DatalakeCompute {
         &self,
         compile_config: &CompilerConfig,
     ) -> Result<CompilationResult, CompileError> {
-        info!("target task: {:#?}", self);
+        info!("1. target task: {:#?}", self);
         let task_commitment = self.commit();
         let aggregation_fn = &self.compute.aggregate_fn_id;
         let fn_context = &self.compute.aggregate_fn_ctx;
-        let provider = EvmProvider::new(compile_config.provider_config.clone());
+        let chain_id = self.get_chain_id();
+        info!("2. Fetching proofs from provider on chain({})...", chain_id);
+        let provider = EvmProvider::new(EvmProviderConfig::from_chains_config(
+            &compile_config.provider_config,
+            chain_id,
+        ));
         match self.datalake {
             DatalakeEnvelope::BlockSampled(ref datalake) => {
                 let compiled_block_sampled = datalake.fetch(provider).await?;
@@ -81,11 +86,12 @@ impl Compilable for DatalakeComputeVec {
 
 #[cfg(test)]
 mod tests {
-    use std::path::PathBuf;
+    use std::{collections::HashMap, path::PathBuf};
 
     use alloy::primitives::{address, B256, U256};
     use hdp_primitives::{
         aggregate_fn::AggregationFunction,
+        config::ChainConfig,
         task::datalake::{
             block_sampled::{
                 AccountField, BlockSampledCollection, BlockSampledDatalake, HeaderField,
@@ -100,10 +106,24 @@ mod tests {
 
     use super::*;
 
+    fn get_test_config() -> CompilerConfig {
+        let program_path = "../../build/compiled_cairo/contract_dry_run.json";
+        let mut provider_config = HashMap::new();
+        let sepolia_config = ChainConfig {
+            rpc_url: "https://eth-sepolia.g.alchemy.com/v2/a-w72ZvoUS0dfMD_LBPAuRzHOlQEhi_m"
+                .to_string(),
+            rpc_chunk_size: 100,
+        };
+        provider_config.insert(11155111, sepolia_config);
+        CompilerConfig {
+            dry_run_program_path: PathBuf::from(program_path),
+            provider_config,
+            save_fetch_keys_file: None,
+        }
+    }
+
     #[tokio::test]
     async fn test_compile_block_sampled_datalake_compute_vec() {
-        let program_path = "../../build/compiled_cairo/contract_dry_run.json";
-
         let datalake_compute_vec = vec![
             DatalakeCompute {
                 compute: Computation::new(AggregationFunction::MIN, None),
@@ -143,8 +163,7 @@ mod tests {
             },
         ];
 
-        let compiler_config =
-            CompilerConfig::default().with_dry_run_program_path(PathBuf::from(program_path));
+        let compiler_config = get_test_config();
 
         let results = datalake_compute_vec
             .compile(&compiler_config)
@@ -162,8 +181,6 @@ mod tests {
 
     #[tokio::test]
     async fn test_compile_transactions_datalake_compute_vec() {
-        let program_path = "../../build/compiled_cairo/contract_dry_run.json";
-
         let datalake_compute_vec = vec![
             DatalakeCompute {
                 compute: Computation::new(AggregationFunction::MIN, None),
@@ -195,8 +212,7 @@ mod tests {
             },
         ];
 
-        let compiler_config =
-            CompilerConfig::default().with_dry_run_program_path(PathBuf::from(program_path));
+        let compiler_config = get_test_config();
         let results = datalake_compute_vec
             .compile(&compiler_config)
             .await

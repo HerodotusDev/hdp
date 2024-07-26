@@ -1,10 +1,10 @@
-use alloy::{primitives::ChainId, transports::http::reqwest::Url};
 use anyhow::Result;
 use hdp_preprocessor::{
     compile::config::CompilerConfig, module_registry::ModuleRegistry, PreProcessor,
 };
 use hdp_primitives::{
     aggregate_fn::{AggregationFunction, FunctionContext},
+    config::Config,
     processed_types::cairo_format::AsCairoFormat,
     task::{
         datalake::{
@@ -24,7 +24,6 @@ use tracing::{info, Level};
 
 use crate::{
     commands::{DataLakeCommands, HDPCli, HDPCliCommands},
-    config::Config,
     interactive,
     query::{SubmitBatchQuery, Task},
 };
@@ -37,8 +36,6 @@ pub async fn run() -> anyhow::Result<()> {
             interactive::run_interactive().await?;
         }
         HDPCliCommands::RunDatalake {
-            rpc_url,
-            chain_id,
             preprocessor_output_file,
             sound_run_cairo_file,
             output_file,
@@ -51,8 +48,6 @@ pub async fn run() -> anyhow::Result<()> {
                 aggregate_fn_id,
                 aggregate_fn_ctx,
                 datalake,
-                rpc_url,
-                chain_id,
                 preprocessor_output_file,
                 sound_run_cairo_file,
                 output_file,
@@ -66,8 +61,6 @@ pub async fn run() -> anyhow::Result<()> {
             local_class_path,
             save_fetch_keys_file,
             module_inputs,
-            rpc_url,
-            chain_id,
             dry_run_cairo_file,
             preprocessor_output_file,
             sound_run_cairo_file,
@@ -79,8 +72,6 @@ pub async fn run() -> anyhow::Result<()> {
                 local_class_path,
                 save_fetch_keys_file,
                 module_inputs,
-                rpc_url,
-                chain_id,
                 dry_run_cairo_file,
                 preprocessor_output_file,
                 sound_run_cairo_file,
@@ -91,7 +82,6 @@ pub async fn run() -> anyhow::Result<()> {
         }
         HDPCliCommands::Run {
             request_file,
-            rpc_url,
             dry_run_cairo_file,
             preprocessor_output_file,
             sound_run_cairo_file,
@@ -100,7 +90,6 @@ pub async fn run() -> anyhow::Result<()> {
         } => {
             entry_run(
                 request_file,
-                rpc_url,
                 dry_run_cairo_file,
                 preprocessor_output_file,
                 sound_run_cairo_file,
@@ -133,8 +122,6 @@ pub async fn module_entry_run(
     local_class_path: Option<PathBuf>,
     save_fetch_keys_file: Option<PathBuf>,
     module_inputs: Vec<String>,
-    rpc_url: Option<Url>,
-    chain_id: Option<ChainId>,
     dry_run_cairo_file: Option<PathBuf>,
     preprocessor_output_file: Option<PathBuf>,
     sound_run_cairo_file: Option<PathBuf>,
@@ -142,8 +129,6 @@ pub async fn module_entry_run(
     cairo_pie_file: Option<PathBuf>,
 ) -> Result<()> {
     let config = Config::init(
-        rpc_url,
-        chain_id,
         dry_run_cairo_file,
         sound_run_cairo_file,
         save_fetch_keys_file,
@@ -172,14 +157,12 @@ pub async fn datalake_entry_run(
     aggregate_fn_id: AggregationFunction,
     aggregate_fn_ctx: Option<FunctionContext>,
     datalake: DataLakeCommands,
-    rpc_url: Option<Url>,
-    chain_id: Option<ChainId>,
     pre_processor_output: Option<PathBuf>,
     sound_run_cairo_file: Option<PathBuf>,
     output_file: Option<PathBuf>,
     cairo_pie_file: Option<PathBuf>,
 ) -> Result<()> {
-    let config = Config::init(rpc_url, chain_id, None, sound_run_cairo_file, None).await;
+    let config = Config::init(None, sound_run_cairo_file, None).await;
     let parsed_datalake = match datalake {
         DataLakeCommands::BlockSampled {
             block_range_start,
@@ -227,7 +210,7 @@ pub async fn datalake_entry_run(
 }
 
 pub async fn handle_running_tasks(
-    config: &Config,
+    config: Config,
     tasks: Vec<TaskEnvelope>,
     pre_processor_output_file: Option<PathBuf>,
     output_file: Option<PathBuf>,
@@ -235,7 +218,7 @@ pub async fn handle_running_tasks(
 ) -> Result<()> {
     let compiler_config = CompilerConfig {
         dry_run_program_path: config.dry_run_program_path.clone(),
-        provider_config: config.evm_provider.clone(),
+        provider_config: config.chains,
         save_fetch_keys_file: config.save_fetch_keys_file.clone(),
     };
     let preprocessor = PreProcessor::new_with_config(compiler_config);
@@ -289,7 +272,6 @@ pub async fn handle_running_tasks(
 
 pub async fn entry_run(
     request_file: PathBuf,
-    rpc_url: Option<Url>,
     dry_run_cairo_file: Option<PathBuf>,
     pre_processor_output_file: PathBuf,
     sound_run_cairo_file: Option<PathBuf>,
@@ -300,14 +282,7 @@ pub async fn entry_run(
         fs::read_to_string(request_file).expect("No request file exist in the path");
     let parsed: SubmitBatchQuery = serde_json::from_str(&request_context)
         .expect("Invalid format of request. Cannot parse it.");
-    let config = Config::init(
-        rpc_url,
-        Some(parsed.destination_chain_id),
-        dry_run_cairo_file,
-        sound_run_cairo_file,
-        None,
-    )
-    .await;
+    let config = Config::init(dry_run_cairo_file, sound_run_cairo_file, None).await;
     let module_registry = ModuleRegistry::new();
     let mut task_envelopes = Vec::new();
     for task in parsed.tasks {
@@ -329,7 +304,7 @@ pub async fn entry_run(
     }
     let compiler_config = CompilerConfig {
         dry_run_program_path: PathBuf::from(&config.dry_run_program_path),
-        provider_config: config.evm_provider.clone(),
+        provider_config: config.chains,
         save_fetch_keys_file: config.save_fetch_keys_file.clone(),
     };
     let preprocessor = PreProcessor::new_with_config(compiler_config);

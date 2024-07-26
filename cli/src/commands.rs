@@ -1,7 +1,4 @@
-use alloy::{
-    primitives::{BlockNumber, ChainId, TxIndex},
-    transports::http::reqwest::Url,
-};
+use alloy::primitives::{BlockNumber, TxIndex};
 use clap::{command, Parser, Subcommand};
 use hdp_primitives::{
     aggregate_fn::{AggregationFunction, FunctionContext},
@@ -36,12 +33,6 @@ pub enum HDPCliCommands {
 
         #[command(subcommand)]
         datalake: DataLakeCommands,
-
-        /// The RPC URL to fetch the datalake
-        rpc_url: Option<Url>,
-
-        /// The chain id to fetch the datalake
-        chain_id: Option<ChainId>,
 
         /// Path to save output file after pre-processing.
         ///
@@ -90,18 +81,6 @@ pub enum HDPCliCommands {
         #[arg(long)]
         save_fetch_keys_file: Option<PathBuf>,
 
-        /// The RPC URL to fetch the data.
-        ///
-        /// Can be overwritten by `RPC_URL` environment variable.
-        #[arg(long)]
-        rpc_url: Option<Url>,
-
-        /// The chain id to fetch the data.
-        ///
-        /// Can be overwritten by `CHAIN_ID` environment variable
-        #[arg(long)]
-        chain_id: Option<ChainId>,
-
         /// dry run contract bootloader program.
         /// only used for module task
         #[arg(long)]
@@ -135,12 +114,6 @@ pub enum HDPCliCommands {
         /// Pass request as json file
         #[arg(short, long)]
         request_file: PathBuf,
-
-        /// The RPC URL to fetch the data.
-        ///
-        /// Can be overwritten by `RPC_URL` environment variable.
-        #[arg(long)]
-        rpc_url: Option<Url>,
 
         /// dry run contract bootloader program.
         /// only used for module task

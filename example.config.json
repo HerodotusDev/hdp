@@ -1,0 +1,15 @@
+{
+  "dry_run_cairo_path": "build/contract_dry_run.json",
+  "sound_run_cairo_path": "build/hdp.json",
+  "save_fetch_keys_file": "dry_run_output.json",
+  "chains": {
+    "1": {
+      "rpc_url": "https://ethereum-rpc.publicnode.com",
+      "rpc_chunk_size": 100
+    },
+    "11155111": {
+      "rpc_url": "https://ethereum-sepolia-rpc.publicnode.com",
+      "rpc_chunk_size": 100
+    }
+  }
+}

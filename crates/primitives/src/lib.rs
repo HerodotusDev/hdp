@@ -4,6 +4,7 @@ use serde_json as _;
 
 pub mod aggregate_fn;
 pub mod block;
+pub mod config;
 pub mod constant;
 pub mod processed_types;
 pub mod serde;
