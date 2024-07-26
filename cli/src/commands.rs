@@ -147,6 +147,8 @@ pub enum DataLakeCommands {
     #[command(arg_required_else_help = true)]
     #[command(short_flag = 'b')]
     BlockSampled {
+        /// Chain id of data lake
+        chain_id: u64,
         /// Block number range start (inclusive)
         block_range_start: BlockNumber,
         /// Block number range end (inclusive)
@@ -161,6 +163,8 @@ pub enum DataLakeCommands {
     #[command(arg_required_else_help = true)]
     #[command(short_flag = 't')]
     TransactionsInBlock {
+        /// Chain id of data lake
+        chain_id: u64,
         /// Target block number
         target_block: BlockNumber,
         /// Sampled property

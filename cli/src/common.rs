@@ -165,18 +165,20 @@ pub async fn datalake_entry_run(
     let config = Config::init(None, sound_run_cairo_file, None).await;
     let parsed_datalake = match datalake {
         DataLakeCommands::BlockSampled {
+            chain_id,
             block_range_start,
             block_range_end,
             sampled_property,
             increment,
         } => DatalakeEnvelope::BlockSampled(BlockSampledDatalake::new(
-            11155111,
+            chain_id,
             block_range_start,
             block_range_end,
             increment,
             sampled_property,
         )),
         DataLakeCommands::TransactionsInBlock {
+            chain_id,
             target_block,
             sampled_property,
             start_index,
@@ -184,7 +186,7 @@ pub async fn datalake_entry_run(
             increment,
             included_types,
         } => DatalakeEnvelope::TransactionsInBlock(TransactionsInBlockDatalake::new(
-            11155111,
+            chain_id,
             target_block,
             sampled_property,
             start_index,
