@@ -302,45 +302,13 @@ pub async fn entry_run(
             }
         }
     }
-    let compiler_config = CompilerConfig {
-        dry_run_program_path: PathBuf::from(&config.dry_run_program_path),
-        provider_config: config.chains,
-        save_fetch_keys_file: config.save_fetch_keys_file.clone(),
-    };
-    let preprocessor = PreProcessor::new_with_config(compiler_config);
-    let preprocessor_result = preprocessor.process(task_envelopes).await?;
-    let input_string = serde_json::to_string_pretty(&preprocessor_result.as_cairo_format())
-        .map_err(|e| anyhow::anyhow!("Failed to serialize preprocessor result: {}", e))?;
-    fs::write(&pre_processor_output_file, input_string)
-        .map_err(|e| anyhow::anyhow!("Unable to write input file: {}", e))?;
-    info!(
-        "Finished pre processing the data, saved the input file of cairo program in {}",
-        pre_processor_output_file.display()
-    );
-    if output_file.is_none() && cairo_pie_file.is_none() {
-        Ok(())
-    } else {
-        info!("Starting processing the data... ");
-        let output_file_path =
-            output_file.ok_or_else(|| anyhow::anyhow!("Output file path should be specified"))?;
-        let pie_file_path =
-            cairo_pie_file.ok_or_else(|| anyhow::anyhow!("PIE path should be specified"))?;
-        let processor = Processor::new(config.sound_run_program_path.clone());
-        let processor_result = processor
-            .process(preprocessor_result, &pie_file_path)
-            .await?;
-        fs::write(
-            &output_file_path,
-            serde_json::to_string_pretty(&processor_result)
-                .map_err(|e| anyhow::anyhow!("Failed to serialize processor result: {}", e))?,
-        )
-        .map_err(|e| anyhow::anyhow!("Unable to write output file: {}", e))?;
-
-        info!(
-            "Finished processing the data, saved the output file in {} and pie file in {}",
-            output_file_path.display(),
-            pie_file_path.display()
-        );
-        Ok(())
-    }
+    handle_running_tasks(
+        config,
+        task_envelopes,
+        Some(pre_processor_output_file),
+        output_file,
+        cairo_pie_file,
+    )
+    .await?;
+    Ok(())
 }
