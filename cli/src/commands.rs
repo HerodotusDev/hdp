@@ -3,7 +3,7 @@ use alloy::{
     transports::http::reqwest::Url,
 };
 use clap::{command, Parser, Subcommand};
-use hdp_primitives::{
+use hdp::primitives::{
     aggregate_fn::{AggregationFunction, FunctionContext},
     task::datalake::{
         block_sampled::BlockSampledCollection,

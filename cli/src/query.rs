@@ -1,4 +1,4 @@
-use hdp_primitives::task::{datalake::DatalakeCompute, module::Module};
+use hdp::primitives::task::{datalake::DatalakeCompute, module::Module};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]

@@ -2172,6 +2172,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "hdp"
+version = "0.2.5"
+dependencies = [
+ "hdp-cairo-runner",
+ "hdp-preprocessor",
+ "hdp-primitives",
+ "hdp-processor",
+ "hdp-provider",
+]
+
+[[package]]
 name = "hdp-cairo-runner"
 version = "0.2.5"
 dependencies = [
@@ -2199,10 +2210,7 @@ dependencies = [
  "anyhow",
  "clap 4.5.4",
  "dotenv",
- "hdp-preprocessor",
- "hdp-primitives",
- "hdp-processor",
- "hdp-provider",
+ "hdp",
  "inquire",
  "serde",
  "serde_json",

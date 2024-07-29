@@ -1,7 +1,7 @@
 use alloy::{primitives::U256, transports::http::reqwest::Url};
 use anyhow::bail;
-use hdp_preprocessor::module_registry::ModuleRegistry;
-use hdp_primitives::{
+use hdp::preprocessor::module_registry::ModuleRegistry;
+use hdp::primitives::{
     aggregate_fn::{integer::Operator, FunctionContext},
     task::{
         datalake::{

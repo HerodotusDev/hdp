@@ -1,8 +1,8 @@
 use alloy::{primitives::ChainId, transports::http::reqwest::Url};
-use hdp_primitives::constant::{
+use hdp::primitives::constant::{
     DEFAULT_DRY_CAIRO_RUN_CAIRO_FILE, DEFAULT_SOUND_CAIRO_RUN_CAIRO_FILE,
 };
-use hdp_provider::evm::config::EvmProviderConfig;
+use hdp::provider::evm::config::EvmProviderConfig;
 
 use std::{env, path::PathBuf};
 use tokio::sync::OnceCell;

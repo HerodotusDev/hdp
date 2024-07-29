@@ -1,9 +1,9 @@
 use alloy::{primitives::ChainId, transports::http::reqwest::Url};
 use anyhow::Result;
-use hdp_preprocessor::{
+use hdp::preprocessor::{
     compile::config::CompilerConfig, module_registry::ModuleRegistry, PreProcessor,
 };
-use hdp_primitives::{
+use hdp::primitives::{
     aggregate_fn::{AggregationFunction, FunctionContext},
     processed_types::cairo_format::AsCairoFormat,
     task::{
@@ -18,7 +18,7 @@ use std::{env, fs, path::PathBuf};
 use tracing_subscriber::{EnvFilter, FmtSubscriber};
 
 use clap::Parser;
-use hdp_processor::Processor;
+use hdp::processor::Processor;
 
 use tracing::{debug, info};
 
