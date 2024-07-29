@@ -1,8 +1,8 @@
 mod integration_test {
-    use hdp_preprocessor::{
+    use hdp::preprocessor::{
         compile::config::CompilerConfig, module_registry::ModuleRegistry, PreProcessor,
     };
-    use hdp_primitives::{
+    use hdp::primitives::{
         aggregate_fn::AggregationFunction,
         processed_types::cairo_format::AsCairoFormat,
         task::{
@@ -15,7 +15,7 @@ mod integration_test {
             TaskEnvelope,
         },
     };
-    use hdp_processor::Processor;
+    use hdp::processor::Processor;
 
     use std::{fs, path::PathBuf};
 
