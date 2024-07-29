@@ -18,6 +18,7 @@ name = "hdp"
 path = "src/main.rs"
 
 [dependencies]
+tracing-subscriber = { version = "0.3.0", features = ["env-filter"] }
 hdp-preprocessor = { workspace = true }
 hdp-processor = { workspace = true }
 anyhow = { workspace = true }
@@ -30,6 +31,5 @@ serde = { workspace = true }
 starknet = { workspace = true }
 clap = { version = "4.4.4", features = ["derive"] }
 dotenv = "0.15.0"
-tracing-subscriber = "0.3.0"
 inquire = "0.7.4"
 alloy = { workspace = true }

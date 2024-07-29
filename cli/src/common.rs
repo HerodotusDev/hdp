@@ -14,13 +14,13 @@ use hdp_primitives::{
         TaskEnvelope,
     },
 };
-use std::{fs, path::PathBuf};
-use tracing_subscriber::FmtSubscriber;
+use std::{env, fs, path::PathBuf};
+use tracing_subscriber::{EnvFilter, FmtSubscriber};
 
 use clap::Parser;
 use hdp_processor::Processor;
 
-use tracing::{info, Level};
+use tracing::{debug, info};
 
 use crate::{
     commands::{DataLakeCommands, HDPCli, HDPCliCommands},
@@ -117,11 +117,12 @@ pub async fn run() -> anyhow::Result<()> {
 
 /// Initialize the CLI
 fn init_cli() -> Result<HDPCli> {
+    let rust_log = env::var("RUST_LOG").unwrap_or_else(|_| "info".to_string());
     let subscriber = FmtSubscriber::builder()
-        .with_max_level(Level::INFO)
+        .with_env_filter(EnvFilter::new(&rust_log))
         .finish();
-
-    tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
+    tracing::subscriber::set_global_default(subscriber).expect("Failed to set subscriber");
+    debug!("running on log level: {}", rust_log);
     let cli = HDPCli::parse();
     dotenv::dotenv().ok();
     Ok(cli)
