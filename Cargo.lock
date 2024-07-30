@@ -2183,6 +2183,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "hdp"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "72b48d4f3ed4627f93adb3df5035b34a8ca5345a9fff8c71402642f925ed8d35"
+dependencies = [
+ "hdp-preprocessor 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "hdp-primitives 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "hdp-processor 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "hdp-provider 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "hdp-cairo-runner"
 version = "0.4.0"
 dependencies = [
@@ -2232,7 +2244,7 @@ dependencies = [
  "anyhow",
  "clap 4.5.4",
  "dotenv",
- "hdp",
+ "hdp 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "inquire",
  "serde",
  "serde_json",
