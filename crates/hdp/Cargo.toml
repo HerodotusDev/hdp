@@ -10,7 +10,7 @@ homepage.workspace = true
 exclude.workspace = true
 keywords.workspace = true
 categories.workspace = true
-readme = "../README.md"
+readme = "../../README.md"
 
 [dependencies]
 hdp-preprocessor = { workspace = true, optional = true }
