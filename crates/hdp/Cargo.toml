@@ -1,5 +1,6 @@
 [package]
 name = "hdp"
+description = "All Herodotus Data Processor crates"
 version.workspace = true
 edition.workspace = true
 license-file.workspace = true
@@ -9,6 +10,7 @@ homepage.workspace = true
 exclude.workspace = true
 keywords.workspace = true
 categories.workspace = true
+readme = "../README.md"
 
 [dependencies]
 hdp-preprocessor = { workspace = true, optional = true }
