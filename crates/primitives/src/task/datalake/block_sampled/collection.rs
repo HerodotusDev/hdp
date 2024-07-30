@@ -2,12 +2,14 @@ use std::{fmt::Display, str::FromStr};
 
 use alloy::primitives::{Address, StorageKey};
 use anyhow::{bail, Result};
+use serde::{Deserialize, Serialize};
 
 use crate::task::datalake::{DatalakeCollection, DatalakeField};
 
 use super::rlp_fields::{AccountField, HeaderField};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(try_from = "String")]
 pub enum BlockSampledCollection {
     Header(HeaderField),
     Account(Address, AccountField),
@@ -137,6 +139,14 @@ impl FromStr for BlockSampledCollection {
             }
             _ => bail!("Unknown block sampled collection"),
         }
+    }
+}
+
+impl TryFrom<String> for BlockSampledCollection {
+    type Error = anyhow::Error;
+
+    fn try_from(value: String) -> Result<Self> {
+        BlockSampledCollection::from_str(&value)
     }
 }
 

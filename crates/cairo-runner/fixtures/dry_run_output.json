@@ -27,6 +27,6 @@
       }
     ],
     "result": { "low": "0x0", "high": "0x0" },
-    "class_hash": "0xc8580f74b6e6e04d8073602ad0c0d55538b56bf8307fefebb6b65b1bbf2a27"
+    "program_hash": "0xc8580f74b6e6e04d8073602ad0c0d55538b56bf8307fefebb6b65b1bbf2a27"
   }
 ]

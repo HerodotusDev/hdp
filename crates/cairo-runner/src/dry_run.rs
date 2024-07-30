@@ -16,21 +16,25 @@ use crate::CairoRunnerError;
 pub type DryRunResult = Vec<DryRunnedModule>;
 
 #[serde_as]
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct DryRunnedModule {
     pub fetch_keys: Vec<FetchKeyEnvelope>,
     pub result: Uint256,
     #[serde_as(as = "UfeHex")]
-    pub class_hash: FieldElement,
+    pub program_hash: FieldElement,
 }
 
 pub struct DryRunner {
     program_path: PathBuf,
+    output_file_path: Option<PathBuf>,
 }
 
 impl DryRunner {
-    pub fn new(program_path: PathBuf) -> Self {
-        Self { program_path }
+    pub fn new(program_path: PathBuf, output_file_path: Option<PathBuf>) -> Self {
+        Self {
+            program_path,
+            output_file_path,
+        }
     }
 
     fn _run(&self, input_file_path: &Path) -> Result<String, CairoRunnerError> {
@@ -55,8 +59,8 @@ impl DryRunner {
         if input_string.is_empty() {
             return Err(CairoRunnerError::EmptyInput);
         }
-        let input_file = NamedTempFile::new()?;
-        let input_file_path = input_file.path();
+
+        let input_file_path = &NamedTempFile::new()?.path().to_path_buf();
         fs::write(input_file_path, input_string).expect("Failed to write input file");
         let _ = self._run(input_file_path)?;
 
@@ -70,8 +74,10 @@ impl DryRunner {
     fn parse_run(&self, input_file_path: &Path) -> Result<DryRunResult, CairoRunnerError> {
         let output = fs::read_to_string(input_file_path)?;
         let fetch_keys: Vec<DryRunnedModule> = serde_json::from_str(&output)?;
-        // clean up generated input file after parse
-        fs::remove_file(input_file_path)?;
+        fs::remove_file(input_file_path).expect("Failed to remove input file");
+        if let Some(ref output_path) = self.output_file_path {
+            fs::write(output_path, &output).expect("Failed to write output file");
+        }
         Ok(fetch_keys)
     }
 }
@@ -84,7 +90,7 @@ mod tests {
 
     fn init_dry_runner() -> DryRunner {
         let program_path = PathBuf::from("../../build/compiled_cairo/contract_dry_run.json");
-        DryRunner::new(program_path)
+        DryRunner::new(program_path, None)
     }
 
     #[ignore = "ignore for now"]
@@ -97,7 +103,7 @@ mod tests {
         assert_eq!(result[0].fetch_keys.len(), 3);
         assert_eq!(result[0].result, Uint256::from_strs("0x0", "0x0").unwrap());
         assert_eq!(
-            result[0].class_hash,
+            result[0].program_hash,
             felt!("0x04df21eb479ae4416fbdc00abab6fab43bff0b8083be4d1fd8602c8fbfbd2274")
         );
     }
@@ -114,7 +120,7 @@ mod tests {
         assert_eq!(module.fetch_keys.len(), 3);
         assert_eq!(module.result, Uint256::from_strs("0x0", "0x0").unwrap());
         assert_eq!(
-            module.class_hash,
+            module.program_hash,
             felt!("0xc8580f74b6e6e04d8073602ad0c0d55538b56bf8307fefebb6b65b1bbf2a27")
         )
     }

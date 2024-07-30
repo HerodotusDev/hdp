@@ -1,5 +1,6 @@
 use alloy::primitives::U256;
 use anyhow::{bail, Result};
+use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
 use self::integer::Operator;
@@ -18,7 +19,8 @@ pub mod string;
 /// - COUNT - Count number of values that satisfy a condition
 /// - MERKLE - Return the merkle root of the values
 /// - SLR - Simple Linear Regression
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
 pub enum AggregationFunction {
     AVG,
     SUM,
@@ -60,7 +62,8 @@ impl std::fmt::Display for AggregationFunction {
         }
     }
 }
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct FunctionContext {
     pub operator: Operator,
     pub value_to_compare: U256,

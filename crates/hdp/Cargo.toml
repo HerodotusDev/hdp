@@ -1,0 +1,27 @@
+[package]
+name = "hdp"
+version.workspace = true
+edition.workspace = true
+license-file.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+exclude.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+hdp-preprocessor = { workspace = true, optional = true }
+hdp-processor = { workspace = true, optional = true }
+hdp-primitives = { workspace = true, optional = true }
+hdp-provider = { workspace = true, optional = true }
+hdp-cairo-runner = { workspace = true, optional = true }
+
+[features]
+default = ["full"]
+full = ["preprocessor", "processor", "primitives", "provider", "cairo-runner"]
+preprocessor = ["dep:hdp-preprocessor"]
+processor = ["dep:hdp-processor"]
+primitives = ["dep:hdp-primitives"]
+provider = ["dep:hdp-provider"]
+cairo-runner = ["dep:hdp-cairo-runner"]

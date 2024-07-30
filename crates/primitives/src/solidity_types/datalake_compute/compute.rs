@@ -227,15 +227,16 @@ mod tests {
             )),
         );
         let datalake = DatalakeEnvelope::BlockSampled(BlockSampledDatalake::new(
+            11155111,
             0,
             100,
-            "header.base_fee_per_gas".parse().unwrap(),
             1,
+            "header.base_fee_per_gas".parse().unwrap(),
         ));
         let task_with_datalake = DatalakeCompute::new(datalake, task);
 
         let serialized = task_with_datalake.encode().unwrap();
-        let serialized_bytes: Vec<u8> = Vec::from_hex("cfa530587401307617ef751178c78751c83757e2143b73b4ffadb5969ca6215e000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000064").unwrap();
+        let serialized_bytes: Vec<u8> = Vec::from_hex("682986dba66e37a68d596cd278051a26d1c4f73b2d5daa5230e6dbc7d8f6790f000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000064").unwrap();
         assert_eq!(serialized, serialized_bytes);
     }
 }

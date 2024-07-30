@@ -22,6 +22,7 @@ impl DatalakeCodecs for TransactionsInBlockDatalake {
     /// Encode the [`TransactionsInBlockDatalake`] into a hex string
     fn encode(&self) -> Result<Vec<u8>> {
         let datalake_code: DynSolValue = self.get_datalake_type().to_u8().into();
+        let chain_id: DynSolValue = self.chain_id.into();
         let target_block: DynSolValue = self.target_block.into();
         let sampled_property: DynSolValue = self.sampled_property.serialize()?.into();
         let start_index: DynSolValue = self.start_index.into();
@@ -31,6 +32,7 @@ impl DatalakeCodecs for TransactionsInBlockDatalake {
 
         let tuple_value = DynSolValue::Tuple(vec![
             datalake_code,
+            chain_id,
             target_block,
             start_index,
             end_index,
@@ -54,7 +56,7 @@ impl DatalakeCodecs for TransactionsInBlockDatalake {
     /// Decode the encoded transactions datalake hex string into a [`TransactionsDatalake`]
     fn decode(encoded: &[u8]) -> Result<Self> {
         let abi_type: DynSolType =
-            "(uint256, uint256, uint256, uint256, uint256, uint256, bytes)".parse()?;
+            "(uint256,uint256, uint256, uint256, uint256, uint256, uint256, bytes)".parse()?;
         let decoded = abi_type.abi_decode_sequence(encoded)?;
 
         let value = decoded.as_tuple().unwrap();
@@ -64,14 +66,16 @@ impl DatalakeCodecs for TransactionsInBlockDatalake {
             bail!("Encoded datalake is not a transactions datalake");
         }
 
-        let target_block = value[1].as_uint().unwrap().0.to_string().parse::<u64>()?;
-        let start_index = value[2].as_uint().unwrap().0.to_string().parse::<u64>()?;
-        let end_index = value[3].as_uint().unwrap().0.to_string().parse::<u64>()?;
-        let increment = value[4].as_uint().unwrap().0.to_string().parse::<u64>()?;
-        let included_types = IncludedTypes::from_uint256(value[5].as_uint().unwrap().0);
-        let sampled_property = TransactionsCollection::deserialize(value[6].as_bytes().unwrap())?;
+        let chain_id = value[1].as_uint().unwrap().0.to_string().parse::<u64>()?;
+        let target_block = value[2].as_uint().unwrap().0.to_string().parse::<u64>()?;
+        let start_index = value[3].as_uint().unwrap().0.to_string().parse::<u64>()?;
+        let end_index = value[4].as_uint().unwrap().0.to_string().parse::<u64>()?;
+        let increment = value[5].as_uint().unwrap().0.to_string().parse::<u64>()?;
+        let included_types = IncludedTypes::from_uint256(value[6].as_uint().unwrap().0);
+        let sampled_property = TransactionsCollection::deserialize(value[7].as_bytes().unwrap())?;
 
         Ok(Self {
+            chain_id,
             target_block,
             start_index,
             end_index,

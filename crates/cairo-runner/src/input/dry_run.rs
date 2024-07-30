@@ -10,11 +10,14 @@ use std::path::PathBuf;
 #[derive(Serialize)]
 pub struct DryRunnerProgramInput {
     pub dry_run_output_path: PathBuf,
-    pub modules: Vec<cairo_format::ProcessedModule>,
+    pub modules: Vec<cairo_format::DryRunProcessedModule>,
 }
 
 impl DryRunnerProgramInput {
-    pub fn new(dry_run_output_path: PathBuf, modules: Vec<cairo_format::ProcessedModule>) -> Self {
+    pub fn new(
+        dry_run_output_path: PathBuf,
+        modules: Vec<cairo_format::DryRunProcessedModule>,
+    ) -> Self {
         // TODO: temporary check to ensure only one module is passed
         if modules.len() != 1 {
             panic!("Currently DryRunnerProgramInput only supports a single module");

@@ -1,10 +1,9 @@
 use alloy::{
-    hex,
-    primitives::{BlockNumber, Bytes, ChainId, TxIndex},
+    primitives::{BlockNumber, ChainId, TxIndex},
     transports::http::reqwest::Url,
 };
 use clap::{command, Parser, Subcommand};
-use hdp_primitives::{
+use hdp::primitives::{
     aggregate_fn::{AggregationFunction, FunctionContext},
     task::datalake::{
         block_sampled::BlockSampledCollection,
@@ -25,13 +24,9 @@ pub struct HDPCli {
 pub enum HDPCliCommands {
     /// New to the HDP CLI? Start here!
     Start,
-    /// Encode the compute and datalake in batch and allow to proceed
+    /// Run single datalake compute
     #[command(arg_required_else_help = true)]
-    Encode {
-        /// Decide to run processor. (default: false)
-        #[arg(short, long, action = clap::ArgAction::SetTrue)]
-        allow_process: bool,
-
+    RunDatalake {
         /// The aggregate function id e.g. "sum", "min", "avg"
         aggregate_fn_id: AggregationFunction,
         /// Optional context for applying conditions on the aggregate function "count".
@@ -40,7 +35,7 @@ pub enum HDPCliCommands {
         aggregate_fn_ctx: Option<FunctionContext>,
 
         #[command(subcommand)]
-        command: DataLakeCommands,
+        datalake: DataLakeCommands,
 
         /// The RPC URL to fetch the datalake
         rpc_url: Option<Url>,
@@ -54,88 +49,35 @@ pub enum HDPCliCommands {
         #[arg(short, long)]
         preprocessor_output_file: Option<PathBuf>,
 
+        /// hdp cairo compiled program. main entry point
+        #[arg(long)]
+        sound_run_cairo_file: Option<PathBuf>,
+
         /// Path to save output file after process
         ///
         /// This will trigger processing(=pie generation) step
-        #[arg(short, long, requires("pre_processor_output"))]
+        #[arg(short, long, requires("preprocessor_output_file"))]
         output_file: Option<PathBuf>,
 
         /// Path to save pie file
         ///
         /// This will trigger processing(=pie generation) step
-        #[arg(short, long, requires("pre_processor_output"))]
-        cairo_pie_file: Option<PathBuf>,
-    },
-    /// Decode batch computes and datalakes
-    ///
-    /// Note: Batch computes and datalakes should be encoded in bytes[] format
-    #[command(arg_required_else_help = true)]
-    Decode {
-        /// Batched computes bytes
-        #[arg(value_parser = parse_bytes)]
-        tasks: Bytes,
-        /// Batched datalakes bytes
-        #[arg(value_parser = parse_bytes)]
-        datalakes: Bytes,
-    },
-
-    /// Decode one compute and one datalake (not batched format)
-    #[command(arg_required_else_help = true)]
-    DecodeOne {
-        #[arg(value_parser = parse_bytes)]
-        task: Bytes,
-        #[arg(value_parser = parse_bytes)]
-        datalake: Bytes,
-    },
-    /// Run from encoded compute and datalake. Usefull for request batch tasks.
-    #[command(arg_required_else_help = true)]
-    RunDatalake {
-        /// Batched computes bytes
-        #[arg(value_parser = parse_bytes)]
-        tasks: Option<Bytes>,
-        /// Batched datalakes bytes
-        #[arg(value_parser = parse_bytes)]
-        datalakes: Option<Bytes>,
-        /// The RPC URL to fetch the data
-        rpc_url: Option<Url>,
-        /// The chain id to fetch the data
-        chain_id: Option<ChainId>,
-
-        /// Path to save output file after pre-processing.
-        ///
-        /// This will trigger pre-processing step
-        #[arg(short, long)]
-        preprocessor_output_file: Option<PathBuf>,
-
-        /// Path to save output file after process
-        ///
-        /// This will trigger processing(=pie generation) step
-        #[arg(short, long, requires("pre_processor_output"))]
-        output_file: Option<PathBuf>,
-
-        /// Path to save pie file
-        ///
-        /// This will trigger processing(=pie generation) step
-        #[arg(short, long, requires("pre_processor_output"))]
+        #[arg(short, long, requires("preprocessor_output_file"))]
         cairo_pie_file: Option<PathBuf>,
     },
 
-    /// Run module with either class hash deployed on starknet or local class path
+    /// Run single module with either class hash deployed on starknet or local class path
     #[command(arg_required_else_help = true)]
     RunModule {
         /// Input field elements for the module contract.
         /// The input field elements should be separated by comma.
         ///
         /// e.g. "0x1234,0xabcd"
-        #[arg(required = true, use_value_delimiter = true)]
+        #[arg(long, required = true, use_value_delimiter = true)]
         module_inputs: Vec<String>,
 
-        /// Class hash of the module that deployed on starknet.
-        /// This will trigger fetching the class from the starknet.
-        ///
-        /// (Note: either class_hash or local_class_path should be provided)
         #[arg(long, group = "class_source")]
-        class_hash: Option<String>,
+        program_hash: Option<String>,
 
         /// Local path of the contract class file.
         /// Make sure to have structure match with [CasmContractClass](https://github.com/starkware-libs/cairo/blob/53f7a0d26d5c8a99a8ad6ba07207a762678f2931/crates/cairo-lang-starknet-classes/src/casm_contract_class.rs)
@@ -143,6 +85,10 @@ pub enum HDPCliCommands {
         /// (Note: either class_hash or local_class_path should be provided)
         #[arg(long, group = "class_source")]
         local_class_path: Option<PathBuf>,
+
+        /// optionally can save keys for module task to file
+        #[arg(long)]
+        save_fetch_keys_file: Option<PathBuf>,
 
         /// The RPC URL to fetch the data.
         ///
@@ -156,13 +102,10 @@ pub enum HDPCliCommands {
         #[arg(long)]
         chain_id: Option<ChainId>,
 
-        /// Module registry starknet rpc url, This is used to fetch the class from the module registry
-        ///
-        /// (Note: This is only used when the class is provided by `class_hash`)
-        ///
-        /// Can be overwritten by `MODULE_REGISTRY_RPC_URL` environment variable
-        #[arg(long, requires("class_hash"))]
-        module_registry_rpc_url: Option<Url>,
+        /// dry run contract bootloader program.
+        /// only used for module task
+        #[arg(long)]
+        dry_run_cairo_file: Option<PathBuf>,
 
         /// Path to save output file after pre-processing.
         ///
@@ -170,16 +113,58 @@ pub enum HDPCliCommands {
         #[arg(short, long)]
         preprocessor_output_file: Option<PathBuf>,
 
+        /// hdp cairo compiled program. main entry point
+        #[arg(long)]
+        sound_run_cairo_file: Option<PathBuf>,
+
         /// Path to save output file after process
         ///
         /// This will trigger processing(=pie generation) step
-        #[arg(short, long, requires("pre_processor_output"))]
+        #[arg(short, long, requires("preprocessor_output_file"))]
         output_file: Option<PathBuf>,
 
         /// Path to save pie file
         ///
         /// This will trigger processing(=pie generation) step
-        #[arg(short, long, requires("pre_processor_output"))]
+        #[arg(short, long, requires("preprocessor_output_file"))]
+        cairo_pie_file: Option<PathBuf>,
+    },
+    /// Run batch of tasks base on request json file
+    #[command(arg_required_else_help = true)]
+    Run {
+        /// Pass request as json file
+        #[arg(short, long)]
+        request_file: PathBuf,
+
+        /// The RPC URL to fetch the data.
+        ///
+        /// Can be overwritten by `RPC_URL` environment variable.
+        #[arg(long)]
+        rpc_url: Option<Url>,
+
+        /// dry run contract bootloader program.
+        /// only used for module task
+        #[arg(long)]
+        dry_run_cairo_file: Option<PathBuf>,
+
+        /// Path to save output file after pre-processing.
+        #[arg(short, long)]
+        preprocessor_output_file: PathBuf,
+
+        /// hdp cairo compiled program. main entry point
+        #[arg(long)]
+        sound_run_cairo_file: Option<PathBuf>,
+
+        /// Path to save output file after process
+        ///
+        /// This will trigger processing(=pie generation) step
+        #[arg(short, long, requires("preprocessor_output_file"))]
+        output_file: Option<PathBuf>,
+
+        /// Path to save pie file
+        ///
+        /// This will trigger processing(=pie generation) step
+        #[arg(short, long, requires("preprocessor_output_file"))]
         cairo_pie_file: Option<PathBuf>,
     },
 }
@@ -220,11 +205,4 @@ pub enum DataLakeCommands {
         /// e.g 1,0,1,0 -> include legacy, exclude eip2930, include eip1559, exclude eip4844
         included_types: IncludedTypes,
     },
-}
-
-/// Parse bytes from hex string
-fn parse_bytes(arg: &str) -> Result<Bytes, String> {
-    hex::decode(arg)
-        .map(Bytes::from)
-        .map_err(|e| format!("Failed to parse bytes: {}", e))
 }

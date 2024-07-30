@@ -1,16 +1,13 @@
 //! Module registry is a service that provides the ability to fetch modules from the StarkNet network.
 //! It fetch contract class from the StarkNet network and compile it to the casm.
 
-use cairo_lang_starknet_classes::{
-    casm_contract_class::{CasmContractClass, StarknetSierraCompilationError},
-    contract_class::ContractClass as CairoContractClass,
+use cairo_lang_starknet_classes::casm_contract_class::{
+    CasmContractClass, StarknetSierraCompilationError,
 };
 
 use hdp_primitives::task::{module::Module, ExtendedModule};
-use starknet::{
-    core::types::{BlockId, BlockTag, ContractClass, FlattenedSierraClass},
-    providers::{jsonrpc::HttpTransport, JsonRpcClient, Provider, Url},
-};
+use reqwest::Client;
+use serde::Deserialize;
 use starknet_crypto::FieldElement;
 use std::path::PathBuf;
 use thiserror::Error;
@@ -38,60 +35,72 @@ pub enum ModuleRegistryError {
 }
 
 pub struct ModuleRegistry {
-    provider: JsonRpcClient<HttpTransport>,
+    client: Client,
+}
+
+#[derive(Deserialize)]
+struct GitHubFileResponse {
+    download_url: String,
+}
+
+impl Default for ModuleRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ModuleRegistry {
-    pub fn new(url: Url) -> Self {
-        let provider = JsonRpcClient::new(HttpTransport::new(url));
-        Self { provider }
+    pub fn new() -> Self {
+        let client = Client::new();
+        Self { client }
     }
 
     pub async fn get_extended_module_from_class_source_string(
         &self,
-        class_hash: Option<String>,
+        program_hash: Option<String>,
         local_class_path: Option<PathBuf>,
         module_inputs: Vec<String>,
     ) -> Result<ExtendedModule, ModuleRegistryError> {
-        let class_hash =
-            class_hash.map(|class_hash| FieldElement::from_hex_be(&class_hash).unwrap());
+        let program_hash =
+            program_hash.map(|program_hash| FieldElement::from_hex_be(&program_hash).unwrap());
         let module_inputs = module_inputs
             .into_iter()
             .map(|input| FieldElement::from_hex_be(&input).unwrap())
             .collect();
-        self.get_extended_module_from_class_source(class_hash, local_class_path, module_inputs)
+        self.get_extended_module_from_class_source(program_hash, local_class_path, module_inputs)
             .await
     }
 
     pub async fn get_extended_module_from_class_source(
         &self,
-        class_hash: Option<FieldElement>,
+        program_hash: Option<FieldElement>,
         local_class_path: Option<PathBuf>,
         module_inputs: Vec<FieldElement>,
     ) -> Result<ExtendedModule, ModuleRegistryError> {
-        if class_hash.is_some() && local_class_path.is_some() {
+        if program_hash.is_some() && local_class_path.is_some() {
             return Err(ModuleRegistryError::ClassSourceError(
-                "Only one of class_hash or local_class_path must be provided".to_string(),
+                "Only one of program_hash or local_class_path must be provided".to_string(),
             ));
         }
 
         let casm = if let Some(ref local_class_path) = local_class_path {
             self.get_module_class_from_local_path(local_class_path)
                 .await?
-        } else if let Some(class_hash) = class_hash {
-            self.get_module_class(class_hash).await?
+        } else if let Some(program_hash) = program_hash {
+            self.get_module_class_from_program_hash(program_hash)
+                .await?
         } else {
             return Err(ModuleRegistryError::ClassSourceError(
-                "One of class_hash or local_class_path must be provided".to_string(),
+                "One of program_hash or local_class_path must be provided".to_string(),
             ));
         };
 
-        let class_hash = casm.compiled_class_hash();
-        let converted_hash = FieldElement::from_bytes_be(&class_hash.to_be_bytes()).unwrap();
+        let program_hash = casm.compiled_class_hash();
+        let converted_hash = FieldElement::from_bytes_be(&program_hash.to_be_bytes()).unwrap();
         info!("Program Hash: {:#?}", converted_hash);
 
         let module = Module {
-            class_hash: converted_hash,
+            program_hash: converted_hash,
             inputs: module_inputs,
             local_class_path,
         };
@@ -120,138 +129,106 @@ impl ModuleRegistry {
         Ok(casm)
     }
 
-    async fn get_module_class(
+    async fn get_module_class_from_program_hash(
         &self,
-        class_hash: FieldElement,
+        program_hash: FieldElement,
     ) -> Result<CasmContractClass, ModuleRegistryError> {
         info!(
-            "Fetching contract class from module registry... Contract Class Hash: {:#?}",
-            class_hash
+            "Fetching contract class from module registry... program_hash: {:#?}",
+            program_hash.to_string()
         );
-        let contract_class = self
-            ._starknet_get_class(BlockId::Tag(BlockTag::Latest), class_hash)
-            .await?;
-        info!("Contract class fetched successfully");
-        let sierra = match contract_class {
-            ContractClass::Sierra(sierra) => sierra,
-            _ => return Err(ModuleRegistryError::SierraNotFound),
+
+        let program_hash_key = program_hash.to_string();
+        let branch = "v2-fix";
+        let api_url = format!(
+            "https://api.github.com/repos/HerodotusDev/hdp/contents/module-registery/{}.json?ref={}",
+            program_hash_key, branch
+        );
+
+        let response_text = self
+            .client
+            .get(&api_url)
+            .header("User-Agent", "request")
+            .send()
+            .await
+            .unwrap()
+            .text()
+            .await
+            .unwrap();
+
+        // Try to deserialize the response into GitHubFileResponse
+        let response: Result<GitHubFileResponse, serde_json::Error> =
+            serde_json::from_str(&response_text);
+        let response = match response {
+            Ok(resp) => resp,
+            Err(err) => {
+                eprintln!("Failed to deserialize GitHubFileResponse: {}", err);
+                return Err(ModuleRegistryError::ClassSourceError("fail".to_string()));
+            }
         };
-        flattened_sierra_to_compiled_class(&sierra)
+        let download_response = self
+            .client
+            .get(&response.download_url)
+            .send()
+            .await
+            .unwrap();
+
+        let file_content = download_response.text().await.unwrap();
+        let casm: CasmContractClass = serde_json::from_str(&file_content)?;
+
+        info!(
+            "Contract class fetched successfully from program_hashh: {:?}",
+            program_hash
+        );
+        Ok(casm)
     }
-
-    async fn _starknet_get_class(
-        &self,
-        block_id: BlockId,
-        class_hash: FieldElement,
-    ) -> Result<ContractClass, ModuleRegistryError> {
-        let contract_class = self.provider.get_class(block_id, class_hash).await?;
-        Ok(contract_class)
-    }
-}
-
-/// Convert the given [FlattenedSierraClass] into [CasmContractClass].
-/// Taken from https://github.com/dojoengine/dojo/blob/920500986855fdaf203471ac11900b15dcf6035f/crates/katana/primitives/src/conversion/rpc.rs#L140
-fn flattened_sierra_to_compiled_class(
-    sierra: &FlattenedSierraClass,
-) -> Result<CasmContractClass, ModuleRegistryError> {
-    let class = rpc_to_cairo_contract_class(sierra)?;
-    let casm = CasmContractClass::from_contract_class(class, true, usize::MAX)?;
-    Ok(casm)
-}
-
-/// Converts RPC [FlattenedSierraClass] type to Cairo's [CairoContractClass] type.
-/// Taken from https://github.com/dojoengine/dojo/blob/920500986855fdaf203471ac11900b15dcf6035f/crates/katana/primitives/src/conversion/rpc.rs#L187
-fn rpc_to_cairo_contract_class(
-    sierra: &FlattenedSierraClass,
-) -> Result<CairoContractClass, ModuleRegistryError> {
-    let value = serde_json::to_value(sierra)?;
-
-    Ok(CairoContractClass {
-        abi: serde_json::from_value(value["abi"].clone()).ok(),
-        sierra_program: serde_json::from_value(value["sierra_program"].clone())?,
-        entry_points_by_type: serde_json::from_value(value["entry_points_by_type"].clone())?,
-        contract_class_version: serde_json::from_value(value["contract_class_version"].clone())?,
-        sierra_program_debug_info: serde_json::from_value(
-            value["sierra_program_debug_info"].clone(),
-        )
-        .ok(),
-    })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use hdp_primitives::constant::ACCOUNT_BALANCE_EXAMPLE_CONTRACT;
+    use hdp_primitives::constant::NEW_EXAMPLE_CONTRACT;
 
     fn init() -> (ModuleRegistry, FieldElement) {
-        let url = Url::parse(
-            "https://starknet-sepolia.g.alchemy.com/v2/lINonYKIlp4NH9ZI6wvqJ4HeZj7T4Wm6",
-        )
-        .unwrap();
-        let module_registry = ModuleRegistry::new(url);
+        let module_registry = ModuleRegistry::new();
         // This is test contract class hash
-        let class_hash = FieldElement::from_hex_be(
-            "0x02aacf92216d1ae71fbdaf3f41865c08f32317b37be18d8c136d442e94cdd823",
+        let program_hash = FieldElement::from_hex_be(
+            "0x64041a339b1edd10de83cf031cfa938645450f971d2527c90d4c2ce68d7d412",
         )
         .unwrap();
 
-        (module_registry, class_hash)
+        (module_registry, program_hash)
     }
 
     #[tokio::test]
     async fn test_get_module() {
-        let (module_registry, class_hash) = init();
-        let casm_from_rpc = module_registry.get_module_class(class_hash).await.unwrap();
-
-        assert_eq!(casm_from_rpc, ACCOUNT_BALANCE_EXAMPLE_CONTRACT.clone());
-    }
-
-    #[tokio::test]
-    async fn test_get_module_class_from_local_path() {
-        let (module_registry, _) = init();
-        let _ = module_registry
-            .get_module_class_from_local_path(&PathBuf::from(
-                "../contracts/account_balance_example.compiled_contract_class.json",
-            ))
+        let (module_registry, program_hash) = init();
+        let casm_from_rpc = module_registry
+            .get_module_class_from_program_hash(program_hash)
             .await
             .unwrap();
-    }
 
-    #[tokio::test]
-    async fn test_flattened_sierra_to_compiled_class() {
-        let (module_registry, class_hash) = init();
-        let contract_class = module_registry
-            ._starknet_get_class(BlockId::Tag(BlockTag::Latest), class_hash)
-            .await
-            .unwrap();
-        let sierra = match contract_class {
-            ContractClass::Sierra(sierra) => sierra,
-            _ => panic!("cairo1 module should have sierra as class"),
-        };
-        let casm_from_rpc = flattened_sierra_to_compiled_class(&sierra).unwrap();
-        assert_eq!(casm_from_rpc, ACCOUNT_BALANCE_EXAMPLE_CONTRACT.clone());
+        assert_eq!(casm_from_rpc, NEW_EXAMPLE_CONTRACT.clone());
     }
 
     #[tokio::test]
     async fn test_get_multiple_module_classes() {
-        let (module_registry, class_hash) = init();
+        let (module_registry, program_hash) = init();
+        println!("{}", program_hash);
 
         let extended_modules = module_registry
-            .get_extended_module_from_class_source(Some(class_hash), None, vec![])
+            .get_extended_module_from_class_source(Some(program_hash), None, vec![])
             .await
             .unwrap();
 
         assert_eq!(
-            extended_modules.task.class_hash,
+            extended_modules.task.program_hash,
             FieldElement::from_hex_be(
-                "0x04df21eb479ae4416fbdc00abab6fab43bff0b8083be4d1fd8602c8fbfbd2274"
+                "0x64041a339b1edd10de83cf031cfa938645450f971d2527c90d4c2ce68d7d412"
             )
             .unwrap()
         );
         assert_eq!(extended_modules.task.inputs, vec![]);
-        assert_eq!(
-            extended_modules.module_class,
-            ACCOUNT_BALANCE_EXAMPLE_CONTRACT.clone()
-        );
+        assert_eq!(extended_modules.module_class, NEW_EXAMPLE_CONTRACT.clone());
     }
 }

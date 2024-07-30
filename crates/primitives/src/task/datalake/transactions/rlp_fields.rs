@@ -3,10 +3,11 @@ use std::{fmt::Display, str::FromStr};
 use alloy::{consensus::Eip658Value, primitives::U256};
 use anyhow::{bail, Result};
 use eth_trie_proofs::{tx::ConsensusTx, tx_receipt::ConsensusTxReceipt};
+use serde::{Deserialize, Serialize};
 
 use crate::task::datalake::DatalakeField;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum TransactionField {
     // ===== Transaction fields =====
     Nonce,
@@ -206,7 +207,7 @@ impl Display for TransactionField {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum TransactionReceiptField {
     Success,
     CumulativeGasUsed,

@@ -1,19 +1,11 @@
-use alloy::{
-    primitives::{Bytes, ChainId},
-    transports::http::reqwest::Url,
-};
+use alloy::{primitives::ChainId, transports::http::reqwest::Url};
 use anyhow::Result;
-use hdp_preprocessor::{
+use hdp::preprocessor::{
     compile::config::CompilerConfig, module_registry::ModuleRegistry, PreProcessor,
-    PreProcessorError,
 };
-use hdp_primitives::{
-    constant::{DEFAULT_DRY_CAIRO_RUN_CAIRO_FILE, DEFAULT_SOUND_CAIRO_RUN_CAIRO_FILE},
+use hdp::primitives::{
+    aggregate_fn::{AggregationFunction, FunctionContext},
     processed_types::cairo_format::AsCairoFormat,
-    solidity_types::{
-        datalake_compute::BatchedDatalakeCompute,
-        traits::{BatchedDatalakeComputeCodecs, DatalakeComputeCodecs},
-    },
     task::{
         datalake::{
             block_sampled::BlockSampledDatalake, compute::Computation, envelope::DatalakeEnvelope,
@@ -22,20 +14,19 @@ use hdp_primitives::{
         TaskEnvelope,
     },
 };
-use hdp_provider::evm::config::EvmProviderConfig;
-use std::{fs, path::PathBuf};
-use tracing_subscriber::FmtSubscriber;
+use std::{env, fs, path::PathBuf};
+use tracing_subscriber::{EnvFilter, FmtSubscriber};
 
 use clap::Parser;
-use hdp_processor::Processor;
+use hdp::processor::Processor;
 
-use tracing::{info, Level};
+use tracing::{debug, info};
 
 use crate::{
     commands::{DataLakeCommands, HDPCli, HDPCliCommands},
     config::Config,
     interactive,
-    module_config::ModuleConfig,
+    query::{SubmitBatchQuery, Task},
 };
 
 pub async fn run() -> anyhow::Result<()> {
@@ -45,118 +36,74 @@ pub async fn run() -> anyhow::Result<()> {
         HDPCliCommands::Start => {
             interactive::run_interactive().await?;
         }
-        HDPCliCommands::Encode {
-            allow_process,
+        HDPCliCommands::RunDatalake {
             rpc_url,
             chain_id,
             preprocessor_output_file,
+            sound_run_cairo_file,
             output_file,
             cairo_pie_file,
             aggregate_fn_id,
             aggregate_fn_ctx,
-            command,
-        } => {
-            let datalake = match command {
-                DataLakeCommands::BlockSampled {
-                    block_range_start,
-                    block_range_end,
-                    sampled_property,
-                    increment,
-                } => DatalakeEnvelope::BlockSampled(BlockSampledDatalake::new(
-                    block_range_start,
-                    block_range_end,
-                    sampled_property,
-                    increment,
-                )),
-                DataLakeCommands::TransactionsInBlock {
-                    target_block,
-                    sampled_property,
-                    start_index,
-                    end_index,
-                    increment,
-                    included_types,
-                } => DatalakeEnvelope::Transactions(TransactionsInBlockDatalake::new(
-                    target_block,
-                    sampled_property,
-                    start_index,
-                    end_index,
-                    increment,
-                    included_types,
-                )),
-            };
-            let (encoded_datalakes, encoded_computes) = vec![DatalakeCompute::new(
-                datalake,
-                Computation::new(aggregate_fn_id, aggregate_fn_ctx),
-            )]
-            .encode()?;
-
-            let encoded_datalakes_string = Bytes::from(encoded_datalakes);
-            let encoded_computes_string = Bytes::from(encoded_computes);
-
-            info!("Encoded datalakes: {:#?}", encoded_datalakes_string);
-            info!("Encoded computes: {:#?}", encoded_computes_string);
-
-            // if allow_process is true, then run the processor
-            if allow_process {
-                datalake_entry_run(
-                    Some(encoded_computes_string),
-                    Some(encoded_datalakes_string),
-                    rpc_url,
-                    chain_id,
-                    preprocessor_output_file,
-                    output_file,
-                    cairo_pie_file,
-                )
-                .await?
-            }
-        }
-        HDPCliCommands::Decode { tasks, datalakes } => {
-            let decoded_tasks = BatchedDatalakeCompute::decode(&datalakes, &tasks)?;
-            info!("Decoded tasks: {:#?}", decoded_tasks);
-        }
-        HDPCliCommands::DecodeOne { task, datalake } => {
-            let decoded_task = DatalakeCompute::decode(&datalake, &task)?;
-            info!("Decoded task: {:#?}", decoded_task);
-        }
-        HDPCliCommands::RunDatalake {
-            tasks,
-            datalakes,
-            rpc_url,
-            chain_id,
-            preprocessor_output_file,
-            output_file,
-            cairo_pie_file,
+            datalake,
         } => {
             datalake_entry_run(
-                tasks,
-                datalakes,
+                aggregate_fn_id,
+                aggregate_fn_ctx,
+                datalake,
                 rpc_url,
                 chain_id,
                 preprocessor_output_file,
+                sound_run_cairo_file,
                 output_file,
                 cairo_pie_file,
             )
             .await?
         }
+
         HDPCliCommands::RunModule {
-            class_hash,
+            program_hash,
             local_class_path,
+            save_fetch_keys_file,
             module_inputs,
-            module_registry_rpc_url,
             rpc_url,
             chain_id,
+            dry_run_cairo_file,
             preprocessor_output_file,
+            sound_run_cairo_file,
             output_file,
             cairo_pie_file,
         } => {
             module_entry_run(
-                class_hash,
+                program_hash,
                 local_class_path,
+                save_fetch_keys_file,
                 module_inputs,
-                module_registry_rpc_url,
                 rpc_url,
                 chain_id,
+                dry_run_cairo_file,
                 preprocessor_output_file,
+                sound_run_cairo_file,
+                output_file,
+                cairo_pie_file,
+            )
+            .await?;
+        }
+        HDPCliCommands::Run {
+            request_file,
+            rpc_url,
+            dry_run_cairo_file,
+            preprocessor_output_file,
+            sound_run_cairo_file,
+            output_file,
+            cairo_pie_file,
+        } => {
+            entry_run(
+                request_file,
+                rpc_url,
+                dry_run_cairo_file,
+                preprocessor_output_file,
+                sound_run_cairo_file,
                 output_file,
                 cairo_pie_file,
             )
@@ -170,11 +117,12 @@ pub async fn run() -> anyhow::Result<()> {
 
 /// Initialize the CLI
 fn init_cli() -> Result<HDPCli> {
+    let rust_log = env::var("RUST_LOG").unwrap_or_else(|_| "info".to_string());
     let subscriber = FmtSubscriber::builder()
-        .with_max_level(Level::INFO)
+        .with_env_filter(EnvFilter::new(&rust_log))
         .finish();
-
-    tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
+    tracing::subscriber::set_global_default(subscriber).expect("Failed to set subscriber");
+    debug!("running on log level: {}", rust_log);
     let cli = HDPCli::parse();
     dotenv::dotenv().ok();
     Ok(cli)
@@ -184,25 +132,33 @@ fn init_cli() -> Result<HDPCli> {
 pub async fn module_entry_run(
     class_hash: Option<String>,
     local_class_path: Option<PathBuf>,
+    save_fetch_keys_file: Option<PathBuf>,
     module_inputs: Vec<String>,
-    module_registry_rpc_url: Option<Url>,
     rpc_url: Option<Url>,
     chain_id: Option<ChainId>,
+    dry_run_cairo_file: Option<PathBuf>,
     preprocessor_output_file: Option<PathBuf>,
+    sound_run_cairo_file: Option<PathBuf>,
     output_file: Option<PathBuf>,
     cairo_pie_file: Option<PathBuf>,
 ) -> Result<()> {
-    let config = ModuleConfig::init(rpc_url, chain_id, module_registry_rpc_url).await;
-    let module_registry = ModuleRegistry::new(config.module_registry_rpc_url.clone());
+    let config = Config::init(
+        rpc_url,
+        chain_id,
+        dry_run_cairo_file,
+        sound_run_cairo_file,
+        save_fetch_keys_file,
+    )
+    .await;
+    let module_registry = ModuleRegistry::new();
     let module = module_registry
         .get_extended_module_from_class_source_string(class_hash, local_class_path, module_inputs)
         .await?;
     // TODO: for now, we only support one task if its a module
     let tasks = vec![TaskEnvelope::Module(module)];
-    let provider_config = config.evm_provider.clone();
 
     handle_running_tasks(
-        provider_config,
+        config,
         tasks,
         preprocessor_output_file,
         output_file,
@@ -212,25 +168,56 @@ pub async fn module_entry_run(
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn datalake_entry_run(
-    tasks: Option<Bytes>,
-    datalakes: Option<Bytes>,
+    aggregate_fn_id: AggregationFunction,
+    aggregate_fn_ctx: Option<FunctionContext>,
+    datalake: DataLakeCommands,
     rpc_url: Option<Url>,
     chain_id: Option<ChainId>,
     pre_processor_output: Option<PathBuf>,
+    sound_run_cairo_file: Option<PathBuf>,
     output_file: Option<PathBuf>,
     cairo_pie_file: Option<PathBuf>,
 ) -> Result<()> {
-    let config = Config::init(rpc_url, datalakes, tasks, chain_id).await;
-    let tasks = BatchedDatalakeCompute::decode(&config.datalakes, &config.tasks)
-        .map_err(PreProcessorError::DecodeError)?;
-    let tasks = tasks
-        .into_iter()
-        .map(TaskEnvelope::DatalakeCompute)
-        .collect::<Vec<_>>();
+    let config = Config::init(rpc_url, chain_id, None, sound_run_cairo_file, None).await;
+    let parsed_datalake = match datalake {
+        DataLakeCommands::BlockSampled {
+            block_range_start,
+            block_range_end,
+            sampled_property,
+            increment,
+        } => DatalakeEnvelope::BlockSampled(BlockSampledDatalake::new(
+            11155111,
+            block_range_start,
+            block_range_end,
+            increment,
+            sampled_property,
+        )),
+        DataLakeCommands::TransactionsInBlock {
+            target_block,
+            sampled_property,
+            start_index,
+            end_index,
+            increment,
+            included_types,
+        } => DatalakeEnvelope::TransactionsInBlock(TransactionsInBlockDatalake::new(
+            11155111,
+            target_block,
+            sampled_property,
+            start_index,
+            end_index,
+            increment,
+            included_types,
+        )),
+    };
+    let tasks = vec![TaskEnvelope::DatalakeCompute(DatalakeCompute::new(
+        parsed_datalake,
+        Computation::new(aggregate_fn_id, aggregate_fn_ctx),
+    ))];
 
     handle_running_tasks(
-        config.evm_provider.clone(),
+        config,
         tasks,
         pre_processor_output,
         output_file,
@@ -240,16 +227,17 @@ pub async fn datalake_entry_run(
     Ok(())
 }
 
-async fn handle_running_tasks(
-    evm_config: EvmProviderConfig,
+pub async fn handle_running_tasks(
+    config: &Config,
     tasks: Vec<TaskEnvelope>,
     pre_processor_output_file: Option<PathBuf>,
     output_file: Option<PathBuf>,
     cairo_pie_file: Option<PathBuf>,
 ) -> Result<()> {
     let compiler_config = CompilerConfig {
-        dry_run_program_path: PathBuf::from(&DEFAULT_DRY_CAIRO_RUN_CAIRO_FILE),
-        provider_config: evm_config,
+        dry_run_program_path: config.dry_run_program_path.clone(),
+        provider_config: config.evm_provider.clone(),
+        save_fetch_keys_file: config.save_fetch_keys_file.clone(),
     };
     let preprocessor = PreProcessor::new_with_config(compiler_config);
     let preprocessor_result = preprocessor.process(tasks).await?;
@@ -275,7 +263,7 @@ async fn handle_running_tasks(
                     .ok_or_else(|| anyhow::anyhow!("Output file path should be specified"))?;
                 let pie_file_path = cairo_pie_file
                     .ok_or_else(|| anyhow::anyhow!("PIE path should be specified"))?;
-                let processor = Processor::new(PathBuf::from(DEFAULT_SOUND_CAIRO_RUN_CAIRO_FILE));
+                let processor = Processor::new(config.sound_run_program_path.clone());
                 let processor_result = processor
                     .process(preprocessor_result, &pie_file_path)
                     .await?;
@@ -298,4 +286,55 @@ async fn handle_running_tasks(
             Err(anyhow::anyhow!("Cairo input path should be specified"))
         }
     }
+}
+
+pub async fn entry_run(
+    request_file: PathBuf,
+    rpc_url: Option<Url>,
+    dry_run_cairo_file: Option<PathBuf>,
+    pre_processor_output_file: PathBuf,
+    sound_run_cairo_file: Option<PathBuf>,
+    output_file: Option<PathBuf>,
+    cairo_pie_file: Option<PathBuf>,
+) -> Result<()> {
+    let request_context =
+        fs::read_to_string(request_file).expect("No request file exist in the path");
+    let parsed: SubmitBatchQuery = serde_json::from_str(&request_context)
+        .expect("Invalid format of request. Cannot parse it.");
+    let config = Config::init(
+        rpc_url,
+        Some(parsed.destination_chain_id),
+        dry_run_cairo_file,
+        sound_run_cairo_file,
+        None,
+    )
+    .await;
+    let module_registry = ModuleRegistry::new();
+    let mut task_envelopes = Vec::new();
+    for task in parsed.tasks {
+        match task {
+            Task::DatalakeCompute(task) => {
+                task_envelopes.push(TaskEnvelope::DatalakeCompute(task));
+            }
+            Task::Module(task) => {
+                let module = module_registry
+                    .get_extended_module_from_class_source(
+                        Some(task.program_hash),
+                        None,
+                        task.inputs,
+                    )
+                    .await?;
+                task_envelopes.push(TaskEnvelope::Module(module));
+            }
+        }
+    }
+    handle_running_tasks(
+        config,
+        task_envelopes,
+        Some(pre_processor_output_file),
+        output_file,
+        cairo_pie_file,
+    )
+    .await?;
+    Ok(())
 }

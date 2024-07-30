@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 use super::{
     block_sampled::BlockSampledDatalake, transactions::TransactionsInBlockDatalake,
     DatalakeCollection,
@@ -6,17 +8,20 @@ use super::{
 pub type BatchedDatalakes = Vec<DatalakeEnvelope>;
 
 /// Envelope for datalake
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "type")]
 pub enum DatalakeEnvelope {
     BlockSampled(BlockSampledDatalake),
-    Transactions(TransactionsInBlockDatalake),
+    TransactionsInBlock(TransactionsInBlockDatalake),
 }
 
 impl DatalakeEnvelope {
     pub fn get_collection_type(&self) -> Box<dyn DatalakeCollection> {
         match self {
             DatalakeEnvelope::BlockSampled(datalake) => Box::new(datalake.sampled_property.clone()),
-            DatalakeEnvelope::Transactions(datalake) => Box::new(datalake.sampled_property.clone()),
+            DatalakeEnvelope::TransactionsInBlock(datalake) => {
+                Box::new(datalake.sampled_property.clone())
+            }
         }
     }
 }

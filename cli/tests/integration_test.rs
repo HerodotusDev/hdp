@@ -1,9 +1,8 @@
 mod integration_test {
-    use alloy::transports::http::reqwest::Url;
-    use hdp_preprocessor::{
+    use hdp::preprocessor::{
         compile::config::CompilerConfig, module_registry::ModuleRegistry, PreProcessor,
     };
-    use hdp_primitives::{
+    use hdp::primitives::{
         aggregate_fn::AggregationFunction,
         processed_types::cairo_format::AsCairoFormat,
         task::{
@@ -16,12 +15,10 @@ mod integration_test {
             TaskEnvelope,
         },
     };
-    use hdp_processor::Processor;
+    use hdp::processor::Processor;
 
     use std::{fs, path::PathBuf};
 
-    const STARKNET_SEPOLIA_RPC: &str =
-        "https://starknet-sepolia.g.alchemy.com/v2/lINonYKIlp4NH9ZI6wvqJ4HeZj7T4Wm6";
     const DRY_RUN_PROGRAM_PATH: &str = "../build/compiled_cairo/contract_dry_run.json";
     const PREPROCESS_PROGRAM_PATH: &str = "../build/compiled_cairo/hdp.json";
     const PIE_PATH: &str = "./cairo.pie";
@@ -48,6 +45,7 @@ mod integration_test {
             TaskEnvelope::DatalakeCompute(DatalakeCompute {
                 compute: Computation::new(AggregationFunction::MIN, None),
                 datalake: DatalakeEnvelope::BlockSampled(BlockSampledDatalake {
+                    chain_id: 11155111,
                     block_range_start: 10001,
                     block_range_end: 10005,
                     increment: 1,
@@ -57,6 +55,7 @@ mod integration_test {
             TaskEnvelope::DatalakeCompute(DatalakeCompute {
                 compute: Computation::new(AggregationFunction::AVG, None),
                 datalake: DatalakeEnvelope::BlockSampled(BlockSampledDatalake {
+                    chain_id: 11155111,
                     block_range_start: 10003,
                     block_range_end: 10004,
                     increment: 1,
@@ -99,6 +98,7 @@ mod integration_test {
             TaskEnvelope::DatalakeCompute(DatalakeCompute {
                 compute: Computation::new(AggregationFunction::MIN, None),
                 datalake: DatalakeEnvelope::BlockSampled(BlockSampledDatalake {
+                    chain_id: 11155111,
                     block_range_start: 10001,
                     block_range_end: 10005,
                     increment: 1,
@@ -141,8 +141,7 @@ mod integration_test {
         let processor = init_processor();
         let start_process = std::time::Instant::now();
 
-        let url = Url::parse(STARKNET_SEPOLIA_RPC).unwrap();
-        let module_regisry = ModuleRegistry::new(url);
+        let module_regisry = ModuleRegistry::new();
         let module = module_regisry
             .get_extended_module_from_class_source_string(
                 Some(

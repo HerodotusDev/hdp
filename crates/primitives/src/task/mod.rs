@@ -60,4 +60,11 @@ impl TaskEnvelope {
 
         (datalake_tasks, module_tasks)
     }
+
+    pub fn variants() -> Vec<String> {
+        vec!["DATALAKE_COMPUTE", "MODULE"]
+            .into_iter()
+            .map(String::from)
+            .collect()
+    }
 }

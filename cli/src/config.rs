@@ -1,10 +1,10 @@
-use alloy::{
-    primitives::{Bytes, ChainId},
-    transports::http::reqwest::Url,
+use alloy::{primitives::ChainId, transports::http::reqwest::Url};
+use hdp::primitives::constant::{
+    DEFAULT_DRY_CAIRO_RUN_CAIRO_FILE, DEFAULT_SOUND_CAIRO_RUN_CAIRO_FILE,
 };
-use hdp_provider::evm::config::EvmProviderConfig;
+use hdp::provider::evm::config::EvmProviderConfig;
 
-use std::env;
+use std::{env, path::PathBuf};
 use tokio::sync::OnceCell;
 
 pub static CONFIG: OnceCell<Config> = OnceCell::const_new();
@@ -13,16 +13,18 @@ pub static CONFIG: OnceCell<Config> = OnceCell::const_new();
 #[derive(Debug)]
 pub struct Config {
     pub evm_provider: EvmProviderConfig,
-    pub datalakes: Bytes,
-    pub tasks: Bytes,
+    pub dry_run_program_path: PathBuf,
+    pub sound_run_program_path: PathBuf,
+    pub save_fetch_keys_file: Option<PathBuf>,
 }
 
 impl Config {
     pub async fn init(
         cli_rpc_url: Option<Url>,
-        cli_datalakes: Option<Bytes>,
-        cli_tasks: Option<Bytes>,
         cli_chain_id: Option<ChainId>,
+        cli_dry_run_cairo_file: Option<PathBuf>,
+        cli_sound_run_cairo_file: Option<PathBuf>,
+        cli_save_fetch_keys_file: Option<PathBuf>,
     ) -> &'static Self {
         let chain_id = cli_chain_id.unwrap_or_else(|| {
             env::var("CHAIN_ID")
@@ -40,17 +42,19 @@ impl Config {
             .unwrap_or_else(|_| "40".to_string())
             .parse()
             .expect("RPC_CHUNK_SIZE must be a number");
-        let datalakes = cli_datalakes.unwrap_or_else(|| {
-            env::var("DATALAKES")
-                .expect("DATALAKES must be set")
+        let save_fetch_keys_file: Option<PathBuf> = cli_save_fetch_keys_file
+            .or_else(|| env::var("SAVE_FETCH_KEYS_FILE").ok().map(PathBuf::from));
+        let dry_run_cairo_path: PathBuf = cli_dry_run_cairo_file.unwrap_or_else(|| {
+            env::var("DRY_RUN_CAIRO_PATH")
+                .unwrap_or_else(|_| DEFAULT_DRY_CAIRO_RUN_CAIRO_FILE.to_string())
                 .parse()
-                .expect("DATALAKES must be a valid hex string")
+                .expect("DRY_RUN_CAIRO_PATH must be a path to a cairo file")
         });
-        let tasks = cli_tasks.unwrap_or_else(|| {
-            env::var("TASKS")
-                .expect("TASKS must be set")
+        let sound_run_cairo_path: PathBuf = cli_sound_run_cairo_file.unwrap_or_else(|| {
+            env::var("SOUND_RUN_CAIRO_PATH")
+                .unwrap_or_else(|_| DEFAULT_SOUND_CAIRO_RUN_CAIRO_FILE.to_string())
                 .parse()
-                .expect("TASKS must be a valid hex string")
+                .expect("SOUND_RUN_CAIRO_PATH must be a path to a cairo file")
         });
 
         CONFIG
@@ -61,8 +65,9 @@ impl Config {
                         chain_id,
                         max_requests: rpc_chunk_size,
                     },
-                    datalakes,
-                    tasks,
+                    dry_run_program_path: dry_run_cairo_path,
+                    sound_run_program_path: sound_run_cairo_path,
+                    save_fetch_keys_file,
                 }
             })
             .await

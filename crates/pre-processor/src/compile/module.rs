@@ -36,9 +36,13 @@ impl Compilable for ModuleVec {
 
         // 2. run the dry run and get the fetch points
         info!("2. Running dry-run... ");
-        let keys: DryRunResult = cairo_dry_run(dry_run_program_path, input_string)?;
+        let keys: DryRunResult = cairo_dry_run(
+            dry_run_program_path,
+            input_string,
+            compile_config.save_fetch_keys_file.clone(),
+        )?;
 
-        if keys[0].class_hash != self[0].task.class_hash {
+        if keys[0].program_hash != self[0].task.program_hash {
             return Err(CompileError::ClassHashMismatch);
         }
 
@@ -91,7 +95,7 @@ async fn generate_input(
     let mut collected_results = Vec::new();
     for module in extended_modules {
         let input_module =
-            cairo_format::ProcessedModule::new(module.task.inputs, module.module_class);
+            cairo_format::DryRunProcessedModule::new(module.task.inputs, module.module_class);
         collected_results.push(input_module);
     }
 

@@ -65,6 +65,4 @@ tools/
 
 # Ignore specific directories and files
 hdp-cairo/
-build/
 *.pie
-*.json

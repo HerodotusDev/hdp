@@ -2,6 +2,7 @@ use std::str::FromStr;
 
 use alloy::primitives::U256;
 use anyhow::{bail, Result};
+use serde::{Deserialize, Serialize};
 
 use super::FunctionContext;
 
@@ -175,7 +176,8 @@ pub fn simple_linear_regression(values: &[U256]) -> Result<U256> {
     Ok(U256::from(0))
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(try_from = "String")]
 pub enum Operator {
     None,
     Equal,
@@ -200,6 +202,14 @@ impl FromStr for Operator {
             "none" => Ok(Self::None),
             _ => bail!("Unknown logical operator"),
         }
+    }
+}
+
+impl TryFrom<String> for Operator {
+    type Error = anyhow::Error;
+
+    fn try_from(value: String) -> Result<Self> {
+        Operator::from_str(&value)
     }
 }
 

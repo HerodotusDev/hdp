@@ -1,6 +1,7 @@
 use std::{fmt::Display, str::FromStr};
 
 use anyhow::{bail, Result};
+use serde::{Deserialize, Serialize};
 
 use crate::task::datalake::{DatalakeCollection, DatalakeField};
 
@@ -29,7 +30,8 @@ impl FromStr for TransactionsCollectionType {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(try_from = "String")]
 pub enum TransactionsCollection {
     Transactions(TransactionField),
     TranasactionReceipts(TransactionReceiptField),
@@ -88,6 +90,14 @@ impl FromStr for TransactionsCollection {
             )),
             _ => bail!("Unknown transactions collection"),
         }
+    }
+}
+
+impl TryFrom<String> for TransactionsCollection {
+    type Error = anyhow::Error;
+
+    fn try_from(value: String) -> Result<Self> {
+        TransactionsCollection::from_str(&value)
     }
 }
 
