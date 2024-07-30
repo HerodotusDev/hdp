@@ -186,8 +186,9 @@ impl ModuleRegistry {
 
 #[cfg(test)]
 mod tests {
+    use crate::constant::NEW_EXAMPLE_CONTRACT;
+
     use super::*;
-    use hdp_primitives::constant::NEW_EXAMPLE_CONTRACT;
 
     fn init() -> (ModuleRegistry, FieldElement) {
         let module_registry = ModuleRegistry::new();

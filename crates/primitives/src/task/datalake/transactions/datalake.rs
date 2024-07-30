@@ -13,7 +13,7 @@ use alloy::primitives::U256;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
-use crate::utils::default_increment;
+use crate::task::datalake::envelope::default_increment;
 
 use super::TransactionsCollection;
 

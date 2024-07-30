@@ -19,6 +19,7 @@ use thiserror::Error;
 use tracing::{debug, info};
 
 pub mod compile;
+pub mod constant;
 pub mod module_registry;
 
 #[derive(Error, Debug)]

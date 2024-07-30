@@ -25,3 +25,8 @@ impl DatalakeEnvelope {
         }
     }
 }
+
+/// Default increment for datalake
+pub fn default_increment() -> u64 {
+    1
+}

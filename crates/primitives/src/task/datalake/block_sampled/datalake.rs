@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::utils::default_increment;
+use crate::task::datalake::envelope::default_increment;
 
 use super::collection::BlockSampledCollection;
 

@@ -2173,7 +2173,7 @@ dependencies = [
 
 [[package]]
 name = "hdp"
-version = "0.2.5"
+version = "0.4.0"
 dependencies = [
  "hdp-cairo-runner",
  "hdp-preprocessor",
@@ -2184,7 +2184,7 @@ dependencies = [
 
 [[package]]
 name = "hdp-cairo-runner"
-version = "0.2.5"
+version = "0.4.0"
 dependencies = [
  "alloy",
  "anyhow",
@@ -2204,7 +2204,7 @@ dependencies = [
 
 [[package]]
 name = "hdp-cli"
-version = "0.2.5"
+version = "0.4.0"
 dependencies = [
  "alloy",
  "anyhow",
@@ -2222,7 +2222,7 @@ dependencies = [
 
 [[package]]
 name = "hdp-preprocessor"
-version = "0.2.5"
+version = "0.4.0"
 dependencies = [
  "alloy",
  "alloy-merkle-tree",
@@ -2232,6 +2232,7 @@ dependencies = [
  "hdp-cairo-runner",
  "hdp-primitives",
  "hdp-provider",
+ "lazy_static",
  "reqwest 0.11.27",
  "serde",
  "serde_json",
@@ -2245,14 +2246,13 @@ dependencies = [
 
 [[package]]
 name = "hdp-primitives"
-version = "0.2.5"
+version = "0.4.0"
 dependencies = [
  "alloy",
  "alloy-rlp",
  "anyhow",
  "cairo-lang-starknet-classes",
  "eth-trie-proofs",
- "lazy_static",
  "rand",
  "serde",
  "serde_json",
@@ -2263,7 +2263,7 @@ dependencies = [
 
 [[package]]
 name = "hdp-processor"
-version = "0.2.5"
+version = "0.4.0"
 dependencies = [
  "alloy",
  "alloy-merkle-tree",
@@ -2277,7 +2277,7 @@ dependencies = [
 
 [[package]]
 name = "hdp-provider"
-version = "0.2.5"
+version = "0.4.0"
 dependencies = [
  "alloy",
  "anyhow",
