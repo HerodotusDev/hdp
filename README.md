@@ -3,6 +3,16 @@
 # Herodotus Data Processor (HDP)
 
 [![CI](https://github.com/HerodotusDev/hdp/actions/workflows/ci.yml/badge.svg)](https://github.com/HerodotusDev/hdp/actions/workflows/ci.yml)
+[![Crates.io][crates-badge]][crates-url]
+[![Documentation][docs-badge]][docs-url]
+[![GPLv3 licensed][gpl3-badge]][gpl3-url]
+
+[crates-url]: https://crates.io/crates/hdp
+[crates-badge]: https://img.shields.io/crates/v/hdp.svg
+[docs-badge]: https://docs.rs/hdp/badge.svg
+[docs-url]: https://docs.rs/hdp
+[gpl3-badge]: https://img.shields.io/badge/license-GPLv3-blue
+[gpl3-url]: LICENSE
 
 > **Warning:** This codebase is experimental and not audited. Use at your own risk.
 
@@ -25,7 +35,7 @@ The Data Processor CLI serves as an essential tool for developers working with C
 
 ```bash
 # Install with cargo
-❯ cargo install --git https://github.com/HerodotusDev/hdp --tag v0.2.6 --locked --force
+❯ cargo install --git https://github.com/HerodotusDev/hdp --tag v0.4.0 --locked --force
 ```
 
 ### Build from source
