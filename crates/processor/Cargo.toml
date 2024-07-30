@@ -1,5 +1,6 @@
 [package]
 name = "hdp-processor"
+description = "HDP processor"
 version.workspace = true
 edition.workspace = true
 license-file.workspace = true

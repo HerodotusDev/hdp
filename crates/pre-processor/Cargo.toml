@@ -1,5 +1,6 @@
 [package]
 name = "hdp-preprocessor"
+description = "HDP preprocessor"
 version.workspace = true
 edition.workspace = true
 license-file.workspace = true
