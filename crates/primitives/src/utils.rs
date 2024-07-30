@@ -29,6 +29,7 @@ pub fn bytes_to_hex_string(bytes: &[u8]) -> String {
     format!("0x{}", hex::encode(bytes))
 }
 
+/// Convert a hex string into a byte array
 pub fn hex_string_to_bytes(hex_string: &str) -> Result<Vec<u8>> {
     let hex_string = hex_string.trim_start_matches("0x");
     Ok(hex::decode(hex_string)?)
@@ -45,18 +46,16 @@ pub fn tx_index_to_tx_key(tx_index: u64) -> String {
     format!("0x{}", hex::encode(binding))
 }
 
+/// Convert a `FieldElement` into a `FixedBytes<32>`
 pub fn felt_to_bytes32(felt: FieldElement) -> FixedBytes<32> {
     let felt_bytes = felt.to_bytes_be();
     B256::from(felt_bytes)
 }
 
+/// Convert a hex string into integer
 pub fn hex_string_to_uint(hex_string: &str) -> u64 {
     let hex_string = hex_string.trim_start_matches("0x");
     u64::from_str_radix(hex_string, 16).expect("Cannot convert hex string to uint")
-}
-
-pub fn default_increment() -> u64 {
-    1
 }
 
 #[cfg(test)]

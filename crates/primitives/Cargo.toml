@@ -23,4 +23,3 @@ starknet.workspace = true
 cairo-lang-starknet-classes.workspace = true
 serde_with.workspace = true
 serde_json = { workspace = true }
-lazy_static = { workspace = true }
