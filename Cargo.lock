@@ -2175,23 +2175,11 @@ dependencies = [
 name = "hdp"
 version = "0.4.0"
 dependencies = [
- "hdp-cairo-runner 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "hdp-preprocessor 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "hdp-primitives 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "hdp-processor 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "hdp-provider 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "hdp"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "72b48d4f3ed4627f93adb3df5035b34a8ca5345a9fff8c71402642f925ed8d35"
-dependencies = [
- "hdp-preprocessor 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "hdp-primitives 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "hdp-processor 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "hdp-provider 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "hdp-cairo-runner",
+ "hdp-preprocessor",
+ "hdp-primitives",
+ "hdp-processor",
+ "hdp-provider",
 ]
 
 [[package]]
@@ -2201,30 +2189,8 @@ dependencies = [
  "alloy",
  "anyhow",
  "cairo-lang-starknet-classes",
- "hdp-primitives 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "hdp-provider 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "regex",
- "serde",
- "serde_json",
- "serde_with 2.3.3",
- "starknet",
- "starknet-crypto",
- "tempfile",
- "thiserror",
- "tracing",
-]
-
-[[package]]
-name = "hdp-cairo-runner"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "500b833308975920a4789fe7a4ef7c328cb30b5763da1284d4d3535cfded33fc"
-dependencies = [
- "alloy",
- "anyhow",
- "cairo-lang-starknet-classes",
- "hdp-primitives 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "hdp-provider 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "hdp-primitives",
+ "hdp-provider",
  "regex",
  "serde",
  "serde_json",
@@ -2244,7 +2210,7 @@ dependencies = [
  "anyhow",
  "clap 4.5.4",
  "dotenv",
- "hdp 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "hdp",
  "inquire",
  "serde",
  "serde_json",
@@ -2263,35 +2229,9 @@ dependencies = [
  "anyhow",
  "cairo-lang-starknet-classes",
  "futures",
- "hdp-cairo-runner 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "hdp-primitives 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "hdp-provider 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "lazy_static",
- "reqwest 0.11.27",
- "serde",
- "serde_json",
- "starknet",
- "starknet-crypto",
- "tempfile",
- "thiserror",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "hdp-preprocessor"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d88e26881f1c03b6bcde41f9eccdd7e806804351600e50e44a220fb5b2d00165"
-dependencies = [
- "alloy",
- "alloy-merkle-tree",
- "anyhow",
- "cairo-lang-starknet-classes",
- "futures",
- "hdp-cairo-runner 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "hdp-primitives 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "hdp-provider 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "hdp-cairo-runner",
+ "hdp-primitives",
+ "hdp-provider",
  "lazy_static",
  "reqwest 0.11.27",
  "serde",
@@ -2322,49 +2262,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "hdp-primitives"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3824542b75eb1151df198eea3cb45d7266e87184a1173f6fb4873fb9add5ca05"
-dependencies = [
- "alloy",
- "alloy-rlp",
- "anyhow",
- "cairo-lang-starknet-classes",
- "eth-trie-proofs",
- "rand",
- "serde",
- "serde_json",
- "serde_with 2.3.3",
- "starknet",
- "starknet-crypto",
-]
-
-[[package]]
 name = "hdp-processor"
 version = "0.4.0"
 dependencies = [
  "alloy",
  "alloy-merkle-tree",
  "anyhow",
- "hdp-cairo-runner 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "hdp-primitives 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde",
- "serde_json",
- "tracing",
-]
-
-[[package]]
-name = "hdp-processor"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "469705fb7a88fd55d922945709828c3ec5fc5ea0107da4a3a760ca800f297e45"
-dependencies = [
- "alloy",
- "alloy-merkle-tree",
- "anyhow",
- "hdp-cairo-runner 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "hdp-primitives 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "hdp-cairo-runner",
+ "hdp-primitives",
  "serde",
  "serde_json",
  "tracing",
@@ -2379,27 +2284,7 @@ dependencies = [
  "criterion",
  "eth-trie-proofs",
  "futures",
- "hdp-primitives 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "itertools 0.10.5",
- "reqwest 0.11.27",
- "serde",
- "serde_json",
- "thiserror",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "hdp-provider"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7364bab8544f1d3edbaf1b0249621d4e58a74866916c45f7ce81ea8545a11915"
-dependencies = [
- "alloy",
- "anyhow",
- "eth-trie-proofs",
- "futures",
- "hdp-primitives 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "hdp-primitives",
  "itertools 0.10.5",
  "reqwest 0.11.27",
  "serde",

@@ -19,7 +19,7 @@ path = "src/main.rs"
 
 [dependencies]
 tracing-subscriber = { version = "0.3.0", features = ["env-filter"] }
-hdp = { version = "0.4.0", default-features = false, features = [
+hdp = { path = "../crates/hdp", default-features = false, features = [
     "preprocessor",
     "processor",
     "provider",

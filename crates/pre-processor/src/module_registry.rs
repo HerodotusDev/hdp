@@ -7,7 +7,6 @@ use cairo_lang_starknet_classes::casm_contract_class::{
 
 use hdp_primitives::task::{module::Module, ExtendedModule};
 use reqwest::Client;
-use serde::Deserialize;
 use starknet_crypto::FieldElement;
 use std::path::PathBuf;
 use thiserror::Error;
@@ -36,11 +35,6 @@ pub enum ModuleRegistryError {
 
 pub struct ModuleRegistry {
     client: Client,
-}
-
-#[derive(Deserialize)]
-struct GitHubFileResponse {
-    download_url: String,
 }
 
 impl Default for ModuleRegistry {
@@ -133,54 +127,40 @@ impl ModuleRegistry {
         &self,
         program_hash: FieldElement,
     ) -> Result<CasmContractClass, ModuleRegistryError> {
+        let program_hash_hex = format!("{:#x}", program_hash);
+
         info!(
-            "Fetching contract class from module registry... program_hash: {:#?}",
-            program_hash.to_string()
+            "Fetching contract class from module registry... program_hash: {}",
+            program_hash_hex
         );
 
-        let program_hash_key = program_hash.to_string();
-        let branch = "dev";
         let api_url = format!(
-            "https://api.github.com/repos/HerodotusDev/hdp/contents/crates/pre-processor/module-registery/{}.json?ref={}",
-            program_hash_key, branch
+            "http://program-registery.api.herodotus.cloud/get-program?program_hash={}",
+            program_hash_hex
         );
 
-        let response_text = self
+        let response = self
             .client
             .get(&api_url)
             .header("User-Agent", "request")
             .send()
             .await
-            .unwrap()
-            .text()
-            .await
-            .unwrap();
+            .expect("response is failed");
 
-        // Try to deserialize the response into GitHubFileResponse
-        let response: Result<GitHubFileResponse, serde_json::Error> =
-            serde_json::from_str(&response_text);
-        let response = match response {
-            Ok(resp) => resp,
-            Err(err) => {
-                eprintln!("Failed to deserialize GitHubFileResponse: {}", err);
-                return Err(ModuleRegistryError::ClassSourceError("fail".to_string()));
-            }
-        };
-        let download_response = self
-            .client
-            .get(&response.download_url)
-            .send()
-            .await
-            .unwrap();
-
-        let file_content = download_response.text().await.unwrap();
-        let casm: CasmContractClass = serde_json::from_str(&file_content)?;
-
-        info!(
-            "Contract class fetched successfully from program_hashh: {:?}",
-            program_hash
-        );
-        Ok(casm)
+        // Check if the response status is successful
+        if response.status().is_success() {
+            let response_text = response.text().await.expect("cannot get response");
+            let casm: CasmContractClass = serde_json::from_str(&response_text)?;
+            info!(
+                "Contract class fetched successfully from program_hash: {:?}",
+                program_hash
+            );
+            Ok(casm)
+        } else {
+            Err(ModuleRegistryError::ClassSourceError(
+                "Failed to fetch contract class".to_string(),
+            ))
+        }
     }
 }
 

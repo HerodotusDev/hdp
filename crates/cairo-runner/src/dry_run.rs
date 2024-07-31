@@ -62,7 +62,10 @@ impl DryRunner {
 
         let input_file_path = &NamedTempFile::new()?.path().to_path_buf();
         fs::write(input_file_path, input_string).expect("Failed to write input file");
-        let _ = self._run(input_file_path)?;
+        let output = self._run(input_file_path)?;
+        if output.is_empty() {
+            return Err(CairoRunnerError::CairoRunError);
+        }
 
         // parse output to return dry run result
         let dry_run_result = self.parse_run(&PathBuf::from(DRY_CAIRO_RUN_OUTPUT_FILE))?;
@@ -73,6 +76,7 @@ impl DryRunner {
     /// Parse the output of the dry run command
     fn parse_run(&self, input_file_path: &Path) -> Result<DryRunResult, CairoRunnerError> {
         let output = fs::read_to_string(input_file_path)?;
+
         let fetch_keys: Vec<DryRunnedModule> = serde_json::from_str(&output)?;
         fs::remove_file(input_file_path).expect("Failed to remove input file");
         if let Some(ref output_path) = self.output_file_path {
