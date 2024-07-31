@@ -135,7 +135,7 @@ impl ModuleRegistry {
         );
 
         let api_url = format!(
-            "http://212.47.227.57/get-program?program_hash={}",
+            "http://program-registery.api.herodotus.cloud/get-program?program_hash={}",
             program_hash_hex
         );
 
