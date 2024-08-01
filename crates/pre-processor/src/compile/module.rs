@@ -9,7 +9,7 @@ use hdp_primitives::processed_types::cairo_format;
 use hdp_primitives::task::ExtendedModule;
 use hdp_provider::evm::from_keys::categorize_fetch_keys;
 use hdp_provider::evm::provider::EvmProvider;
-use std::collections::HashMap;
+
 use std::path::PathBuf;
 use tracing::info;
 
@@ -25,10 +25,6 @@ impl Compilable for ModuleVec {
     ) -> Result<CompilationResult, CompileError> {
         info!("target task: {:#?}", self[0].task);
         let dry_run_program_path = compile_config.dry_run_program_path.clone();
-        let tasks_commitments = self
-            .iter()
-            .map(|module| module.task.commit())
-            .collect::<Vec<_>>();
 
         let input = generate_input(self.to_vec(), PathBuf::from(DRY_CAIRO_RUN_OUTPUT_FILE)).await?;
         let input_string =
@@ -51,11 +47,7 @@ impl Compilable for ModuleVec {
             panic!("Multiple Modules are not supported yet");
         }
         let dry_runned_module = keys.into_iter().next().unwrap();
-        let mut commit_results_maps = HashMap::new();
-        commit_results_maps.insert(
-            tasks_commitments[0],
-            dry_runned_module.result.to_combined_string().into(),
-        );
+        let commit_results_maps = vec![dry_runned_module.result.to_combined_string().into()];
 
         // 3. call provider using keys
         let keys_maps_chain = categorize_fetch_keys(dry_runned_module.fetch_keys);

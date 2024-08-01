@@ -2249,6 +2249,7 @@ name = "hdp-primitives"
 version = "0.4.0"
 dependencies = [
  "alloy",
+ "alloy-merkle-tree",
  "alloy-rlp",
  "anyhow",
  "cairo-lang-starknet-classes",

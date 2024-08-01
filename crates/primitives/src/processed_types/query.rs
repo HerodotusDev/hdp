@@ -1,9 +1,15 @@
 use std::path::PathBuf;
 
+use crate::merkle_tree::build_result_merkle_tree;
 use ::serde::{Deserialize, Serialize};
-use alloy::primitives::B256;
+use alloy::{
+    dyn_abi::DynSolValue,
+    primitives::{B256, U256},
+};
 
-use super::{block_proofs::ProcessedBlockProofs, task::ProcessedTask};
+use super::{
+    block_proofs::ProcessedBlockProofs, processor_output::ProcessorOutput, task::ProcessedTask,
+};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ProcessorInput {
@@ -33,5 +39,37 @@ impl ProcessorInput {
             proofs,
             tasks,
         }
+    }
+
+    /// Turn [`ProcessorInput`] into [`ProcessorOutput`] by provided task results
+    pub fn into_processor_output(self, task_results: Vec<U256>) -> ProcessorOutput {
+        let tasks_commitments: Vec<B256> = self
+            .tasks
+            .iter()
+            .map(|task| task.get_task_commitment())
+            .collect();
+        let task_inclusion_proofs: Vec<Vec<B256>> = self
+            .tasks
+            .iter()
+            .map(|task| task.get_task_proof())
+            .collect();
+        let (results_tree, result_commitments) =
+            build_result_merkle_tree(&tasks_commitments, &task_results);
+        let results_inclusion_proofs: Vec<Vec<B256>> = result_commitments
+            .iter()
+            .map(|rc| results_tree.get_proof(&DynSolValue::FixedBytes(*rc, 32)))
+            .collect();
+        let result_root = results_tree.root();
+
+        ProcessorOutput::new(
+            task_results.iter().map(|x| B256::from(*x)).collect(),
+            result_commitments,
+            tasks_commitments,
+            task_inclusion_proofs,
+            results_inclusion_proofs,
+            result_root,
+            self.tasks_root,
+            self.proofs.mmr_metas,
+        )
     }
 }

@@ -1,10 +1,7 @@
 use std::collections::HashSet;
 
 use crate::compile::datalake::fetchable::Fetchable;
-use hdp_primitives::{
-    solidity_types::traits::DatalakeComputeCodecs,
-    task::datalake::{envelope::DatalakeEnvelope, DatalakeCompute},
-};
+use hdp_primitives::task::datalake::{envelope::DatalakeEnvelope, DatalakeCompute};
 use hdp_provider::evm::provider::EvmProvider;
 use tracing::info;
 
@@ -18,7 +15,6 @@ impl Compilable for DatalakeCompute {
         compile_config: &CompilerConfig,
     ) -> Result<CompilationResult, CompileError> {
         info!("target task: {:#?}", self);
-        let task_commitment = self.commit();
         let aggregation_fn = &self.compute.aggregate_fn_id;
         let fn_context = &self.compute.aggregate_fn_ctx;
         let provider = EvmProvider::new(compile_config.provider_config.clone());
@@ -29,9 +25,7 @@ impl Compilable for DatalakeCompute {
                     .operation(&compiled_block_sampled.values, Some(fn_context.clone()))?;
                 Ok(CompilationResult::new(
                     aggregation_fn.is_pre_processable(),
-                    vec![(task_commitment, aggregated_result)]
-                        .into_iter()
-                        .collect(),
+                    vec![aggregated_result],
                     compiled_block_sampled.headers,
                     compiled_block_sampled.accounts,
                     compiled_block_sampled.storages,
@@ -46,9 +40,7 @@ impl Compilable for DatalakeCompute {
                     .operation(&compiled_tx_datalake.values, Some(fn_context.clone()))?;
                 Ok(CompilationResult::new(
                     aggregation_fn.is_pre_processable(),
-                    vec![(task_commitment, aggregated_result)]
-                        .into_iter()
-                        .collect(),
+                    vec![aggregated_result],
                     compiled_tx_datalake.headers,
                     HashSet::new(),
                     HashSet::new(),

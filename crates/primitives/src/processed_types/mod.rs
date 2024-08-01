@@ -7,6 +7,7 @@ pub mod header;
 pub mod mmr;
 pub mod module;
 pub mod mpt;
+pub mod processor_output;
 pub mod query;
 pub mod receipt;
 pub mod storage;
