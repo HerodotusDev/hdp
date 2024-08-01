@@ -16,6 +16,13 @@ impl TransactionsCollectionType {
     pub fn variants() -> Vec<String> {
         vec!["TX".to_string(), "TX_RECEIPT".to_string()]
     }
+
+    pub fn to_u8(&self) -> u8 {
+        match self {
+            TransactionsCollectionType::Transactions => 4,
+            TransactionsCollectionType::TransactionReceipts => 5,
+        }
+    }
 }
 
 impl FromStr for TransactionsCollectionType {
