@@ -128,7 +128,6 @@ fn init_cli() -> Result<HDPCli> {
     Ok(cli)
 }
 
-#[allow(clippy::too_many_arguments)]
 pub async fn module_entry_run(
     class_hash: Option<String>,
     local_class_path: Option<PathBuf>,
@@ -168,7 +167,6 @@ pub async fn module_entry_run(
     Ok(())
 }
 
-#[allow(clippy::too_many_arguments)]
 pub async fn datalake_entry_run(
     aggregate_fn_id: AggregationFunction,
     aggregate_fn_ctx: Option<FunctionContext>,

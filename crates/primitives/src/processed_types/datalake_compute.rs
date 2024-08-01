@@ -25,7 +25,6 @@ pub struct ProcessedDatalakeCompute {
 }
 
 impl ProcessedDatalakeCompute {
-    #[allow(clippy::too_many_arguments)]
     pub fn new_with_result(
         encoded_task: Bytes,
         task_commitment: B256,

@@ -107,7 +107,6 @@ impl CompilationResult {
         }
     }
 
-    #[allow(clippy::too_many_arguments)]
     pub fn new(
         pre_processable: bool,
         commit_results_maps: HashMap<B256, U256>,

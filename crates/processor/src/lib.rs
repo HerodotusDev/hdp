@@ -39,7 +39,6 @@ pub struct ProcessorResult {
 }
 
 impl ProcessorResult {
-    #[allow(clippy::too_many_arguments)]
     pub fn new(
         raw_results: Vec<B256>,
         results_commitments: Vec<B256>,
