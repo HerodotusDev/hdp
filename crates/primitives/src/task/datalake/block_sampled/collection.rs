@@ -30,6 +30,14 @@ impl BlockSampledCollectionType {
             "STORAGE".to_string(),
         ]
     }
+
+    pub fn to_u8(&self) -> u8 {
+        match self {
+            BlockSampledCollectionType::Header => 0,
+            BlockSampledCollectionType::Account => 1,
+            BlockSampledCollectionType::Storage => 2,
+        }
+    }
 }
 
 impl FromStr for BlockSampledCollectionType {

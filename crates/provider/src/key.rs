@@ -6,6 +6,9 @@
 use std::{hash::Hash, str::FromStr};
 
 use alloy::primitives::{Address, BlockNumber, ChainId, Keccak256, StorageKey, B256};
+use hdp_primitives::task::datalake::{
+    block_sampled::BlockSampledCollectionType, transactions::TransactionsCollectionType,
+};
 use serde::{Deserialize, Serialize};
 
 /// Key for fetching block header from provider.
@@ -25,6 +28,7 @@ impl HeaderMemorizerKey {
 
     pub fn hash_key(&self) -> B256 {
         let mut keccak = Keccak256::new();
+        keccak.update([BlockSampledCollectionType::Header.to_u8()]);
         keccak.update(self.chain_id.to_be_bytes());
         keccak.update(self.block_number.to_be_bytes());
         keccak.finalize()
@@ -50,6 +54,7 @@ impl AccountMemorizerKey {
 
     pub fn hash_key(&self) -> B256 {
         let mut keccak = Keccak256::new();
+        keccak.update([BlockSampledCollectionType::Account.to_u8()]);
         keccak.update(self.chain_id.to_be_bytes());
         keccak.update(self.block_number.to_be_bytes());
         keccak.update(self.address);
@@ -83,6 +88,7 @@ impl StorageMemorizerKey {
 
     pub fn hash_key(&self) -> B256 {
         let mut keccak = Keccak256::new();
+        keccak.update([BlockSampledCollectionType::Storage.to_u8()]);
         keccak.update(self.chain_id.to_be_bytes());
         keccak.update(self.block_number.to_be_bytes());
         keccak.update(self.address);
@@ -110,6 +116,7 @@ impl TxMemorizerKey {
 
     pub fn hash_key(&self) -> B256 {
         let mut keccak = Keccak256::new();
+        keccak.update([TransactionsCollectionType::Transactions.to_u8()]);
         keccak.update(self.chain_id.to_be_bytes());
         keccak.update(self.block_number.to_be_bytes());
         keccak.update(self.tx_index.to_be_bytes());
@@ -136,6 +143,7 @@ impl TxReceiptMemorizerKey {
 
     pub fn hash_key(&self) -> B256 {
         let mut keccak = Keccak256::new();
+        keccak.update([TransactionsCollectionType::TransactionReceipts.to_u8()]);
         keccak.update(self.chain_id.to_be_bytes());
         keccak.update(self.block_number.to_be_bytes());
         keccak.update(self.tx_index.to_be_bytes());
@@ -223,7 +231,7 @@ mod tests {
         let header_key_hash = header_key.hash_key();
         assert_eq!(
             header_key_hash,
-            b256!("06244d81b463cd9e199e3d3845d948bf87e094b4cd407c87238b52e4ec017e06")
+            b256!("205342692a0b320915750abf5ad47709ea4c6c10e18802d5981070e47bd6f0c1")
         )
     }
 
@@ -233,7 +241,40 @@ mod tests {
         let account_key_hash = account_key.hash_key();
         assert_eq!(
             account_key_hash,
-            b256!("dbea9b2e992075e52528a88d0e4ed0471599bc7a6b790a947a361c88051d5ae0")
+            b256!("4298fef03738f1a6d9f77e3d1ad8cf7906a60f4f9ecd63b34cb2a1ac61353e7a")
         )
     }
+
+    #[test]
+    fn test_hash_storage_key() {
+        let storage_key = StorageMemorizerKey::new(1, 100, Address::ZERO, B256::ZERO);
+        let storage_key_hash = storage_key.hash_key();
+        assert_eq!(
+            storage_key_hash,
+            b256!("22133ae0a8c6964d0e4fc28659442e311c4a9f6a82f16ea9f103e36a1085c11f")
+        )
+    }
+
+    #[test]
+    fn test_hash_tx_key() {
+        let tx_key = TxMemorizerKey::new(1, 100, 1);
+        let tx_key_hash = tx_key.hash_key();
+        assert_eq!(
+            tx_key_hash,
+            b256!("487ea7bf96eb1280f1075498855b55ec61ba7d354b5260e2504ef51140e0df63")
+        )
+    }
+
+    #[test]
+    fn test_hash_tx_receipt_key() {
+        let tx_receipt = TxReceiptMemorizerKey::new(1, 100, 1);
+        let tx_receipt_hash = tx_receipt.hash_key();
+        assert_eq!(
+            tx_receipt_hash,
+            b256!("beac44bc7092d6c5c2c9ce2d6957c9b962ad4654a65c9b9a9b19a9c278ee5a83")
+        )
+    }
+
+    #[test]
+    fn test_fetch_key_envelop() {}
 }
