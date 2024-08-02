@@ -1,5 +1,6 @@
 use alloy::{primitives::ChainId, transports::http::reqwest::Url};
 use anyhow::Result;
+use hdp::config::HdpRunConfig;
 use hdp::preprocessor::{
     compile::config::CompilerConfig, module_registry::ModuleRegistry, PreProcessor,
 };
@@ -24,7 +25,6 @@ use tracing::{debug, info};
 
 use crate::{
     commands::{DataLakeCommands, HDPCli, HDPCliCommands},
-    config::Config,
     interactive,
     query::{SubmitBatchQuery, Task},
 };
@@ -141,7 +141,7 @@ pub async fn module_entry_run(
     output_file: Option<PathBuf>,
     cairo_pie_file: Option<PathBuf>,
 ) -> Result<()> {
-    let config = Config::init(
+    let config = HdpRunConfig::init(
         rpc_url,
         chain_id,
         dry_run_cairo_file,
@@ -178,7 +178,7 @@ pub async fn datalake_entry_run(
     output_file: Option<PathBuf>,
     cairo_pie_file: Option<PathBuf>,
 ) -> Result<()> {
-    let config = Config::init(rpc_url, chain_id, None, sound_run_cairo_file, None).await;
+    let config = HdpRunConfig::init(rpc_url, chain_id, None, sound_run_cairo_file, None).await;
     let parsed_datalake = match datalake {
         DataLakeCommands::BlockSampled {
             block_range_start,
@@ -226,7 +226,7 @@ pub async fn datalake_entry_run(
 }
 
 pub async fn handle_running_tasks(
-    config: &Config,
+    config: &HdpRunConfig,
     tasks: Vec<TaskEnvelope>,
     pre_processor_output_file: Option<PathBuf>,
     output_file: Option<PathBuf>,
@@ -299,7 +299,7 @@ pub async fn entry_run(
         fs::read_to_string(request_file).expect("No request file exist in the path");
     let parsed: SubmitBatchQuery = serde_json::from_str(&request_context)
         .expect("Invalid format of request. Cannot parse it.");
-    let config = Config::init(
+    let config = HdpRunConfig::init(
         rpc_url,
         Some(parsed.destination_chain_id),
         dry_run_cairo_file,

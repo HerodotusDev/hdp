@@ -1,24 +1,24 @@
-use alloy::{primitives::ChainId, transports::http::reqwest::Url};
-use hdp::primitives::constant::{
+use crate::primitives::constant::{
     DEFAULT_DRY_CAIRO_RUN_CAIRO_FILE, DEFAULT_SOUND_CAIRO_RUN_CAIRO_FILE,
 };
-use hdp::provider::evm::config::EvmProviderConfig;
+use crate::provider::evm::config::EvmProviderConfig;
+use alloy::{primitives::ChainId, transports::http::reqwest::Url};
 
 use std::{env, path::PathBuf};
 use tokio::sync::OnceCell;
 
-pub static CONFIG: OnceCell<Config> = OnceCell::const_new();
+pub static CONFIG: OnceCell<HdpRunConfig> = OnceCell::const_new();
 
-/// Configuration for the CLI
+/// HdpRunConfig for the CLI
 #[derive(Debug)]
-pub struct Config {
+pub struct HdpRunConfig {
     pub evm_provider: EvmProviderConfig,
     pub dry_run_program_path: PathBuf,
     pub sound_run_program_path: PathBuf,
     pub save_fetch_keys_file: Option<PathBuf>,
 }
 
-impl Config {
+impl HdpRunConfig {
     pub async fn init(
         cli_rpc_url: Option<Url>,
         cli_chain_id: Option<ChainId>,
@@ -59,7 +59,7 @@ impl Config {
 
         CONFIG
             .get_or_init(|| async {
-                Config {
+                HdpRunConfig {
                     evm_provider: EvmProviderConfig {
                         rpc_url,
                         chain_id,
