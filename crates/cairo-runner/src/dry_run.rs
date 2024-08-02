@@ -76,7 +76,6 @@ impl DryRunner {
     /// Parse the output of the dry run command
     fn parse_run(&self, input_file_path: &Path) -> Result<DryRunResult, CairoRunnerError> {
         let output = fs::read_to_string(input_file_path)?;
-
         let fetch_keys: Vec<DryRunnedModule> = serde_json::from_str(&output)?;
         fs::remove_file(input_file_path).expect("Failed to remove input file");
         if let Some(ref output_path) = self.output_file_path {
@@ -93,7 +92,7 @@ mod tests {
     use super::*;
 
     fn init_dry_runner() -> DryRunner {
-        let program_path = PathBuf::from("../../build/compiled_cairo/contract_dry_run.json");
+        let program_path = PathBuf::from("../../build/contract_dry_run.json");
         DryRunner::new(program_path, None)
     }
 
@@ -114,13 +113,43 @@ mod tests {
 
     #[test]
     fn test_parse_run() {
-        let dry_runner = init_dry_runner();
-
-        let path: &Path = Path::new("./fixtures/dry_run_output.json");
-
-        let modules = dry_runner.parse_run(path).unwrap();
-        assert_eq!(modules.len(), 1);
-        let module = &modules[0];
+        let output = r#"
+    [
+        {
+            "fetch_keys": [
+            {
+                "key": {
+                "chain_id": 11155111,
+                "block_number": 5186021
+                },
+                "type": "HeaderMemorizerKey"
+            },
+             {
+                "key": {
+                "chain_id": 11155111,
+                "block_number": 5186023,
+                "address": "0x13CB6AE34A13a0977F4d7101eBc24B87Bb23F0d5"
+                },
+                "type": "AccountMemorizerKey"
+            },
+            {
+                "key": {
+                "chain_id": 11155111,
+                "block_number": 5186022,
+                "address": "0x13CB6AE34A13a0977F4d7101eBc24B87Bb23F0d5",
+                "key": "0x487ea7bf96eb1280f1075498855b55ec61ba7d354b5260e2504ef51140e0df63"
+                },
+                "type": "StorageMemorizerKey"
+            }
+            ],
+            "result": { "low": "0x0", "high": "0x0" },
+            "program_hash": "0xc8580f74b6e6e04d8073602ad0c0d55538b56bf8307fefebb6b65b1bbf2a27"
+            }
+        ]
+        "#;
+        let fetch_keys: Vec<DryRunnedModule> = serde_json::from_str(output).unwrap();
+        assert_eq!(fetch_keys.len(), 1);
+        let module = &fetch_keys[0];
         assert_eq!(module.fetch_keys.len(), 3);
         assert_eq!(module.result, Uint256::from_strs("0x0", "0x0").unwrap());
         assert_eq!(

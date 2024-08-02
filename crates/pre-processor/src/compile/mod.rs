@@ -1,4 +1,4 @@
-use alloy::primitives::{B256, U256};
+use alloy::primitives::U256;
 
 use config::CompilerConfig;
 use hdp_primitives::processed_types::{
@@ -6,7 +6,7 @@ use hdp_primitives::processed_types::{
     storage::ProcessedStorage, transaction::ProcessedTransaction,
 };
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use thiserror::Error;
 
 use crate::module_registry::ModuleRegistryError;
@@ -55,8 +55,8 @@ pub trait Compilable {
 pub struct CompilationResult {
     /// flag to check if the aggregation function is pre-processable
     pub pre_processable: bool,
-    /// task_commitment -> value
-    pub commit_results_maps: HashMap<B256, U256>,
+    /// results of tasks
+    pub task_results: Vec<U256>,
     /// Headers related to the datalake
     pub headers: HashSet<ProcessedHeader>,
     /// Accounts related to the datalake
@@ -75,7 +75,7 @@ impl Default for CompilationResult {
     fn default() -> Self {
         Self {
             pre_processable: true,
-            commit_results_maps: HashMap::new(),
+            task_results: Vec::new(),
             headers: HashSet::new(),
             accounts: HashSet::new(),
             storages: HashSet::new(),
@@ -97,7 +97,7 @@ impl CompilationResult {
     ) -> Self {
         Self {
             pre_processable: false,
-            commit_results_maps: HashMap::new(),
+            task_results: Vec::new(),
             headers,
             accounts,
             storages,
@@ -107,10 +107,9 @@ impl CompilationResult {
         }
     }
 
-    #[allow(clippy::too_many_arguments)]
     pub fn new(
         pre_processable: bool,
-        commit_results_maps: HashMap<B256, U256>,
+        task_results: Vec<U256>,
         headers: HashSet<ProcessedHeader>,
         accounts: HashSet<ProcessedAccount>,
         storages: HashSet<ProcessedStorage>,
@@ -120,7 +119,7 @@ impl CompilationResult {
     ) -> Self {
         Self {
             pre_processable,
-            commit_results_maps,
+            task_results,
             headers,
             accounts,
             storages,
@@ -137,7 +136,7 @@ impl CompilationResult {
         self.storages.extend(other.storages);
         self.transactions.extend(other.transactions);
         self.transaction_receipts.extend(other.transaction_receipts);
-        self.commit_results_maps.extend(other.commit_results_maps);
+        self.task_results.extend(other.task_results);
         self.mmr_metas.extend(other.mmr_metas);
 
         // if any of the task is not pre-processable, the whole batch is not pre-processable

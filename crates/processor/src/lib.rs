@@ -2,65 +2,16 @@
 //! This run is sound execution of the module.
 //! This will be most abstract layer of the processor.
 
-use alloy::dyn_abi::DynSolValue;
-use alloy::primitives::{FixedBytes, Keccak256, B256, U256};
-use alloy_merkle_tree::standard_binary_tree::StandardMerkleTree;
 use anyhow::Result;
 use hdp_cairo_runner::cairo_run;
 use hdp_primitives::processed_types::cairo_format::AsCairoFormat;
-use hdp_primitives::processed_types::mmr::MMRMeta;
+use hdp_primitives::processed_types::processor_output::ProcessorOutput;
 use hdp_primitives::processed_types::query::ProcessorInput;
-use serde::Serialize;
 use std::path::PathBuf;
-use tracing::{debug, info};
+use tracing::info;
 
 pub struct Processor {
     program_path: PathBuf,
-}
-
-#[derive(Debug, Serialize)]
-pub struct ProcessorResult {
-    /// raw results of the module
-    pub raw_results: Vec<B256>,
-    /// leaf of result merkle tree
-    pub results_commitments: Vec<B256>,
-    /// leaf of task merkle tree
-    pub tasks_commitments: Vec<B256>,
-    /// tasks inclusion proofs
-    pub task_inclusion_proofs: Vec<Vec<FixedBytes<32>>>,
-    /// results inclusion proofs
-    pub results_inclusion_proofs: Vec<Vec<FixedBytes<32>>>,
-    /// root of the results merkle tree
-    pub results_root: B256,
-    /// root of the tasks merkle tree
-    pub tasks_root: B256,
-    /// mmr metas related to processed tasks
-    pub mmr_metas: Vec<MMRMeta>,
-}
-
-impl ProcessorResult {
-    #[allow(clippy::too_many_arguments)]
-    pub fn new(
-        raw_results: Vec<B256>,
-        results_commitments: Vec<B256>,
-        tasks_commitments: Vec<B256>,
-        task_inclusion_proofs: Vec<Vec<FixedBytes<32>>>,
-        results_inclusion_proofs: Vec<Vec<FixedBytes<32>>>,
-        results_root: B256,
-        tasks_root: B256,
-        mmr_metas: Vec<MMRMeta>,
-    ) -> Self {
-        Self {
-            raw_results,
-            results_commitments,
-            tasks_commitments,
-            task_inclusion_proofs,
-            results_inclusion_proofs,
-            results_root,
-            tasks_root,
-            mmr_metas,
-        }
-    }
 }
 
 impl Processor {
@@ -68,84 +19,18 @@ impl Processor {
         Self { program_path }
     }
 
+    /// Execute process that involves sound-cairo-run.
     pub async fn process(
         &self,
-        requset: ProcessorInput,
-        pie_path: &PathBuf,
-    ) -> Result<ProcessorResult> {
-        // 1. pass the input file to the runner
-        let input_string = serde_json::to_string_pretty(&requset.as_cairo_format())
+        processor_input: ProcessorInput,
+        pie_file_path: &PathBuf,
+    ) -> Result<ProcessorOutput> {
+        let cairo_run_input = serde_json::to_string_pretty(&processor_input.as_cairo_format())
             .expect("Failed to serialize module class");
-        let result = cairo_run(&self.program_path, input_string, pie_path)?;
-        let cairo_run_output = result.cairo_run_output;
-        let tasks_commitments: Vec<B256> = requset
-            .tasks
-            .iter()
-            .map(|task| task.get_task_commitment())
-            .collect();
-        let task_inclusion_proofs: Vec<Vec<B256>> = requset
-            .tasks
-            .iter()
-            .map(|task| task.get_task_proof())
-            .collect();
-        let task_root = requset.tasks_root;
-
-        let (results_tree, result_commitments) = self.build_result_merkle_tree(
-            tasks_commitments.clone(),
-            cairo_run_output.results.clone(),
-        )?;
-        let results_inclusion_proofs: Vec<_> = result_commitments
-            .iter()
-            .map(|rc| results_tree.get_proof(&DynSolValue::FixedBytes(*rc, 32)))
-            .collect();
-        let result_root = results_tree.root();
-        let processor_result = ProcessorResult::new(
-            cairo_run_output
-                .results
-                .iter()
-                .map(|x| B256::from(*x))
-                .collect(),
-            result_commitments,
-            tasks_commitments,
-            task_inclusion_proofs,
-            results_inclusion_proofs,
-            result_root,
-            task_root,
-            requset.proofs.mmr_metas,
-        );
+        let cairo_run_result = cairo_run(&self.program_path, cairo_run_input, pie_file_path)?;
+        let processor_result =
+            processor_input.into_processor_output(cairo_run_result.cairo_run_output.results);
         info!("2️⃣  Processor completed successfully");
         Ok(processor_result)
-    }
-
-    fn build_result_merkle_tree(
-        &self,
-        tasks_commitments: Vec<B256>,
-        task_results: Vec<U256>,
-    ) -> Result<(StandardMerkleTree, Vec<FixedBytes<32>>)> {
-        let mut results_leaves = Vec::new();
-        let mut results_commitments = Vec::new();
-        for (task_commitment, task_result) in tasks_commitments.iter().zip(task_results.iter()) {
-            debug!(
-                "building result merkle tree | task_commitment: {:?}, task_result: {:?}",
-                task_commitment, task_result
-            );
-            let result_commitment =
-                self._raw_result_to_result_commitment(task_commitment, task_result);
-            results_commitments.push(result_commitment);
-            results_leaves.push(DynSolValue::FixedBytes(result_commitment, 32));
-        }
-        let tree = StandardMerkleTree::of(results_leaves);
-        Ok((tree, results_commitments))
-    }
-
-    fn _raw_result_to_result_commitment(
-        &self,
-        task_commitment: &B256,
-        compiled_result: &U256,
-    ) -> B256 {
-        let mut hasher = Keccak256::new();
-        hasher.update(task_commitment);
-        hasher.update(B256::from(*compiled_result));
-        hasher.finalize()
     }
 }

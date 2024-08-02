@@ -16,6 +16,7 @@ serde = { workspace = true }
 anyhow = { workspace = true }
 alloy = { workspace = true }
 alloy-rlp = { workspace = true }
+alloy-merkle-tree = { workspace = true }
 eth-trie-proofs.workspace = true
 rand = { workspace = true }
 starknet-crypto.workspace = true

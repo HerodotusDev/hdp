@@ -3,54 +3,16 @@
 //!
 //! TODO: need to sync with how bootloader will emit the keys
 
-use std::str::FromStr;
+use std::{hash::Hash, str::FromStr};
 
-use alloy::primitives::{Address, BlockNumber, ChainId, StorageKey};
+use alloy::primitives::{Address, BlockNumber, ChainId, Keccak256, StorageKey, B256};
+use hdp_primitives::task::datalake::{
+    block_sampled::BlockSampledCollectionType, transactions::TransactionsCollectionType,
+};
 use serde::{Deserialize, Serialize};
 
-macro_rules! impl_hash_for_provider_key {
-    // Match a struct with an identifier and any number of fields.
-    ($key:ident { $( $field:ident ),* }) => {
-        impl std::hash::Hash for $key {
-            fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-                $( self.$field.hash(state); )*
-            }
-        }
-    };
-}
-
-impl_hash_for_provider_key!(HeaderMemorizerKey {
-    chain_id,
-    block_number
-});
-
-impl_hash_for_provider_key!(AccountMemorizerKey {
-    chain_id,
-    block_number,
-    address
-});
-
-impl_hash_for_provider_key!(StorageMemorizerKey {
-    chain_id,
-    block_number,
-    address,
-    key
-});
-
-impl_hash_for_provider_key!(TxMemorizerKey {
-    chain_id,
-    block_number,
-    tx_index
-});
-
-impl_hash_for_provider_key!(TxReceiptMemorizerKey {
-    chain_id,
-    block_number,
-    tx_index
-});
-
 /// Key for fetching block header from provider.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct HeaderMemorizerKey {
     pub chain_id: ChainId,
     pub block_number: BlockNumber,
@@ -63,10 +25,18 @@ impl HeaderMemorizerKey {
             block_number,
         }
     }
+
+    pub fn hash_key(&self) -> B256 {
+        let mut keccak = Keccak256::new();
+        keccak.update([BlockSampledCollectionType::Header.to_u8()]);
+        keccak.update(self.chain_id.to_be_bytes());
+        keccak.update(self.block_number.to_be_bytes());
+        keccak.finalize()
+    }
 }
 
 /// Key for fetching account from provider.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct AccountMemorizerKey {
     pub chain_id: ChainId,
     pub block_number: BlockNumber,
@@ -81,10 +51,19 @@ impl AccountMemorizerKey {
             address,
         }
     }
+
+    pub fn hash_key(&self) -> B256 {
+        let mut keccak = Keccak256::new();
+        keccak.update([BlockSampledCollectionType::Account.to_u8()]);
+        keccak.update(self.chain_id.to_be_bytes());
+        keccak.update(self.block_number.to_be_bytes());
+        keccak.update(self.address);
+        keccak.finalize()
+    }
 }
 
 /// Key for fetching storage value from provider.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct StorageMemorizerKey {
     pub chain_id: ChainId,
     pub block_number: BlockNumber,
@@ -106,10 +85,20 @@ impl StorageMemorizerKey {
             key,
         }
     }
+
+    pub fn hash_key(&self) -> B256 {
+        let mut keccak = Keccak256::new();
+        keccak.update([BlockSampledCollectionType::Storage.to_u8()]);
+        keccak.update(self.chain_id.to_be_bytes());
+        keccak.update(self.block_number.to_be_bytes());
+        keccak.update(self.address);
+        keccak.update(self.key);
+        keccak.finalize()
+    }
 }
 
 /// Key for fetching transaction from provider.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct TxMemorizerKey {
     pub chain_id: ChainId,
     pub block_number: BlockNumber,
@@ -124,10 +113,19 @@ impl TxMemorizerKey {
             tx_index,
         }
     }
+
+    pub fn hash_key(&self) -> B256 {
+        let mut keccak = Keccak256::new();
+        keccak.update([TransactionsCollectionType::Transactions.to_u8()]);
+        keccak.update(self.chain_id.to_be_bytes());
+        keccak.update(self.block_number.to_be_bytes());
+        keccak.update(self.tx_index.to_be_bytes());
+        keccak.finalize()
+    }
 }
 
 /// Key for fetching transaction receipt from provider.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct TxReceiptMemorizerKey {
     pub chain_id: ChainId,
     pub block_number: BlockNumber,
@@ -141,6 +139,15 @@ impl TxReceiptMemorizerKey {
             block_number,
             tx_index,
         }
+    }
+
+    pub fn hash_key(&self) -> B256 {
+        let mut keccak = Keccak256::new();
+        keccak.update([TransactionsCollectionType::TransactionReceipts.to_u8()]);
+        keccak.update(self.chain_id.to_be_bytes());
+        keccak.update(self.block_number.to_be_bytes());
+        keccak.update(self.tx_index.to_be_bytes());
+        keccak.finalize()
     }
 }
 
@@ -159,7 +166,6 @@ pub enum FetchKeyEnvelope {
     TxReceipt(TxReceiptMemorizerKey),
 }
 
-// TODO: Temporary implemented from string approach, but need to sync with how bootloader will emit the keys
 impl FromStr for FetchKeyEnvelope {
     type Err = anyhow::Error;
 
@@ -211,4 +217,64 @@ impl FetchKeyEnvelope {
             FetchKeyEnvelope::TxReceipt(key) => key.chain_id,
         }
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use alloy::primitives::b256;
+
+    use super::*;
+
+    #[test]
+    fn test_hash_header_key() {
+        let header_key = HeaderMemorizerKey::new(1, 100);
+        let header_key_hash = header_key.hash_key();
+        assert_eq!(
+            header_key_hash,
+            b256!("205342692a0b320915750abf5ad47709ea4c6c10e18802d5981070e47bd6f0c1")
+        )
+    }
+
+    #[test]
+    fn test_hash_account_key() {
+        let account_key = AccountMemorizerKey::new(1, 100, Address::ZERO);
+        let account_key_hash = account_key.hash_key();
+        assert_eq!(
+            account_key_hash,
+            b256!("4298fef03738f1a6d9f77e3d1ad8cf7906a60f4f9ecd63b34cb2a1ac61353e7a")
+        )
+    }
+
+    #[test]
+    fn test_hash_storage_key() {
+        let storage_key = StorageMemorizerKey::new(1, 100, Address::ZERO, B256::ZERO);
+        let storage_key_hash = storage_key.hash_key();
+        assert_eq!(
+            storage_key_hash,
+            b256!("22133ae0a8c6964d0e4fc28659442e311c4a9f6a82f16ea9f103e36a1085c11f")
+        )
+    }
+
+    #[test]
+    fn test_hash_tx_key() {
+        let tx_key = TxMemorizerKey::new(1, 100, 1);
+        let tx_key_hash = tx_key.hash_key();
+        assert_eq!(
+            tx_key_hash,
+            b256!("487ea7bf96eb1280f1075498855b55ec61ba7d354b5260e2504ef51140e0df63")
+        )
+    }
+
+    #[test]
+    fn test_hash_tx_receipt_key() {
+        let tx_receipt = TxReceiptMemorizerKey::new(1, 100, 1);
+        let tx_receipt_hash = tx_receipt.hash_key();
+        assert_eq!(
+            tx_receipt_hash,
+            b256!("beac44bc7092d6c5c2c9ce2d6957c9b962ad4654a65c9b9a9b19a9c278ee5a83")
+        )
+    }
+
+    #[test]
+    fn test_fetch_key_envelop() {}
 }
