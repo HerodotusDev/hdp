@@ -5,7 +5,10 @@ use cairo_lang_starknet_classes::casm_contract_class::{
     CasmContractClass, StarknetSierraCompilationError,
 };
 
-use crate::primitives::task::{module::Module, ExtendedModule};
+use crate::{
+    constant::HERODOTUS_PROGRAM_REGISTRY_URL,
+    primitives::task::{module::Module, ExtendedModule},
+};
 use reqwest::Client;
 use starknet_crypto::FieldElement;
 use std::path::PathBuf;
@@ -135,8 +138,8 @@ impl ModuleRegistry {
         );
 
         let api_url = format!(
-            "http://program-registery.api.herodotus.cloud/get-program?program_hash={}",
-            program_hash_hex
+            "{}={}",
+            HERODOTUS_PROGRAM_REGISTRY_URL, program_hash_hex
         );
 
         let response = self

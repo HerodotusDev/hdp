@@ -235,20 +235,18 @@ fn handle_error(e: RpcError<TransportErrorKind>) -> Option<u64> {
 }
 
 #[cfg(test)]
+#[cfg(feature = "test_utils")]
 mod tests {
     use alloy::primitives::{address, b256, B256, U256};
 
-    use super::*;
+    use crate::provider::evm::provider::EvmProvider;
 
-    // Non-paid personal alchemy endpoint
-    const SEPOLIA_RPC_URL: &str =
-        "https://eth-sepolia.g.alchemy.com/v2/a-w72ZvoUS0dfMD_LBPAuRzHOlQEhi_m";
+    use super::*;
 
     #[tokio::test]
     async fn test_get_100_range_storage_with_proof_by_storage_key() {
         let start_time = Instant::now();
-        let rpc_url = Url::parse(SEPOLIA_RPC_URL).unwrap();
-        let provider = RpcProvider::new(rpc_url, 100);
+        let provider = EvmProvider::default().rpc_provider;
         let block_range_start = 6127485;
         let block_range_end = 6127584;
         let target_block_range = (block_range_start..=block_range_end).collect::<Vec<u64>>();
@@ -271,8 +269,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_100_range_storage_with_proof_by_storage_slot() {
         let start_time = Instant::now();
-        let rpc_url = Url::parse(SEPOLIA_RPC_URL).unwrap();
-        let provider = RpcProvider::new(rpc_url, 100);
+        let provider = EvmProvider::default().rpc_provider;
         let block_range_start = 6127485;
         let block_range_end = 6127584;
         let target_block_range =
@@ -296,8 +293,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_100_range_account_with_proof() {
         let start_time = Instant::now();
-        let rpc_url = Url::parse(SEPOLIA_RPC_URL).unwrap();
-        let provider = RpcProvider::new(rpc_url, 100);
+        let provider = EvmProvider::default().rpc_provider;
         let block_range_start = 6127485;
         let block_range_end = 6127584;
         let target_block_range =

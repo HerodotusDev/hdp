@@ -17,20 +17,19 @@ pub struct EvmProviderConfig {
 
 /// This is optimal max number of requests to send in parallel when using non-paid alchemy rpc url
 #[cfg(feature = "test_utils")]
-pub const DEFAULT_MAX_REQUESTS: u64 = 100;
+pub const TEST_MAX_REQUESTS: u64 = 100;
 #[cfg(feature = "test_utils")]
-const DEFAULT_CHAIN_ID: u64 = 11155111;
+const TEST_CHAIN_ID: u64 = 11155111;
 #[cfg(feature = "test_utils")]
-const DEFAULT_RPC_URL: &str =
-    "https://eth-sepolia.g.alchemy.com/v2/xar76cftwEtqTBWdF4ZFy9n8FLHAETDv";
+const TEST_RPC_URL: &str = "https://eth-sepolia.g.alchemy.com/v2/xar76cftwEtqTBWdF4ZFy9n8FLHAETDv";
 
 #[cfg(feature = "test_utils")]
 impl Default for EvmProviderConfig {
     fn default() -> Self {
         Self {
-            rpc_url: DEFAULT_RPC_URL.parse().unwrap(),
-            chain_id: DEFAULT_CHAIN_ID,
-            max_requests: DEFAULT_MAX_REQUESTS,
+            rpc_url: TEST_RPC_URL.parse().unwrap(),
+            chain_id: TEST_CHAIN_ID,
+            max_requests: TEST_MAX_REQUESTS,
         }
     }
 }
