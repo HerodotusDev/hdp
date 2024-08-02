@@ -105,3 +105,16 @@ impl Runner {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_cairo_run_output() {
+        let cairo_run_output_str = r#"{"tasks_root": "0x25bdd48e6c00a86eef6c08afb935635652d246bdf07f54e3ef7c81c29e763fe2", "results_root": "0xbe7bb3e8d053273c753c752107b0b528a24a03058ae989c1e0a9d920c96da753", "results": ["0x0000000000000000000000000000000000000000000000103557b1b802c24c17"]}"#;
+        let cairo_run_output: CairoRunOutput =
+            serde_json::from_str(cairo_run_output_str).expect("Failed to parse cairo run output");
+        println!("Cairo run output: {:#?}", cairo_run_output);
+    }
+}
