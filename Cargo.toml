@@ -1,14 +1,6 @@
 [workspace]
 resolver = "2"
-members = [
-    "cli",
-    "crates/primitives",
-    "crates/provider",
-    "crates/pre-processor",
-    "crates/processor",
-    "crates/cairo-runner",
-    "crates/hdp",
-]
+members = ["cli", "hdp"]
 
 [workspace.package]
 version = "0.4.0"
@@ -27,11 +19,7 @@ categories = [
 ]
 
 [workspace.dependencies]
-hdp-preprocessor = { path = "crates/pre-processor" }
-hdp-processor = { path = "crates/processor" }
-hdp-primitives = { path = "crates/primitives" }
-hdp-provider = { path = "crates/provider" }
-hdp-cairo-runner = { path = "crates/cairo-runner" }
+hdp = { path = "hdp" }
 tokio = { version = "1", features = ["full"] }
 tempfile = "3.10.1"
 alloy-merkle-tree = { version = "0.6.0" }
@@ -48,7 +36,7 @@ rand = "0.8.4"
 regex = "1"
 starknet = "0.10.0"
 starknet-crypto = "0.6.1"
-cairo-lang-starknet-classes = "2.6.4"
+cairo-lang-starknet-classes = "2.7.0"
 cairo-vm = "1.0.0-rc6"
 futures = "0.3.30"
 lazy_static = "1.4.0"
