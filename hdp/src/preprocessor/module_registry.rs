@@ -90,7 +90,7 @@ impl ModuleRegistry {
         };
 
         let program_hash = casm.compiled_class_hash();
-        let converted_hash = FieldElement::from_bytes_be(&program_hash.to_be_bytes()).unwrap();
+        let converted_hash = FieldElement::from_bytes_be(&program_hash.to_bytes_be()).unwrap();
         info!("Program Hash: {:#?}", converted_hash);
 
         let module = Module {
