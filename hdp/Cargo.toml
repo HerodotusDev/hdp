@@ -1,0 +1,35 @@
+[package]
+name = "hdp"
+description = "All Herodotus Data Processor"
+version.workspace = true
+edition.workspace = true
+license-file.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+exclude.workspace = true
+keywords.workspace = true
+categories.workspace = true
+readme = "../../README.md"
+
+[dependencies]
+anyhow = { workspace = true }
+tempfile = { workspace = true }
+tracing = { workspace = true }
+regex = { workspace = true }
+alloy = { workspace = true }
+alloy-rlp = { workspace = true }
+cairo-lang-starknet-classes = { workspace = true }
+serde = { workspace = true }
+serde_with = { workspace = true }
+serde_json = { workspace = true }
+starknet-crypto = { workspace = true }
+starknet = { workspace = true }
+thiserror.workspace = true
+alloy-merkle-tree = { workspace = true }
+tokio = { workspace = true }
+futures = { workspace = true }
+reqwest = { workspace = true }
+lazy_static = { workspace = true }
+eth-trie-proofs = { workspace = true }
+itertools = { workspace = true }
