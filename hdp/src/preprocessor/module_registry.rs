@@ -137,10 +137,7 @@ impl ModuleRegistry {
             program_hash_hex
         );
 
-        let api_url = format!(
-            "{}={}",
-            HERODOTUS_PROGRAM_REGISTRY_URL, program_hash_hex
-        );
+        let api_url = format!("{}={}", HERODOTUS_PROGRAM_REGISTRY_URL, program_hash_hex);
 
         let response = self
             .client
