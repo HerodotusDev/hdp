@@ -12,10 +12,10 @@
 
 ## Benchmark Results
 
-| Benchmark                            | Time (ms)       | Iterations | Notes          |
-| ------------------------------------ | --------------- | ---------- | -------------- |
-| get_10_header_proofs                 | 1667.7 - 1720.4 | 10         | Block Range 10 |
-| get_10_account_proofs                | 343.19 - 403.63 | 10         | Block Range 10 |
-| get_10_storage_proofs                | 331.28 - 385.67 | 10         | Block Range 10 |
-| get_tx_with_proof_from_block         | 458.63 - 552.80 | 10         | --             |
-| get_tx_receipt_with_proof_from_block | 2090.4 - 2692.8 | 10         | --             |
+| Benchmark                            | Time (ms) | Iterations | Notes          |
+| ------------------------------------ | --------- | ---------- | -------------- |
+| get_10_header_proofs                 | 200.52 ms | 10         | Block Range 10 |
+| get_10_account_proofs                | 243.05 ms | 10         | Block Range 10 |
+| get_10_storage_proofs                | 245.14 ms | 10         | Block Range 10 |
+| get_tx_with_proof_from_block         | 231.62 ms | 10         | --             |
+| get_tx_receipt_with_proof_from_block | 1590.2 ms | 10         | --             |

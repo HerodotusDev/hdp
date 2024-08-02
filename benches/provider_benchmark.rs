@@ -1,7 +1,6 @@
 use alloy::primitives::{address, B256};
 use criterion::{criterion_group, criterion_main, Bencher, Criterion};
-use hdp_provider::evm::provider::EvmProvider; // Adjust this import path according to your project structure
-
+use hdp::provider::evm::provider::EvmProvider;
 use tokio::runtime::Runtime;
 
 fn benchmark_header(b: &mut Bencher) {
