@@ -34,6 +34,10 @@ lazy_static = { workspace = true }
 eth-trie-proofs = { workspace = true }
 itertools = { workspace = true }
 
+[features]
+default = []
+test_utils = []
+
 [dev-dependencies]
 criterion = { version = "0.4", features = [
     "async",
@@ -45,3 +49,4 @@ criterion = { version = "0.4", features = [
 name = "provider_benchmark"
 path = "../benches/provider_benchmark.rs"
 harness = false
+required-features = ["test_utils"]

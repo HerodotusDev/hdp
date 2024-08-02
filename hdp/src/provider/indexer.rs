@@ -1,5 +1,8 @@
-use crate::primitives::block::header::{
-    MMRDataFromNewIndexer, MMRFromNewIndexer, MMRMetaFromNewIndexer, MMRProofFromNewIndexer,
+use crate::{
+    constant::HERODOTUS_RS_INDEXER_URL,
+    primitives::block::header::{
+        MMRDataFromNewIndexer, MMRFromNewIndexer, MMRMetaFromNewIndexer, MMRProofFromNewIndexer,
+    },
 };
 use alloy::primitives::{BlockNumber, ChainId};
 use reqwest::Client;
@@ -7,9 +10,6 @@ use serde_json::{from_value, Value};
 use std::collections::HashMap;
 use thiserror::Error;
 use tracing::error;
-
-pub const HERODOTUS_RS_INDEXER_URL: &str =
-    "https://rs-indexer.api.herodotus.cloud/accumulators/proofs";
 
 /// Error from [`Indexer`]
 #[derive(Error, Debug)]

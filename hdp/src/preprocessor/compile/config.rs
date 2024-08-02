@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
-use crate::primitives::constant::DEFAULT_DRY_CAIRO_RUN_CAIRO_FILE;
+#[cfg(feature = "test_utils")]
+use crate::constant::DEFAULT_DRY_CAIRO_RUN_CAIRO_FILE;
 use crate::provider::evm::config::EvmProviderConfig;
 
 pub struct CompilerConfig {
@@ -21,6 +22,7 @@ impl CompilerConfig {
 }
 
 // Default config for the compiler only for testing
+#[cfg(feature = "test_utils")]
 impl Default for CompilerConfig {
     fn default() -> Self {
         let default_provider_config = EvmProviderConfig::default();

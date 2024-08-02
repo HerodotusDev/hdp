@@ -1,6 +1,5 @@
 pub mod aggregate_fn;
 pub mod block;
-pub mod constant;
 pub mod merkle_tree;
 pub mod processed_types;
 pub mod serde;

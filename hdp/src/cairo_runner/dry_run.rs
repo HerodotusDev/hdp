@@ -1,4 +1,4 @@
-use crate::primitives::constant::DRY_CAIRO_RUN_OUTPUT_FILE;
+use crate::constant::DRY_CAIRO_RUN_OUTPUT_FILE;
 use crate::primitives::processed_types::uint256::Uint256;
 use crate::provider::key::FetchKeyEnvelope;
 use serde::{Deserialize, Serialize};

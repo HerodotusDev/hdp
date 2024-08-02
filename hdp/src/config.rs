@@ -1,6 +1,4 @@
-use crate::primitives::constant::{
-    DEFAULT_DRY_CAIRO_RUN_CAIRO_FILE, DEFAULT_SOUND_CAIRO_RUN_CAIRO_FILE,
-};
+use crate::constant::{DEFAULT_DRY_CAIRO_RUN_CAIRO_FILE, DEFAULT_SOUND_CAIRO_RUN_CAIRO_FILE};
 use crate::provider::evm::config::EvmProviderConfig;
 use alloy::{primitives::ChainId, transports::http::reqwest::Url};
 

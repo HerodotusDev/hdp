@@ -1,11 +1,5 @@
 use reqwest::Url;
 
-/// This is optimal max number of requests to send in parallel when using non-paid alchemy rpc url
-pub const DEFAULT_MAX_REQUESTS: u64 = 100;
-const DEFAULT_CHAIN_ID: u64 = 11155111;
-const DEFAULT_RPC_URL: &str =
-    "https://eth-sepolia.g.alchemy.com/v2/xar76cftwEtqTBWdF4ZFy9n8FLHAETDv";
-
 /// EVM provider configuration
 #[derive(Clone, Debug)]
 pub struct EvmProviderConfig {
@@ -21,6 +15,16 @@ pub struct EvmProviderConfig {
     pub max_requests: u64,
 }
 
+/// This is optimal max number of requests to send in parallel when using non-paid alchemy rpc url
+#[cfg(feature = "test_utils")]
+pub const DEFAULT_MAX_REQUESTS: u64 = 100;
+#[cfg(feature = "test_utils")]
+const DEFAULT_CHAIN_ID: u64 = 11155111;
+#[cfg(feature = "test_utils")]
+const DEFAULT_RPC_URL: &str =
+    "https://eth-sepolia.g.alchemy.com/v2/xar76cftwEtqTBWdF4ZFy9n8FLHAETDv";
+
+#[cfg(feature = "test_utils")]
 impl Default for EvmProviderConfig {
     fn default() -> Self {
         Self {

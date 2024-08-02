@@ -74,6 +74,7 @@ pub struct EvmProvider {
     pub(crate) tx_provider_url: Url,
 }
 
+#[cfg(feature = "test_utils")]
 impl Default for EvmProvider {
     fn default() -> Self {
         Self::new(EvmProviderConfig::default())
@@ -407,12 +408,15 @@ impl EvmProvider {
 }
 
 #[cfg(test)]
+#[cfg(feature = "test_utils")]
 mod tests {
     use super::*;
-    use alloy::primitives::{address, B256};
+    use alloy::primitives::address;
+    use alloy::primitives::B256;
 
     #[ignore = "too many requests, recommend to run locally"]
     #[tokio::test]
+    #[cfg(feature = "test_utils")]
     async fn test_get_2000_range_of_account_proofs() -> Result<(), ProviderError> {
         let start_time = Instant::now();
         let provider = EvmProvider::default();
@@ -430,6 +434,7 @@ mod tests {
 
     #[ignore = "too many requests, recommend to run locally"]
     #[tokio::test]
+    #[cfg(feature = "test_utils")]
     async fn test_get_2000_range_of_storage_proofs() -> Result<(), ProviderError> {
         let start_time = Instant::now();
         let provider = EvmProvider::default();
@@ -447,6 +452,7 @@ mod tests {
 
     #[ignore = "too many requests, recommend to run locally"]
     #[tokio::test]
+    #[cfg(feature = "test_utils")]
     async fn test_get_2000_range_of_header_proofs() -> Result<(), ProviderError> {
         let start_time = Instant::now();
         let provider = EvmProvider::default();
@@ -461,6 +467,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg(feature = "test_utils")]
     async fn test_get_parallel_4_all_tx_with_proof_from_block() {
         let provider = EvmProvider::default();
 
@@ -513,6 +520,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg(feature = "test_utils")]
     async fn test_get_parallel_4_all_tx_receipt_with_proof_from_block() {
         let provider = EvmProvider::default();
         let task1 = {
@@ -565,6 +573,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg(feature = "test_utils")]
     async fn test_error_get_tx_with_proof_from_block() {
         let provider = EvmProvider::default();
         let response = provider
@@ -578,6 +587,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg(feature = "test_utils")]
     async fn test_error_get_tx_receipt_with_proof_from_block() {
         let provider = EvmProvider::default();
         let response = provider

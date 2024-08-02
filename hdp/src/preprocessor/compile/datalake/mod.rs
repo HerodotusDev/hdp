@@ -72,6 +72,7 @@ impl Compilable for DatalakeComputeVec {
 }
 
 #[cfg(test)]
+#[cfg(feature = "test_utils")]
 mod tests {
     use std::path::PathBuf;
 

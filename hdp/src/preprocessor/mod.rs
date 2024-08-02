@@ -1,7 +1,7 @@
 //!  Preprocessor is reponsible for identifying the required values.
 //!  This will be most abstract layer of the preprocessor.
 
-use crate::primitives::constant::SOUND_CAIRO_RUN_OUTPUT_FILE;
+use crate::constant::SOUND_CAIRO_RUN_OUTPUT_FILE;
 use crate::primitives::merkle_tree::{build_result_merkle_tree, build_task_merkle_tree};
 use crate::primitives::processed_types::block_proofs::ProcessedBlockProofs;
 use crate::primitives::processed_types::datalake_compute::ProcessedDatalakeCompute;

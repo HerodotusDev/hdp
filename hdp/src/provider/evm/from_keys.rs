@@ -431,6 +431,7 @@ impl EvmProvider {
 }
 
 #[cfg(test)]
+#[cfg(feature = "test_utils")]
 mod tests {
     use super::*;
     use crate::provider::evm::provider::EvmProvider;
@@ -438,6 +439,7 @@ mod tests {
     use alloy::primitives::address;
 
     #[tokio::test]
+    #[cfg(feature = "test_utils")]
     async fn test_get_proofs_from_header_keys() {
         let target_chain_id = 11155111;
         let provider = EvmProvider::default();
@@ -453,6 +455,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg(feature = "test_utils")]
     async fn test_get_proofs_from_accounts_keys() {
         let target_chain_id = 11155111;
         let provider = EvmProvider::default();
@@ -478,6 +481,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg(feature = "test_utils")]
     async fn test_proofs_from_storage_keys() {
         let start_fetch = Instant::now();
         let target_chain_id = 11155111;
@@ -533,6 +537,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg(feature = "test_utils")]
     async fn test_get_proofs_from_tx_keys() {
         let target_chain_id = 11155111;
         let provider = EvmProvider::default();
