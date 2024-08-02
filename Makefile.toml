@@ -20,7 +20,7 @@ description = "Run clippy to catch common mistakes and improve your Rust code."
 [tasks.test]
 workspace = false
 command = "cargo"
-args = ["llvm-cov", "nextest"]
+args = ["llvm-cov", "nextest", "--features", "test_utils"]
 description = "Execute all unit tests in the workspace."
 
 [tasks.run-ci-flow]
