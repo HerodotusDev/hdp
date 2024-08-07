@@ -3356,8 +3356,8 @@ dependencies = [
 name = "private-input"
 version = "0.4.0"
 dependencies = [
- "alloy",
  "hdp",
+ "serde_json",
  "tokio",
 ]
 

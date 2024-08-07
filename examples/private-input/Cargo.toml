@@ -11,6 +11,6 @@ keywords.workspace = true
 categories.workspace = true
 
 [dependencies]
-hdp = { workspace = true }
-alloy = { workspace = true }
+hdp = { workspace = true, features = ["test_utils"] }
 tokio = { workspace = true }
+serde_json = { workspace = true }
