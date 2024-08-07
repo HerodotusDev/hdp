@@ -9,7 +9,7 @@ license-file = "LICENSE"
 authors = ["Pia <pia@herodotus.dev>"]
 repository = "https://github.com/HerodotusDev/hdp"
 homepage = "https://herodotus.dev/"
-exclude = ["benches/", "tests/", "fixtures/", "examples/"]
+exclude = ["benches/", "fixtures/", "examples/"]
 keywords = ["blockchain", "ethereum", "rust", "data-processor", "storage-proof"]
 categories = [
     "command-line-interface",
