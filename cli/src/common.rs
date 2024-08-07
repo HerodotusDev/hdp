@@ -1,6 +1,5 @@
 use alloy::{primitives::ChainId, transports::http::reqwest::Url};
 use anyhow::Result;
-use hdp::config::HdpRunConfig;
 use hdp::hdp_run;
 use hdp::preprocessor::module_registry::ModuleRegistry;
 use hdp::primitives::{
@@ -138,7 +137,7 @@ pub async fn module_entry_run(
     output_file: Option<PathBuf>,
     cairo_pie_file: Option<PathBuf>,
 ) -> Result<()> {
-    let config = HdpRunConfig::init(
+    let config = hdp_run::HdpRunConfig::init(
         rpc_url,
         chain_id,
         dry_run_cairo_file,
@@ -154,7 +153,7 @@ pub async fn module_entry_run(
     let tasks = vec![TaskEnvelope::Module(module)];
 
     hdp_run(
-        config,
+        &config,
         tasks,
         preprocessor_output_file,
         output_file,
@@ -175,7 +174,8 @@ pub async fn datalake_entry_run(
     output_file: Option<PathBuf>,
     cairo_pie_file: Option<PathBuf>,
 ) -> Result<()> {
-    let config = HdpRunConfig::init(rpc_url, chain_id, None, sound_run_cairo_file, None).await;
+    let config =
+        hdp_run::HdpRunConfig::init(rpc_url, chain_id, None, sound_run_cairo_file, None).await;
     let parsed_datalake = match datalake {
         DataLakeCommands::BlockSampled {
             block_range_start,
@@ -212,7 +212,7 @@ pub async fn datalake_entry_run(
     ))];
 
     hdp_run(
-        config,
+        &config,
         tasks,
         pre_processor_output,
         output_file,
@@ -235,7 +235,7 @@ pub async fn entry_run(
         fs::read_to_string(request_file).expect("No request file exist in the path");
     let parsed: SubmitBatchQuery = serde_json::from_str(&request_context)
         .expect("Invalid format of request. Cannot parse it.");
-    let config = HdpRunConfig::init(
+    let config = hdp_run::HdpRunConfig::init(
         rpc_url,
         Some(parsed.destination_chain_id),
         dry_run_cairo_file,
@@ -263,7 +263,7 @@ pub async fn entry_run(
         }
     }
     hdp_run(
-        config,
+        &config,
         task_envelopes,
         Some(pre_processor_output_file),
         output_file,

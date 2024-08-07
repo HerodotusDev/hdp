@@ -1,6 +1,5 @@
 use alloy::{primitives::U256, transports::http::reqwest::Url};
 use anyhow::bail;
-use hdp::config::HdpRunConfig;
 use hdp::hdp_run;
 use hdp::preprocessor::module_registry::ModuleRegistry;
 use hdp::primitives::{
@@ -348,7 +347,7 @@ pub async fn run_interactive() -> anyhow::Result<()> {
             },
             Err(_) => None,
         };
-        let config = HdpRunConfig::init(rpc_url, chain_id, None, None, None).await;
+        let config = hdp_run::HdpRunConfig::init(rpc_url, chain_id, None, None, None).await;
         let output_file: PathBuf = inquire::Text::new("Enter Output file path: ")
             .with_default("output.json")
             .prompt()?
@@ -363,7 +362,7 @@ pub async fn run_interactive() -> anyhow::Result<()> {
             .into();
 
         hdp_run(
-            config,
+            &config,
             tasks,
             Some(output_file),
             Some(cairo_input),
