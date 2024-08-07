@@ -34,8 +34,11 @@ pub struct ModuleInput {
 }
 
 impl ModuleInput {
-    pub fn new(visibility: Visibility, value: FieldElement) -> Self {
-        Self { visibility, value }
+    pub fn new(visibility: Visibility, value: &str) -> Self {
+        Self {
+            visibility,
+            value: FieldElement::from_hex_be(value).unwrap(),
+        }
     }
 }
 
@@ -54,9 +57,7 @@ impl FromStr for ModuleInput {
             _ => return Err("Unknown visibility"),
         };
 
-        let value = FieldElement::from_str(parts[1]).map_err(|_| "Invalid field element")?;
-
-        Ok(ModuleInput::new(visibility, value))
+        Ok(ModuleInput::new(visibility, parts[1]))
     }
 }
 

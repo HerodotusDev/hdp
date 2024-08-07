@@ -46,18 +46,11 @@ mod tests {
             )
             .unwrap(),
             inputs: vec![
+                ModuleInput::new(Visibility::Public, "0x4F21E5"),
+                ModuleInput::new(Visibility::Public, "0x4F21E8"),
                 ModuleInput::new(
                     Visibility::Public,
-                    FieldElement::from_hex_be("0x4F21E5").unwrap(),
-                ),
-                ModuleInput::new(
-                    Visibility::Public,
-                    FieldElement::from_hex_be("0x4F21E8").unwrap(),
-                ),
-                ModuleInput::new(
-                    Visibility::Public,
-                    FieldElement::from_hex_be("0x13cb6ae34a13a0977f4d7101ebc24b87bb23f0d5")
-                        .unwrap(),
+                    "0x13cb6ae34a13a0977f4d7101ebc24b87bb23f0d5",
                 ),
             ],
             local_class_path: None,
