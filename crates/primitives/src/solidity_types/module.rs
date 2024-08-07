@@ -6,11 +6,13 @@ use alloy::{
 use crate::{task::module::Module, utils::felt_to_bytes32};
 
 impl Module {
+    /// Encoding scheme is as follows:
+    /// abi.encodePacked(class_hash, module_public_inputs)
     pub fn encode_task(&self) -> Vec<u8> {
         let class_hash: DynSolValue =
             DynSolValue::FixedBytes(felt_to_bytes32(self.program_hash), 32);
         let module_inputs: DynSolValue = DynSolValue::FixedArray(
-            self.inputs
+            self.get_public_inputs()
                 .iter()
                 .map(|input| DynSolValue::FixedBytes(felt_to_bytes32(*input), 32))
                 .collect(),
@@ -34,6 +36,8 @@ mod tests {
     use starknet_crypto::FieldElement;
     use std::str::FromStr;
 
+    use crate::task::module::{ModuleInput, Visibility};
+
     use super::*;
 
     #[test]
@@ -44,9 +48,19 @@ mod tests {
             )
             .unwrap(),
             inputs: vec![
-                FieldElement::from_hex_be("0x4F21E5").unwrap(),
-                FieldElement::from_hex_be("0x4F21E8").unwrap(),
-                FieldElement::from_hex_be("0x13cb6ae34a13a0977f4d7101ebc24b87bb23f0d5").unwrap(),
+                ModuleInput::new(
+                    Visibility::Public,
+                    FieldElement::from_hex_be("0x4F21E5").unwrap(),
+                ),
+                ModuleInput::new(
+                    Visibility::Public,
+                    FieldElement::from_hex_be("0x4F21E8").unwrap(),
+                ),
+                ModuleInput::new(
+                    Visibility::Public,
+                    FieldElement::from_hex_be("0x13cb6ae34a13a0977f4d7101ebc24b87bb23f0d5")
+                        .unwrap(),
+                ),
             ],
             local_class_path: None,
         };

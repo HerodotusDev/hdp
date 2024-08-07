@@ -15,7 +15,6 @@ pub struct Module {
     /// Note that this program_hash is pure cairo program hash
     #[serde_as(as = "UfeHex")]
     pub program_hash: FieldElement,
-    #[serde_as(as = "Vec<UfeHex>")]
     pub inputs: Vec<ModuleInput>,
     pub local_class_path: Option<PathBuf>,
 }
@@ -30,31 +29,37 @@ pub enum Visibility {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct ModuleInput {
     pub visibility: Visibility,
-    #[serde_as(as = "Vec<UfeHex>")]
+    #[serde_as(as = "UfeHex")]
     pub value: FieldElement,
 }
 
-impl Module {
-    pub fn new_from_string(
-        class_hash: String,
-        inputs: Vec<String>,
-        local_class_path: Option<PathBuf>,
-    ) -> Result<Self, FromStrError> {
-        let program_hash = FieldElement::from_hex_be(&class_hash)?;
-        let inputs = inputs
-            .iter()
-            .map(|x| FieldElement::from_hex_be(x))
-            .collect::<Result<Vec<_>, _>>()?;
-        Ok(Self {
-            program_hash,
-            inputs,
-            local_class_path,
-        })
+impl ModuleInput {
+    pub fn new(visibility: Visibility, value: FieldElement) -> Self {
+        Self { visibility, value }
     }
+}
+
+impl Module {
+    // pub fn new_from_string(
+    //     class_hash: String,
+    //     inputs: Vec<String>,
+    //     local_class_path: Option<PathBuf>,
+    // ) -> Result<Self, FromStrError> {
+    //     let program_hash = FieldElement::from_hex_be(&class_hash)?;
+    //     let inputs = inputs
+    //         .iter()
+    //         .map(|x| FieldElement::from_hex_be(x))
+    //         .collect::<Result<Vec<_>, _>>()?;
+    //     Ok(Self {
+    //         program_hash,
+    //         inputs,
+    //         local_class_path,
+    //     })
+    // }
 
     pub fn new(
         program_hash: FieldElement,
-        inputs: Vec<FieldElement>,
+        inputs: Vec<ModuleInput>,
         local_class_path: Option<PathBuf>,
     ) -> Self {
         Self {
@@ -68,7 +73,16 @@ impl Module {
         self.program_hash
     }
 
-    pub fn get_module_inputs(&self) -> Vec<FieldElement> {
+    pub fn get_module_inputs(&self) -> Vec<ModuleInput> {
         self.inputs.clone()
+    }
+
+    /// Collect all the public inputs
+    pub fn get_public_inputs(&self) -> Vec<FieldElement> {
+        self.inputs
+            .iter()
+            .filter(|x| x.visibility == Visibility::Public)
+            .map(|x| x.value)
+            .collect()
     }
 }
