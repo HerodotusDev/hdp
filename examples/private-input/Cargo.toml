@@ -1,16 +1,9 @@
 [package]
 name = "private-input"
-version.workspace = true
-edition.workspace = true
-license-file.workspace = true
-authors.workspace = true
-repository.workspace = true
-homepage.workspace = true
-exclude.workspace = true
-keywords.workspace = true
-categories.workspace = true
+version = "0.1.0"
+edition = "2021"
 
 [dependencies]
-hdp = { workspace = true }
+hdp = { path = "hdp" }
 alloy = { workspace = true }
 tokio = { workspace = true }
