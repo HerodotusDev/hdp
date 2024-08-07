@@ -1,4 +1,6 @@
-use crate::primitives::processed_types::module::ProcessedModule as BaseProcessedModule;
+use crate::primitives::{
+    processed_types::module::ProcessedModule as BaseProcessedModule, task::module::ModuleInput,
+};
 use cairo_lang_starknet_classes::casm_contract_class::CasmContractClass;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
@@ -29,18 +31,16 @@ impl BaseProcessedModule {
     }
 }
 
-#[serde_as]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DryRunProcessedModule {
-    #[serde_as(as = "Vec<UfeHex>")]
-    pub inputs: Vec<FieldElement>,
+    pub inputs: Vec<ModuleInput>,
     /// Detail class code of the module.
     /// This will be loaded to bootloader.
     pub module_class: CasmContractClass,
 }
 
 impl DryRunProcessedModule {
-    pub fn new(inputs: Vec<FieldElement>, module_class: CasmContractClass) -> Self {
+    pub fn new(inputs: Vec<ModuleInput>, module_class: CasmContractClass) -> Self {
         Self {
             inputs,
             module_class,

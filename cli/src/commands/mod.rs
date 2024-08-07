@@ -23,16 +23,17 @@ pub struct HDPCli {
 #[derive(Debug, Subcommand)]
 pub enum HDPCliCommands {
     /// New to the HDP CLI? Start here!
+    #[command(name = "start")]
     Start,
     /// Run single datalake compute
-    #[command(arg_required_else_help = true)]
+    #[command(name = "run-datalake", arg_required_else_help = true)]
     RunDatalake(RunDatalakeArgs),
 
-    /// Run single module with either class hash deployed on starknet or local class path
-    #[command(arg_required_else_help = true)]
+    /// Run single module with either program hash or local class path
+    #[command(name = "run-module", arg_required_else_help = true)]
     RunModule(RunModuleArgs),
     /// Run batch of tasks base on request json file
-    #[command(arg_required_else_help = true)]
+    #[command(name = "run", arg_required_else_help = true)]
     Run(RunArgs),
 }
 

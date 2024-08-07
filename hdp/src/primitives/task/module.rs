@@ -4,9 +4,9 @@
 
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
-use starknet::core::{serde::unsigned_field_element::UfeHex, types::FromStrError};
+use starknet::core::serde::unsigned_field_element::UfeHex;
 use starknet_crypto::FieldElement;
-use std::path::PathBuf;
+use std::{path::PathBuf, str::FromStr};
 
 #[serde_as]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
@@ -15,32 +15,55 @@ pub struct Module {
     /// Note that this program_hash is pure cairo program hash
     #[serde_as(as = "UfeHex")]
     pub program_hash: FieldElement,
-    #[serde_as(as = "Vec<UfeHex>")]
-    pub inputs: Vec<FieldElement>,
+    pub inputs: Vec<ModuleInput>,
     pub local_class_path: Option<PathBuf>,
+}
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum Visibility {
+    Public,
+    Private,
+}
+
+#[serde_as]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+pub struct ModuleInput {
+    pub visibility: Visibility,
+    #[serde_as(as = "UfeHex")]
+    pub value: FieldElement,
+}
+
+impl ModuleInput {
+    pub fn new(visibility: Visibility, value: FieldElement) -> Self {
+        Self { visibility, value }
+    }
+}
+
+impl FromStr for ModuleInput {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let parts: Vec<&str> = s.split('.').collect();
+        if parts.len() != 2 {
+            return Err("Invalid input format");
+        }
+
+        let visibility = match parts[0] {
+            "public" => Visibility::Public,
+            "private" => Visibility::Private,
+            _ => return Err("Unknown visibility"),
+        };
+
+        let value = FieldElement::from_str(parts[1]).map_err(|_| "Invalid field element")?;
+
+        Ok(ModuleInput::new(visibility, value))
+    }
 }
 
 impl Module {
-    pub fn new_from_string(
-        class_hash: String,
-        inputs: Vec<String>,
-        local_class_path: Option<PathBuf>,
-    ) -> Result<Self, FromStrError> {
-        let program_hash = FieldElement::from_hex_be(&class_hash)?;
-        let inputs = inputs
-            .iter()
-            .map(|x| FieldElement::from_hex_be(x))
-            .collect::<Result<Vec<_>, _>>()?;
-        Ok(Self {
-            program_hash,
-            inputs,
-            local_class_path,
-        })
-    }
-
     pub fn new(
         program_hash: FieldElement,
-        inputs: Vec<FieldElement>,
+        inputs: Vec<ModuleInput>,
         local_class_path: Option<PathBuf>,
     ) -> Self {
         Self {
@@ -54,7 +77,16 @@ impl Module {
         self.program_hash
     }
 
-    pub fn get_module_inputs(&self) -> Vec<FieldElement> {
+    pub fn get_module_inputs(&self) -> Vec<ModuleInput> {
         self.inputs.clone()
+    }
+
+    /// Collect all the public inputs
+    pub fn get_public_inputs(&self) -> Vec<FieldElement> {
+        self.inputs
+            .iter()
+            .filter(|x| x.visibility == Visibility::Public)
+            .map(|x| x.value)
+            .collect()
     }
 }
