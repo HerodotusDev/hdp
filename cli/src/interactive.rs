@@ -1,6 +1,7 @@
 use alloy::{primitives::U256, transports::http::reqwest::Url};
 use anyhow::bail;
 use hdp::config::HdpRunConfig;
+use hdp::hdp_run;
 use hdp::preprocessor::module_registry::ModuleRegistry;
 use hdp::primitives::{
     aggregate_fn::{integer::Operator, FunctionContext},
@@ -25,8 +26,6 @@ use hdp::primitives::{
 use inquire::{InquireError, Select};
 use std::{path::PathBuf, str::FromStr};
 use tracing::error;
-
-use crate::common::handle_running_tasks;
 
 pub async fn run_interactive() -> anyhow::Result<()> {
     println!("Welcome to Herodotus Data Processor interactive CLI! 🛰️");
@@ -363,7 +362,7 @@ pub async fn run_interactive() -> anyhow::Result<()> {
             .prompt()?
             .into();
 
-        handle_running_tasks(
+        hdp_run(
             config,
             tasks,
             Some(output_file),
