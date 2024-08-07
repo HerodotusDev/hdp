@@ -16,8 +16,22 @@ pub struct Module {
     #[serde_as(as = "UfeHex")]
     pub program_hash: FieldElement,
     #[serde_as(as = "Vec<UfeHex>")]
-    pub inputs: Vec<FieldElement>,
+    pub inputs: Vec<ModuleInput>,
     pub local_class_path: Option<PathBuf>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+pub enum Visibility {
+    Public,
+    Private,
+}
+
+#[serde_as]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+pub struct ModuleInput {
+    pub visibility: Visibility,
+    #[serde_as(as = "Vec<UfeHex>")]
+    pub value: FieldElement,
 }
 
 impl Module {
