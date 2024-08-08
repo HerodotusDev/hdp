@@ -19,10 +19,7 @@ impl Compilable for DatalakeCompute {
         let fn_context = &self.compute.aggregate_fn_ctx;
         let provider = EvmProvider::new(compile_config.provider_config.clone());
         let compiled_block_sampled = self.datalake.fetch(provider).await?;
-        debug!(
-            "Target aggregated values : {:#?}",
-            compiled_block_sampled.values
-        );
+        debug!("values to aggregate : {:#?}", compiled_block_sampled.values);
         let aggregated_result =
             aggregation_fn.operation(&compiled_block_sampled.values, Some(fn_context.clone()))?;
         Ok(CompilationResult::new(

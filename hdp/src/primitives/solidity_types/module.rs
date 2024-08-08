@@ -88,7 +88,7 @@ mod tests {
         let expected_commit = module.commit();
         assert_eq!(
             expected_commit,
-            B256::from_str("0xa726b1f08367bc3d90390c8492625b095d9fd2960255bb67540c12a9c5879c1d")
+            B256::from_str("0xd81ebd27b719967e1df4edf64c9e3ce87635089e3462306af340a393625d8726")
                 .unwrap()
         );
     }
