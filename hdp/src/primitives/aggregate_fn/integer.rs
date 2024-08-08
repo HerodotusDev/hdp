@@ -12,10 +12,7 @@ pub fn average(values: &[U256]) -> Result<U256> {
         bail!("No values found");
     }
 
-    let sum = values
-        .iter()
-        .try_fold(U256::from(0), |acc, val| acc.checked_add(*val))
-        .unwrap();
+    let sum = sum(values).unwrap();
 
     divide(sum, U256::from(values.len()))
 }

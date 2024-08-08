@@ -2,6 +2,7 @@ use alloy::primitives::U256;
 use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
+use tracing::debug;
 
 use self::integer::Operator;
 
@@ -136,6 +137,7 @@ impl AggregationFunction {
     }
 
     pub fn operation(&self, values: &[U256], ctx: Option<FunctionContext>) -> Result<U256> {
+        debug!("Values to aggregate: {:?}", values);
         match self {
             // Aggregation functions for integer values
             AggregationFunction::AVG => integer::average(values),
