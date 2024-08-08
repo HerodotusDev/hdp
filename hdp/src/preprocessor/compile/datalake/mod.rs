@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use crate::preprocessor::compile::datalake::fetchable::Fetchable;
 use crate::primitives::task::datalake::DatalakeCompute;
 use crate::provider::evm::provider::EvmProvider;
@@ -28,8 +26,8 @@ impl Compilable for DatalakeCompute {
             compiled_block_sampled.headers,
             compiled_block_sampled.accounts,
             compiled_block_sampled.storages,
-            HashSet::new(),
-            HashSet::new(),
+            compiled_block_sampled.transactions,
+            compiled_block_sampled.transaction_receipts,
             compiled_block_sampled.mmr_metas,
         ))
     }
