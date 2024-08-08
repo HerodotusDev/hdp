@@ -25,28 +25,21 @@ async fn main() {
         )
         .await
         .unwrap();
-
     let tasks = vec![TaskEnvelope::Module(module)];
-
-    let hdp_run_config = HdpRunConfig {
-        dry_run_program_path: "./build/contract_dry_run.json".into(),
-        sound_run_program_path: "./build/hdp.json".into(),
-        ..Default::default()
-    };
-
     let pre_processor_output_file = "input.json";
     let output_file = "output.json";
     let cairo_pie_file = "pie.zip";
 
-    hdp_run::hdp_run(
-        &hdp_run_config,
-        tasks,
-        Some(pre_processor_output_file.into()),
-        Some(output_file.into()),
-        Some(cairo_pie_file.into()),
-    )
-    .await
-    .unwrap();
+    let hdp_run_config = HdpRunConfig {
+        dry_run_program_path: "./build/contract_dry_run.json".into(),
+        sound_run_program_path: "./build/hdp.json".into(),
+        pre_processor_output_file: pre_processor_output_file.into(),
+        processor_output_file: Some(output_file.into()),
+        cairo_pie_file: Some(cairo_pie_file.into()),
+        ..Default::default()
+    };
+
+    hdp_run::hdp_run(&hdp_run_config, tasks).await.unwrap();
     // // 3. prover -> verify ( sharp warpper )
     // let sharp_wrapper = SharpWrapper::new();
     // sharp_wrapper.prove(cairo_pie, Verifier::Solidity).await?;

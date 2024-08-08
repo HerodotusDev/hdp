@@ -1,11 +1,9 @@
 use std::{env, fs};
 
 use crate::commands::run::RunArgs;
+use crate::commands::run_datalake::DataLakeCommands;
 use crate::{
-    commands::{
-        run_datalake::RunDatalakeArgs, run_module::RunModuleArgs, DataLakeCommands, HDPCli,
-        HDPCliCommands,
-    },
+    commands::{run_datalake::RunDatalakeArgs, run_module::RunModuleArgs, HDPCli, HDPCliCommands},
     interactive,
 };
 use anyhow::Result;
@@ -64,11 +62,13 @@ pub async fn module_entry_run(args: RunModuleArgs) -> Result<()> {
     let config = hdp_run::HdpRunConfig::init(
         args.rpc_url,
         args.chain_id,
-        args.dry_run_cairo_file,
+        Some(args.dry_run_cairo_file),
         args.sound_run_cairo_file,
+        args.preprocessor_output_file,
         args.save_fetch_keys_file,
-    )
-    .await;
+        args.output_file,
+        args.cairo_pie_file,
+    );
     let module_registry = ModuleRegistry::new();
     let module = module_registry
         .get_extended_module_from_class_source_string(
@@ -80,14 +80,7 @@ pub async fn module_entry_run(args: RunModuleArgs) -> Result<()> {
     // TODO: for now, we only support one task if its a module
     let tasks = vec![TaskEnvelope::Module(module)];
 
-    hdp_run(
-        &config,
-        tasks,
-        args.preprocessor_output_file,
-        args.output_file,
-        args.cairo_pie_file,
-    )
-    .await?;
+    hdp_run(&config, tasks).await?;
     Ok(())
 }
 
@@ -97,9 +90,11 @@ pub async fn datalake_entry_run(args: RunDatalakeArgs) -> Result<()> {
         args.chain_id,
         None,
         args.sound_run_cairo_file,
+        args.preprocessor_output_file,
         None,
-    )
-    .await;
+        args.output_file,
+        args.cairo_pie_file,
+    );
     let parsed_datalake = match args.datalake {
         DataLakeCommands::BlockSampled {
             block_range_start,
@@ -135,14 +130,7 @@ pub async fn datalake_entry_run(args: RunDatalakeArgs) -> Result<()> {
         Computation::new(args.aggregate_fn_id, args.aggregate_fn_ctx),
     ))];
 
-    hdp_run(
-        &config,
-        tasks,
-        args.preprocessor_output_file,
-        args.output_file,
-        args.cairo_pie_file,
-    )
-    .await?;
+    hdp_run(&config, tasks).await?;
     Ok(())
 }
 
@@ -156,9 +144,11 @@ pub async fn entry_run(args: RunArgs) -> Result<()> {
         Some(parsed.destination_chain_id),
         args.dry_run_cairo_file,
         args.sound_run_cairo_file,
+        args.preprocessor_output_file,
         None,
-    )
-    .await;
+        args.output_file,
+        args.cairo_pie_file,
+    );
     let module_registry = ModuleRegistry::new();
     let mut task_envelopes = Vec::new();
     for task in parsed.tasks {
@@ -178,13 +168,6 @@ pub async fn entry_run(args: RunArgs) -> Result<()> {
             }
         }
     }
-    hdp_run(
-        &config,
-        task_envelopes,
-        Some(args.preprocessor_output_file),
-        args.output_file,
-        args.cairo_pie_file,
-    )
-    .await?;
+    hdp_run(&config, task_envelopes).await?;
     Ok(())
 }

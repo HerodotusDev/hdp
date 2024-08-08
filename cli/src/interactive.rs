@@ -347,7 +347,7 @@ pub async fn run_interactive() -> anyhow::Result<()> {
             },
             Err(_) => None,
         };
-        let config = hdp_run::HdpRunConfig::init(rpc_url, chain_id, None, None, None).await;
+
         let output_file: PathBuf = inquire::Text::new("Enter Output file path: ")
             .with_default("output.json")
             .prompt()?
@@ -360,15 +360,18 @@ pub async fn run_interactive() -> anyhow::Result<()> {
             .with_default("hdp_pie.zip")
             .prompt()?
             .into();
-
-        hdp_run(
-            &config,
-            tasks,
+        let config = hdp_run::HdpRunConfig::init(
+            rpc_url,
+            chain_id,
+            None,
+            None,
+            cairo_input,
+            None,
             Some(output_file),
-            Some(cairo_input),
             Some(pie_file),
-        )
-        .await?
+        );
+
+        hdp_run(&config, tasks).await?
     }
     Ok(())
 }
