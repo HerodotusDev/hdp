@@ -2,18 +2,18 @@
   "destinationChainId": 11155111,
   "tasks": [
     {
-      "type": "Module",
-      "programHash": "0x64041a339b1edd10de83cf031cfa938645450f971d2527c90d4c2ce68d7d412",
-      "inputs": [
-        {
-          "visibility": "private",
-          "value": "0x5222a4"
-        },
-        {
-          "visibility": "public",
-          "value": "0x00000000000000000000000013cb6ae34a13a0977f4d7101ebc24b87bb23f0d5"
-        }
-      ]
+      "type": "DatalakeCompute",
+      "datalake": {
+        "type": "BlockSampled",
+        "chainId": 11155111,
+        "blockRangeStart": 6375109,
+        "blockRangeEnd": 6375109,
+        "increment": 1,
+        "sampledProperty": "storage.0xaFE8A72C86d5895DD6616daB26d4b736Cf22472f.0x0000000000000000000000000000000000000000000000000000000000000010"
+      },
+      "compute": {
+        "aggregateFnId": "avg"
+      }
     }
   ]
 }

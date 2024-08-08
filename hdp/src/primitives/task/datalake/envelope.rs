@@ -1,5 +1,10 @@
 use serde::{Deserialize, Serialize};
 
+use crate::{
+    preprocessor::compile::datalake::fetchable::{FetchError, Fetchable, FetchedDatalake},
+    provider::evm::provider::EvmProvider,
+};
+
 use super::{
     block_sampled::BlockSampledDatalake, transactions::TransactionsInBlockDatalake,
     DatalakeCollection,
@@ -22,6 +27,15 @@ impl DatalakeEnvelope {
             DatalakeEnvelope::TransactionsInBlock(datalake) => {
                 Box::new(datalake.sampled_property.clone())
             }
+        }
+    }
+}
+
+impl Fetchable for DatalakeEnvelope {
+    async fn fetch(&self, provider: EvmProvider) -> Result<FetchedDatalake, FetchError> {
+        match self {
+            DatalakeEnvelope::BlockSampled(datalake) => datalake.fetch(provider).await,
+            DatalakeEnvelope::TransactionsInBlock(datalake) => datalake.fetch(provider).await,
         }
     }
 }
