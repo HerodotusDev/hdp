@@ -1,7 +1,9 @@
 use alloy::{
     dyn_abi::DynSolValue,
+    hex,
     primitives::{keccak256, B256},
 };
+use tracing::debug;
 
 use crate::primitives::{task::module::Module, utils::felt_to_bytes32};
 
@@ -15,7 +17,7 @@ impl Module {
                 .map(|input| DynSolValue::FixedBytes(felt_to_bytes32(*input), 32))
                 .collect(),
         );
-        let input_length: DynSolValue = self.inputs.len().into();
+        let input_length: DynSolValue = self.get_public_inputs().len().into();
         // offset of class hash
         let offset: DynSolValue = (64).into();
         let module_tuple_value =
@@ -25,6 +27,7 @@ impl Module {
 
     pub fn commit(&self) -> B256 {
         let encoded_task = self.encode_task();
+        debug!("encoded_task: {:?}", hex::encode(encoded_task.clone()));
         keccak256(encoded_task)
     }
 }
