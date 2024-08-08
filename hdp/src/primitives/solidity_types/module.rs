@@ -63,4 +63,30 @@ mod tests {
                 .unwrap()
         );
     }
+
+    #[test]
+    pub fn module_encode_with_private_input() {
+        let module = Module {
+            program_hash: FieldElement::from_hex_be(
+                "0x00af1333b8346c1ac941efe380f3122a71c1f7cbad19301543712e74f765bfca",
+            )
+            .unwrap(),
+            inputs: vec![
+                ModuleInput::new(Visibility::Public, "0x4F21E5"),
+                ModuleInput::new(Visibility::Public, "0x4F21E8"),
+                ModuleInput::new(
+                    Visibility::Private,
+                    "0x13cb6ae34a13a0977f4d7101ebc24b87bb23f0d5",
+                ),
+            ],
+            local_class_path: None,
+        };
+
+        let expected_commit = module.commit();
+        assert_eq!(
+            expected_commit,
+            B256::from_str("0xa726b1f08367bc3d90390c8492625b095d9fd2960255bb67540c12a9c5879c1d")
+                .unwrap()
+        );
+    }
 }

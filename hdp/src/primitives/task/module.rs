@@ -18,12 +18,6 @@ pub struct Module {
     pub inputs: Vec<ModuleInput>,
     pub local_class_path: Option<PathBuf>,
 }
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "lowercase")]
-pub enum Visibility {
-    Public,
-    Private,
-}
 
 #[serde_as]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
@@ -40,6 +34,13 @@ impl ModuleInput {
             value: FieldElement::from_hex_be(value).unwrap(),
         }
     }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum Visibility {
+    Public,
+    Private,
 }
 
 impl FromStr for ModuleInput {
@@ -89,5 +90,33 @@ impl Module {
             .filter(|x| x.visibility == Visibility::Public)
             .map(|x| x.value)
             .collect()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_module_input() {
+        let module_input_str = "public.0x123";
+        let module = ModuleInput::from_str(module_input_str).unwrap();
+        assert_eq!(
+            module,
+            ModuleInput {
+                value: FieldElement::from_hex_be("0x123").unwrap(),
+                visibility: Visibility::Public
+            }
+        );
+
+        let module_input_str = "private.0x1";
+        let module = ModuleInput::from_str(module_input_str).unwrap();
+        assert_eq!(
+            module,
+            ModuleInput {
+                value: FieldElement::from_hex_be("0x1").unwrap(),
+                visibility: Visibility::Private
+            }
+        );
     }
 }
