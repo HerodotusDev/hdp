@@ -61,6 +61,9 @@ impl DryRunner {
         }
 
         let input_file_path = &NamedTempFile::new()?.path().to_path_buf();
+
+        #[cfg(debug_assertions)]
+        fs::write("dry_run_input.json", input_string.clone()).expect("Failed to write input file");
         fs::write(input_file_path, input_string).expect("Failed to write input file");
         let output = self._run(input_file_path)?;
         if output.is_empty() {

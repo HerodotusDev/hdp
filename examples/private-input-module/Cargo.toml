@@ -1,0 +1,16 @@
+[package]
+name = "private-input-module"
+version.workspace = true
+edition.workspace = true
+license-file.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+exclude.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+hdp = { workspace = true, features = ["test_utils"] }
+tokio = { workspace = true }
+serde_json = { workspace = true }

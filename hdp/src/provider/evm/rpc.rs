@@ -106,7 +106,7 @@ impl RpcProvider {
             fetched_proofs.insert(block_number, proof);
         }
         let duration = start_fetch.elapsed();
-        debug!("RPC| Time taken (Fetch): {:?}", duration);
+        debug!("time taken (Fetch): {:?}", duration);
 
         Ok(fetched_proofs)
     }
@@ -123,7 +123,10 @@ impl RpcProvider {
         let provider_clone = self.provider.clone();
         let target_blocks_length = blocks.len();
 
-        debug!("Fetching proofs for {} chunk size: {}", address, chunk_size);
+        debug!(
+            "fetching proofs for {}, with chunk size: {}",
+            address, chunk_size
+        );
 
         tokio::spawn(async move {
             let mut try_count = 0;

@@ -7,11 +7,14 @@ use cairo_lang_starknet_classes::casm_contract_class::{
 
 use crate::{
     constant::HERODOTUS_PROGRAM_REGISTRY_URL,
-    primitives::task::{module::Module, ExtendedModule},
+    primitives::task::{
+        module::{Module, ModuleInput},
+        ExtendedModule,
+    },
 };
 use reqwest::Client;
 use starknet_crypto::FieldElement;
-use std::path::PathBuf;
+use std::{path::PathBuf, str::FromStr};
 use thiserror::Error;
 use tracing::info;
 
@@ -62,7 +65,7 @@ impl ModuleRegistry {
             program_hash.map(|program_hash| FieldElement::from_hex_be(&program_hash).unwrap());
         let module_inputs = module_inputs
             .into_iter()
-            .map(|input| FieldElement::from_hex_be(&input).unwrap())
+            .map(|input| ModuleInput::from_str(&input).unwrap())
             .collect();
         self.get_extended_module_from_class_source(program_hash, local_class_path, module_inputs)
             .await
@@ -72,7 +75,7 @@ impl ModuleRegistry {
         &self,
         program_hash: Option<FieldElement>,
         local_class_path: Option<PathBuf>,
-        module_inputs: Vec<FieldElement>,
+        module_inputs: Vec<ModuleInput>,
     ) -> Result<ExtendedModule, ModuleRegistryError> {
         if program_hash.is_some() && local_class_path.is_some() {
             return Err(ModuleRegistryError::ClassSourceError(
