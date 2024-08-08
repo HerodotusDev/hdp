@@ -17,6 +17,7 @@ impl AsCairoFormat for BaseProcessedModule {
         ProcessedModule {
             module_class: self.module_class.clone(),
             encoded_task: module_task_felts.felts,
+            inputs: self.inputs.clone(),
             task_bytes_len: module_task_felts.bytes_len,
         }
     }
@@ -54,6 +55,7 @@ pub struct ProcessedModule {
     #[serde_as(as = "Vec<UfeHex>")]
     pub encoded_task: Vec<FieldElement>,
     pub task_bytes_len: u64,
+    pub inputs: Vec<ModuleInput>,
     /// Detail class code of the module.
     /// This will be loaded to bootloader.
     pub module_class: CasmContractClass,
@@ -63,11 +65,13 @@ impl ProcessedModule {
     pub fn new(
         encoded_task: Vec<FieldElement>,
         task_bytes_len: u64,
+        inputs: Vec<ModuleInput>,
         module_class: CasmContractClass,
     ) -> Self {
         Self {
             encoded_task,
             task_bytes_len,
+            inputs,
             module_class,
         }
     }
