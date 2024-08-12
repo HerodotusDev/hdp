@@ -66,3 +66,4 @@ tools/
 # Ignore specific directories and files
 hdp-cairo/
 *.pie
+*.zip
