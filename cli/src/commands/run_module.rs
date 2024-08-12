@@ -8,11 +8,14 @@ use starknet::providers::Url;
 pub struct RunModuleArgs {
     /// Input field elements for the module contract.
     /// The input field elements should be separated by comma.
+    /// The first element is visibility, and the second element is the value.
     ///
-    /// e.g. "0x1234,0xabcd"
+    /// e.g. "private.0x1234,public.0xabcd"
     #[arg(long, required = true, use_value_delimiter = true)]
     pub module_inputs: Vec<String>,
 
+    /// Program hash of the contract class.
+    /// (Note: either class_hash or local_class_path should be provided)
     #[arg(long, group = "class_source")]
     pub program_hash: Option<String>,
 

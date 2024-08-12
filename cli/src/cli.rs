@@ -47,7 +47,7 @@ pub async fn run() -> anyhow::Result<()> {
 
 /// Initialize the CLI
 fn init_cli() -> Result<HDPCli> {
-    let rust_log = env::var("RUST_LOG").unwrap_or_else(|_| "debug".to_string());
+    let rust_log = env::var("RUST_LOG").unwrap_or_else(|_| "info".to_string());
     let subscriber = FmtSubscriber::builder()
         .with_env_filter(EnvFilter::new(&rust_log))
         .finish();

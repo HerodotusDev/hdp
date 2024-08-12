@@ -1,7 +1,10 @@
 ### Pedersen Program Hash
 
-```
-0x343995a543ac64616d33fa77670cfa4e498691c96c2d964a0a07181dff4ce81
+```json
+{
+  "HDP_PROGRAM_HASH": "0x7f4e04ae49045719567040fd49a42283c63f50c9241abdadd23e96f7d9bda8c",
+  "DRY_RUN_PROGRAM_HASH": "0x48ac124e876e38ec61c5cd1543930e8211d17be84fd37e6c65da472f6801529"
+}
 ```
 
 ### Solidity Contract

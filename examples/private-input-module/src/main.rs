@@ -11,7 +11,6 @@ use hdp::{
 async fn main() {
     //set RUST_LOG into debug
     std::env::set_var("RUST_LOG", "debug");
-    // 1. initiate test env, spawn anvil deploy contract on devnet
 
     let module_regisry = ModuleRegistry::new();
     let module = module_regisry
@@ -31,8 +30,8 @@ async fn main() {
     let cairo_pie_file = "pie.zip";
 
     let hdp_run_config = HdpRunConfig {
-        dry_run_program_path: "./build/contract_dry_run.json".into(),
-        sound_run_program_path: "./build/hdp.json".into(),
+        dry_run_program_path: "../../build/contract_dry_run.json".into(),
+        sound_run_program_path: "../../build/hdp.json".into(),
         pre_processor_output_file: pre_processor_output_file.into(),
         processor_output_file: Some(output_file.into()),
         cairo_pie_file: Some(cairo_pie_file.into()),
@@ -40,14 +39,4 @@ async fn main() {
     };
 
     hdp_run::hdp_run(&hdp_run_config, tasks).await.unwrap();
-    // // 3. prover -> verify ( sharp warpper )
-    // let sharp_wrapper = SharpWrapper::new();
-    // sharp_wrapper.prove(cairo_pie, Verifier::Solidity).await?;
-
-    // // pull the job status until it get finalized
-
-    // // 4. authenticate
-    // let hdp_contract = HdpContract::new();
-    // // send transaction
-    // hdp_contract.authenticate(authentication_output).await?;
 }
