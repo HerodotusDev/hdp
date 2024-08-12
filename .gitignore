@@ -68,3 +68,5 @@ hdp-cairo/
 *.pie
 
 *.zip
+
+build/*.json
