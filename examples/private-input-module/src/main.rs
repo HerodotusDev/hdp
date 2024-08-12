@@ -1,5 +1,5 @@
 use hdp::{
-    hdp_run::{self, HdpRunConfig},
+    hdp_run::HdpRunConfig,
     preprocessor::module_registry::ModuleRegistry,
     primitives::task::{
         module::{ModuleInput, Visibility},
@@ -38,5 +38,5 @@ async fn main() {
         ..Default::default()
     };
 
-    hdp_run::hdp_run(&hdp_run_config, tasks).await.unwrap();
+    hdp::run(&hdp_run_config, tasks).await.unwrap();
 }

@@ -110,7 +110,7 @@ impl HdpRunConfig {
 /// - `pre_processor_output_file`: The path to the file where the preprocessor output will be saved. (Optional)
 /// - `output_file`: The path to the file where the output will be saved. (Optional)
 /// - `cairo_pie_file`: The path to the file where the cairo pie will be saved. (Optional)
-pub async fn hdp_run(hdp_run_config: &HdpRunConfig, tasks: Vec<TaskEnvelope>) -> Result<()> {
+pub async fn run(hdp_run_config: &HdpRunConfig, tasks: Vec<TaskEnvelope>) -> Result<()> {
     let compiler_config = CompilerConfig {
         dry_run_program_path: hdp_run_config.dry_run_program_path.clone(),
         provider_config: hdp_run_config.evm_provider.clone(),
@@ -125,13 +125,13 @@ pub async fn hdp_run(hdp_run_config: &HdpRunConfig, tasks: Vec<TaskEnvelope>) ->
     fs::write(&hdp_run_config.pre_processor_output_file, input_string)
         .map_err(|e| anyhow::anyhow!("Unable to write input file: {}", e))?;
     info!(
-        "Finished pre processing the data, saved the input file in {}",
+        "finished pre processing the data, saved the input file in {}",
         &hdp_run_config.pre_processor_output_file.display()
     );
     if hdp_run_config.processor_output_file.is_none() && hdp_run_config.cairo_pie_file.is_none() {
         Ok(())
     } else {
-        info!("Starting processing the data... ");
+        info!("starting processing the data... ");
         let output_file_path = &hdp_run_config
             .processor_output_file
             .clone()
@@ -152,7 +152,7 @@ pub async fn hdp_run(hdp_run_config: &HdpRunConfig, tasks: Vec<TaskEnvelope>) ->
         .map_err(|e| anyhow::anyhow!("Unable to write output file: {}", e))?;
 
         info!(
-            "Finished processing the data, saved the output file in {} and pie file in {}",
+            "finished processing the data, saved the output file in {} and pie file in {}",
             output_file_path.display(),
             pie_file_path.display()
         );

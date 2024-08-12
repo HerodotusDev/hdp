@@ -200,7 +200,7 @@ impl EvmProvider {
         }
 
         let duration = start_fetch.elapsed();
-        info!("Time taken (Headers Proofs Fetch): {:?}", duration);
+        info!("time taken (Headers Proofs Fetch): {:?}", duration);
 
         if !mmrs.is_empty() {
             let vec_mmrs = mmrs.into_iter().collect::<Vec<_>>();
@@ -256,7 +256,7 @@ impl EvmProvider {
             fetched_accounts_proofs.insert(ProcessedAccount::new(address, account_mpt_proofs));
         }
         let duration = start_fetch.elapsed();
-        info!("Time taken (Accounts Proofs Fetch): {:?}", duration);
+        info!("time taken (Accounts Proofs Fetch): {:?}", duration);
 
         Ok(fetched_accounts_proofs)
     }
@@ -322,7 +322,7 @@ impl EvmProvider {
             ));
         }
         let duration = start_fetch.elapsed();
-        info!("Time taken (Storage Proofs Fetch): {:?}", duration);
+        info!("time taken (Storage Proofs Fetch): {:?}", duration);
 
         Ok((fetched_accounts_proofs, fetched_storage_proofs))
     }
@@ -372,7 +372,7 @@ impl EvmProvider {
             }
         }
         let duration = start_fetch.elapsed();
-        info!("Time taken (Transaction Fetch): {:?}", duration);
+        info!("time taken (Transaction Fetch): {:?}", duration);
         Ok(fetched_transactions)
     }
 
@@ -425,7 +425,7 @@ impl EvmProvider {
             }
         }
         let duration = start_fetch.elapsed();
-        info!("Time taken (Transaction Receipts Fetch): {:?}", duration);
+        info!("time taken (Transaction Receipts Fetch): {:?}", duration);
         Ok(fetched_transaction_receipts)
     }
 }

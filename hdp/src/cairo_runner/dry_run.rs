@@ -72,7 +72,7 @@ impl DryRunner {
 
         // parse output to return dry run result
         let dry_run_result = self.parse_run(&PathBuf::from(DRY_CAIRO_RUN_OUTPUT_FILE))?;
-        info!("Dry-runner executed successfully");
+        info!("dry-runner executed successfully");
         Ok(dry_run_result)
     }
 

@@ -371,7 +371,7 @@ pub async fn run_interactive() -> anyhow::Result<()> {
             Some(pie_file),
         );
 
-        hdp_run(&config, tasks).await?
+        hdp::run(&config, tasks).await?
     }
     Ok(())
 }

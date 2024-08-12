@@ -135,7 +135,7 @@ impl EvmProvider {
         }
 
         let duration = start_fetch.elapsed();
-        info!("Time taken (Headers Proofs Fetch): {:?}", duration);
+        info!("time taken (Headers Proofs Fetch): {:?}", duration);
         if !mmrs.is_empty() {
             Ok((mmrs, fetched_headers_proofs_with_blocks_map))
         } else {
@@ -170,7 +170,7 @@ impl EvmProvider {
         }
 
         let duration = start_fetch.elapsed();
-        info!("Time taken (Account Proofs Fetch): {:?}", duration);
+        info!("time taken (Account Proofs Fetch): {:?}", duration);
 
         Ok(fetched_accounts_proofs_with_blocks_map)
     }
@@ -261,7 +261,7 @@ impl EvmProvider {
         }
 
         let duration = start_fetch.elapsed();
-        info!("Time taken (Storage Proofs Fetch): {:?}", duration);
+        info!("time taken (Storage Proofs Fetch): {:?}", duration);
 
         Ok(processed_accounts)
     }
@@ -328,7 +328,7 @@ impl EvmProvider {
         }
 
         let duration = start_fetch.elapsed();
-        info!("Time taken (Transactions Proofs Fetch): {:?}", duration);
+        info!("time taken (Transactions Proofs Fetch): {:?}", duration);
 
         Ok(fetched_transaction_proofs)
     }
@@ -399,7 +399,7 @@ impl EvmProvider {
 
         let duration = start_fetch.elapsed();
         info!(
-            "Time taken (Transaction Receipts Proofs Fetch): {:?}",
+            "time taken (Transaction Receipts Proofs Fetch): {:?}",
             duration
         );
 

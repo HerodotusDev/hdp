@@ -12,7 +12,7 @@ impl Compilable for DatalakeCompute {
         &self,
         compile_config: &CompilerConfig,
     ) -> Result<CompilationResult, CompileError> {
-        info!("Target task: {:#?}", self);
+        info!("target task: {:#?}", self);
         let aggregation_fn = &self.compute.aggregate_fn_id;
         let fn_context = &self.compute.aggregate_fn_ctx;
         let provider = EvmProvider::new(compile_config.provider_config.clone());

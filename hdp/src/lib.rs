@@ -6,4 +6,4 @@ pub mod primitives;
 pub mod processor;
 pub mod provider;
 
-pub use hdp_run::hdp_run;
+pub use hdp_run::run;

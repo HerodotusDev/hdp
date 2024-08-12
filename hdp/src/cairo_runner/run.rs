@@ -76,7 +76,7 @@ impl Runner {
         let output = self._run(input_file_path, pie_file_path)?;
         let cairo_run_output =
             self.parse_run(output, &PathBuf::from(SOUND_CAIRO_RUN_OUTPUT_FILE))?;
-        info!("Cairo run output: {:#?}", cairo_run_output);
+        info!("cairo run output: {:#?}", cairo_run_output);
 
         Ok(RunResult {
             pie_path: pie_file_path.to_owned(),
@@ -93,7 +93,7 @@ impl Runner {
         let number_of_steps = Regex::new(r"Number of steps: (\d+)").unwrap();
         if let Some(number_of_steps_caps) = number_of_steps.captures(&output) {
             let number_of_steps = number_of_steps_caps[1].parse::<usize>()?;
-            info!("Number of steps: {:#?}", number_of_steps);
+            info!("number of steps: {:#?}", number_of_steps);
             let cairo_run_output_from_file = fs::read_to_string(cairo_run_output_path)
                 .expect("Failed to read cairo run output file");
             let cairo_run_output: CairoRunOutput =

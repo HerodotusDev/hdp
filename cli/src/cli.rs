@@ -23,7 +23,7 @@ use hdp::{
 use tracing::info;
 use tracing_subscriber::{EnvFilter, FmtSubscriber};
 
-pub async fn run() -> anyhow::Result<()> {
+pub async fn hdp_cli_run() -> anyhow::Result<()> {
     let start_run = std::time::Instant::now();
     let cli = init_cli()?;
     match cli.command {
@@ -80,7 +80,7 @@ pub async fn module_entry_run(args: RunModuleArgs) -> Result<()> {
     // TODO: for now, we only support one task if its a module
     let tasks = vec![TaskEnvelope::Module(module)];
 
-    hdp_run(&config, tasks).await?;
+    hdp::run(&config, tasks).await?;
     Ok(())
 }
 
@@ -130,7 +130,7 @@ pub async fn datalake_entry_run(args: RunDatalakeArgs) -> Result<()> {
         Computation::new(args.aggregate_fn_id, args.aggregate_fn_ctx),
     ))];
 
-    hdp_run(&config, tasks).await?;
+    hdp::run(&config, tasks).await?;
     Ok(())
 }
 
@@ -168,6 +168,6 @@ pub async fn entry_run(args: RunArgs) -> Result<()> {
             }
         }
     }
-    hdp_run(&config, task_envelopes).await?;
+    hdp::run(&config, task_envelopes).await?;
     Ok(())
 }
