@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["cli", "hdp"]
+members = ["cli", "examples/private-input-module", "hdp"]
 
 [workspace.package]
 version = "0.4.0"
@@ -9,7 +9,7 @@ license-file = "LICENSE"
 authors = ["Pia <pia@herodotus.dev>"]
 repository = "https://github.com/HerodotusDev/hdp"
 homepage = "https://herodotus.dev/"
-exclude = ["benches/", "tests/", "fixtures/"]
+exclude = ["benches/", "fixtures/", "examples/"]
 keywords = ["blockchain", "ethereum", "rust", "data-processor", "storage-proof"]
 categories = [
     "command-line-interface",
@@ -20,6 +20,7 @@ categories = [
 
 [workspace.dependencies]
 hdp = { path = "hdp" }
+hdp-cli = { path = "cli" }
 tokio = { version = "1", features = ["full"] }
 tempfile = "3.10.1"
 alloy-merkle-tree = { version = "0.6.0" }

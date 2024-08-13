@@ -7,11 +7,14 @@ use cairo_lang_starknet_classes::casm_contract_class::{
 
 use crate::{
     constant::HERODOTUS_PROGRAM_REGISTRY_URL,
-    primitives::task::{module::Module, ExtendedModule},
+    primitives::task::{
+        module::{Module, ModuleInput},
+        ExtendedModule,
+    },
 };
 use reqwest::Client;
 use starknet_crypto::FieldElement;
-use std::path::PathBuf;
+use std::{path::PathBuf, str::FromStr};
 use thiserror::Error;
 use tracing::info;
 
@@ -34,6 +37,9 @@ pub enum ModuleRegistryError {
 
     #[error("Module class source error: {0}")]
     ClassSourceError(String),
+
+    #[error("Type conversion error: {0}")]
+    TypeConversionError(String),
 }
 
 pub struct ModuleRegistry {
@@ -60,10 +66,14 @@ impl ModuleRegistry {
     ) -> Result<ExtendedModule, ModuleRegistryError> {
         let program_hash =
             program_hash.map(|program_hash| FieldElement::from_hex_be(&program_hash).unwrap());
-        let module_inputs = module_inputs
+        let module_inputs: Result<Vec<ModuleInput>, _> = module_inputs
             .into_iter()
-            .map(|input| FieldElement::from_hex_be(&input).unwrap())
+            .map(|input| ModuleInput::from_str(&input))
             .collect();
+
+        let module_inputs =
+            module_inputs.map_err(|e| ModuleRegistryError::TypeConversionError(e.to_string()))?;
+
         self.get_extended_module_from_class_source(program_hash, local_class_path, module_inputs)
             .await
     }
@@ -72,7 +82,7 @@ impl ModuleRegistry {
         &self,
         program_hash: Option<FieldElement>,
         local_class_path: Option<PathBuf>,
-        module_inputs: Vec<FieldElement>,
+        module_inputs: Vec<ModuleInput>,
     ) -> Result<ExtendedModule, ModuleRegistryError> {
         if program_hash.is_some() && local_class_path.is_some() {
             return Err(ModuleRegistryError::ClassSourceError(
@@ -94,7 +104,7 @@ impl ModuleRegistry {
 
         let program_hash = casm.compiled_class_hash();
         let converted_hash = FieldElement::from_bytes_be(&program_hash.to_bytes_be()).unwrap();
-        info!("Program Hash: {:#?}", converted_hash);
+        info!("program Hash: {:#?}", converted_hash);
 
         let module = Module {
             program_hash: converted_hash,
@@ -120,7 +130,7 @@ impl ModuleRegistry {
             })?)?;
 
         info!(
-            "Contract class fetched successfully from local path: {:?}",
+            "contract class fetched successfully from local path: {:?}",
             local_class_path
         );
         Ok(casm)
@@ -133,7 +143,7 @@ impl ModuleRegistry {
         let program_hash_hex = format!("{:#x}", program_hash);
 
         info!(
-            "Fetching contract class from module registry... program_hash: {}",
+            "fetching contract class from module registry... program_hash: {}",
             program_hash_hex
         );
 
@@ -152,13 +162,13 @@ impl ModuleRegistry {
             let response_text = response.text().await.expect("cannot get response");
             let casm: CasmContractClass = serde_json::from_str(&response_text)?;
             info!(
-                "Contract class fetched successfully from program_hash: {:?}",
+                "contract class fetched successfully from program_hash: {:?}",
                 program_hash
             );
             Ok(casm)
         } else {
             Err(ModuleRegistryError::ClassSourceError(
-                "Failed to fetch contract class".to_string(),
+                "failed to fetch contract class".to_string(),
             ))
         }
     }

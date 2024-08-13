@@ -1,9 +1,7 @@
-use std::collections::HashSet;
-
 use crate::preprocessor::compile::datalake::fetchable::Fetchable;
-use crate::primitives::task::datalake::{envelope::DatalakeEnvelope, DatalakeCompute};
+use crate::primitives::task::datalake::DatalakeCompute;
 use crate::provider::evm::provider::EvmProvider;
-use tracing::info;
+use tracing::{debug, info};
 
 use super::{config::CompilerConfig, Compilable, CompilationResult, CompileError};
 
@@ -18,38 +16,20 @@ impl Compilable for DatalakeCompute {
         let aggregation_fn = &self.compute.aggregate_fn_id;
         let fn_context = &self.compute.aggregate_fn_ctx;
         let provider = EvmProvider::new(compile_config.provider_config.clone());
-        match self.datalake {
-            DatalakeEnvelope::BlockSampled(ref datalake) => {
-                let compiled_block_sampled = datalake.fetch(provider).await?;
-                let aggregated_result = aggregation_fn
-                    .operation(&compiled_block_sampled.values, Some(fn_context.clone()))?;
-                Ok(CompilationResult::new(
-                    aggregation_fn.is_pre_processable(),
-                    vec![aggregated_result],
-                    compiled_block_sampled.headers,
-                    compiled_block_sampled.accounts,
-                    compiled_block_sampled.storages,
-                    HashSet::new(),
-                    HashSet::new(),
-                    compiled_block_sampled.mmr_metas,
-                ))
-            }
-            DatalakeEnvelope::TransactionsInBlock(ref datalake) => {
-                let compiled_tx_datalake = datalake.fetch(provider).await?;
-                let aggregated_result = aggregation_fn
-                    .operation(&compiled_tx_datalake.values, Some(fn_context.clone()))?;
-                Ok(CompilationResult::new(
-                    aggregation_fn.is_pre_processable(),
-                    vec![aggregated_result],
-                    compiled_tx_datalake.headers,
-                    HashSet::new(),
-                    HashSet::new(),
-                    compiled_tx_datalake.transactions,
-                    compiled_tx_datalake.transaction_receipts,
-                    compiled_tx_datalake.mmr_metas,
-                ))
-            }
-        }
+        let compiled_block_sampled = self.datalake.fetch(provider).await?;
+        debug!("values to aggregate : {:#?}", compiled_block_sampled.values);
+        let aggregated_result =
+            aggregation_fn.operation(&compiled_block_sampled.values, Some(fn_context.clone()))?;
+        Ok(CompilationResult::new(
+            aggregation_fn.is_pre_processable(),
+            vec![aggregated_result],
+            compiled_block_sampled.headers,
+            compiled_block_sampled.accounts,
+            compiled_block_sampled.storages,
+            compiled_block_sampled.transactions,
+            compiled_block_sampled.transaction_receipts,
+            compiled_block_sampled.mmr_metas,
+        ))
     }
 }
 
@@ -83,6 +63,7 @@ mod tests {
                 AccountField, BlockSampledCollection, BlockSampledDatalake, HeaderField,
             },
             compute::Computation,
+            envelope::DatalakeEnvelope,
             transactions::{
                 IncludedTypes, TransactionField, TransactionReceiptField, TransactionsCollection,
                 TransactionsInBlockDatalake,

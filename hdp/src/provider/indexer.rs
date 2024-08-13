@@ -9,7 +9,7 @@ use reqwest::Client;
 use serde_json::{from_value, Value};
 use std::collections::HashMap;
 use thiserror::Error;
-use tracing::error;
+use tracing::{debug, error};
 
 /// Error from [`Indexer`]
 #[derive(Error, Debug)]
@@ -149,7 +149,7 @@ impl Indexer {
         to_block: BlockNumber,
         chain_id: ChainId,
     ) -> Vec<(String, String)> {
-        vec![
+        let query = vec![
             ("deployed_on_chain".to_string(), chain_id.to_string()),
             ("accumulates_chain".to_string(), chain_id.to_string()),
             ("hashing_function".to_string(), "poseidon".to_string()),
@@ -166,7 +166,9 @@ impl Indexer {
             ("is_whole_tree".to_string(), "true".to_string()),
             ("is_rlp_included".to_string(), "true".to_string()),
             ("is_pure_rlp".to_string(), "true".to_string()),
-        ]
+        ];
+        debug!("request params to indexer: {:#?}", query);
+        query
     }
 }
 

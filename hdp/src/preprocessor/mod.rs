@@ -16,7 +16,7 @@ use compile::config::CompilerConfig;
 use compile::{Compilable, CompileError};
 
 use thiserror::Error;
-use tracing::info;
+use tracing::{debug, info};
 
 pub mod compile;
 pub mod module_registry;
@@ -93,6 +93,7 @@ impl PreProcessor {
                     let datalake_compute = match result {
                         Some(result_value) => {
                             let (compiled_result, result_commitment, result_proof) = result_value;
+                            debug!("compiled_result: {:#?}", compiled_result);
                             ProcessedDatalakeCompute::new_with_result(
                                 Bytes::from(encoded_task),
                                 task_commitment,

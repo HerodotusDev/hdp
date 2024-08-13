@@ -3353,6 +3353,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "private-input-module"
+version = "0.4.0"
+dependencies = [
+ "hdp",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
 name = "proc-macro-crate"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

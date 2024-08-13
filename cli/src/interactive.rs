@@ -1,6 +1,6 @@
 use alloy::{primitives::U256, transports::http::reqwest::Url};
 use anyhow::bail;
-use hdp::config::HdpRunConfig;
+use hdp::hdp_run;
 use hdp::preprocessor::module_registry::ModuleRegistry;
 use hdp::primitives::{
     aggregate_fn::{integer::Operator, FunctionContext},
@@ -25,8 +25,6 @@ use hdp::primitives::{
 use inquire::{InquireError, Select};
 use std::{path::PathBuf, str::FromStr};
 use tracing::error;
-
-use crate::common::handle_running_tasks;
 
 pub async fn run_interactive() -> anyhow::Result<()> {
     println!("Welcome to Herodotus Data Processor interactive CLI! 🛰️");
@@ -349,7 +347,7 @@ pub async fn run_interactive() -> anyhow::Result<()> {
             },
             Err(_) => None,
         };
-        let config = HdpRunConfig::init(rpc_url, chain_id, None, None, None).await;
+
         let output_file: PathBuf = inquire::Text::new("Enter Output file path: ")
             .with_default("output.json")
             .prompt()?
@@ -362,15 +360,18 @@ pub async fn run_interactive() -> anyhow::Result<()> {
             .with_default("hdp_pie.zip")
             .prompt()?
             .into();
-
-        handle_running_tasks(
-            config,
-            tasks,
+        let config = hdp_run::HdpRunConfig::init(
+            rpc_url,
+            chain_id,
+            None,
+            None,
+            cairo_input,
+            None,
             Some(output_file),
-            Some(cairo_input),
             Some(pie_file),
-        )
-        .await?
+        );
+
+        hdp::run(&config, tasks).await?
     }
     Ok(())
 }
