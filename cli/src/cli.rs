@@ -20,7 +20,7 @@ use hdp::{
         TaskEnvelope,
     },
 };
-use tracing::info;
+use tracing::{debug, info};
 use tracing_subscriber::{EnvFilter, FmtSubscriber};
 
 pub async fn hdp_cli_run() -> anyhow::Result<()> {
@@ -53,7 +53,7 @@ fn init_cli() -> Result<HDPCli> {
         .with_env_filter(EnvFilter::new(&rust_log))
         .finish();
     tracing::subscriber::set_global_default(subscriber).expect("Failed to set subscriber");
-    info!("running on log level: {}", rust_log);
+    debug!("running on log level: {}", rust_log);
     let cli = HDPCli::parse();
     Ok(cli)
 }
