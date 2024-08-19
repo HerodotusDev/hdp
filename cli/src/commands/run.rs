@@ -21,7 +21,7 @@ pub struct RunArgs {
 
     /// Path to save output file after pre-processing.
     #[arg(short, long)]
-    pub preprocessor_output_file: PathBuf,
+    pub preprocessor_output_file: Option<PathBuf>,
 
     /// hdp cairo compiled program. main entry point
     #[arg(long)]

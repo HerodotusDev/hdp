@@ -48,7 +48,7 @@ impl HdpRunConfig {
         cli_chain_id: Option<ChainId>,
         cli_dry_run_cairo_file: Option<PathBuf>,
         cli_sound_run_cairo_file: Option<PathBuf>,
-        cli_pre_processor_output_file: PathBuf,
+        cli_pre_processor_output_file: Option<PathBuf>,
         cli_save_fetch_keys_file: Option<PathBuf>,
         cli_processor_output_file: Option<PathBuf>,
         cli_cairo_pie_file: Option<PathBuf>,
@@ -71,6 +71,13 @@ impl HdpRunConfig {
             .expect("RPC_CHUNK_SIZE must be a number");
         let save_fetch_keys_file: Option<PathBuf> = cli_save_fetch_keys_file
             .or_else(|| env::var("SAVE_FETCH_KEYS_FILE").ok().map(PathBuf::from));
+        let pre_processor_output_file: PathBuf =
+            cli_pre_processor_output_file.unwrap_or_else(|| {
+                env::var("DRY_RUN_CAIRO_PATH")
+                    .unwrap_or_else(|_| DEFAULT_PREPROCESSOR_OUTPUT_FILE.to_string())
+                    .parse()
+                    .expect("DRY_RUN_CAIRO_PATH must be a path to a cairo file")
+            });
         let dry_run_cairo_path: PathBuf = cli_dry_run_cairo_file.unwrap_or_else(|| {
             env::var("DRY_RUN_CAIRO_PATH")
                 .unwrap_or_else(|_| DEFAULT_DRY_CAIRO_RUN_CAIRO_FILE.to_string())
@@ -92,7 +99,7 @@ impl HdpRunConfig {
             },
             dry_run_program_path: dry_run_cairo_path,
             sound_run_program_path: sound_run_cairo_path,
-            pre_processor_output_file: cli_pre_processor_output_file,
+            pre_processor_output_file,
             save_fetch_keys_file,
             processor_output_file: cli_processor_output_file,
             cairo_pie_file: cli_cairo_pie_file,

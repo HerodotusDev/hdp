@@ -62,7 +62,7 @@ pub async fn module_entry_run(args: RunModuleArgs) -> Result<()> {
     let config = hdp_run::HdpRunConfig::init(
         args.rpc_url,
         args.chain_id,
-        Some(args.dry_run_cairo_file),
+        args.dry_run_cairo_file,
         args.sound_run_cairo_file,
         args.preprocessor_output_file,
         args.save_fetch_keys_file,
