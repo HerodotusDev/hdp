@@ -33,7 +33,7 @@ pub struct RunDatalakeArgs {
     ///
     /// This will trigger pre-processing step
     #[arg(short, long)]
-    pub preprocessor_output_file: PathBuf,
+    pub preprocessor_output_file: Option<PathBuf>,
 
     /// hdp cairo compiled program. main entry point
     #[arg(long)]

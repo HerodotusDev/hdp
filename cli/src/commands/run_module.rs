@@ -45,13 +45,13 @@ pub struct RunModuleArgs {
     /// dry run contract bootloader program.
     /// only used for module task
     #[arg(long)]
-    pub dry_run_cairo_file: PathBuf,
+    pub dry_run_cairo_file: Option<PathBuf>,
 
     /// Path to save output file after pre-processing.
     ///
     /// This will trigger pre-processing step
     #[arg(short, long)]
-    pub preprocessor_output_file: PathBuf,
+    pub preprocessor_output_file: Option<PathBuf>,
 
     /// hdp cairo compiled program. main entry point
     #[arg(long)]
