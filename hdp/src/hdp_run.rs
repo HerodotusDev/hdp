@@ -1,19 +1,18 @@
-use alloy::primitives::ChainId;
-use anyhow::Result;
-use reqwest::Url;
-use std::{env, fs, path::PathBuf};
-use tracing::{debug, info};
-
-#[cfg(feature = "test_utils")]
-use crate::constant::DEFAULT_PREPROCESSOR_OUTPUT_FILE;
-
 use crate::{
-    constant::{DEFAULT_DRY_CAIRO_RUN_CAIRO_FILE, DEFAULT_SOUND_CAIRO_RUN_CAIRO_FILE},
+    constant::{
+        DEFAULT_DRY_CAIRO_RUN_CAIRO_FILE, DEFAULT_PREPROCESSOR_OUTPUT_FILE,
+        DEFAULT_SOUND_CAIRO_RUN_CAIRO_FILE,
+    },
     preprocessor::{compile::config::CompilerConfig, PreProcessor},
     primitives::{processed_types::cairo_format::AsCairoFormat, task::TaskEnvelope},
     processor::Processor,
     provider::evm::config::EvmProviderConfig,
 };
+use alloy::primitives::ChainId;
+use anyhow::Result;
+use reqwest::Url;
+use std::{env, fs, path::PathBuf};
+use tracing::{debug, info};
 
 /// HdpRunConfig for the CLI
 #[derive(Debug)]
