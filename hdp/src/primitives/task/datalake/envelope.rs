@@ -1,10 +1,5 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    preprocessor::compile::datalake::fetchable::{FetchError, Fetchable, FetchedDatalake},
-    provider::ProofProvider,
-};
-
 use super::{
     block_sampled::BlockSampledDatalake, transactions::TransactionsInBlockDatalake,
     DatalakeCollection,
@@ -34,18 +29,6 @@ impl DatalakeEnvelope {
         match self {
             DatalakeEnvelope::BlockSampled(datalake) => datalake.chain_id,
             DatalakeEnvelope::TransactionsInBlock(datalake) => datalake.chain_id,
-        }
-    }
-}
-
-impl<P> Fetchable<P> for DatalakeEnvelope
-where
-    P: ProofProvider,
-{
-    async fn fetch(&self, provider: P) -> Result<FetchedDatalake, FetchError> {
-        match self {
-            DatalakeEnvelope::BlockSampled(datalake) => datalake.fetch(provider).await,
-            DatalakeEnvelope::TransactionsInBlock(datalake) => datalake.fetch(provider).await,
         }
     }
 }

@@ -79,7 +79,7 @@ pub struct EvmProvider {
 #[cfg(feature = "test_utils")]
 impl Default for EvmProvider {
     fn default() -> Self {
-        Self::new(ProviderConfig::default())
+        Self::new(&ProviderConfig::default())
     }
 }
 
@@ -346,14 +346,14 @@ impl ProofProvider for EvmProvider {
 }
 
 impl EvmProvider {
-    pub fn new(config: ProviderConfig) -> Self {
+    pub fn new(config: &ProviderConfig) -> Self {
         let rpc_provider = RpcProvider::new(config.rpc_url.clone(), config.max_requests);
         let header_provider = Indexer::new(config.chain_id);
 
         Self {
             rpc_provider,
             header_provider,
-            tx_provider_url: config.rpc_url,
+            tx_provider_url: config.rpc_url.clone(),
         }
     }
 

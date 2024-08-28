@@ -9,6 +9,7 @@ use crate::primitives::processed_types::{
     account::ProcessedAccount, header::ProcessedHeader, mmr::MMRMeta, receipt::ProcessedReceipt,
     storage::ProcessedStorage, transaction::ProcessedTransaction,
 };
+use crate::provider::envelope::evm::datalake::FetchError;
 use crate::{cairo_runner, preprocessor::module_registry::ModuleRegistryError, provider};
 
 pub mod config;
@@ -25,10 +26,10 @@ pub enum CompileError {
     CairoRunnerError(#[from] cairo_runner::CairoRunnerError),
 
     #[error("Invalid provider")]
-    ProviderError(#[from] provider::evm::provider::ProviderError),
+    ProviderError(#[from] provider::envelope::evm::provider::ProviderError),
 
     #[error("Failed to fetch datalake: {0}")]
-    FetchError(#[from] datalake::fetchable::FetchError),
+    FetchError(#[from] FetchError),
 
     #[error("Invalid MMR meta data")]
     InvalidMMR,

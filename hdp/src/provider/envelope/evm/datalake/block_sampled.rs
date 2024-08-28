@@ -10,36 +10,36 @@ use crate::{
             DatalakeField,
         },
     },
-    provider::ProofProvider,
+    provider::{envelope::evm::provider::EvmProvider, ProofProvider},
 };
 use std::collections::HashSet;
 
 use alloy::primitives::{Bytes, U256};
 use anyhow::Result;
 
-use super::{FetchError, Fetchable, FetchedDatalake};
+use super::{FetchError, FetchedDatalake};
 
-impl<P> Fetchable<P> for BlockSampledDatalake
-where
-    P: ProofProvider,
-{
-    async fn fetch(&self, provider: P) -> Result<FetchedDatalake, FetchError> {
+impl EvmProvider {
+    pub async fn fetch_block_sampled(
+        &self,
+        datalake: &BlockSampledDatalake,
+    ) -> Result<FetchedDatalake, FetchError> {
         let mut aggregation_set: Vec<U256> = Vec::new();
 
-        let (mmr_metas, headers_proofs) = provider
+        let (mmr_metas, headers_proofs) = self
             .get_range_of_header_proofs(
-                self.block_range_start,
-                self.block_range_end,
-                self.increment,
+                datalake.block_range_start,
+                datalake.block_range_end,
+                datalake.increment,
             )
             .await?;
         let mut headers: HashSet<ProcessedHeader> = HashSet::new();
         let mut accounts: HashSet<ProcessedAccount> = HashSet::new();
         let mut storages: HashSet<ProcessedStorage> = HashSet::new();
-        let block_range =
-            (self.block_range_start..=self.block_range_end).step_by(self.increment as usize);
+        let block_range = (datalake.block_range_start..=datalake.block_range_end)
+            .step_by(datalake.increment as usize);
 
-        match &self.sampled_property {
+        match &datalake.sampled_property {
             BlockSampledCollection::Header(property) => {
                 for block in block_range {
                     let fetched_block = headers_proofs.get(&block).unwrap();
@@ -55,11 +55,11 @@ where
                 }
             }
             BlockSampledCollection::Account(address, property) => {
-                let accounts_and_proofs_result = provider
+                let accounts_and_proofs_result = self
                     .get_range_of_account_proofs(
-                        self.block_range_start,
-                        self.block_range_end,
-                        self.increment,
+                        datalake.block_range_start,
+                        datalake.block_range_end,
+                        datalake.increment,
                         *address,
                     )
                     .await?;
@@ -90,11 +90,11 @@ where
                 accounts.insert(ProcessedAccount::new(*address, account_proofs));
             }
             BlockSampledCollection::Storage(address, slot) => {
-                let storages_and_proofs_result = provider
+                let storages_and_proofs_result = self
                     .get_range_of_storage_proofs(
-                        self.block_range_start,
-                        self.block_range_end,
-                        self.increment,
+                        datalake.block_range_start,
+                        datalake.block_range_end,
+                        datalake.increment,
                         *address,
                         *slot,
                     )

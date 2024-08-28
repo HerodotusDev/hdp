@@ -1,11 +1,7 @@
-use crate::preprocessor::compile::datalake::fetchable::Fetchable;
-use crate::primitives::task::datalake::DatalakeCompute;
-use crate::provider::evm::provider::EvmProvider;
+use crate::{primitives::task::datalake::DatalakeCompute, provider::envelope::ProviderEnvelope};
 use tracing::{debug, info};
 
 use super::{config::CompilerConfig, Compilable, CompilationResult, CompileError};
-
-pub mod fetchable;
 
 impl Compilable for DatalakeCompute {
     async fn compile(
@@ -15,15 +11,12 @@ impl Compilable for DatalakeCompute {
         info!("target task: {:#?}", self);
         let aggregation_fn = &self.compute.aggregate_fn_id;
         let fn_context = &self.compute.aggregate_fn_ctx;
-        // TODO: it can be differnt provider base if chain id is not evm
-        let provider = EvmProvider::new(
-            compile_config
-                .provider_config
-                .get(&self.datalake.get_chain_id())
-                .unwrap()
-                .clone(),
-        );
-        let compiled_block_sampled = self.datalake.fetch(provider).await?;
+        let target_provider_config = compile_config
+            .provider_config
+            .get(&self.datalake.get_chain_id())
+            .unwrap();
+        let provider = ProviderEnvelope::new(target_provider_config);
+        let compiled_block_sampled = provider.fetch_datalake_envelope(self).await?;
         debug!("values to aggregate : {:#?}", compiled_block_sampled.values);
         let aggregated_result =
             aggregation_fn.operation(&compiled_block_sampled.values, Some(fn_context.clone()))?;

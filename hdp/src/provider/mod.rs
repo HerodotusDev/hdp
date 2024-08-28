@@ -9,14 +9,14 @@ use alloy::{
 };
 
 pub mod config;
-pub mod evm;
+pub mod envelope;
 pub mod indexer;
 pub mod key;
 pub mod types;
 
 use crate::primitives::{block::header::MMRProofFromNewIndexer, processed_types::mmr::MMRMeta};
 
-use self::evm::provider::ProviderError;
+use self::envelope::evm::provider::ProviderError;
 use self::types::{FetchedTransactionProof, FetchedTransactionReceiptProof};
 
 type HeaderProofsResult = Result<

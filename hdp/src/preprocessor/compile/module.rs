@@ -6,8 +6,8 @@ use crate::cairo_runner::{cairo_dry_run, input::dry_run::DryRunnerProgramInput};
 use crate::constant::DRY_CAIRO_RUN_OUTPUT_FILE;
 use crate::primitives::processed_types::cairo_format;
 use crate::primitives::task::ExtendedModule;
-use crate::provider::evm::from_keys::categorize_fetch_keys;
-use crate::provider::evm::provider::EvmProvider;
+use crate::provider::envelope::evm::from_keys::categorize_fetch_keys;
+use crate::provider::envelope::evm::provider::EvmProvider;
 use core::panic;
 
 use std::path::PathBuf;
@@ -63,7 +63,7 @@ impl Compilable for ModuleVec {
         // But as this have not used, for now we can just follow batch's chain id
         info!("3. Fetching proofs from provider...");
         let provider = EvmProvider::new(
-            compile_config
+            &compile_config
                 .provider_config
                 .get(&chain_id)
                 .unwrap()

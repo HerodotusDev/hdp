@@ -242,7 +242,7 @@ fn handle_error(e: RpcError<TransportErrorKind>) -> Option<u64> {
 mod tests {
     use alloy::primitives::{address, b256, B256, U256};
 
-    use crate::provider::evm::provider::EvmProvider;
+    use crate::provider::envelope::evm::provider::EvmProvider;
 
     use super::*;
 

@@ -5,28 +5,16 @@ use crate::primitives::processed_types::{
     storage::ProcessedStorage, transaction::ProcessedTransaction,
 };
 
-use crate::provider::ProofProvider;
 use alloy::primitives::U256;
 use thiserror::Error;
 
 pub mod block_sampled;
 pub mod transactions;
 
-/// Fetchable trait for fetching target datalake related data and proofs from the provider
-pub trait Fetchable<P>
-where
-    P: ProofProvider,
-{
-    fn fetch(
-        &self,
-        provider: P,
-    ) -> impl std::future::Future<Output = Result<FetchedDatalake, FetchError>> + Send;
-}
-
 #[derive(Error, Debug)]
 pub enum FetchError {
     #[error("provider error: {0}")]
-    ProviderError(#[from] crate::provider::evm::provider::ProviderError),
+    ProviderError(#[from] crate::provider::envelope::evm::provider::ProviderError),
 }
 
 pub struct FetchedDatalake {

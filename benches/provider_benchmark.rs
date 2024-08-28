@@ -1,6 +1,6 @@
 use alloy::primitives::{address, B256};
 use criterion::{criterion_group, criterion_main, Bencher, Criterion};
-use hdp::provider::{evm::provider::EvmProvider, ProofProvider};
+use hdp::provider::{envelope::evm::provider::EvmProvider, ProofProvider};
 use tokio::runtime::Runtime;
 
 fn benchmark_header(b: &mut Bencher) {
