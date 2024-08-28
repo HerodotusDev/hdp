@@ -1,22 +1,27 @@
-use crate::primitives::{
-    processed_types::{
-        header::ProcessedHeader, receipt::ProcessedReceipt, transaction::ProcessedTransaction,
+use crate::{
+    primitives::{
+        processed_types::{
+            header::ProcessedHeader, receipt::ProcessedReceipt, transaction::ProcessedTransaction,
+        },
+        task::datalake::{
+            transactions::{TransactionsCollection, TransactionsInBlockDatalake},
+            DatalakeField,
+        },
     },
-    task::datalake::{
-        transactions::{TransactionsCollection, TransactionsInBlockDatalake},
-        DatalakeField,
-    },
+    provider::ProofProvider,
 };
 use alloy::primitives::U256;
 use anyhow::Result;
 
-use crate::provider::evm::provider::EvmProvider;
 use std::collections::HashSet;
 
 use super::{FetchError, Fetchable, FetchedDatalake};
 
-impl Fetchable for TransactionsInBlockDatalake {
-    async fn fetch(&self, provider: EvmProvider) -> Result<FetchedDatalake, FetchError> {
+impl<P> Fetchable<P> for TransactionsInBlockDatalake
+where
+    P: ProofProvider,
+{
+    async fn fetch(&self, provider: P) -> Result<FetchedDatalake, FetchError> {
         let mut aggregation_set: Vec<U256> = Vec::new();
 
         let (mmr_metas, headers_proofs) = provider

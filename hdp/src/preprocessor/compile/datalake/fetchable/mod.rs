@@ -4,7 +4,8 @@ use crate::primitives::processed_types::{
     account::ProcessedAccount, header::ProcessedHeader, mmr::MMRMeta, receipt::ProcessedReceipt,
     storage::ProcessedStorage, transaction::ProcessedTransaction,
 };
-use crate::provider::evm::provider::EvmProvider;
+
+use crate::provider::ProofProvider;
 use alloy::primitives::U256;
 use thiserror::Error;
 
@@ -12,10 +13,13 @@ pub mod block_sampled;
 pub mod transactions;
 
 /// Fetchable trait for fetching target datalake related data and proofs from the provider
-pub trait Fetchable {
+pub trait Fetchable<P>
+where
+    P: ProofProvider,
+{
     fn fetch(
         &self,
-        provider: EvmProvider,
+        provider: P,
     ) -> impl std::future::Future<Output = Result<FetchedDatalake, FetchError>> + Send;
 }
 
