@@ -9,17 +9,21 @@ impl Compilable for DatalakeCompute {
         compile_config: &CompilerConfig,
     ) -> Result<CompilationResult, CompileError> {
         info!("target task: {:#?}", self);
-        let aggregation_fn = &self.compute.aggregate_fn_id;
-        let fn_context = &self.compute.aggregate_fn_ctx;
+        // ========== datalake ==============
         let target_provider_config = compile_config
             .provider_config
             .get(&self.datalake.get_chain_id())
-            .unwrap();
+            .expect("target task's chain had not been configured.");
         let provider = ProviderEnvelope::new(target_provider_config);
-        let compiled_block_sampled = provider.fetch_datalake_envelope(self).await?;
+        let compiled_block_sampled = provider.fetch_proofs(self).await?;
         debug!("values to aggregate : {:#?}", compiled_block_sampled.values);
+
+        // ========== compute ==============
+        let aggregation_fn = &self.compute.aggregate_fn_id;
+        let fn_context = &self.compute.aggregate_fn_ctx;
         let aggregated_result =
             aggregation_fn.operation(&compiled_block_sampled.values, Some(fn_context.clone()))?;
+
         Ok(CompilationResult::new(
             aggregation_fn.is_pre_processable(),
             vec![aggregated_result],

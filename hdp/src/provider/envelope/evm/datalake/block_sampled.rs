@@ -20,7 +20,7 @@ use anyhow::Result;
 use super::{FetchError, FetchedDatalake};
 
 impl EvmProvider {
-    pub async fn fetch_block_sampled(
+    pub(crate) async fn fetch_block_sampled(
         &self,
         datalake: &BlockSampledDatalake,
     ) -> Result<FetchedDatalake, FetchError> {
