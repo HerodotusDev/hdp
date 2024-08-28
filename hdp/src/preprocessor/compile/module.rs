@@ -56,13 +56,19 @@ impl Compilable for ModuleVec {
             panic!("Multiple chain id is not supported yet");
         }
 
-        let (_, keys) = keys_maps_chain.into_iter().next().unwrap();
+        let (chain_id, keys) = keys_maps_chain.into_iter().next().unwrap();
         // TODO: later we can get chain id from the key. For now we just ignore as this not compatible with cairo
         // TODO: should spawn multiple provider base on batch of chain id. Probably need to change config around chain id and rpc url
         // This config cannot handle the situation when calling multiple chain data in one module
         // But as this have not used, for now we can just follow batch's chain id
         info!("3. Fetching proofs from provider...");
-        let provider = EvmProvider::new(compile_config.provider_config.clone());
+        let provider = EvmProvider::new(
+            compile_config
+                .provider_config
+                .get(&chain_id)
+                .unwrap()
+                .clone(),
+        );
         let results = provider.fetch_proofs_from_keys(keys).await?;
 
         Ok(CompilationResult::new(

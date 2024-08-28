@@ -29,6 +29,13 @@ impl DatalakeEnvelope {
             }
         }
     }
+
+    pub fn get_chain_id(&self) -> u64 {
+        match self {
+            DatalakeEnvelope::BlockSampled(datalake) => datalake.chain_id,
+            DatalakeEnvelope::TransactionsInBlock(datalake) => datalake.chain_id,
+        }
+    }
 }
 
 impl<P> Fetchable<P> for DatalakeEnvelope

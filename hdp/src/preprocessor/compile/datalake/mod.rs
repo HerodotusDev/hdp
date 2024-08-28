@@ -15,7 +15,14 @@ impl Compilable for DatalakeCompute {
         info!("target task: {:#?}", self);
         let aggregation_fn = &self.compute.aggregate_fn_id;
         let fn_context = &self.compute.aggregate_fn_ctx;
-        let provider = EvmProvider::new(compile_config.provider_config.clone());
+        // TODO: it can be differnt provider base if chain id is not evm
+        let provider = EvmProvider::new(
+            compile_config
+                .provider_config
+                .get(&self.datalake.get_chain_id())
+                .unwrap()
+                .clone(),
+        );
         let compiled_block_sampled = self.datalake.fetch(provider).await?;
         debug!("values to aggregate : {:#?}", compiled_block_sampled.values);
         let aggregated_result =
