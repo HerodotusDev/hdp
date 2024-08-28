@@ -1,4 +1,7 @@
-use crate::primitives::{block::header::MMRProofFromNewIndexer, processed_types::mmr::MMRMeta};
+use crate::{
+    primitives::{block::header::MMRProofFromNewIndexer, processed_types::mmr::MMRMeta},
+    provider::config::ProviderConfig,
+};
 use alloy::{
     primitives::{Address, BlockNumber, Bytes, StorageKey, TxIndex},
     rpc::types::EIP1186AccountProofResponse,
@@ -21,10 +24,7 @@ use crate::{
     provider::types::{FetchedTransactionProof, FetchedTransactionReceiptProof},
 };
 
-use super::{
-    config::EvmProviderConfig,
-    rpc::{RpcProvider, RpcProviderError},
-};
+use super::rpc::{RpcProvider, RpcProviderError};
 
 /// Error from [`EvmProvider`]
 #[derive(Error, Debug)]
@@ -77,12 +77,12 @@ pub struct EvmProvider {
 #[cfg(feature = "test_utils")]
 impl Default for EvmProvider {
     fn default() -> Self {
-        Self::new(EvmProviderConfig::default())
+        Self::new(ProviderConfig::default())
     }
 }
 
 impl EvmProvider {
-    pub fn new(config: EvmProviderConfig) -> Self {
+    pub fn new(config: ProviderConfig) -> Self {
         let rpc_provider = RpcProvider::new(config.rpc_url.clone(), config.max_requests);
         let header_provider = Indexer::new(config.chain_id);
 

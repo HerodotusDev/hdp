@@ -1,3 +1,4 @@
+pub mod config;
 pub mod evm;
 pub mod indexer;
 pub mod key;
