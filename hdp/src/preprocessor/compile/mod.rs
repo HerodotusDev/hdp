@@ -10,7 +10,7 @@ use crate::primitives::processed_types::{
     storage::ProcessedStorage, transaction::ProcessedTransaction,
 };
 
-use crate::provider::envelope::error::ProviderError;
+use crate::provider::error::ProviderError;
 use crate::{cairo_runner, preprocessor::module_registry::ModuleRegistryError};
 
 pub mod config;

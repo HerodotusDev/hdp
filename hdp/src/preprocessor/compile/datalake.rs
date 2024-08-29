@@ -1,5 +1,5 @@
 use crate::{
-    primitives::task::datalake::DatalakeCompute, provider::envelope::new_provider_from_config,
+    primitives::task::datalake::DatalakeCompute, provider::traits::new_provider_from_config,
 };
 use tracing::{debug, info};
 

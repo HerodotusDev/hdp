@@ -1,13 +1,17 @@
 use crate::{
-    primitives::{processed_types::mmr::MMRMeta, task::datalake::envelope::DatalakeEnvelope},
+    primitives::{
+        block::header::MMRProofFromNewIndexer, processed_types::mmr::MMRMeta,
+        task::datalake::envelope::DatalakeEnvelope,
+    },
     provider::{
-        config::ProviderConfig, envelope::error::ProviderError, AccountProofsResult, AsyncResult,
-        HeaderProofsResult, ProofProvider, StorageProofsResult, TxProofsResult,
-        TxReceiptProofsResult,
+        config::ProviderConfig,
+        error::ProviderError,
+        traits::{AsyncResult, FetchProofsFromKeysResult, FetchProofsResult, ProofProvider},
     },
 };
 use alloy::{
     primitives::{Address, BlockNumber, Bytes, StorageKey, TxIndex},
+    rpc::types::EIP1186AccountProofResponse,
     transports::{RpcError, TransportErrorKind},
 };
 use eth_trie_proofs::{
@@ -27,6 +31,18 @@ use crate::{
 };
 
 use super::rpc::RpcProvider;
+
+type HeaderProofsResult = Result<
+    (
+        HashSet<MMRMeta>,
+        HashMap<BlockNumber, MMRProofFromNewIndexer>,
+    ),
+    ProviderError,
+>;
+type AccountProofsResult = Result<HashMap<BlockNumber, EIP1186AccountProofResponse>, ProviderError>;
+type StorageProofsResult = Result<HashMap<BlockNumber, EIP1186AccountProofResponse>, ProviderError>;
+type TxProofsResult = Result<Vec<FetchedTransactionProof>, ProviderError>;
+type TxReceiptProofsResult = Result<Vec<FetchedTransactionReceiptProof>, ProviderError>;
 
 /// EVM provider
 ///
@@ -376,7 +392,7 @@ impl ProofProvider for EvmProvider {
     fn fetch_proofs<'a>(
         &'a self,
         datalake: &'a crate::primitives::task::datalake::DatalakeCompute,
-    ) -> AsyncResult<crate::provider::FetchProofsResult> {
+    ) -> AsyncResult<FetchProofsResult> {
         Box::pin(async move {
             match &datalake.datalake {
                 DatalakeEnvelope::BlockSampled(datalake) => {
@@ -391,8 +407,8 @@ impl ProofProvider for EvmProvider {
 
     fn fetch_proofs_from_keys(
         &self,
-        keys: super::from_keys::CategorizedFetchKeys,
-    ) -> AsyncResult<crate::provider::FetchProofsFromKeysResult> {
+        keys: crate::provider::key::CategorizedFetchKeys,
+    ) -> AsyncResult<FetchProofsFromKeysResult> {
         Box::pin(async move { self.fetch_proofs_from_keys(keys).await })
     }
 }

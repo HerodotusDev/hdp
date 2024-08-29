@@ -6,8 +6,8 @@ use crate::cairo_runner::{cairo_dry_run, input::dry_run::DryRunnerProgramInput};
 use crate::constant::DRY_CAIRO_RUN_OUTPUT_FILE;
 use crate::primitives::processed_types::cairo_format;
 use crate::primitives::task::ExtendedModule;
-use crate::provider::envelope::evm::from_keys::categorize_fetch_keys;
-use crate::provider::envelope::new_provider_from_config;
+use crate::provider::key::categorize_fetch_keys;
+use crate::provider::traits::new_provider_from_config;
 use core::panic;
 
 use std::collections::HashSet;

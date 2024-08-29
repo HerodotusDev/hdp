@@ -7,12 +7,12 @@ use crate::primitives::processed_types::mpt::ProcessedMPTProof;
 use crate::primitives::processed_types::receipt::ProcessedReceipt;
 use crate::primitives::processed_types::storage::ProcessedStorage;
 use crate::primitives::processed_types::transaction::ProcessedTransaction;
-use crate::provider::envelope::error::ProviderError;
+use crate::provider::error::ProviderError;
 use crate::provider::key::{
-    AccountMemorizerKey, FetchKeyEnvelope, HeaderMemorizerKey, StorageMemorizerKey, TxMemorizerKey,
-    TxReceiptMemorizerKey,
+    AccountMemorizerKey, CategorizedFetchKeys, HeaderMemorizerKey, StorageMemorizerKey,
+    TxMemorizerKey, TxReceiptMemorizerKey,
 };
-use alloy::primitives::{Address, BlockNumber, Bytes, ChainId, TxIndex, B256};
+use alloy::primitives::{Address, BlockNumber, Bytes, TxIndex, B256};
 use alloy::transports::{RpcError, TransportErrorKind};
 use eth_trie_proofs::tx_receipt_trie::TxReceiptsMptHandler;
 use eth_trie_proofs::tx_trie::TxsMptHandler;
@@ -20,92 +20,6 @@ use eth_trie_proofs::EthTrieError;
 use std::collections::{HashMap, HashSet};
 use std::time::Instant;
 use tracing::info;
-
-#[derive(Debug, Default)]
-/// This is keys that are categorized into different subsets of keys.
-pub struct CategorizedFetchKeys {
-    pub headers: HashSet<HeaderMemorizerKey>,
-    pub accounts: HashSet<AccountMemorizerKey>,
-    pub storage: HashSet<StorageMemorizerKey>,
-    pub txs: HashSet<TxMemorizerKey>,
-    pub tx_receipts: HashSet<TxReceiptMemorizerKey>,
-}
-
-impl CategorizedFetchKeys {
-    pub fn new(
-        headers: HashSet<HeaderMemorizerKey>,
-        accounts: HashSet<AccountMemorizerKey>,
-        storage: HashSet<StorageMemorizerKey>,
-        txs: HashSet<TxMemorizerKey>,
-        tx_receipts: HashSet<TxReceiptMemorizerKey>,
-    ) -> Self {
-        Self {
-            headers,
-            accounts,
-            storage,
-            txs,
-            tx_receipts,
-        }
-    }
-}
-
-/// Categorize fetch keys
-/// This is require to initiate multiple provider for different chain and fetch keys types
-pub fn categorize_fetch_keys(
-    fetch_keys: Vec<FetchKeyEnvelope>,
-) -> Vec<(ChainId, CategorizedFetchKeys)> {
-    let mut chain_id_map: HashMap<u64, CategorizedFetchKeys> = std::collections::HashMap::new();
-
-    for key in fetch_keys {
-        let chain_id = key.get_chain_id();
-        let target_categorized_fetch_keys = chain_id_map.entry(chain_id).or_default();
-
-        match key {
-            FetchKeyEnvelope::Header(header_key) => {
-                target_categorized_fetch_keys.headers.insert(header_key);
-            }
-            FetchKeyEnvelope::Account(account_key) => {
-                target_categorized_fetch_keys
-                    .headers
-                    .insert(HeaderMemorizerKey::new(
-                        account_key.chain_id,
-                        account_key.block_number,
-                    ));
-                target_categorized_fetch_keys.accounts.insert(account_key);
-            }
-            FetchKeyEnvelope::Storage(storage_key) => {
-                target_categorized_fetch_keys
-                    .headers
-                    .insert(HeaderMemorizerKey::new(
-                        storage_key.chain_id,
-                        storage_key.block_number,
-                    ));
-                target_categorized_fetch_keys.storage.insert(storage_key);
-            }
-            FetchKeyEnvelope::Tx(tx_key) => {
-                target_categorized_fetch_keys
-                    .headers
-                    .insert(HeaderMemorizerKey::new(
-                        tx_key.chain_id,
-                        tx_key.block_number,
-                    ));
-                target_categorized_fetch_keys.txs.insert(tx_key);
-            }
-            FetchKeyEnvelope::TxReceipt(tx_receipt_key) => {
-                target_categorized_fetch_keys
-                    .headers
-                    .insert(HeaderMemorizerKey::new(
-                        tx_receipt_key.chain_id,
-                        tx_receipt_key.block_number,
-                    ));
-                target_categorized_fetch_keys
-                    .tx_receipts
-                    .insert(tx_receipt_key);
-            }
-        }
-    }
-    chain_id_map.into_iter().collect()
-}
 
 impl EvmProvider {
     /// This is the public entry point of provider.  
@@ -434,7 +348,9 @@ impl EvmProvider {
 #[cfg(feature = "test_utils")]
 mod tests {
     use super::*;
-    use crate::provider::envelope::evm::provider::EvmProvider;
+    use crate::provider::evm::provider::EvmProvider;
+    use crate::provider::key::categorize_fetch_keys;
+    use crate::provider::key::FetchKeyEnvelope;
     use crate::provider::key::{AccountMemorizerKey, HeaderMemorizerKey};
     use alloy::primitives::address;
 

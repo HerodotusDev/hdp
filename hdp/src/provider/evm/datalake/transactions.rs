@@ -8,14 +8,12 @@ use crate::{
             DatalakeField,
         },
     },
-    provider::envelope::{error::ProviderError, evm::provider::EvmProvider},
+    provider::{error::ProviderError, evm::provider::EvmProvider, types::FetchedDatalake},
 };
 use alloy::primitives::U256;
 use anyhow::Result;
 
 use std::collections::HashSet;
-
-use super::FetchedDatalake;
 
 impl EvmProvider {
     pub async fn fetch_transactions(

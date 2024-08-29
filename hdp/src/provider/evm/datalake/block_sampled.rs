@@ -10,14 +10,12 @@ use crate::{
             DatalakeField,
         },
     },
-    provider::envelope::{error::ProviderError, evm::provider::EvmProvider},
+    provider::{error::ProviderError, evm::provider::EvmProvider, types::FetchedDatalake},
 };
 use std::collections::HashSet;
 
 use alloy::primitives::{Bytes, U256};
 use anyhow::Result;
-
-use super::FetchedDatalake;
 
 impl EvmProvider {
     pub(crate) async fn fetch_block_sampled(
