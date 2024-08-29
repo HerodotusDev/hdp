@@ -366,6 +366,7 @@ pub async fn run_interactive() -> anyhow::Result<()> {
             None,
             None,
             Some(cairo_input),
+            false,
             None,
             Some(output_file),
             Some(pie_file),

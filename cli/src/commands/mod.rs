@@ -1,8 +1,10 @@
 use crate::commands::run::RunArgs;
 use clap::{command, Parser, Subcommand};
+use process::ProcessArgs;
 use run_datalake::RunDatalakeArgs;
 use run_module::RunModuleArgs;
 
+pub mod process;
 pub mod run;
 pub mod run_datalake;
 pub mod run_module;
@@ -30,4 +32,8 @@ pub enum HDPCliCommands {
     /// Run batch of tasks base on request json file
     #[command(name = "run", arg_required_else_help = true)]
     Run(RunArgs),
+
+    /// Process the output of preprocessor
+    #[command(name = "process", arg_required_else_help = true)]
+    Process(ProcessArgs),
 }

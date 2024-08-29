@@ -84,7 +84,7 @@ For a more comprehensive guide on commands available on `hdp run`:
 ❯ hdp run --help
 Run batch of tasks base on request json file
 
-Usage: hdp run [OPTIONS] --request-file <REQUEST_FILE> --preprocessor-output-file <PREPROCESSOR_OUTPUT_FILE>
+Usage: hdp run [OPTIONS] --request-file <REQUEST_FILE>
 
 Options:
   -r, --request-file <REQUEST_FILE>
@@ -100,6 +100,9 @@ Options:
 
   -p, --preprocessor-output-file <PREPROCESSOR_OUTPUT_FILE>
           Path to save output file after pre-processing
+
+      --cairo-format
+          Set this boolean to true to generate cairo format preprocessor_output_file
 
       --sound-run-cairo-file <SOUND_RUN_CAIRO_FILE>
           hdp cairo compiled program. main entry point
