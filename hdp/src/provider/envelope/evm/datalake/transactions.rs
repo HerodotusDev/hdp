@@ -8,10 +8,7 @@ use crate::{
             DatalakeField,
         },
     },
-    provider::{
-        envelope::{error::ProviderError, evm::provider::EvmProvider},
-        ProofProvider,
-    },
+    provider::envelope::{error::ProviderError, evm::provider::EvmProvider},
 };
 use alloy::primitives::U256;
 use anyhow::Result;

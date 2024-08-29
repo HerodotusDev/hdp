@@ -7,7 +7,7 @@ use crate::constant::DRY_CAIRO_RUN_OUTPUT_FILE;
 use crate::primitives::processed_types::cairo_format;
 use crate::primitives::task::ExtendedModule;
 use crate::provider::envelope::evm::from_keys::categorize_fetch_keys;
-use crate::provider::envelope::ProviderEnvelope;
+use crate::provider::envelope::new_provider_from_config;
 use core::panic;
 
 use std::collections::HashSet;
@@ -70,7 +70,7 @@ impl Compilable for ModuleVec {
                 .provider_config
                 .get(&chain_id)
                 .expect("target task's chain had not been configured.");
-            let provider = ProviderEnvelope::new(target_provider_config);
+            let provider = new_provider_from_config(target_provider_config);
             let results = provider.fetch_proofs_from_keys(keys).await?;
             headers.extend(results.headers.into_iter());
             accounts.extend(results.accounts.into_iter());

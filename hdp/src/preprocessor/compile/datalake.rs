@@ -1,4 +1,6 @@
-use crate::{primitives::task::datalake::DatalakeCompute, provider::envelope::ProviderEnvelope};
+use crate::{
+    primitives::task::datalake::DatalakeCompute, provider::envelope::new_provider_from_config,
+};
 use tracing::{debug, info};
 
 use super::{config::CompilerConfig, Compilable, CompilationResult, CompileError};
@@ -14,7 +16,7 @@ impl Compilable for DatalakeCompute {
             .provider_config
             .get(&self.datalake.get_chain_id())
             .expect("target task's chain had not been configured.");
-        let provider = ProviderEnvelope::new(target_provider_config);
+        let provider = new_provider_from_config(target_provider_config);
         let compiled_block_sampled = provider.fetch_proofs(self).await?;
         debug!("values to aggregate : {:#?}", compiled_block_sampled.values);
 

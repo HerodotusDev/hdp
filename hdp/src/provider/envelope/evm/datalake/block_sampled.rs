@@ -10,10 +10,7 @@ use crate::{
             DatalakeField,
         },
     },
-    provider::{
-        envelope::{error::ProviderError, evm::provider::EvmProvider},
-        ProofProvider,
-    },
+    provider::envelope::{error::ProviderError, evm::provider::EvmProvider},
 };
 use std::collections::HashSet;
 
