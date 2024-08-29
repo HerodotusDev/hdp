@@ -1,5 +1,6 @@
 use std::{env, fs};
 
+use crate::commands::process::ProcessArgs;
 use crate::commands::run::RunArgs;
 use crate::commands::run_datalake::DataLakeCommands;
 use crate::{
@@ -8,7 +9,9 @@ use crate::{
 };
 use anyhow::Result;
 use clap::Parser;
+use hdp::primitives::processed_types::query::ProcessorInput;
 use hdp::primitives::request::{SubmitBatchQuery, Task};
+use hdp::processor::{self, Processor};
 use hdp::{
     hdp_run,
     preprocessor::module_registry::ModuleRegistry,
@@ -39,6 +42,9 @@ pub async fn hdp_cli_run() -> anyhow::Result<()> {
         HDPCliCommands::Run(args) => {
             entry_run(args).await?;
         }
+        HDPCliCommands::Process(args) => {
+            process_entry_run(args).await?;
+        }
     }
     let duration_run = start_run.elapsed();
     info!("HDP Cli Finished in: {:?}", duration_run);
@@ -56,6 +62,36 @@ fn init_cli() -> Result<HDPCli> {
     debug!("running on log level: {}", rust_log);
     let cli = HDPCli::parse();
     Ok(cli)
+}
+
+pub async fn process_entry_run(args: ProcessArgs) -> Result<()> {
+    let config = processor::HdpProcessorConfig::init(
+        args.sound_run_cairo_file,
+        args.input_file,
+        args.output_file,
+        args.cairo_pie_file,
+    );
+    let input_string = fs::read_to_string(config.input_file)?;
+    let preprocessor_result: ProcessorInput = serde_json::from_str(&input_string).unwrap();
+
+    let processor = Processor::new(config.sound_run_program_path.clone());
+    let processor_result = processor
+        .process(preprocessor_result, &config.cairo_pie_file)
+        .await?;
+    fs::write(
+        &config.processor_output_file,
+        serde_json::to_string_pretty(&processor_result)
+            .map_err(|e| anyhow::anyhow!("Failed to serialize processor result: {}", e))?,
+    )
+    .map_err(|e| anyhow::anyhow!("Unable to write output file: {}", e))?;
+
+    info!(
+        "finished processing the data, saved the output file in {} and pie file in {}",
+        &config.processor_output_file.display(),
+        &config.cairo_pie_file.display()
+    );
+
+    Ok(())
 }
 
 pub async fn module_entry_run(args: RunModuleArgs) -> Result<()> {
