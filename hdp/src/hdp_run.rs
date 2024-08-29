@@ -22,6 +22,7 @@ pub struct HdpRunConfig {
     pub dry_run_program_path: PathBuf,
     pub sound_run_program_path: PathBuf,
     pub pre_processor_output_file: PathBuf,
+    pub is_cairo_format: bool,
     pub processor_output_file: Option<PathBuf>,
     pub cairo_pie_file: Option<PathBuf>,
     pub save_fetch_keys_file: Option<PathBuf>,
@@ -35,6 +36,7 @@ impl Default for HdpRunConfig {
             dry_run_program_path: DEFAULT_DRY_CAIRO_RUN_CAIRO_FILE.into(),
             sound_run_program_path: DEFAULT_SOUND_CAIRO_RUN_CAIRO_FILE.into(),
             pre_processor_output_file: DEFAULT_PREPROCESSOR_OUTPUT_FILE.into(),
+            is_cairo_format: false,
             cairo_pie_file: None,
             processor_output_file: None,
             save_fetch_keys_file: None,
@@ -49,6 +51,7 @@ impl HdpRunConfig {
         cli_dry_run_cairo_file: Option<PathBuf>,
         cli_sound_run_cairo_file: Option<PathBuf>,
         cli_pre_processor_output_file: Option<PathBuf>,
+        cli_is_cairo_format: bool,
         cli_save_fetch_keys_file: Option<PathBuf>,
         cli_processor_output_file: Option<PathBuf>,
         cli_cairo_pie_file: Option<PathBuf>,
@@ -106,6 +109,7 @@ impl HdpRunConfig {
             dry_run_program_path: dry_run_cairo_path,
             sound_run_program_path: sound_run_cairo_path,
             pre_processor_output_file,
+            is_cairo_format: cli_is_cairo_format,
             save_fetch_keys_file,
             processor_output_file: cli_processor_output_file,
             cairo_pie_file: cli_cairo_pie_file,
@@ -132,8 +136,12 @@ pub async fn run(hdp_run_config: &HdpRunConfig, tasks: Vec<TaskEnvelope>) -> Res
     let preprocessor = PreProcessor::new_with_config(compiler_config);
     let preprocessor_result = preprocessor.process(tasks).await?;
 
-    let input_string = serde_json::to_string_pretty(&preprocessor_result.as_cairo_format())
-        .map_err(|e| anyhow::anyhow!("Failed to serialize preprocessor result: {}", e))?;
+    let input_string = match hdp_run_config.is_cairo_format {
+        true => serde_json::to_string_pretty(&preprocessor_result.as_cairo_format())
+            .map_err(|e| anyhow::anyhow!("Failed to serialize preprocessor result: {}", e))?,
+        false => serde_json::to_string_pretty(&preprocessor_result)
+            .map_err(|e| anyhow::anyhow!("Failed to serialize preprocessor result: {}", e))?,
+    };
 
     fs::write(&hdp_run_config.pre_processor_output_file, input_string)
         .map_err(|e| anyhow::anyhow!("Unable to write input file: {}", e))?;

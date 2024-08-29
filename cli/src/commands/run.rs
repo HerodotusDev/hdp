@@ -23,6 +23,10 @@ pub struct RunArgs {
     #[arg(short, long)]
     pub preprocessor_output_file: Option<PathBuf>,
 
+    /// Set this boolean to true to generate cairo format preprocessor_output_file
+    #[arg(long, default_value_t = false, requires("preprocessor_output_file"))]
+    pub cairo_format: bool,
+
     /// hdp cairo compiled program. main entry point
     #[arg(long)]
     pub sound_run_cairo_file: Option<PathBuf>,
