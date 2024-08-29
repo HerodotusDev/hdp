@@ -8,20 +8,23 @@ use crate::{
             DatalakeField,
         },
     },
-    provider::{envelope::evm::provider::EvmProvider, ProofProvider},
+    provider::{
+        envelope::{error::ProviderError, evm::provider::EvmProvider},
+        ProofProvider,
+    },
 };
 use alloy::primitives::U256;
 use anyhow::Result;
 
 use std::collections::HashSet;
 
-use super::{FetchError, FetchedDatalake};
+use super::FetchedDatalake;
 
 impl EvmProvider {
     pub async fn fetch_transactions(
         &self,
         datalake: &TransactionsInBlockDatalake,
-    ) -> Result<FetchedDatalake, FetchError> {
+    ) -> Result<FetchedDatalake, ProviderError> {
         let mut aggregation_set: Vec<U256> = Vec::new();
 
         let (mmr_metas, headers_proofs) = self

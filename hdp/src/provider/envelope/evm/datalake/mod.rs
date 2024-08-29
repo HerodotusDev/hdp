@@ -6,16 +6,9 @@ use crate::primitives::processed_types::{
 };
 
 use alloy::primitives::U256;
-use thiserror::Error;
 
 pub mod block_sampled;
 pub mod transactions;
-
-#[derive(Error, Debug)]
-pub enum FetchError {
-    #[error("provider error: {0}")]
-    ProviderError(#[from] crate::provider::envelope::evm::provider::ProviderError),
-}
 
 pub struct FetchedDatalake {
     /// Targeted datalake's compiled results

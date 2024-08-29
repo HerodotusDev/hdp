@@ -1,19 +1,18 @@
+use error::ProviderError;
+
 use crate::primitives::{
     processed_types::block_proofs::ProcessedBlockProofs,
     task::datalake::{envelope::DatalakeEnvelope, DatalakeCompute},
 };
 
 use self::{
-    evm::{
-        datalake::{FetchError, FetchedDatalake},
-        from_keys::CategorizedFetchKeys,
-        provider::{EvmProvider, ProviderError},
-    },
+    evm::{datalake::FetchedDatalake, from_keys::CategorizedFetchKeys, provider::EvmProvider},
     starknet::StarknetProvider,
 };
 
 use super::config::ProviderConfig;
 
+pub mod error;
 pub mod evm;
 pub mod starknet;
 
@@ -34,7 +33,7 @@ impl ProviderEnvelope {
     pub async fn fetch_proofs(
         &self,
         datalake: &DatalakeCompute,
-    ) -> Result<FetchedDatalake, FetchError> {
+    ) -> Result<FetchedDatalake, ProviderError> {
         match self {
             ProviderEnvelope::Evm(provider) => match &datalake.datalake {
                 DatalakeEnvelope::BlockSampled(datalake) => {

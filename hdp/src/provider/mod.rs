@@ -7,6 +7,7 @@ use alloy::{
     primitives::{Address, BlockNumber, StorageKey},
     rpc::types::EIP1186AccountProofResponse,
 };
+use envelope::error::ProviderError;
 
 pub mod config;
 pub mod envelope;
@@ -16,7 +17,6 @@ pub mod types;
 
 use crate::primitives::{block::header::MMRProofFromNewIndexer, processed_types::mmr::MMRMeta};
 
-use self::envelope::evm::provider::ProviderError;
 use self::types::{FetchedTransactionProof, FetchedTransactionReceiptProof};
 
 type HeaderProofsResult = Result<

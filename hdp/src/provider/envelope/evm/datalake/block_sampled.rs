@@ -10,20 +10,23 @@ use crate::{
             DatalakeField,
         },
     },
-    provider::{envelope::evm::provider::EvmProvider, ProofProvider},
+    provider::{
+        envelope::{error::ProviderError, evm::provider::EvmProvider},
+        ProofProvider,
+    },
 };
 use std::collections::HashSet;
 
 use alloy::primitives::{Bytes, U256};
 use anyhow::Result;
 
-use super::{FetchError, FetchedDatalake};
+use super::FetchedDatalake;
 
 impl EvmProvider {
     pub(crate) async fn fetch_block_sampled(
         &self,
         datalake: &BlockSampledDatalake,
-    ) -> Result<FetchedDatalake, FetchError> {
+    ) -> Result<FetchedDatalake, ProviderError> {
         let mut aggregation_set: Vec<U256> = Vec::new();
 
         let (mmr_metas, headers_proofs) = self

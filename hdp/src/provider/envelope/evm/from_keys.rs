@@ -7,7 +7,7 @@ use crate::primitives::processed_types::mpt::ProcessedMPTProof;
 use crate::primitives::processed_types::receipt::ProcessedReceipt;
 use crate::primitives::processed_types::storage::ProcessedStorage;
 use crate::primitives::processed_types::transaction::ProcessedTransaction;
-use crate::provider::envelope::evm::provider::ProviderError;
+use crate::provider::envelope::error::ProviderError;
 use crate::provider::key::{
     AccountMemorizerKey, FetchKeyEnvelope, HeaderMemorizerKey, StorageMemorizerKey, TxMemorizerKey,
     TxReceiptMemorizerKey,
