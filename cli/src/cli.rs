@@ -72,8 +72,8 @@ pub async fn process_entry_run(args: ProcessArgs) -> Result<()> {
         args.cairo_pie_file,
     );
     let input_string = fs::read_to_string(config.input_file)?;
-    let preprocessor_result: ProcessorInput = serde_json::from_str(&input_string).unwrap();
-
+    let preprocessor_result: ProcessorInput = serde_json::from_str(&input_string)
+        .expect("Input file is not valid. Check if format is correct");
     let processor = Processor::new(config.sound_run_program_path.clone());
     let processor_result = processor
         .process(preprocessor_result, &config.cairo_pie_file)
