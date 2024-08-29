@@ -4,7 +4,7 @@ use crate::provider::indexer::IndexerError;
 
 use super::evm::rpc::RpcProviderError;
 
-/// Error from [`EvmProvider`]
+/// Error type for provider
 #[derive(Error, Debug)]
 pub enum ProviderError {
     /// Error when the query is invalid

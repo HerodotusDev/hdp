@@ -15,8 +15,8 @@ use crate::primitives::task::datalake::{
 use alloy::primitives::{Address, BlockNumber, ChainId, Keccak256, StorageKey, B256};
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Default)]
 /// This is keys that are categorized into different subsets of keys.
+#[derive(Debug, Default)]
 pub struct CategorizedFetchKeys {
     pub headers: HashSet<HeaderMemorizerKey>,
     pub accounts: HashSet<AccountMemorizerKey>,

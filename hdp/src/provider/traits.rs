@@ -13,6 +13,10 @@ pub type FetchProofsFromKeysResult = Result<ProcessedBlockProofs, ProviderError>
 
 pub type AsyncResult<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
 
+/// Trait for generic proof provider.
+///
+/// - `fetch_proofs` is used to fetch proofs from datalake.
+/// - `fetch_proofs_from_keys` is used to fetch proofs from the provider based on the keys. Used in module.
 pub trait ProofProvider: Send + Sync {
     fn fetch_proofs<'a>(
         &'a self,
@@ -25,6 +29,9 @@ pub trait ProofProvider: Send + Sync {
     ) -> AsyncResult<FetchProofsFromKeysResult>;
 }
 
+/// Create a new provider from config
+///
+/// returns generic provider that implemented [`ProofProvider`] trait
 pub fn new_provider_from_config(config: &ProviderConfig) -> Box<dyn ProofProvider> {
     match config.chain_id {
         1 | 11155111 => Box::new(EvmProvider::new(config)),
