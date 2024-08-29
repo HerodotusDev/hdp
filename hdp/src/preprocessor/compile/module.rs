@@ -63,6 +63,7 @@ impl Compilable for ModuleVec {
         let mut transactions = HashSet::new();
         let mut transaction_receipts = HashSet::new();
         let mut mmr_metas = HashSet::new();
+
         info!("3. Fetching proofs from provider...");
         for (chain_id, keys) in keys_maps_chain {
             info!("target provider chain id: {}", chain_id);
@@ -72,6 +73,8 @@ impl Compilable for ModuleVec {
                 .expect("target task's chain had not been configured.");
             let provider = new_provider_from_config(target_provider_config);
             let results = provider.fetch_proofs_from_keys(keys).await?;
+
+            // TODO: can we do better?
             headers.extend(results.headers.into_iter());
             accounts.extend(results.accounts.into_iter());
             storages.extend(results.storages.into_iter());
@@ -79,6 +82,7 @@ impl Compilable for ModuleVec {
             transaction_receipts.extend(results.transaction_receipts.into_iter());
             mmr_metas.extend(results.mmr_metas.into_iter());
         }
+
         let compiled_result = CompilationResult::new(
             true,
             commit_results_maps,
