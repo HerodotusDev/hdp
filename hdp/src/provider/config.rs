@@ -2,7 +2,7 @@ use reqwest::Url;
 
 /// EVM provider configuration
 #[derive(Clone, Debug)]
-pub struct EvmProviderConfig {
+pub struct ProviderConfig {
     /// RPC url
     pub rpc_url: Url,
     /// Chain id
@@ -24,7 +24,7 @@ const TEST_CHAIN_ID: u64 = 11155111;
 const TEST_RPC_URL: &str = "https://eth-sepolia.g.alchemy.com/v2/xar76cftwEtqTBWdF4ZFy9n8FLHAETDv";
 
 #[cfg(feature = "test_utils")]
-impl Default for EvmProviderConfig {
+impl Default for ProviderConfig {
     fn default() -> Self {
         Self {
             rpc_url: TEST_RPC_URL.parse().unwrap(),

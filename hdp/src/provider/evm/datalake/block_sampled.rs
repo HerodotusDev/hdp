@@ -1,41 +1,43 @@
-use crate::primitives::{
-    block::account::Account,
-    processed_types::{
-        account::ProcessedAccount, header::ProcessedHeader, mpt::ProcessedMPTProof,
-        storage::ProcessedStorage,
+use crate::{
+    primitives::{
+        block::account::Account,
+        processed_types::{
+            account::ProcessedAccount, header::ProcessedHeader, mpt::ProcessedMPTProof,
+            storage::ProcessedStorage,
+        },
+        task::datalake::{
+            block_sampled::{BlockSampledCollection, BlockSampledDatalake},
+            DatalakeField,
+        },
     },
-    task::datalake::{
-        block_sampled::{BlockSampledCollection, BlockSampledDatalake},
-        DatalakeField,
-    },
+    provider::{error::ProviderError, evm::provider::EvmProvider, types::FetchedDatalake},
 };
 use std::collections::HashSet;
 
 use alloy::primitives::{Bytes, U256};
 use anyhow::Result;
 
-use crate::provider::evm::provider::EvmProvider;
-
-use super::{FetchError, Fetchable, FetchedDatalake};
-
-impl Fetchable for BlockSampledDatalake {
-    async fn fetch(&self, provider: EvmProvider) -> Result<FetchedDatalake, FetchError> {
+impl EvmProvider {
+    pub(crate) async fn fetch_block_sampled(
+        &self,
+        datalake: &BlockSampledDatalake,
+    ) -> Result<FetchedDatalake, ProviderError> {
         let mut aggregation_set: Vec<U256> = Vec::new();
 
-        let (mmr_metas, headers_proofs) = provider
+        let (mmr_metas, headers_proofs) = self
             .get_range_of_header_proofs(
-                self.block_range_start,
-                self.block_range_end,
-                self.increment,
+                datalake.block_range_start,
+                datalake.block_range_end,
+                datalake.increment,
             )
             .await?;
         let mut headers: HashSet<ProcessedHeader> = HashSet::new();
         let mut accounts: HashSet<ProcessedAccount> = HashSet::new();
         let mut storages: HashSet<ProcessedStorage> = HashSet::new();
-        let block_range =
-            (self.block_range_start..=self.block_range_end).step_by(self.increment as usize);
+        let block_range = (datalake.block_range_start..=datalake.block_range_end)
+            .step_by(datalake.increment as usize);
 
-        match &self.sampled_property {
+        match &datalake.sampled_property {
             BlockSampledCollection::Header(property) => {
                 for block in block_range {
                     let fetched_block = headers_proofs.get(&block).unwrap();
@@ -51,11 +53,11 @@ impl Fetchable for BlockSampledDatalake {
                 }
             }
             BlockSampledCollection::Account(address, property) => {
-                let accounts_and_proofs_result = provider
+                let accounts_and_proofs_result = self
                     .get_range_of_account_proofs(
-                        self.block_range_start,
-                        self.block_range_end,
-                        self.increment,
+                        datalake.block_range_start,
+                        datalake.block_range_end,
+                        datalake.increment,
                         *address,
                     )
                     .await?;
@@ -86,11 +88,11 @@ impl Fetchable for BlockSampledDatalake {
                 accounts.insert(ProcessedAccount::new(*address, account_proofs));
             }
             BlockSampledCollection::Storage(address, slot) => {
-                let storages_and_proofs_result = provider
+                let storages_and_proofs_result = self
                     .get_range_of_storage_proofs(
-                        self.block_range_start,
-                        self.block_range_end,
-                        self.increment,
+                        datalake.block_range_start,
+                        datalake.block_range_end,
+                        datalake.increment,
                         *address,
                         *slot,
                     )

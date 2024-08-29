@@ -1,10 +1,5 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    preprocessor::compile::datalake::fetchable::{FetchError, Fetchable, FetchedDatalake},
-    provider::evm::provider::EvmProvider,
-};
-
 use super::{
     block_sampled::BlockSampledDatalake, transactions::TransactionsInBlockDatalake,
     DatalakeCollection,
@@ -29,13 +24,11 @@ impl DatalakeEnvelope {
             }
         }
     }
-}
 
-impl Fetchable for DatalakeEnvelope {
-    async fn fetch(&self, provider: EvmProvider) -> Result<FetchedDatalake, FetchError> {
+    pub fn get_chain_id(&self) -> u64 {
         match self {
-            DatalakeEnvelope::BlockSampled(datalake) => datalake.fetch(provider).await,
-            DatalakeEnvelope::TransactionsInBlock(datalake) => datalake.fetch(provider).await,
+            DatalakeEnvelope::BlockSampled(datalake) => datalake.chain_id,
+            DatalakeEnvelope::TransactionsInBlock(datalake) => datalake.chain_id,
         }
     }
 }

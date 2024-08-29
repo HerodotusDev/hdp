@@ -1,4 +1,14 @@
-use crate::primitives::{block::header::MMRProofFromNewIndexer, processed_types::mmr::MMRMeta};
+use crate::{
+    primitives::{
+        block::header::MMRProofFromNewIndexer, processed_types::mmr::MMRMeta,
+        task::datalake::envelope::DatalakeEnvelope,
+    },
+    provider::{
+        config::ProviderConfig,
+        error::ProviderError,
+        traits::{AsyncResult, FetchProofsFromKeysResult, FetchProofsResult, ProofProvider},
+    },
+};
 use alloy::{
     primitives::{Address, BlockNumber, Bytes, StorageKey, TxIndex},
     rpc::types::EIP1186AccountProofResponse,
@@ -13,49 +23,26 @@ use std::{
     collections::{HashMap, HashSet},
     time::Instant,
 };
-use thiserror::Error;
 use tracing::info;
 
 use crate::{
-    provider::indexer::{Indexer, IndexerError},
+    provider::indexer::Indexer,
     provider::types::{FetchedTransactionProof, FetchedTransactionReceiptProof},
 };
 
-use super::{
-    config::EvmProviderConfig,
-    rpc::{RpcProvider, RpcProviderError},
-};
+use super::rpc::RpcProvider;
 
-/// Error from [`EvmProvider`]
-#[derive(Error, Debug)]
-pub enum ProviderError {
-    /// Error when the query is invalid
-    #[error("Transaction index out of bound: requested index: {0}, length: {1}")]
-    OutOfBoundRequestError(u64, u64),
-
-    /// Error when the MMR meta is mismatched among range of requested blocks
-    #[error("MMR meta mismatch among range of requested blocks")]
-    MismatchedMMRMeta,
-
-    /// Error when the MMR is not found
-    #[error("MMR not found")]
-    MmrNotFound,
-
-    /// Error from the [`Indexer`]
-    #[error("Failed from indexer")]
-    IndexerError(#[from] IndexerError),
-
-    /// Error from [`RpcProvider`]
-    #[error("Failed to get proofs: {0}")]
-    RpcProviderError(#[from] RpcProviderError),
-
-    /// Error from [`eth_trie_proofs`]
-    #[error("EthTrieError: {0}")]
-    EthTrieError(#[from] eth_trie_proofs::EthTrieError),
-
-    #[error("Fetch key error: {0}")]
-    FetchKeyError(String),
-}
+type HeaderProofsResult = Result<
+    (
+        HashSet<MMRMeta>,
+        HashMap<BlockNumber, MMRProofFromNewIndexer>,
+    ),
+    ProviderError,
+>;
+type AccountProofsResult = Result<HashMap<BlockNumber, EIP1186AccountProofResponse>, ProviderError>;
+type StorageProofsResult = Result<HashMap<BlockNumber, EIP1186AccountProofResponse>, ProviderError>;
+type TxProofsResult = Result<Vec<FetchedTransactionProof>, ProviderError>;
+type TxReceiptProofsResult = Result<Vec<FetchedTransactionReceiptProof>, ProviderError>;
 
 /// EVM provider
 ///
@@ -77,19 +64,19 @@ pub struct EvmProvider {
 #[cfg(feature = "test_utils")]
 impl Default for EvmProvider {
     fn default() -> Self {
-        Self::new(EvmProviderConfig::default())
+        Self::new(&ProviderConfig::default())
     }
 }
 
 impl EvmProvider {
-    pub fn new(config: EvmProviderConfig) -> Self {
+    pub fn new(config: &ProviderConfig) -> Self {
         let rpc_provider = RpcProvider::new(config.rpc_url.clone(), config.max_requests);
         let header_provider = Indexer::new(config.chain_id);
 
         Self {
             rpc_provider,
             header_provider,
-            tx_provider_url: config.rpc_url,
+            tx_provider_url: config.rpc_url.clone(),
         }
     }
 
@@ -104,13 +91,7 @@ impl EvmProvider {
         from_block: BlockNumber,
         to_block: BlockNumber,
         increment: u64,
-    ) -> Result<
-        (
-            HashSet<MMRMeta>,
-            HashMap<BlockNumber, MMRProofFromNewIndexer>,
-        ),
-        ProviderError,
-    > {
+    ) -> HeaderProofsResult {
         let start_fetch = Instant::now();
 
         let target_blocks_batch: Vec<Vec<BlockNumber>> =
@@ -154,7 +135,7 @@ impl EvmProvider {
         to_block: BlockNumber,
         increment: u64,
         address: Address,
-    ) -> Result<HashMap<BlockNumber, EIP1186AccountProofResponse>, ProviderError> {
+    ) -> AccountProofsResult {
         let start_fetch = Instant::now();
 
         let target_blocks_batch: Vec<Vec<BlockNumber>> =
@@ -175,64 +156,6 @@ impl EvmProvider {
         Ok(fetched_accounts_proofs_with_blocks_map)
     }
 
-    /// Chunks the block range into smaller ranges of 800 blocks.
-    /// This is to avoid fetching too many blocks at once from the RPC provider.
-    /// This is meant to use with data lake definition, which have sequential block numbers
-    pub(crate) fn _chunk_block_range(
-        &self,
-        from_block: BlockNumber,
-        to_block: BlockNumber,
-        increment: u64,
-    ) -> Vec<Vec<BlockNumber>> {
-        (from_block..=to_block)
-            .step_by(increment as usize)
-            .chunks(800)
-            .into_iter()
-            .map(|chunk| chunk.collect())
-            .collect()
-    }
-
-    /// Chunks the blocks range into smaller ranges of 800 blocks.
-    /// It simply consider the number of blocks in the range and divide it by 800.
-    /// This is targeted for account and storage proofs in optimized way
-    pub(crate) fn _chunk_vec_blocks_for_mpt(
-        &self,
-        blocks: Vec<BlockNumber>,
-    ) -> Vec<Vec<BlockNumber>> {
-        blocks.chunks(800).map(|chunk| chunk.to_vec()).collect()
-    }
-
-    /// Chunks the blocks into smaller ranges of 800 blocks.
-    /// This is targeted for indexer to fetch header proofs in optimized way
-    pub(crate) fn _chunk_vec_blocks_for_indexer(
-        &self,
-        blocks: Vec<BlockNumber>,
-    ) -> Vec<Vec<BlockNumber>> {
-        // Sort the blocks
-        let mut sorted_blocks = blocks.clone();
-        sorted_blocks.sort();
-
-        let mut result: Vec<Vec<BlockNumber>> = Vec::new();
-        let mut current_chunk: Vec<BlockNumber> = Vec::new();
-
-        for &block in sorted_blocks.iter() {
-            // Check if the current chunk is empty or if the difference is within 800 blocks
-            if current_chunk.is_empty() || block - current_chunk[0] <= 800 {
-                current_chunk.push(block);
-            } else {
-                // Push the current chunk to result and start a new chunk
-                result.push(current_chunk);
-                current_chunk = vec![block];
-            }
-        }
-
-        if !current_chunk.is_empty() {
-            result.push(current_chunk);
-        }
-
-        result
-    }
-
     /// Fetches the storage proofs for the given block range.
     /// The storage proofs are fetched from the RPC provider.
     ///
@@ -245,7 +168,7 @@ impl EvmProvider {
         increment: u64,
         address: Address,
         storage_slot: StorageKey,
-    ) -> Result<HashMap<BlockNumber, EIP1186AccountProofResponse>, ProviderError> {
+    ) -> StorageProofsResult {
         let start_fetch = Instant::now();
 
         let target_blocks_batch: Vec<Vec<BlockNumber>> =
@@ -277,7 +200,7 @@ impl EvmProvider {
         start_index: TxIndex,
         end_index: TxIndex,
         incremental: u64,
-    ) -> Result<Vec<FetchedTransactionProof>, ProviderError> {
+    ) -> TxProofsResult {
         let start_fetch = Instant::now();
 
         let mut fetched_transaction_proofs = vec![];
@@ -344,7 +267,7 @@ impl EvmProvider {
         start_index: TxIndex,
         end_index: TxIndex,
         incremental: u64,
-    ) -> Result<Vec<FetchedTransactionReceiptProof>, ProviderError> {
+    ) -> TxReceiptProofsResult {
         let start_fetch = Instant::now();
 
         let mut fetched_transaction_receipts_proofs = vec![];
@@ -404,6 +327,89 @@ impl EvmProvider {
         );
 
         Ok(fetched_transaction_receipts_proofs)
+    }
+
+    /// Chunks the block range into smaller ranges of 800 blocks.
+    /// This is to avoid fetching too many blocks at once from the RPC provider.
+    /// This is meant to use with data lake definition, which have sequential block numbers
+    pub(crate) fn _chunk_block_range(
+        &self,
+        from_block: BlockNumber,
+        to_block: BlockNumber,
+        increment: u64,
+    ) -> Vec<Vec<BlockNumber>> {
+        (from_block..=to_block)
+            .step_by(increment as usize)
+            .chunks(800)
+            .into_iter()
+            .map(|chunk| chunk.collect())
+            .collect()
+    }
+
+    /// Chunks the blocks range into smaller ranges of 800 blocks.
+    /// It simply consider the number of blocks in the range and divide it by 800.
+    /// This is targeted for account and storage proofs in optimized way
+    pub(crate) fn _chunk_vec_blocks_for_mpt(
+        &self,
+        blocks: Vec<BlockNumber>,
+    ) -> Vec<Vec<BlockNumber>> {
+        blocks.chunks(800).map(|chunk| chunk.to_vec()).collect()
+    }
+
+    /// Chunks the blocks into smaller ranges of 800 blocks.
+    /// This is targeted for indexer to fetch header proofs in optimized way
+    pub(crate) fn _chunk_vec_blocks_for_indexer(
+        &self,
+        blocks: Vec<BlockNumber>,
+    ) -> Vec<Vec<BlockNumber>> {
+        // Sort the blocks
+        let mut sorted_blocks = blocks.clone();
+        sorted_blocks.sort();
+
+        let mut result: Vec<Vec<BlockNumber>> = Vec::new();
+        let mut current_chunk: Vec<BlockNumber> = Vec::new();
+
+        for &block in sorted_blocks.iter() {
+            // Check if the current chunk is empty or if the difference is within 800 blocks
+            if current_chunk.is_empty() || block - current_chunk[0] <= 800 {
+                current_chunk.push(block);
+            } else {
+                // Push the current chunk to result and start a new chunk
+                result.push(current_chunk);
+                current_chunk = vec![block];
+            }
+        }
+
+        if !current_chunk.is_empty() {
+            result.push(current_chunk);
+        }
+
+        result
+    }
+}
+
+impl ProofProvider for EvmProvider {
+    fn fetch_proofs<'a>(
+        &'a self,
+        datalake: &'a crate::primitives::task::datalake::DatalakeCompute,
+    ) -> AsyncResult<FetchProofsResult> {
+        Box::pin(async move {
+            match &datalake.datalake {
+                DatalakeEnvelope::BlockSampled(datalake) => {
+                    self.fetch_block_sampled(datalake).await
+                }
+                DatalakeEnvelope::TransactionsInBlock(datalake) => {
+                    self.fetch_transactions(datalake).await
+                }
+            }
+        })
+    }
+
+    fn fetch_proofs_from_keys(
+        &self,
+        keys: crate::provider::key::CategorizedFetchKeys,
+    ) -> AsyncResult<FetchProofsFromKeysResult> {
+        Box::pin(async move { self.fetch_proofs_from_keys(keys).await })
     }
 }
 

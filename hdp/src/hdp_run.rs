@@ -6,18 +6,19 @@ use crate::{
     preprocessor::{compile::config::CompilerConfig, PreProcessor},
     primitives::{processed_types::cairo_format::AsCairoFormat, task::TaskEnvelope},
     processor::Processor,
-    provider::evm::config::EvmProviderConfig,
+    provider::config::ProviderConfig,
 };
 use alloy::primitives::ChainId;
 use anyhow::Result;
 use reqwest::Url;
-use std::{env, fs, path::PathBuf};
+use std::{collections::HashMap, env, fs, path::PathBuf};
 use tracing::{debug, info};
 
 /// HdpRunConfig for the CLI
 #[derive(Debug)]
 pub struct HdpRunConfig {
-    pub evm_provider: EvmProviderConfig,
+    // chain_id => provider config
+    pub provider_config: HashMap<u64, ProviderConfig>,
     pub dry_run_program_path: PathBuf,
     pub sound_run_program_path: PathBuf,
     pub pre_processor_output_file: PathBuf,
@@ -30,7 +31,7 @@ pub struct HdpRunConfig {
 impl Default for HdpRunConfig {
     fn default() -> Self {
         Self {
-            evm_provider: EvmProviderConfig::default(),
+            provider_config: HashMap::new(),
             dry_run_program_path: DEFAULT_DRY_CAIRO_RUN_CAIRO_FILE.into(),
             sound_run_program_path: DEFAULT_SOUND_CAIRO_RUN_CAIRO_FILE.into(),
             pre_processor_output_file: DEFAULT_PREPROCESSOR_OUTPUT_FILE.into(),
@@ -90,12 +91,18 @@ impl HdpRunConfig {
                 .expect("SOUND_RUN_CAIRO_PATH must be a path to a cairo file")
         });
 
-        let config = HdpRunConfig {
-            evm_provider: EvmProviderConfig {
+        let mut provider_config = HashMap::new();
+        provider_config.insert(
+            chain_id,
+            ProviderConfig {
                 rpc_url,
                 chain_id,
                 max_requests: rpc_chunk_size,
             },
+        );
+
+        let config = HdpRunConfig {
+            provider_config,
             dry_run_program_path: dry_run_cairo_path,
             sound_run_program_path: sound_run_cairo_path,
             pre_processor_output_file,
@@ -119,7 +126,7 @@ impl HdpRunConfig {
 pub async fn run(hdp_run_config: &HdpRunConfig, tasks: Vec<TaskEnvelope>) -> Result<()> {
     let compiler_config = CompilerConfig {
         dry_run_program_path: hdp_run_config.dry_run_program_path.clone(),
-        provider_config: hdp_run_config.evm_provider.clone(),
+        provider_config: hdp_run_config.provider_config.clone(),
         save_fetch_keys_file: hdp_run_config.save_fetch_keys_file.clone(),
     };
     let preprocessor = PreProcessor::new_with_config(compiler_config);
