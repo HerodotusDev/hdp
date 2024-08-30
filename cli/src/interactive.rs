@@ -355,7 +355,7 @@ pub async fn run_interactive() -> anyhow::Result<()> {
             chain_id,
             None,
             None,
-            Some(cairo_input),
+            cairo_input,
             false,
             None,
             Some(output_file),

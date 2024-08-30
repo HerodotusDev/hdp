@@ -36,7 +36,7 @@ impl ProcessorInput {
     }
 
     /// Turn [`ProcessorInput`] into [`ProcessorOutput`] by provided task results
-    pub fn into_processor_output(self) -> ProcessorOutput {
+    pub fn into_processor_output(&self) -> ProcessorOutput {
         let tasks_commitments: Vec<B256> = self
             .tasks
             .iter()
@@ -67,7 +67,7 @@ impl ProcessorInput {
             results_inclusion_proofs,
             self.results_root,
             self.tasks_root,
-            self.proofs.mmr_metas,
+            self.proofs.mmr_metas.clone(),
         )
     }
 }

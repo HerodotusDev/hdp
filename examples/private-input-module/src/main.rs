@@ -32,8 +32,8 @@ async fn main() {
     let hdp_run_config = HdpRunConfig {
         dry_run_program_path: "../../build/contract_dry_run.json".into(),
         sound_run_program_path: "../../build/hdp.json".into(),
-        pre_processor_output_file: pre_processor_output_file.into(),
-        processor_output_file: Some(output_file.into()),
+        program_input_file: pre_processor_output_file.into(),
+        batch_proof_file: Some(output_file.into()),
         cairo_pie_file: Some(cairo_pie_file.into()),
         ..Default::default()
     };

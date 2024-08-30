@@ -1,4 +1,4 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::primitives::processed_types::{
     block_proofs::ProcessedBlockProofs as BaseProcessedBlockProofs, mmr::MMRMeta,
@@ -44,7 +44,7 @@ impl AsCairoFormat for BaseProcessedBlockProofs {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct ProcessedBlockProofs {
     pub mmr_metas: Vec<MMRMeta>,
     pub headers: Vec<ProcessedHeader>,

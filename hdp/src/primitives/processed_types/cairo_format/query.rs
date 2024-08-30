@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use crate::primitives::processed_types::query::ProcessorInput as BasedProcessorInput;
 use ::serde::Serialize;
 use alloy::primitives::B256;
+use serde::Deserialize;
 
 use super::{AsCairoFormat, ProcessedBlockProofs, ProcessedTask};
 
@@ -24,7 +25,7 @@ impl AsCairoFormat for BasedProcessorInput {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct ProcessorInput {
     /// Path to the directory where the cairo-run output will be stored.
     pub cairo_run_output_path: PathBuf,

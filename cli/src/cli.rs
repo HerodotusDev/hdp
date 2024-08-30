@@ -9,7 +9,7 @@ use crate::{
 };
 use anyhow::Result;
 use clap::Parser;
-use hdp::primitives::processed_types::query::ProcessorInput;
+use hdp::primitives::processed_types::cairo_format::query::ProcessorInput;
 use hdp::primitives::request::{SubmitBatchQuery, Task};
 use hdp::processor::{self, Processor};
 use hdp::{
@@ -68,26 +68,23 @@ pub async fn process_entry_run(args: ProcessArgs) -> Result<()> {
     let config = processor::HdpProcessorConfig::init(
         args.sound_run_cairo_file,
         args.input_file,
-        args.output_file,
         args.cairo_pie_file,
     );
-    let input_string = fs::read_to_string(config.input_file)?;
+    let input_string = fs::read_to_string(&config.input_file)?;
     let preprocessor_result: ProcessorInput = serde_json::from_str(&input_string)
         .expect("Input file is not valid. Check if format is correct");
-    let processor = Processor::new(config.sound_run_program_path.clone());
-    let processor_result = processor
-        .process(preprocessor_result, &config.cairo_pie_file)
-        .await?;
-    fs::write(
-        &config.processor_output_file,
-        serde_json::to_string_pretty(&processor_result)
-            .map_err(|e| anyhow::anyhow!("Failed to serialize processor result: {}", e))?,
-    )
-    .map_err(|e| anyhow::anyhow!("Unable to write output file: {}", e))?;
 
     info!(
-        "finished processing the data, saved the output file in {} and pie file in {}",
-        &config.processor_output_file.display(),
+        "processing the data from {}... ",
+        &config.input_file.display()
+    );
+    let processor = Processor::new(config.sound_run_program_path.clone());
+    processor
+        .process(preprocessor_result, &config.cairo_pie_file)
+        .await?;
+
+    info!(
+        "finished processing the data, saved pie file in {}",
         &config.cairo_pie_file.display()
     );
 
@@ -100,10 +97,10 @@ pub async fn module_entry_run(args: RunModuleArgs) -> Result<()> {
         args.chain_id,
         args.dry_run_cairo_file,
         args.sound_run_cairo_file,
-        args.preprocessor_output_file,
+        args.program_input_file,
         args.cairo_format,
         args.save_fetch_keys_file,
-        args.output_file,
+        args.batch_proof_file,
         args.cairo_pie_file,
     );
     let module_registry = ModuleRegistry::new();
@@ -127,10 +124,10 @@ pub async fn datalake_entry_run(args: RunDatalakeArgs) -> Result<()> {
         args.chain_id,
         None,
         args.sound_run_cairo_file,
-        args.preprocessor_output_file,
+        args.program_input_file,
         args.cairo_format,
         None,
-        args.output_file,
+        args.batch_proof_file,
         args.cairo_pie_file,
     );
     let parsed_datalake = match args.datalake {
@@ -182,10 +179,10 @@ pub async fn entry_run(args: RunArgs) -> Result<()> {
         Some(parsed.destination_chain_id),
         args.dry_run_cairo_file,
         args.sound_run_cairo_file,
-        args.preprocessor_output_file,
+        args.program_input_file,
         args.cairo_format,
         None,
-        args.output_file,
+        args.batch_proof_file,
         args.cairo_pie_file,
     );
     let module_registry = ModuleRegistry::new();
