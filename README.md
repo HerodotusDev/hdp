@@ -35,7 +35,7 @@ The Data Processor CLI serves as an essential tool for developers working with C
 
 ```bash
 # Install with cargo
-❯ cargo install --git https://github.com/HerodotusDev/hdp/ --tag v0.5.0 --locked --force hdp-cli
+❯ cargo install --git https://github.com/HerodotusDev/hdp/ --tag {TAG} --locked --force hdp-cli
 ```
 
 ### Build from source
@@ -75,7 +75,7 @@ Second, run command like below :
 note that this will go though both pre-process -> process step.
 
 ```bash
-hdp run -r ${Request file path} -p ${Pre-processor output} -c ${PIE file after process} -o ${Output file after process}
+hdp run -r ${Request file path} -p ${Program input file path} -b ${Batch proof file path} -c ${PIE file after process}
 ```
 
 For a more comprehensive guide on commands available on `hdp run`:
@@ -84,41 +84,27 @@ For a more comprehensive guide on commands available on `hdp run`:
 ❯ hdp run --help
 Run batch of tasks base on request json file
 
-Usage: hdp run [OPTIONS] --request-file <REQUEST_FILE>
+Usage: hdp run [OPTIONS] --request-file <REQUEST_FILE> --program-input-file <PROGRAM_INPUT_FILE>
 
 Options:
   -r, --request-file <REQUEST_FILE>
           Pass request as json file
-
       --rpc-url <RPC_URL>
-          The RPC URL to fetch the data.
-
-          Can be overwritten by `RPC_URL` environment variable.
-
+          The RPC URL to fetch the data
       --dry-run-cairo-file <DRY_RUN_CAIRO_FILE>
           dry run contract bootloader program. only used for module task
-
-  -p, --preprocessor-output-file <PREPROCESSOR_OUTPUT_FILE>
-          Path to save output file after pre-processing
-
+  -p, --program-input-file <PROGRAM_INPUT_FILE>
+          Path to save program input file after pre-processing
       --cairo-format
-          Set this boolean to true to generate cairo format preprocessor_output_file
-
+          Set this boolean to true to generate cairo format program_input_file
+  -b, --batch-proof-file <BATCH_PROOF_FILE>
+          Path to save batch proof file after pre-processing
       --sound-run-cairo-file <SOUND_RUN_CAIRO_FILE>
           hdp cairo compiled program. main entry point
-
-  -o, --output-file <OUTPUT_FILE>
-          Path to save output file after process
-
-          This will trigger processing(=pie generation) step
-
   -c, --cairo-pie-file <CAIRO_PIE_FILE>
           Path to save pie file
-
-          This will trigger processing(=pie generation) step
-
   -h, --help
-          Print help (see a summary with '-h')
+          Print help (see more with '--help')
 ```
 
 ## Integration Testing

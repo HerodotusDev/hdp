@@ -55,7 +55,7 @@ pub struct RunModuleArgs {
 
     /// Set this boolean to true to generate cairo format program_input_file
     ///
-    /// By default, preprocessor will outp
+    /// By default, program_input_file is generated in cairo format. If you dont want, set this to false.
     #[arg(long, default_value_t = true)]
     pub cairo_format: bool,
 
