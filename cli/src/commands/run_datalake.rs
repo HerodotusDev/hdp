@@ -61,7 +61,7 @@ pub struct RunDatalakeArgs {
 #[derive(Subcommand, Clone, Debug, PartialEq, Eq)]
 pub enum DataLakeCommands {
     #[command(arg_required_else_help = true)]
-    #[command(short_flag = 'b')]
+    #[command(short_flag = 's')]
     BlockSampled {
         /// Block number range start (inclusive)
         block_range_start: BlockNumber,
