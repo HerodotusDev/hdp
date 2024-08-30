@@ -64,9 +64,8 @@ impl Processor {
     ) -> Result<ProcessorOutput> {
         let cairo_run_input = serde_json::to_string_pretty(&processor_input.as_cairo_format())
             .expect("Failed to serialize module class");
-        let cairo_run_result = cairo_run(&self.program_path, cairo_run_input, pie_file_path)?;
-        let processor_result =
-            processor_input.into_processor_output(cairo_run_result.cairo_run_output.results);
+        let _ = cairo_run(&self.program_path, cairo_run_input, pie_file_path)?;
+        let processor_result = processor_input.into_processor_output();
         info!("2️⃣  Processor completed successfully");
         Ok(processor_result)
     }

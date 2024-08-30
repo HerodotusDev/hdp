@@ -60,7 +60,6 @@ impl PreProcessor {
         let results_merkle_tree_result =
             build_result_merkle_tree(&tasks_commitments, &compiled_results.task_results);
         let (result_merkle_tree, results_commitments) = results_merkle_tree_result;
-
         let task_merkle_root = tasks_merkle_tree.root();
         let mut combined_tasks = Vec::new();
 
@@ -68,44 +67,28 @@ impl PreProcessor {
             match task {
                 TaskEnvelope::DatalakeCompute(datalake_compute) => {
                     let task_commitment = datalake_compute.commit();
-                    let compiled_result = compiled_results.task_results[i];
                     let result_commitment = results_commitments[i];
+                    let compiled_result = compiled_results.task_results[i];
                     let result_proof = result_merkle_tree
                         .get_proof(&DynSolValue::FixedBytes(result_commitment, 32));
-                    let result = Some((compiled_result, result_commitment, result_proof));
                     let task_proof =
                         tasks_merkle_tree.get_proof(&DynSolValue::FixedBytes(task_commitment, 32));
                     let encoded_task = datalake_compute.encode()?;
                     let datalake_type = datalake_compute.datalake.get_datalake_type();
                     let property_type = datalake_compute.datalake.get_collection_type().to_index();
+                    debug!("compiled_result: {:#?}", compiled_result);
+                    let datalake_compute = ProcessedDatalakeCompute::new(
+                        Bytes::from(encoded_task),
+                        task_commitment,
+                        compiled_result,
+                        result_commitment,
+                        task_proof,
+                        result_proof,
+                        Bytes::from(datalake_compute.datalake.encode()?),
+                        datalake_type.into(),
+                        property_type,
+                    );
 
-                    let datalake_compute = match result {
-                        Some(result_value) => {
-                            let (compiled_result, result_commitment, result_proof) = result_value;
-                            debug!("compiled_result: {:#?}", compiled_result);
-                            ProcessedDatalakeCompute::new_with_result(
-                                Bytes::from(encoded_task),
-                                task_commitment,
-                                compiled_result,
-                                result_commitment,
-                                task_proof,
-                                result_proof,
-                                Bytes::from(datalake_compute.datalake.encode()?),
-                                datalake_type.into(),
-                                property_type,
-                            )
-                        }
-                        None => ProcessedDatalakeCompute::new_without_result(
-                            Bytes::from(encoded_task),
-                            task_commitment,
-                            task_proof,
-                            Bytes::from(datalake_compute.datalake.encode()?),
-                            datalake_type.into(),
-                            property_type,
-                        ),
-                    };
-
-                    // wrap into ProcessedTask
                     let task = ProcessedTask::DatalakeCompute(datalake_compute);
                     combined_tasks.push(task);
                 }
@@ -113,6 +96,8 @@ impl PreProcessor {
                     let task_commitment = module.task.commit();
                     let encoded_task = module.task.encode_task();
                     let result_commitment = results_commitments[i];
+                    let compiled_result = compiled_results.task_results[i];
+                    debug!("compiled_result: {:#?}", compiled_result);
                     let result_proof = result_merkle_tree
                         .get_proof(&DynSolValue::FixedBytes(result_commitment, 32));
                     let task_proof =
@@ -121,6 +106,7 @@ impl PreProcessor {
                         Bytes::from(encoded_task),
                         task_commitment,
                         result_commitment,
+                        compiled_result,
                         task_proof,
                         result_proof,
                         module.task.inputs,

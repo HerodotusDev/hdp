@@ -1,11 +1,6 @@
-use std::path::PathBuf;
-
-use crate::primitives::merkle_tree::build_result_merkle_tree;
 use ::serde::{Deserialize, Serialize};
-use alloy::{
-    dyn_abi::DynSolValue,
-    primitives::{B256, U256},
-};
+use alloy::primitives::B256;
+use std::path::PathBuf;
 
 use super::{
     block_proofs::ProcessedBlockProofs, processor_output::ProcessorOutput, task::ProcessedTask,
@@ -41,7 +36,7 @@ impl ProcessorInput {
     }
 
     /// Turn [`ProcessorInput`] into [`ProcessorOutput`] by provided task results
-    pub fn into_processor_output(self, task_results: Vec<U256>) -> ProcessorOutput {
+    pub fn into_processor_output(self) -> ProcessorOutput {
         let tasks_commitments: Vec<B256> = self
             .tasks
             .iter()
@@ -52,21 +47,25 @@ impl ProcessorInput {
             .iter()
             .map(|task| task.get_task_proof())
             .collect();
-        let (results_tree, result_commitments) =
-            build_result_merkle_tree(&tasks_commitments, &task_results);
-        let results_inclusion_proofs: Vec<Vec<B256>> = result_commitments
+        let task_results: Vec<B256> = self.tasks.iter().map(|task| task.get_result()).collect();
+        let result_commitments: Vec<B256> = self
+            .tasks
             .iter()
-            .map(|rc| results_tree.get_proof(&DynSolValue::FixedBytes(*rc, 32)))
+            .map(|task| task.get_result_commitment())
             .collect();
-        let result_root = results_tree.root();
+        let results_inclusion_proofs: Vec<Vec<B256>> = self
+            .tasks
+            .iter()
+            .map(|task| task.get_result_proof())
+            .collect();
 
         ProcessorOutput::new(
-            task_results.iter().map(|x| B256::from(*x)).collect(),
+            task_results,
             result_commitments,
             tasks_commitments,
             task_inclusion_proofs,
             results_inclusion_proofs,
-            result_root,
+            self.results_root,
             self.tasks_root,
             self.proofs.mmr_metas,
         )

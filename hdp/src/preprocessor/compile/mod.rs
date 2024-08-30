@@ -69,25 +69,6 @@ pub struct CompilationResult {
 }
 
 impl CompilationResult {
-    pub fn new_without_result(
-        headers: HashSet<ProcessedHeader>,
-        accounts: HashSet<ProcessedAccount>,
-        storages: HashSet<ProcessedStorage>,
-        transactions: HashSet<ProcessedTransaction>,
-        transaction_receipts: HashSet<ProcessedReceipt>,
-        mmr_metas: HashSet<MMRMeta>,
-    ) -> Self {
-        Self {
-            task_results: Vec::new(),
-            headers,
-            accounts,
-            storages,
-            transactions,
-            transaction_receipts,
-            mmr_metas,
-        }
-    }
-
     pub fn new(
         task_results: Vec<U256>,
         headers: HashSet<ProcessedHeader>,
