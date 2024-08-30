@@ -57,14 +57,9 @@ impl PreProcessor {
         let tasks_commitments: Vec<B256> =
             tasks.iter().map(|task| task.commit()).collect::<Vec<_>>();
         let tasks_merkle_tree = build_task_merkle_tree(&tasks_commitments);
-        let results_merkle_tree_result = if compiled_results.pre_processable {
-            Some(build_result_merkle_tree(
-                &tasks_commitments,
-                &compiled_results.task_results,
-            ))
-        } else {
-            None
-        };
+        let results_merkle_tree_result =
+            build_result_merkle_tree(&tasks_commitments, &compiled_results.task_results);
+        let (result_merkle_tree, results_commitments) = results_merkle_tree_result;
 
         let task_merkle_root = tasks_merkle_tree.root();
         let mut combined_tasks = Vec::new();
@@ -73,17 +68,11 @@ impl PreProcessor {
             match task {
                 TaskEnvelope::DatalakeCompute(datalake_compute) => {
                     let task_commitment = datalake_compute.commit();
-                    let result = if results_merkle_tree_result.is_some() {
-                        let (result_merkle_tree, results_commitments) =
-                            results_merkle_tree_result.as_ref().unwrap();
-                        let compiled_result = compiled_results.task_results[i];
-                        let result_commitment = results_commitments[i];
-                        let result_proof = result_merkle_tree
-                            .get_proof(&DynSolValue::FixedBytes(result_commitment, 32));
-                        Some((compiled_result, result_commitment, result_proof))
-                    } else {
-                        None
-                    };
+                    let compiled_result = compiled_results.task_results[i];
+                    let result_commitment = results_commitments[i];
+                    let result_proof = result_merkle_tree
+                        .get_proof(&DynSolValue::FixedBytes(result_commitment, 32));
+                    let result = Some((compiled_result, result_commitment, result_proof));
                     let task_proof =
                         tasks_merkle_tree.get_proof(&DynSolValue::FixedBytes(task_commitment, 32));
                     let encoded_task = datalake_compute.encode()?;
@@ -123,8 +112,6 @@ impl PreProcessor {
                 TaskEnvelope::Module(module) => {
                     let task_commitment = module.task.commit();
                     let encoded_task = module.task.encode_task();
-                    let (result_merkle_tree, results_commitments) =
-                        results_merkle_tree_result.as_ref().unwrap();
                     let result_commitment = results_commitments[i];
                     let result_proof = result_merkle_tree
                         .get_proof(&DynSolValue::FixedBytes(result_commitment, 32));
@@ -156,9 +143,7 @@ impl PreProcessor {
         };
         let processed_result = ProcessorInput::new(
             SOUND_CAIRO_RUN_OUTPUT_FILE.into(),
-            results_merkle_tree_result
-                .as_ref()
-                .map(|tree| tree.0.root()),
+            result_merkle_tree.root(),
             task_merkle_root,
             proofs,
             combined_tasks,

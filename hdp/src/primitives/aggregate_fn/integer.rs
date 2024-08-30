@@ -164,15 +164,6 @@ pub fn count(values: &[U256], ctx: &FunctionContext) -> Result<U256> {
     Ok(U256::from(condition_satisfiability_count))
 }
 
-pub fn simple_linear_regression(values: &[U256]) -> Result<U256> {
-    // if value is empty or has only one value, return error
-    if values.is_empty() || values.len() == 1 {
-        bail!("At least 2 values are needed to compute SLR");
-    }
-    // TODO: handle custom compute module
-    Ok(U256::from(0))
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "String")]
 pub enum Operator {

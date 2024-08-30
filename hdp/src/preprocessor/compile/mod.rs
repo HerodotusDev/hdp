@@ -50,10 +50,8 @@ pub trait Compilable {
     ) -> impl std::future::Future<Output = Result<CompilationResult, CompileError>> + Send;
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Default, PartialEq)]
 pub struct CompilationResult {
-    /// flag to check if the aggregation function is pre-processable
-    pub pre_processable: bool,
     /// results of tasks
     pub task_results: Vec<U256>,
     /// Headers related to the datalake
@@ -70,21 +68,6 @@ pub struct CompilationResult {
     pub mmr_metas: HashSet<MMRMeta>,
 }
 
-impl Default for CompilationResult {
-    fn default() -> Self {
-        Self {
-            pre_processable: true,
-            task_results: Vec::new(),
-            headers: HashSet::new(),
-            accounts: HashSet::new(),
-            storages: HashSet::new(),
-            transactions: HashSet::new(),
-            transaction_receipts: HashSet::new(),
-            mmr_metas: HashSet::new(),
-        }
-    }
-}
-
 impl CompilationResult {
     pub fn new_without_result(
         headers: HashSet<ProcessedHeader>,
@@ -95,7 +78,6 @@ impl CompilationResult {
         mmr_metas: HashSet<MMRMeta>,
     ) -> Self {
         Self {
-            pre_processable: false,
             task_results: Vec::new(),
             headers,
             accounts,
@@ -107,7 +89,6 @@ impl CompilationResult {
     }
 
     pub fn new(
-        pre_processable: bool,
         task_results: Vec<U256>,
         headers: HashSet<ProcessedHeader>,
         accounts: HashSet<ProcessedAccount>,
@@ -117,7 +98,6 @@ impl CompilationResult {
         mmr_metas: HashSet<MMRMeta>,
     ) -> Self {
         Self {
-            pre_processable,
             task_results,
             headers,
             accounts,
@@ -137,10 +117,5 @@ impl CompilationResult {
         self.transaction_receipts.extend(other.transaction_receipts);
         self.task_results.extend(other.task_results);
         self.mmr_metas.extend(other.mmr_metas);
-
-        // if any of the task is not pre-processable, the whole batch is not pre-processable
-        if !(self.pre_processable && other.pre_processable) {
-            self.pre_processable = false;
-        }
     }
 }

@@ -18,8 +18,7 @@ pub struct ProcessorInput {
     // U256 type
     pub tasks_root: B256,
     // U256 type
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub results_root: Option<B256>,
+    pub results_root: B256,
     pub proofs: ProcessedBlockProofs,
     pub tasks: Vec<ProcessedTask>,
 }
@@ -27,7 +26,7 @@ pub struct ProcessorInput {
 impl ProcessorInput {
     pub fn new(
         cairo_run_output_path: PathBuf,
-        results_root: Option<B256>,
+        results_root: B256,
         tasks_root: B256,
         proofs: ProcessedBlockProofs,
         tasks: Vec<ProcessedTask>,

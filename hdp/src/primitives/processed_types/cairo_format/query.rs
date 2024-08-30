@@ -30,9 +30,8 @@ pub struct ProcessorInput {
     pub cairo_run_output_path: PathBuf,
     /// Batched tasks root of all tasks.
     pub task_root: B256,
-    /// if every tasks are pre computable, this can be Some
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub result_root: Option<B256>,
+    /// Batched results root of all tasks.
+    pub result_root: B256,
     /// Fetched proofs per each fetch point.
     pub proofs: ProcessedBlockProofs,
     /// tasks to be executed.
