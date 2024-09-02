@@ -204,7 +204,7 @@ mod tests {
                         "chain_id": 11155111,
                         "block_number": 5186022,
                         "address": "0x13CB6AE34A13a0977F4d7101eBc24B87Bb23F0d5",
-                        "storage_key": "0x487ea7bf96eb1280f1075498855b55ec61ba7d354b5260e2504ef51140e0df63"
+                        "key": "0x487ea7bf96eb1280f1075498855b55ec61ba7d354b5260e2504ef51140e0df63"
                     }
                 }
                 ],
@@ -269,7 +269,7 @@ mod tests {
                     Address::from_str("0x13CB6AE34A13a0977F4d7101eBc24B87Bb23F0d5").unwrap()
                 );
                 assert_eq!(
-                    key.storage_key,
+                    key.key,
                     StorageKey::from_str(
                         "0x487ea7bf96eb1280f1075498855b55ec61ba7d354b5260e2504ef51140e0df63"
                     )

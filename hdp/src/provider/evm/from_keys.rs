@@ -187,7 +187,7 @@ impl EvmProvider {
         let mut address_slot_to_block_range: HashMap<(Address, B256), Vec<u64>> = HashMap::new();
         for key in keys {
             let block_range = address_slot_to_block_range
-                .entry((key.address, key.storage_key))
+                .entry((key.address, key.key))
                 .or_default();
             block_range.push(key.block_number);
         }

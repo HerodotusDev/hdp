@@ -203,7 +203,7 @@ pub struct StorageMemorizerKey {
     pub chain_id: ChainId,
     pub block_number: BlockNumber,
     pub address: Address,
-    pub storage_key: StorageKey,
+    pub key: StorageKey,
 }
 
 impl<'de> Deserialize<'de> for StorageMemorizerKey {
@@ -216,7 +216,7 @@ impl<'de> Deserialize<'de> for StorageMemorizerKey {
             chain_id: u128,
             block_number: BlockNumber,
             address: Address,
-            storage_key: StorageKey,
+            key: StorageKey,
         }
 
         let helper = Helper::deserialize(deserializer)?;
@@ -225,7 +225,7 @@ impl<'de> Deserialize<'de> for StorageMemorizerKey {
             chain_id: ChainId::from_numeric_id(helper.chain_id).expect("invalid deserialize"),
             block_number: helper.block_number,
             address: helper.address,
-            storage_key: helper.storage_key,
+            key: helper.key,
         })
     }
 }
@@ -235,13 +235,13 @@ impl StorageMemorizerKey {
         chain_id: ChainId,
         block_number: BlockNumber,
         address: Address,
-        storage_key: StorageKey,
+        key: StorageKey,
     ) -> Self {
         Self {
             chain_id,
             block_number,
             address,
-            storage_key,
+            key,
         }
     }
 
@@ -251,7 +251,7 @@ impl StorageMemorizerKey {
         keccak.update(self.chain_id.to_be_bytes());
         keccak.update(self.block_number.to_be_bytes());
         keccak.update(self.address);
-        keccak.update(self.storage_key);
+        keccak.update(self.key);
         keccak.finalize()
     }
 }
@@ -396,12 +396,12 @@ impl FromStr for FetchKeyEnvelope {
             }
             4 => {
                 let address = parts[2].parse()?;
-                let storage_key = parts[3].parse()?;
+                let key = parts[3].parse()?;
                 Ok(FetchKeyEnvelope::Storage(StorageMemorizerKey {
                     chain_id,
                     block_number,
                     address,
-                    storage_key,
+                    key,
                 }))
             }
             _ => anyhow::bail!("Invalid fetch key envelope: {}", s),
@@ -507,7 +507,7 @@ mod tests {
 
     #[test]
     fn test_parse_json_storage_key() {
-        let json = r#"{"type": "StorageMemorizerKey", "key": {"chain_id": 1, "block_number": 100, "address": "0x0000000000000000000000000000000000000000", "storage_key": "0x0000000000000000000000000000000000000000000000000000000000000000"}}"#;
+        let json = r#"{"type": "StorageMemorizerKey", "key": {"chain_id": 1, "block_number": 100, "address": "0x0000000000000000000000000000000000000000", "key": "0x0000000000000000000000000000000000000000000000000000000000000000"}}"#;
         let parsed: FetchKeyEnvelope = serde_json::from_str(json).unwrap();
         assert_eq!(
             parsed,
