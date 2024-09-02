@@ -2,7 +2,7 @@ use std::{collections::HashMap, path::PathBuf};
 
 #[cfg(feature = "test_utils")]
 use crate::constant::DEFAULT_DRY_CAIRO_RUN_CAIRO_FILE;
-use crate::{primitives::chain_id::ChainId, provider::config::ProviderConfig};
+use crate::{primitives::ChainId, provider::config::ProviderConfig};
 
 pub struct CompilerConfig {
     // dry-run program path

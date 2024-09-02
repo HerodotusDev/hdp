@@ -1,9 +1,7 @@
 use crate::{
     constant::{DEFAULT_DRY_CAIRO_RUN_CAIRO_FILE, DEFAULT_SOUND_CAIRO_RUN_CAIRO_FILE},
     preprocessor::{compile::config::CompilerConfig, PreProcessor},
-    primitives::{
-        chain_id::ChainId, processed_types::cairo_format::AsCairoFormat, task::TaskEnvelope,
-    },
+    primitives::{processed_types::cairo_format::AsCairoFormat, task::TaskEnvelope, ChainId},
     processor::Processor,
     provider::config::ProviderConfig,
 };

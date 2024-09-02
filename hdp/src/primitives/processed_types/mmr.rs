@@ -1,8 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::primitives::{
-    block::header::MMRMetaFromNewIndexer, chain_id::ChainId, utils::hex_string_to_uint,
-};
+use crate::primitives::{block::header::MMRMetaFromNewIndexer, utils::hex_string_to_uint, ChainId};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub struct MMRMeta {

@@ -1,6 +1,6 @@
 use reqwest::Url;
 
-use crate::primitives::chain_id::ChainId;
+use crate::primitives::ChainId;
 
 /// EVM provider configuration
 #[derive(Clone, Debug)]

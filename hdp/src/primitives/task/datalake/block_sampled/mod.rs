@@ -10,8 +10,7 @@ pub use rlp_fields::*;
 #[cfg(test)]
 mod tests {
     use crate::primitives::{
-        chain_id::ChainId, solidity_types::traits::DatalakeCodecs,
-        task::datalake::DatalakeCollection,
+        solidity_types::traits::DatalakeCodecs, task::datalake::DatalakeCollection, ChainId,
     };
 
     use super::*;

@@ -63,7 +63,6 @@ mod tests {
 
     use crate::primitives::{
         aggregate_fn::AggregationFunction,
-        chain_id::ChainId,
         task::datalake::{
             block_sampled::{
                 AccountField, BlockSampledCollection, BlockSampledDatalake, HeaderField,
@@ -75,6 +74,7 @@ mod tests {
                 TransactionsInBlockDatalake,
             },
         },
+        ChainId,
     };
     use alloy::primitives::{address, B256, U256};
 

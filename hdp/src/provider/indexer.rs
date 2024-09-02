@@ -4,7 +4,7 @@ use crate::{
         block::header::{
             MMRDataFromNewIndexer, MMRFromNewIndexer, MMRMetaFromNewIndexer, MMRProofFromNewIndexer,
         },
-        chain_id::ChainId,
+        ChainId,
     },
 };
 use alloy::primitives::BlockNumber;

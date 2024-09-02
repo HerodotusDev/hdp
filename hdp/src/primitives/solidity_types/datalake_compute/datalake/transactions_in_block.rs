@@ -1,11 +1,11 @@
 use crate::primitives::{
-    chain_id::ChainId,
     solidity_types::traits::DatalakeCodecs,
     task::datalake::{
         datalake_type::DatalakeType,
         transactions::{IncludedTypes, TransactionsCollection, TransactionsInBlockDatalake},
         DatalakeCollection,
     },
+    ChainId,
 };
 use alloy::primitives::keccak256;
 use alloy::{

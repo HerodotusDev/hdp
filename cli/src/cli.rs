@@ -9,9 +9,9 @@ use crate::{
 };
 use anyhow::Result;
 use clap::Parser;
-use hdp::primitives::chain_id::ChainId;
 use hdp::primitives::processed_types::cairo_format::query::ProcessorInput;
 use hdp::primitives::request::{SubmitBatchQuery, Task};
+use hdp::primitives::ChainId;
 use hdp::processor::{self, Processor};
 use hdp::{
     hdp_run,

@@ -1,7 +1,7 @@
 use crate::primitives::task::{datalake::DatalakeCompute, module::Module};
 use serde::{Deserialize, Serialize};
 
-use super::chain_id::ChainId;
+use super::ChainId;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "type")]

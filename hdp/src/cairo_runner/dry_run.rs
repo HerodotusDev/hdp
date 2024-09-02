@@ -153,7 +153,7 @@ mod tests {
     use alloy::primitives::{Address, StorageKey};
     use starknet::macros::felt;
 
-    use crate::primitives::chain_id::ChainId;
+    use crate::primitives::ChainId;
 
     use super::*;
 

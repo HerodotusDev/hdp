@@ -92,7 +92,6 @@ impl DatalakeCodecs for DatalakeEnvelope {
 #[cfg(test)]
 mod tests {
     use crate::primitives::{
-        chain_id::ChainId,
         task::datalake::{
             block_sampled::{AccountField, BlockSampledCollection, BlockSampledDatalake},
             envelope::BatchedDatalakes,
@@ -101,6 +100,7 @@ mod tests {
                 TransactionsInBlockDatalake,
             },
         },
+        ChainId,
     };
     use alloy::{hex, primitives::Address};
     use std::str::FromStr;

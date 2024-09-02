@@ -108,11 +108,11 @@ mod tests {
 
     use crate::primitives::{
         aggregate_fn::FunctionContext,
-        chain_id::ChainId,
         task::datalake::{
             block_sampled::{BlockSampledCollection, BlockSampledDatalake},
             transactions::{IncludedTypes, TransactionsCollection, TransactionsInBlockDatalake},
         },
+        ChainId,
     };
 
     use super::*;

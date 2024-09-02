@@ -1,5 +1,5 @@
-use crate::primitives::chain_id::ChainId;
 use crate::primitives::processed_types::block_proofs::ProcessedBlockProofs;
+use crate::primitives::ChainId;
 use std::future::Future;
 use std::pin::Pin;
 

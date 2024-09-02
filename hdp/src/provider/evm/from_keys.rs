@@ -357,7 +357,7 @@ mod tests {
     #[tokio::test]
     #[cfg(feature = "test_utils")]
     async fn test_get_proofs_from_header_keys() {
-        let target_chain_id = crate::primitives::chain_id::ChainId::EthereumSepolia;
+        let target_chain_id = crate::primitives::ChainId::EthereumSepolia;
         let provider = EvmProvider::default();
         let keys = vec![
             FetchKeyEnvelope::Header(HeaderMemorizerKey::new(target_chain_id, 1)),
@@ -373,7 +373,7 @@ mod tests {
     #[tokio::test]
     #[cfg(feature = "test_utils")]
     async fn test_get_proofs_from_accounts_keys() {
-        let target_chain_id = crate::primitives::chain_id::ChainId::EthereumSepolia;
+        let target_chain_id = crate::primitives::ChainId::EthereumSepolia;
         let provider = EvmProvider::default();
         let target_address = address!("7f2c6f930306d3aa736b3a6c6a98f512f74036d4");
         let keys = vec![
@@ -400,7 +400,7 @@ mod tests {
     #[cfg(feature = "test_utils")]
     async fn test_proofs_from_storage_keys() {
         let start_fetch = Instant::now();
-        let target_chain_id = crate::primitives::chain_id::ChainId::EthereumSepolia;
+        let target_chain_id = crate::primitives::ChainId::EthereumSepolia;
         let provider = EvmProvider::default();
         let target_address = address!("7f2c6f930306d3aa736b3a6c6a98f512f74036d4");
         let target_slot = B256::ZERO;
@@ -455,7 +455,7 @@ mod tests {
     #[tokio::test]
     #[cfg(feature = "test_utils")]
     async fn test_get_proofs_from_tx_keys() {
-        let target_chain_id = crate::primitives::chain_id::ChainId::EthereumSepolia;
+        let target_chain_id = crate::primitives::ChainId::EthereumSepolia;
         let provider = EvmProvider::default();
         let keys = vec![
             FetchKeyEnvelope::Tx(TxMemorizerKey::new(target_chain_id, 1000, 0)),

@@ -111,11 +111,11 @@ impl Codecs for Computation {
 #[cfg(test)]
 mod tests {
     use crate::primitives::{
-        chain_id::ChainId,
         solidity_types::traits::DatalakeComputeCodecs,
         task::datalake::{
             block_sampled::BlockSampledDatalake, envelope::DatalakeEnvelope, DatalakeCompute,
         },
+        ChainId,
     };
     use alloy::hex::FromHex;
 

@@ -1,10 +1,10 @@
-use crate::primitives::chain_id::ChainId;
 use crate::primitives::solidity_types::traits::DatalakeCodecs;
 use crate::primitives::task::datalake::block_sampled::{
     BlockSampledCollection, BlockSampledDatalake,
 };
 use crate::primitives::task::datalake::datalake_type::DatalakeType;
 use crate::primitives::task::datalake::DatalakeCollection;
+use crate::primitives::ChainId;
 
 use alloy::primitives::keccak256;
 use alloy::{

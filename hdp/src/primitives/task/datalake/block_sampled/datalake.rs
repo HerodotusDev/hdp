@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::primitives::{chain_id::ChainId, task::datalake::envelope::default_increment};
+use crate::primitives::{task::datalake::envelope::default_increment, ChainId};
 
 use super::collection::BlockSampledCollection;
 

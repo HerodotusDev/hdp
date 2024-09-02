@@ -8,3 +8,5 @@ pub mod serde;
 pub mod solidity_types;
 pub mod task;
 pub mod utils;
+
+pub use chain_id::ChainId;

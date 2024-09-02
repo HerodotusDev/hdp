@@ -1,5 +1,5 @@
 use clap::{arg, Parser};
-use hdp::primitives::chain_id::ChainId;
+use hdp::primitives::ChainId;
 use starknet::providers::Url;
 use std::path::PathBuf;
 

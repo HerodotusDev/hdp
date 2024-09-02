@@ -13,8 +13,7 @@ mod tests {
     use std::str::FromStr;
 
     use crate::primitives::{
-        chain_id::ChainId, solidity_types::traits::DatalakeCodecs,
-        task::datalake::DatalakeCollection,
+        solidity_types::traits::DatalakeCodecs, task::datalake::DatalakeCollection, ChainId,
     };
     use alloy::{
         hex,

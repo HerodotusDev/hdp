@@ -13,7 +13,7 @@ use alloy::primitives::U256;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
-use crate::primitives::{chain_id::ChainId, task::datalake::envelope::default_increment};
+use crate::primitives::{task::datalake::envelope::default_increment, ChainId};
 
 use super::TransactionsCollection;
 

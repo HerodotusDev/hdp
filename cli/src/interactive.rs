@@ -2,7 +2,7 @@ use alloy::{primitives::U256, transports::http::reqwest::Url};
 use anyhow::bail;
 use hdp::hdp_run;
 use hdp::preprocessor::module_registry::ModuleRegistry;
-use hdp::primitives::chain_id::ChainId;
+use hdp::primitives::ChainId;
 use hdp::primitives::{
     aggregate_fn::{integer::Operator, FunctionContext},
     task::{

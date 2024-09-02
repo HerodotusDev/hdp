@@ -10,10 +10,10 @@ use std::{
 };
 
 use crate::primitives::{
-    chain_id::ChainId,
     task::datalake::{
         block_sampled::BlockSampledCollectionType, transactions::TransactionsCollectionType,
     },
+    ChainId,
 };
 use alloy::primitives::{Address, BlockNumber, Keccak256, StorageKey, B256};
 use serde::{Deserialize, Serialize};
