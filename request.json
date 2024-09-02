@@ -1,11 +1,11 @@
 {
-  "destinationChainId": "ETH_SEPOLIA",
+  "destinationChainId": "ETHEREUM_SEPOLIA",
   "tasks": [
     {
       "type": "DatalakeCompute",
       "datalake": {
         "type": "BlockSampled",
-        "chainId": "ETH_SEPOLIA",
+        "chainId": "ETHEREUM_SEPOLIA",
         "blockRangeStart": 6375109,
         "blockRangeEnd": 6375109,
         "increment": 1,

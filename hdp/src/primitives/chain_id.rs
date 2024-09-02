@@ -57,10 +57,10 @@ impl FromStr for ChainId {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "ETH_MAINNET" => Ok(Self::EthereumMainnet),
-            "ETH_SEPOLIA" => Ok(Self::EthereumSepolia),
-            "SN_MAINNET" => Ok(Self::StarknetMainnet),
-            "SN_SEPOLIA" => Ok(Self::StarknetSepolia),
+            "ETHEREUM_MAINNET" => Ok(Self::EthereumMainnet),
+            "ETHEREUM_SEPOLIA" => Ok(Self::EthereumSepolia),
+            "STARKNET_MAINNET" => Ok(Self::StarknetMainnet),
+            "STARKNET_SEPOLIA" => Ok(Self::StarknetSepolia),
             _ => Err(ParseChainIdError {
                 input: s.to_string(),
             }),
@@ -71,10 +71,10 @@ impl FromStr for ChainId {
 impl Display for ChainId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ChainId::EthereumMainnet => write!(f, "ETH_MAINNET"),
-            ChainId::EthereumSepolia => write!(f, "ETH_SEPOLIA"),
-            ChainId::StarknetMainnet => write!(f, "SN_MAINNET"),
-            ChainId::StarknetSepolia => write!(f, "SN_SEPOLIA"),
+            ChainId::EthereumMainnet => write!(f, "ETHEREUM_MAINNET"),
+            ChainId::EthereumSepolia => write!(f, "ETHEREUM_SEPOLIA"),
+            ChainId::StarknetMainnet => write!(f, "STARKNET_MAINNET"),
+            ChainId::StarknetSepolia => write!(f, "STARKNET_SEPOLIA"),
         }
     }
 }
@@ -82,10 +82,10 @@ impl Display for ChainId {
 impl Debug for ChainId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ChainId::EthereumMainnet => write!(f, "ETH_MAINNET"),
-            ChainId::EthereumSepolia => write!(f, "ETH_SEPOLIA"),
-            ChainId::StarknetMainnet => write!(f, "SN_MAINNET"),
-            ChainId::StarknetSepolia => write!(f, "SN_SEPOLIA"),
+            ChainId::EthereumMainnet => write!(f, "ETHEREUM_MAINNET"),
+            ChainId::EthereumSepolia => write!(f, "ETHEREUM_SEPOLIA"),
+            ChainId::StarknetMainnet => write!(f, "STARKNET_MAINNET"),
+            ChainId::StarknetSepolia => write!(f, "STARKNET_SEPOLIA"),
         }
     }
 }
@@ -142,19 +142,19 @@ mod tests {
     #[test]
     fn test_from_str() {
         assert_eq!(
-            ChainId::from_str("ETH_MAINNET").unwrap(),
+            ChainId::from_str("ETHEREUM_MAINNET").unwrap(),
             ChainId::EthereumMainnet
         );
         assert_eq!(
-            ChainId::from_str("ETH_SEPOLIA").unwrap(),
+            ChainId::from_str("ETHEREUM_SEPOLIA").unwrap(),
             ChainId::EthereumSepolia
         );
         assert_eq!(
-            ChainId::from_str("SN_MAINNET").unwrap(),
+            ChainId::from_str("STARKNET_MAINNET").unwrap(),
             ChainId::StarknetMainnet
         );
         assert_eq!(
-            ChainId::from_str("SN_SEPOLIA").unwrap(),
+            ChainId::from_str("STARKNET_SEPOLIA").unwrap(),
             ChainId::StarknetSepolia
         );
         assert!(ChainId::from_str("INVALID").is_err());
@@ -162,10 +162,10 @@ mod tests {
 
     #[test]
     fn test_display() {
-        assert_eq!(ChainId::EthereumMainnet.to_string(), "ETH_MAINNET");
-        assert_eq!(ChainId::EthereumSepolia.to_string(), "ETH_SEPOLIA");
-        assert_eq!(ChainId::StarknetMainnet.to_string(), "SN_MAINNET");
-        assert_eq!(ChainId::StarknetSepolia.to_string(), "SN_SEPOLIA");
+        assert_eq!(ChainId::EthereumMainnet.to_string(), "ETHEREUM_MAINNET");
+        assert_eq!(ChainId::EthereumSepolia.to_string(), "ETHEREUM_SEPOLIA");
+        assert_eq!(ChainId::StarknetMainnet.to_string(), "STARKNET_MAINNET");
+        assert_eq!(ChainId::StarknetSepolia.to_string(), "STARKNET_SEPOLIA");
     }
 
     #[test]

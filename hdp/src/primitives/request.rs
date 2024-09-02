@@ -21,13 +21,13 @@ pub struct SubmitBatchQuery {
 fn test_serialize_submit_batch_query_datalake() {
     let json_data = r#"
     {
-      "destinationChainId": "ETH_SEPOLIA",
+      "destinationChainId": "ETHEREUM_SEPOLIA",
       "tasks": [
         {
           "type": "DatalakeCompute",
           "datalake": {
             "type": "BlockSampled",
-            "chainId": "ETH_SEPOLIA",
+            "chainId": "ETHEREUM_SEPOLIA",
             "blockRangeStart": 5515020,
             "blockRangeEnd": 5515039,
             "increment": 10,
@@ -41,7 +41,7 @@ fn test_serialize_submit_batch_query_datalake() {
           "type": "DatalakeCompute",
           "datalake": {
             "type": "TransactionsInBlock",
-            "chainId": "ETH_SEPOLIA",
+            "chainId": "ETHEREUM_SEPOLIA",
             "targetBlock": 5409986,
             "startIndex": 10,
             "endIndex": 40,
@@ -74,7 +74,7 @@ fn test_serialize_submit_batch_query_datalake() {
 fn test_serialize_submit_batch_query_module() {
     let json_data = r#"
    {
-    "destinationChainId": "ETH_SEPOLIA",
+    "destinationChainId": "ETHEREUM_SEPOLIA",
     "tasks": [
         {
         "type": "Module",
