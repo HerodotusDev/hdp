@@ -129,9 +129,9 @@ mod tests {
                 ),
             }),
             compute: Computation {
-                aggregate_fn_id: AggregationFunction::SLR,
+                aggregate_fn_id: AggregationFunction::COUNT,
                 aggregate_fn_ctx: FunctionContext {
-                    operator: Operator::None,
+                    operator: Operator::GreaterThan,
                     value_to_compare: U256::from_str("10000000").unwrap(),
                 },
             },
@@ -139,7 +139,7 @@ mod tests {
 
         assert_eq!(
             datalake_compute.commit(),
-            B256::from_str("0x8b610552e6badf24b2d4c44ebd7281d64bb9bdcbb229e29d8be53d4917989ee9")
+            B256::from_str("0x931644ee9576d1a377d4c5ba642a9f96361663f31d867d36169623f782a887fc")
                 .unwrap()
         )
     }
@@ -159,9 +159,9 @@ mod tests {
                 ),
             }),
             compute: Computation {
-                aggregate_fn_id: AggregationFunction::SLR,
+                aggregate_fn_id: AggregationFunction::COUNT,
                 aggregate_fn_ctx: FunctionContext {
-                    operator: Operator::None,
+                    operator: Operator::GreaterThan,
                     value_to_compare: U256::from_str("50").unwrap(),
                 },
             },
@@ -169,7 +169,7 @@ mod tests {
 
         assert_eq!(
             datalake_compute.commit(),
-            B256::from_str("0x4db0b8b60e30ad6300ad54021c0ee6b250d986b33d07e4a7b28631850b5752ec")
+            B256::from_str("0xa15da24b3eb2bb5260f59a71c3934b64e2747d8e934563ad532e7f877a061bed")
                 .unwrap()
         )
     }

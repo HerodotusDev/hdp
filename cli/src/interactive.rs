@@ -243,7 +243,7 @@ pub async fn run_interactive() -> anyhow::Result<()> {
                 }
             };
 
-            let task_opts: Vec<&str> = vec!["AVG", "SUM", "MIN", "MAX", "COUNT", "SLR"];
+            let task_opts: Vec<&str> = vec!["AVG", "SUM", "MIN", "MAX", "COUNT"];
 
             let aggregate_fn_id = Select::new("Select the aggregation function", task_opts)
                 .with_help_message(
@@ -266,16 +266,6 @@ pub async fn run_interactive() -> anyhow::Result<()> {
                     Some(FunctionContext::new(
                         Operator::from_symbol(&operator_ans)?,
                         U256::from_str(&value_to_compare)?,
-                    ))
-                }
-                "SLR" => {
-                    let target_index: String =
-                        inquire::Text::new("Enter the target index to compute SLR")
-                            .with_help_message("We will get y index over provided this x index")
-                            .prompt()?;
-                    Some(FunctionContext::new(
-                        Operator::None,
-                        U256::from_str(&target_index)?,
                     ))
                 }
                 _ => None,
@@ -365,7 +355,7 @@ pub async fn run_interactive() -> anyhow::Result<()> {
             chain_id,
             None,
             None,
-            Some(cairo_input),
+            cairo_input,
             false,
             None,
             Some(output_file),

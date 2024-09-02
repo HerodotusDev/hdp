@@ -1,4 +1,4 @@
-use alloy::primitives::{Bytes, B256};
+use alloy::primitives::{Bytes, B256, U256};
 use cairo_lang_starknet_classes::casm_contract_class::CasmContractClass;
 use serde::{Deserialize, Serialize};
 
@@ -10,6 +10,8 @@ pub struct ProcessedModule {
     pub encoded_task: Bytes,
     pub task_commitment: B256,
     pub result_commitment: B256,
+    /// raw evaluation result of target compiled task
+    pub compiled_result: U256,
     pub task_proof: Vec<B256>,
     pub result_proof: Vec<B256>,
 
@@ -24,6 +26,7 @@ impl ProcessedModule {
         encoded_task: Bytes,
         task_commitment: B256,
         result_commitment: B256,
+        compiled_result: U256,
         task_proof: Vec<B256>,
         result_proof: Vec<B256>,
         inputs: Vec<ModuleInput>,
@@ -33,6 +36,7 @@ impl ProcessedModule {
             encoded_task,
             task_commitment,
             result_commitment,
+            compiled_result,
             task_proof,
             result_proof,
             inputs,

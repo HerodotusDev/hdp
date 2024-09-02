@@ -15,8 +15,6 @@ pub mod integer;
 /// - MIN - Find the minimum value
 /// - MAX - Find the maximum value
 /// - COUNT - Count number of values that satisfy a condition
-/// - MERKLE - Return the merkle root of the values
-/// - SLR - Simple Linear Regression
 #[derive(Debug, PartialEq, Eq, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum AggregationFunction {
@@ -25,8 +23,6 @@ pub enum AggregationFunction {
     MIN,
     MAX,
     COUNT,
-    MERKLE,
-    SLR,
 }
 
 /// Get [`AggregationFunction`] from function id
@@ -40,8 +36,6 @@ impl FromStr for AggregationFunction {
             "MIN" => Ok(Self::MIN),
             "MAX" => Ok(Self::MAX),
             "COUNT" => Ok(Self::COUNT),
-            "MERKLE" => Ok(Self::MERKLE),
-            "SLR" => Ok(Self::SLR),
             _ => bail!("Unknown aggregation function"),
         }
     }
@@ -55,8 +49,6 @@ impl std::fmt::Display for AggregationFunction {
             AggregationFunction::MIN => write!(f, "min"),
             AggregationFunction::MAX => write!(f, "max"),
             AggregationFunction::COUNT => write!(f, "count"),
-            AggregationFunction::MERKLE => write!(f, "merkle"),
-            AggregationFunction::SLR => write!(f, "slr"),
         }
     }
 }
@@ -117,8 +109,6 @@ impl AggregationFunction {
             AggregationFunction::MIN => 2,
             AggregationFunction::MAX => 3,
             AggregationFunction::COUNT => 4,
-            AggregationFunction::MERKLE => 5,
-            AggregationFunction::SLR => 6,
         }
     }
 
@@ -129,8 +119,6 @@ impl AggregationFunction {
             2 => Ok(AggregationFunction::MIN),
             3 => Ok(AggregationFunction::MAX),
             4 => Ok(AggregationFunction::COUNT),
-            5 => Ok(AggregationFunction::MERKLE),
-            6 => Ok(AggregationFunction::SLR),
             _ => bail!("Unknown aggregation function index"),
         }
     }
@@ -149,48 +137,9 @@ impl AggregationFunction {
                     bail!("Context not provided for COUNT")
                 }
             }
-            // Aggregation functions for string values
-            AggregationFunction::MERKLE => todo!("Merkleize not implemented yet"),
-            AggregationFunction::SLR => integer::simple_linear_regression(values),
-        }
-    }
-
-    // Check if the function is pre-processable
-    pub fn is_pre_processable(&self) -> bool {
-        match self {
-            AggregationFunction::AVG
-            | AggregationFunction::SUM
-            | AggregationFunction::MIN
-            | AggregationFunction::MAX
-            | AggregationFunction::COUNT => true,
-            AggregationFunction::SLR | AggregationFunction::MERKLE => false,
         }
     }
 }
-
-// TODO: legacy parse.
-// // Remove the "0x" prefix if exist, so that integer functions can parse integer values
-// // In case of storage value, either if this is number or hex string type, all stored in hex string format.
-// // So, we need to remove the "0x" prefix to parse the integer value if user target to use integer functions.
-// // If the value is already in integer format, then it will be parsed as integer, which is decimal format.
-// //
-// // This also implies, even if the value is in hex string format, it will be parsed as integer, which is decimal format.
-// // So for user it's importantant to know the value type and the function type.
-// fn parse_int_value(values: &[String]) -> Result<Vec<U256>> {
-//     let int_values: Vec<U256> = values
-//         .iter()
-//         .map(|hex_str| {
-//             if hex_str.starts_with("0x") {
-//                 let hex_value = hex_str.trim_start_matches("0x").to_string();
-//                 U256::from_str_radix(&hex_value, 16).unwrap()
-//             } else {
-//                 U256::from_str_radix(hex_str, 10).unwrap()
-//             }
-//         })
-//         .collect();
-
-//     Ok(int_values)
-// }
 
 #[cfg(test)]
 mod tests {

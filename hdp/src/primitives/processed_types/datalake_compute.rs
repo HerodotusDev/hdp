@@ -8,14 +8,13 @@ pub struct ProcessedDatalakeCompute {
     /// computational task commitment
     pub task_commitment: B256,
     /// raw evaluation result of target compiled task
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub compiled_result: Option<U256>,
+    pub compiled_result: U256,
     /// results merkle tree's entry value
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub result_commitment: Option<B256>,
+    pub result_commitment: B256,
+    /// merkle proof for tasks
     pub task_proof: Vec<B256>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub result_proof: Option<Vec<B256>>,
+    /// merkle proof for results
+    pub result_proof: Vec<B256>,
     /// encoded datalake
     pub encoded_datalake: Bytes,
     // ex. block sampled datalake / transaction datalake
@@ -25,7 +24,7 @@ pub struct ProcessedDatalakeCompute {
 }
 
 impl ProcessedDatalakeCompute {
-    pub fn new_with_result(
+    pub fn new(
         encoded_task: Bytes,
         task_commitment: B256,
         compiled_result: U256,
@@ -39,45 +38,13 @@ impl ProcessedDatalakeCompute {
         Self {
             encoded_task,
             task_commitment,
-            compiled_result: Some(compiled_result),
-            result_commitment: Some(result_commitment),
+            compiled_result,
+            result_commitment,
             task_proof,
-            result_proof: Some(result_proof),
+            result_proof,
             encoded_datalake,
             datalake_type,
             property_type,
         }
-    }
-
-    pub fn new_without_result(
-        encoded_task: Bytes,
-        task_commitment: B256,
-        task_proof: Vec<B256>,
-        encoded_datalake: Bytes,
-        datalake_type: u8,
-        property_type: u8,
-    ) -> Self {
-        Self {
-            encoded_task,
-            task_commitment,
-            compiled_result: None,
-            result_commitment: None,
-            task_proof,
-            result_proof: None,
-            encoded_datalake,
-            datalake_type,
-            property_type,
-        }
-    }
-
-    pub fn update_results(
-        &mut self,
-        compiled_result: U256,
-        result_commitment: B256,
-        result_proof: Vec<B256>,
-    ) {
-        self.compiled_result = Some(compiled_result);
-        self.result_commitment = Some(result_commitment);
-        self.result_proof = Some(result_proof);
     }
 }

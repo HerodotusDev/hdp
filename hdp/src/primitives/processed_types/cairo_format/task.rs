@@ -1,6 +1,7 @@
 use super::{module::ProcessedModule, AsCairoFormat, ProcessedDatalakeCompute};
 use crate::primitives::processed_types::task::ProcessedTask as BaseProcessedTask;
 use ::serde::Serialize;
+use serde::Deserialize;
 
 impl AsCairoFormat for BaseProcessedTask {
     type Output = ProcessedTask;
@@ -15,7 +16,7 @@ impl AsCairoFormat for BaseProcessedTask {
     }
 }
 
-#[derive(Serialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(tag = "type", content = "context")]
 pub enum ProcessedTask {
     #[serde(rename = "datalake_compute")]

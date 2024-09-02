@@ -78,6 +78,9 @@ impl Runner {
             self.parse_run(output, &PathBuf::from(SOUND_CAIRO_RUN_OUTPUT_FILE))?;
         info!("cairo run output: {:#?}", cairo_run_output);
 
+        fs::remove_file(SOUND_CAIRO_RUN_OUTPUT_FILE)
+            .expect("Failed to remove cairo run output file");
+
         Ok(RunResult {
             pie_path: pie_file_path.to_owned(),
             cairo_run_output,

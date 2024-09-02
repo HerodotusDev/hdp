@@ -84,7 +84,6 @@ impl Compilable for ModuleVec {
         }
 
         let compiled_result = CompilationResult::new(
-            true,
             commit_results_maps,
             headers,
             accounts,

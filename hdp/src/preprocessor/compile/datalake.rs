@@ -27,7 +27,6 @@ impl Compilable for DatalakeCompute {
             aggregation_fn.operation(&compiled_block_sampled.values, Some(fn_context.clone()))?;
 
         Ok(CompilationResult::new(
-            aggregation_fn.is_pre_processable(),
             vec![aggregated_result],
             compiled_block_sampled.headers,
             compiled_block_sampled.accounts,

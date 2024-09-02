@@ -1,8 +1,5 @@
 use crate::{
-    constant::{
-        DEFAULT_DRY_CAIRO_RUN_CAIRO_FILE, DEFAULT_PREPROCESSOR_OUTPUT_FILE,
-        DEFAULT_SOUND_CAIRO_RUN_CAIRO_FILE,
-    },
+    constant::{DEFAULT_DRY_CAIRO_RUN_CAIRO_FILE, DEFAULT_SOUND_CAIRO_RUN_CAIRO_FILE},
     preprocessor::{compile::config::CompilerConfig, PreProcessor},
     primitives::{processed_types::cairo_format::AsCairoFormat, task::TaskEnvelope},
     processor::Processor,
@@ -21,9 +18,9 @@ pub struct HdpRunConfig {
     pub provider_config: HashMap<u64, ProviderConfig>,
     pub dry_run_program_path: PathBuf,
     pub sound_run_program_path: PathBuf,
-    pub pre_processor_output_file: PathBuf,
+    pub program_input_file: PathBuf,
     pub is_cairo_format: bool,
-    pub processor_output_file: Option<PathBuf>,
+    pub batch_proof_file: Option<PathBuf>,
     pub cairo_pie_file: Option<PathBuf>,
     pub save_fetch_keys_file: Option<PathBuf>,
 }
@@ -35,10 +32,10 @@ impl Default for HdpRunConfig {
             provider_config: HashMap::new(),
             dry_run_program_path: DEFAULT_DRY_CAIRO_RUN_CAIRO_FILE.into(),
             sound_run_program_path: DEFAULT_SOUND_CAIRO_RUN_CAIRO_FILE.into(),
-            pre_processor_output_file: DEFAULT_PREPROCESSOR_OUTPUT_FILE.into(),
+            program_input_file: "program_input.json".into(),
             is_cairo_format: false,
             cairo_pie_file: None,
-            processor_output_file: None,
+            batch_proof_file: None,
             save_fetch_keys_file: None,
         }
     }
@@ -50,10 +47,10 @@ impl HdpRunConfig {
         cli_chain_id: Option<ChainId>,
         cli_dry_run_cairo_file: Option<PathBuf>,
         cli_sound_run_cairo_file: Option<PathBuf>,
-        cli_pre_processor_output_file: Option<PathBuf>,
+        program_input_file: PathBuf,
         cli_is_cairo_format: bool,
         cli_save_fetch_keys_file: Option<PathBuf>,
-        cli_processor_output_file: Option<PathBuf>,
+        batch_proof_file: Option<PathBuf>,
         cli_cairo_pie_file: Option<PathBuf>,
     ) -> Self {
         let chain_id = cli_chain_id.unwrap_or_else(|| {
@@ -74,13 +71,6 @@ impl HdpRunConfig {
             .expect("RPC_CHUNK_SIZE must be a number");
         let save_fetch_keys_file: Option<PathBuf> = cli_save_fetch_keys_file
             .or_else(|| env::var("SAVE_FETCH_KEYS_FILE").ok().map(PathBuf::from));
-        let pre_processor_output_file: PathBuf =
-            cli_pre_processor_output_file.unwrap_or_else(|| {
-                env::var("DRY_RUN_CAIRO_PATH")
-                    .unwrap_or_else(|_| DEFAULT_PREPROCESSOR_OUTPUT_FILE.to_string())
-                    .parse()
-                    .expect("DRY_RUN_CAIRO_PATH must be a path to a cairo file")
-            });
         let dry_run_cairo_path: PathBuf = cli_dry_run_cairo_file.unwrap_or_else(|| {
             env::var("DRY_RUN_CAIRO_PATH")
                 .unwrap_or_else(|_| DEFAULT_DRY_CAIRO_RUN_CAIRO_FILE.to_string())
@@ -108,10 +98,10 @@ impl HdpRunConfig {
             provider_config,
             dry_run_program_path: dry_run_cairo_path,
             sound_run_program_path: sound_run_cairo_path,
-            pre_processor_output_file,
+            program_input_file,
             is_cairo_format: cli_is_cairo_format,
             save_fetch_keys_file,
-            processor_output_file: cli_processor_output_file,
+            batch_proof_file,
             cairo_pie_file: cli_cairo_pie_file,
         };
 
@@ -143,38 +133,46 @@ pub async fn run(hdp_run_config: &HdpRunConfig, tasks: Vec<TaskEnvelope>) -> Res
             .map_err(|e| anyhow::anyhow!("Failed to serialize preprocessor result: {}", e))?,
     };
 
-    fs::write(&hdp_run_config.pre_processor_output_file, input_string)
+    fs::write(&hdp_run_config.program_input_file, input_string)
         .map_err(|e| anyhow::anyhow!("Unable to write input file: {}", e))?;
+
+    match &hdp_run_config.batch_proof_file {
+        Some(batch_proof_file) => {
+            let batch_proof_data = preprocessor_result.into_processor_output();
+            fs::write(
+                batch_proof_file,
+                serde_json::to_string_pretty(&batch_proof_data)
+                    .map_err(|e| anyhow::anyhow!("Failed to serialize processor result: {}", e))?,
+            )
+            .map_err(|e| anyhow::anyhow!("Unable to write output file: {}", e))?;
+            info!(
+                "saved the batch proof file in {}",
+                &batch_proof_file.display()
+            );
+        }
+        None => {}
+    }
+
     info!(
-        "finished pre processing the data, saved the input file in {}",
-        &hdp_run_config.pre_processor_output_file.display()
+        "finished pre processing the data, saved the program input file in {}",
+        &hdp_run_config.program_input_file.display()
     );
-    if hdp_run_config.processor_output_file.is_none() && hdp_run_config.cairo_pie_file.is_none() {
+
+    if hdp_run_config.cairo_pie_file.is_none() {
         Ok(())
     } else {
         info!("starting processing the data... ");
-        let output_file_path = &hdp_run_config
-            .processor_output_file
-            .clone()
-            .ok_or_else(|| anyhow::anyhow!("Output file path should be specified"))?;
         let pie_file_path = &hdp_run_config
             .cairo_pie_file
             .clone()
             .ok_or_else(|| anyhow::anyhow!("PIE path should be specified"))?;
         let processor = Processor::new(hdp_run_config.sound_run_program_path.clone());
-        let processor_result = processor
-            .process(preprocessor_result, pie_file_path)
+        processor
+            .process(preprocessor_result.as_cairo_format(), pie_file_path)
             .await?;
-        fs::write(
-            output_file_path,
-            serde_json::to_string_pretty(&processor_result)
-                .map_err(|e| anyhow::anyhow!("Failed to serialize processor result: {}", e))?,
-        )
-        .map_err(|e| anyhow::anyhow!("Unable to write output file: {}", e))?;
 
         info!(
-            "finished processing the data, saved the output file in {} and pie file in {}",
-            output_file_path.display(),
+            "finished processing the data, saved pie file in {}",
             pie_file_path.display()
         );
         Ok(())

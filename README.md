@@ -35,7 +35,7 @@ The Data Processor CLI serves as an essential tool for developers working with C
 
 ```bash
 # Install with cargo
-❯ cargo install --git https://github.com/HerodotusDev/hdp/ --tag v0.5.0 --locked --force hdp-cli
+❯ cargo install --git https://github.com/HerodotusDev/hdp/ --tag {TAG} --locked --force hdp-cli
 ```
 
 ### Build from source
@@ -75,7 +75,7 @@ Second, run command like below :
 note that this will go though both pre-process -> process step.
 
 ```bash
-hdp run -r ${Request file path} -p ${Pre-processor output} -c ${PIE file after process} -o ${Output file after process}
+hdp run -r ${Request file path} -p ${Program input file path} -b ${Batch proof file path} -c ${PIE file after process}
 ```
 
 For a more comprehensive guide on commands available on `hdp run`:
@@ -84,41 +84,27 @@ For a more comprehensive guide on commands available on `hdp run`:
 ❯ hdp run --help
 Run batch of tasks base on request json file
 
-Usage: hdp run [OPTIONS] --request-file <REQUEST_FILE>
+Usage: hdp run [OPTIONS] --request-file <REQUEST_FILE> --program-input-file <PROGRAM_INPUT_FILE>
 
 Options:
   -r, --request-file <REQUEST_FILE>
           Pass request as json file
-
       --rpc-url <RPC_URL>
-          The RPC URL to fetch the data.
-
-          Can be overwritten by `RPC_URL` environment variable.
-
+          The RPC URL to fetch the data
       --dry-run-cairo-file <DRY_RUN_CAIRO_FILE>
           dry run contract bootloader program. only used for module task
-
-  -p, --preprocessor-output-file <PREPROCESSOR_OUTPUT_FILE>
-          Path to save output file after pre-processing
-
+  -p, --program-input-file <PROGRAM_INPUT_FILE>
+          Path to save program input file after pre-processing
       --cairo-format
-          Set this boolean to true to generate cairo format preprocessor_output_file
-
+          Set this boolean to true to generate cairo format program_input_file
+  -b, --batch-proof-file <BATCH_PROOF_FILE>
+          Path to save batch proof file after pre-processing
       --sound-run-cairo-file <SOUND_RUN_CAIRO_FILE>
           hdp cairo compiled program. main entry point
-
-  -o, --output-file <OUTPUT_FILE>
-          Path to save output file after process
-
-          This will trigger processing(=pie generation) step
-
   -c, --cairo-pie-file <CAIRO_PIE_FILE>
           Path to save pie file
-
-          This will trigger processing(=pie generation) step
-
   -h, --help
-          Print help (see a summary with '-h')
+          Print help (see more with '--help')
 ```
 
 ## Integration Testing
@@ -132,50 +118,47 @@ The core soundness of HDP relies on generating the correct input file and runnin
 ### Supported Aggregate Functions
 
 - **SUM, AVG, MIN, MAX, COUNT**: These functions are supported only for fields with numeric values.
-- **SLR**: Simple linear regression written in Cairo 1. The input array should contain more than 2 elements.
 
 ### Context Required Operation
 
 For a practical example of how to implement context-sensitive operations, refer to the implementation of the `COUNT` function. This example shows how to pass and utilize additional context for operations, which can be particularly useful for conditional processing or complex calculations.
 
-During `SLR` computation, we also need a context to use as the target index for computation. Since `SLR` is not supported during the preprocessing step, we simply pass the encoded task that contains the function context, and the Cairo program will handle this computation based on the provided index.
-
 ### Function Support Matrix
 
 Here is the support matrix indicating which blockchain elements are tested for each aggregate function. The matrix highlights fields where these functions are applicable.
 
-| Field Description                | SUM | AVG | MIN | MAX | COUNT | SLR |
-| -------------------------------- | --- | --- | --- | --- | ----- | --- |
-| `account.nonce`                  | ✅  | ✅  | ✅  | ✅  | ✅    | ✅  |
-| `account.balance`                | ✅  | ✅  | ✅  | ✅  | ✅    | ✅  |
-| `account.storage_root`           | -   | -   | -   | -   | -     | -   |
-| `account.code_hash`              | -   | -   | -   | -   | -     | -   |
-| `storage.key` (numeric value)    | ✅  | ✅  | ✅  | ✅  | ✅    | ✅  |
-| `storage.key` (hash value)       | -   | -   | -   | -   | -     | -   |
-| `header.difficulty`              | ✅  | ✅  | ✅  | ✅  | ✅    | ✅  |
-| `header.gas_limit`               | ✅  | ✅  | ✅  | ✅  | ✅    | ✅  |
-| `header.gas_used`                | ✅  | ✅  | ✅  | ✅  | ✅    | ✅  |
-| `header.timestamp`               | ✅  | ✅  | ✅  | ✅  | ✅    | ✅  |
-| `header.base_fee_per_gas`        | ✅  | ✅  | ✅  | ✅  | ✅    | ✅  |
-| `header.blob_gas_used`           | ✅  | ✅  | ✅  | ✅  | ✅    | ✅  |
-| `header.excess_blob_gas`         | ✅  | ✅  | ✅  | ✅  | ✅    | ✅  |
-| `header.nonce`                   | ✅  | ✅  | ✅  | ✅  | ✅    | ✅  |
-| Other `header` elements          | -   | -   | -   | -   | -     | -   |
-| `tx.nonce`                       | ✅  | ✅  | ✅  | ✅  | ✅    | ✅  |
-| `tx.gas_price`                   | ✅  | ✅  | ✅  | ✅  | ✅    | ✅  |
-| `tx.gas_limit`                   | ✅  | ✅  | ✅  | ✅  | ✅    | ✅  |
-| `tx.value`                       | ✅  | ✅  | ✅  | ✅  | ✅    | ✅  |
-| `tx.v`                           | ✅  | ✅  | ✅  | ✅  | ✅    | ✅  |
-| `tx.r`                           | ✅  | ✅  | ✅  | ✅  | ✅    | ✅  |
-| `tx.s`                           | ✅  | ✅  | ✅  | ✅  | ✅    | ✅  |
-| `tx.chain_id`                    | ✅  | ✅  | ✅  | ✅  | ✅    | ✅  |
-| `tx.max_fee_per_gas`             | ✅  | ✅  | ✅  | ✅  | ✅    | ✅  |
-| `tx.max_priority_fee_per_gas`    | ✅  | ✅  | ✅  | ✅  | ✅    | ✅  |
-| `tx.max_fee_per_blob_gas`        | ✅  | ✅  | ✅  | ✅  | ✅    | ✅  |
-| Other `tx` elements              | -   | -   | -   | -   | -     | -   |
-| `tx_receipt.success`             | ✅  | ✅  | ✅  | ✅  | ✅    | ✅  |
-| `tx_receipt.cumulative_gas_used` | ✅  | ✅  | ✅  | ✅  | ✅    | ✅  |
-| Other `tx_receipt` elements      | -   | -   | -   | -   | -     | -   |
+| Field Description                | SUM | AVG | MIN | MAX | COUNT |
+| -------------------------------- | --- | --- | --- | --- | ----- |
+| `account.nonce`                  | ✅  | ✅  | ✅  | ✅  | ✅    |
+| `account.balance`                | ✅  | ✅  | ✅  | ✅  | ✅    |
+| `account.storage_root`           | -   | -   | -   | -   | -     |
+| `account.code_hash`              | -   | -   | -   | -   | -     |
+| `storage.key` (numeric value)    | ✅  | ✅  | ✅  | ✅  | ✅    |
+| `storage.key` (hash value)       | -   | -   | -   | -   | -     |
+| `header.difficulty`              | ✅  | ✅  | ✅  | ✅  | ✅    |
+| `header.gas_limit`               | ✅  | ✅  | ✅  | ✅  | ✅    |
+| `header.gas_used`                | ✅  | ✅  | ✅  | ✅  | ✅    |
+| `header.timestamp`               | ✅  | ✅  | ✅  | ✅  | ✅    |
+| `header.base_fee_per_gas`        | ✅  | ✅  | ✅  | ✅  | ✅    |
+| `header.blob_gas_used`           | ✅  | ✅  | ✅  | ✅  | ✅    |
+| `header.excess_blob_gas`         | ✅  | ✅  | ✅  | ✅  | ✅    |
+| `header.nonce`                   | ✅  | ✅  | ✅  | ✅  | ✅    |
+| Other `header` elements          | -   | -   | -   | -   | -     |
+| `tx.nonce`                       | ✅  | ✅  | ✅  | ✅  | ✅    |
+| `tx.gas_price`                   | ✅  | ✅  | ✅  | ✅  | ✅    |
+| `tx.gas_limit`                   | ✅  | ✅  | ✅  | ✅  | ✅    |
+| `tx.value`                       | ✅  | ✅  | ✅  | ✅  | ✅    |
+| `tx.v`                           | ✅  | ✅  | ✅  | ✅  | ✅    |
+| `tx.r`                           | ✅  | ✅  | ✅  | ✅  | ✅    |
+| `tx.s`                           | ✅  | ✅  | ✅  | ✅  | ✅    |
+| `tx.chain_id`                    | ✅  | ✅  | ✅  | ✅  | ✅    |
+| `tx.max_fee_per_gas`             | ✅  | ✅  | ✅  | ✅  | ✅    |
+| `tx.max_priority_fee_per_gas`    | ✅  | ✅  | ✅  | ✅  | ✅    |
+| `tx.max_fee_per_blob_gas`        | ✅  | ✅  | ✅  | ✅  | ✅    |
+| Other `tx` elements              | -   | -   | -   | -   | -     |
+| `tx_receipt.success`             | ✅  | ✅  | ✅  | ✅  | ✅    |
+| `tx_receipt.cumulative_gas_used` | ✅  | ✅  | ✅  | ✅  | ✅    |
+| Other `tx_receipt` elements      | -   | -   | -   | -   | -     |
 
 _Note: Fields marked with "-" are not applicable for the specified aggregate functions because they do not contain numeric data or the data type is not suitable for these calculations._
 
