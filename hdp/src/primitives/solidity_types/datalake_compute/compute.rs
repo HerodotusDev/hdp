@@ -110,9 +110,10 @@ impl Codecs for Computation {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        primitives::solidity_types::traits::DatalakeComputeCodecs,
-        primitives::task::datalake::{
+    use crate::primitives::{
+        chain_id::ChainId,
+        solidity_types::traits::DatalakeComputeCodecs,
+        task::datalake::{
             block_sampled::BlockSampledDatalake, envelope::DatalakeEnvelope, DatalakeCompute,
         },
     };
@@ -227,7 +228,7 @@ mod tests {
             )),
         );
         let datalake = DatalakeEnvelope::BlockSampled(BlockSampledDatalake::new(
-            11155111,
+            ChainId::EthereumSepolia,
             0,
             100,
             1,

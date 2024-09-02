@@ -9,6 +9,7 @@ use crate::{
 };
 use anyhow::Result;
 use clap::Parser;
+use hdp::primitives::chain_id::ChainId;
 use hdp::primitives::processed_types::cairo_format::query::ProcessorInput;
 use hdp::primitives::request::{SubmitBatchQuery, Task};
 use hdp::processor::{self, Processor};
@@ -137,7 +138,7 @@ pub async fn datalake_entry_run(args: RunDatalakeArgs) -> Result<()> {
             sampled_property,
             increment,
         } => DatalakeEnvelope::BlockSampled(BlockSampledDatalake::new(
-            11155111,
+            ChainId::EthereumSepolia,
             block_range_start,
             block_range_end,
             increment,
@@ -151,7 +152,7 @@ pub async fn datalake_entry_run(args: RunDatalakeArgs) -> Result<()> {
             increment,
             included_types,
         } => DatalakeEnvelope::TransactionsInBlock(TransactionsInBlockDatalake::new(
-            11155111,
+            ChainId::EthereumSepolia,
             target_block,
             sampled_property,
             start_index,

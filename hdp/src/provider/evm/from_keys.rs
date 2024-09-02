@@ -22,7 +22,7 @@ use std::time::Instant;
 use tracing::info;
 
 impl EvmProvider {
-    /// This is the public entry point of provider.  
+    /// This is the public entry point of provider.
     pub async fn fetch_proofs_from_keys(
         &self,
         fetch_keys: CategorizedFetchKeys,
@@ -187,7 +187,7 @@ impl EvmProvider {
         let mut address_slot_to_block_range: HashMap<(Address, B256), Vec<u64>> = HashMap::new();
         for key in keys {
             let block_range = address_slot_to_block_range
-                .entry((key.address, key.key))
+                .entry((key.address, key.storage_key))
                 .or_default();
             block_range.push(key.block_number);
         }
@@ -357,7 +357,7 @@ mod tests {
     #[tokio::test]
     #[cfg(feature = "test_utils")]
     async fn test_get_proofs_from_header_keys() {
-        let target_chain_id = 11155111;
+        let target_chain_id = crate::primitives::chain_id::ChainId::EthereumSepolia;
         let provider = EvmProvider::default();
         let keys = vec![
             FetchKeyEnvelope::Header(HeaderMemorizerKey::new(target_chain_id, 1)),
@@ -373,7 +373,7 @@ mod tests {
     #[tokio::test]
     #[cfg(feature = "test_utils")]
     async fn test_get_proofs_from_accounts_keys() {
-        let target_chain_id = 11155111;
+        let target_chain_id = crate::primitives::chain_id::ChainId::EthereumSepolia;
         let provider = EvmProvider::default();
         let target_address = address!("7f2c6f930306d3aa736b3a6c6a98f512f74036d4");
         let keys = vec![
@@ -400,7 +400,7 @@ mod tests {
     #[cfg(feature = "test_utils")]
     async fn test_proofs_from_storage_keys() {
         let start_fetch = Instant::now();
-        let target_chain_id = 11155111;
+        let target_chain_id = crate::primitives::chain_id::ChainId::EthereumSepolia;
         let provider = EvmProvider::default();
         let target_address = address!("7f2c6f930306d3aa736b3a6c6a98f512f74036d4");
         let target_slot = B256::ZERO;
@@ -455,7 +455,7 @@ mod tests {
     #[tokio::test]
     #[cfg(feature = "test_utils")]
     async fn test_get_proofs_from_tx_keys() {
-        let target_chain_id = 11155111;
+        let target_chain_id = crate::primitives::chain_id::ChainId::EthereumSepolia;
         let provider = EvmProvider::default();
         let keys = vec![
             FetchKeyEnvelope::Tx(TxMemorizerKey::new(target_chain_id, 1000, 0)),

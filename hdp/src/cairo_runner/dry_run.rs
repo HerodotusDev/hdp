@@ -1,6 +1,9 @@
 use crate::constant::DRY_CAIRO_RUN_OUTPUT_FILE;
 use crate::primitives::processed_types::uint256::Uint256;
-use crate::provider::key::FetchKeyEnvelope;
+use crate::provider::key::{
+    AccountMemorizerKey, FetchKeyEnvelope, HeaderMemorizerKey, StorageMemorizerKey, TxMemorizerKey,
+    TxReceiptMemorizerKey,
+};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use starknet::core::serde::unsigned_field_element::UfeHex;
@@ -18,10 +21,65 @@ pub type DryRunResult = Vec<DryRunnedModule>;
 #[serde_as]
 #[derive(Serialize, Deserialize, Debug)]
 pub struct DryRunnedModule {
+    #[serde(deserialize_with = "deserialize_fetch_keys")]
     pub fetch_keys: Vec<FetchKeyEnvelope>,
     pub result: Uint256,
     #[serde_as(as = "UfeHex")]
     pub program_hash: FieldElement,
+}
+
+fn deserialize_fetch_keys<'de, D>(deserializer: D) -> Result<Vec<FetchKeyEnvelope>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    #[derive(Deserialize)]
+    struct Helper {
+        #[serde(rename = "type")]
+        key_type: String,
+        key: serde_json::Value,
+    }
+
+    let helpers: Vec<Helper> = Vec::deserialize(deserializer)?;
+
+    helpers
+        .into_iter()
+        .map(|helper| {
+            let envelope = match helper.key_type.as_str() {
+                "HeaderMemorizerKey" => {
+                    let key: HeaderMemorizerKey =
+                        serde_json::from_value(helper.key).map_err(serde::de::Error::custom)?;
+                    FetchKeyEnvelope::Header(key)
+                }
+                "AccountMemorizerKey" => {
+                    let key: AccountMemorizerKey =
+                        serde_json::from_value(helper.key).map_err(serde::de::Error::custom)?;
+                    FetchKeyEnvelope::Account(key)
+                }
+                "StorageMemorizerKey" => {
+                    let key: StorageMemorizerKey =
+                        serde_json::from_value(helper.key).map_err(serde::de::Error::custom)?;
+                    FetchKeyEnvelope::Storage(key)
+                }
+                "TxMemorizerKey" => {
+                    let key: TxMemorizerKey =
+                        serde_json::from_value(helper.key).map_err(serde::de::Error::custom)?;
+                    FetchKeyEnvelope::Tx(key)
+                }
+                "TxReceiptMemorizerKey" => {
+                    let key: TxReceiptMemorizerKey =
+                        serde_json::from_value(helper.key).map_err(serde::de::Error::custom)?;
+                    FetchKeyEnvelope::TxReceipt(key)
+                }
+                _ => {
+                    return Err(serde::de::Error::custom(format!(
+                        "Unknown key type: {}",
+                        helper.key_type
+                    )))
+                }
+            };
+            Ok(envelope)
+        })
+        .collect()
 }
 
 pub struct DryRunner {
@@ -90,7 +148,12 @@ impl DryRunner {
 
 #[cfg(test)]
 mod tests {
+    use core::str::FromStr;
+
+    use alloy::primitives::{Address, StorageKey};
     use starknet::macros::felt;
+
+    use crate::primitives::chain_id::ChainId;
 
     use super::*;
 
@@ -117,47 +180,103 @@ mod tests {
     #[test]
     fn test_parse_run() {
         let output = r#"
-    [
-        {
-            "fetch_keys": [
+        [
             {
-                "key": {
-                "chain_id": 11155111,
-                "block_number": 5186021
+                "fetch_keys": [
+                {
+                    "type": "HeaderMemorizerKey",
+                    "key": {
+                        "chain_id": 11155111,
+                        "block_number": 5186021
+                    }
                 },
-                "type": "HeaderMemorizerKey"
-            },
-             {
-                "key": {
-                "chain_id": 11155111,
-                "block_number": 5186023,
-                "address": "0x13CB6AE34A13a0977F4d7101eBc24B87Bb23F0d5"
+                {
+                    "type": "AccountMemorizerKey",
+                    "key": {
+                        "chain_id": 11155111,
+                        "block_number": 5186023,
+                        "address": "0x13CB6AE34A13a0977F4d7101eBc24B87Bb23F0d5"
+                    }
                 },
-                "type": "AccountMemorizerKey"
-            },
-            {
-                "key": {
-                "chain_id": 11155111,
-                "block_number": 5186022,
-                "address": "0x13CB6AE34A13a0977F4d7101eBc24B87Bb23F0d5",
-                "key": "0x487ea7bf96eb1280f1075498855b55ec61ba7d354b5260e2504ef51140e0df63"
-                },
-                "type": "StorageMemorizerKey"
-            }
-            ],
-            "result": { "low": "0x0", "high": "0x0" },
-            "program_hash": "0xc8580f74b6e6e04d8073602ad0c0d55538b56bf8307fefebb6b65b1bbf2a27"
+                {
+                    "type": "StorageMemorizerKey",
+                    "key": {
+                        "chain_id": 11155111,
+                        "block_number": 5186022,
+                        "address": "0x13CB6AE34A13a0977F4d7101eBc24B87Bb23F0d5",
+                        "storage_key": "0x487ea7bf96eb1280f1075498855b55ec61ba7d354b5260e2504ef51140e0df63"
+                    }
+                }
+                ],
+                "result": { "low": "0x0", "high": "0x0" },
+                "program_hash": "0xc8580f74b6e6e04d8073602ad0c0d55538b56bf8307fefebb6b65b1bbf2a27"
             }
         ]
         "#;
-        let fetch_keys: Vec<DryRunnedModule> = serde_json::from_str(output).unwrap();
+
+        println!("Attempting to parse the following JSON:");
+        println!("{}", output);
+
+        let fetch_keys: Vec<DryRunnedModule> = match serde_json::from_str(output) {
+            Ok(result) => result,
+            Err(e) => {
+                println!("Error parsing JSON: {:?}", e);
+                panic!("JSON parsing failed");
+            }
+        };
+
         assert_eq!(fetch_keys.len(), 1);
         let module = &fetch_keys[0];
         assert_eq!(module.fetch_keys.len(), 3);
+
+        for (i, key) in module.fetch_keys.iter().enumerate() {
+            println!("Fetch key {}: {:?}", i, key);
+        }
+
         assert_eq!(module.result, Uint256::from_strs("0x0", "0x0").unwrap());
         assert_eq!(
             module.program_hash,
             felt!("0xc8580f74b6e6e04d8073602ad0c0d55538b56bf8307fefebb6b65b1bbf2a27")
-        )
+        );
+
+        // Additional assertions for each key type
+        match &module.fetch_keys[0] {
+            FetchKeyEnvelope::Header(key) => {
+                assert_eq!(key.chain_id, ChainId::from_numeric_id(11155111).unwrap());
+                assert_eq!(key.block_number, 5186021);
+            }
+            _ => panic!("Expected HeaderMemorizerKey"),
+        }
+
+        match &module.fetch_keys[1] {
+            FetchKeyEnvelope::Account(key) => {
+                assert_eq!(key.chain_id, ChainId::from_numeric_id(11155111).unwrap());
+                assert_eq!(key.block_number, 5186023);
+                assert_eq!(
+                    key.address,
+                    Address::from_str("0x13CB6AE34A13a0977F4d7101eBc24B87Bb23F0d5").unwrap()
+                );
+            }
+            _ => panic!("Expected AccountMemorizerKey"),
+        }
+
+        match &module.fetch_keys[2] {
+            FetchKeyEnvelope::Storage(key) => {
+                assert_eq!(key.chain_id, ChainId::from_numeric_id(11155111).unwrap());
+                assert_eq!(key.block_number, 5186022);
+                assert_eq!(
+                    key.address,
+                    Address::from_str("0x13CB6AE34A13a0977F4d7101eBc24B87Bb23F0d5").unwrap()
+                );
+                assert_eq!(
+                    key.storage_key,
+                    StorageKey::from_str(
+                        "0x487ea7bf96eb1280f1075498855b55ec61ba7d354b5260e2504ef51140e0df63"
+                    )
+                    .unwrap()
+                );
+            }
+            _ => panic!("Expected StorageMemorizerKey"),
+        }
     }
 }

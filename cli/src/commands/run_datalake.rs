@@ -1,9 +1,10 @@
 use std::path::PathBuf;
 
-use alloy::primitives::{BlockNumber, ChainId, TxIndex};
+use alloy::primitives::{BlockNumber, TxIndex};
 use clap::{arg, command, Parser, Subcommand};
 use hdp::primitives::{
     aggregate_fn::{AggregationFunction, FunctionContext},
+    chain_id::ChainId,
     task::datalake::{
         block_sampled::BlockSampledCollection,
         transactions::{IncludedTypes, TransactionsCollection},

@@ -1,6 +1,8 @@
 use crate::primitives::task::{datalake::DatalakeCompute, module::Module};
 use serde::{Deserialize, Serialize};
 
+use super::chain_id::ChainId;
+
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum Task {
@@ -11,7 +13,7 @@ pub enum Task {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SubmitBatchQuery {
-    pub destination_chain_id: u64,
+    pub destination_chain_id: ChainId,
     pub tasks: Vec<Task>,
 }
 
@@ -19,13 +21,13 @@ pub struct SubmitBatchQuery {
 fn test_serialize_submit_batch_query_datalake() {
     let json_data = r#"
     {
-      "destinationChainId": 11155111,
+      "destinationChainId": "ETH_SEPOLIA",
       "tasks": [
         {
           "type": "DatalakeCompute",
           "datalake": {
             "type": "BlockSampled",
-            "chainId": 11155111,
+            "chainId": "ETH_SEPOLIA",
             "blockRangeStart": 5515020,
             "blockRangeEnd": 5515039,
             "increment": 10,
@@ -39,8 +41,7 @@ fn test_serialize_submit_batch_query_datalake() {
           "type": "DatalakeCompute",
           "datalake": {
             "type": "TransactionsInBlock",
-    
-            "chainId": 11155111,
+            "chainId": "ETH_SEPOLIA",
             "targetBlock": 5409986,
             "startIndex": 10,
             "endIndex": 40,
@@ -62,7 +63,7 @@ fn test_serialize_submit_batch_query_datalake() {
           }
         }
       ]
-    }  
+    }
     "#;
 
     let parsed: SubmitBatchQuery = serde_json::from_str(json_data).unwrap();
@@ -73,7 +74,7 @@ fn test_serialize_submit_batch_query_datalake() {
 fn test_serialize_submit_batch_query_module() {
     let json_data = r#"
    {
-    "destinationChainId": 11155111,
+    "destinationChainId": "ETH_SEPOLIA",
     "tasks": [
         {
         "type": "Module",
@@ -91,7 +92,7 @@ fn test_serialize_submit_batch_query_module() {
         }
     ]
     }
-      
+
     "#;
 
     let parsed: SubmitBatchQuery = serde_json::from_str(json_data).unwrap();

@@ -2,9 +2,10 @@ use core::{
     fmt::{Debug, Display},
     str::FromStr,
 };
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use thiserror::Error;
 
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, Clone, Copy, Hash)]
 pub enum ChainId {
     EthereumMainnet,
     EthereumSepolia,
@@ -16,6 +17,39 @@ pub enum ChainId {
 #[error("Failed to parse ChainId: {input}")]
 pub struct ParseChainIdError {
     input: String,
+}
+
+impl TryFrom<u128> for ChainId {
+    type Error = ParseChainIdError;
+
+    fn try_from(value: u128) -> Result<Self, Self::Error> {
+        Self::from_numeric_id(value)
+    }
+}
+
+impl From<ChainId> for u128 {
+    fn from(chain_id: ChainId) -> Self {
+        chain_id.to_numeric_id()
+    }
+}
+
+impl<'de> Deserialize<'de> for ChainId {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        ChainId::from_str(&s).map_err(serde::de::Error::custom)
+    }
+}
+
+impl Serialize for ChainId {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
+    }
 }
 
 impl FromStr for ChainId {
@@ -37,10 +71,10 @@ impl FromStr for ChainId {
 impl Display for ChainId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ChainId::EthereumMainnet => write!(f, "{}", "ETH_MAINNET"),
-            ChainId::EthereumSepolia => write!(f, "{}", "ETH_SEPOLIA"),
-            ChainId::StarknetMainnet => write!(f, "{}", "SN_MAINNET"),
-            ChainId::StarknetSepolia => write!(f, "{}", "SN_SEPOLIA"),
+            ChainId::EthereumMainnet => write!(f, "ETH_MAINNET"),
+            ChainId::EthereumSepolia => write!(f, "ETH_SEPOLIA"),
+            ChainId::StarknetMainnet => write!(f, "SN_MAINNET"),
+            ChainId::StarknetSepolia => write!(f, "SN_SEPOLIA"),
         }
     }
 }
@@ -84,7 +118,7 @@ impl ChainId {
     /// # Returns
     /// A Result containing the corresponding ChainId enum if successful,
     /// or a ParseChainIdError if the numeric ID is not recognized.
-    pub fn from_numberic_id(id: u128) -> Result<Self, ParseChainIdError> {
+    pub fn from_numeric_id(id: u128) -> Result<Self, ParseChainIdError> {
         match id {
             1 => Ok(Self::EthereumMainnet),
             11155111 => Ok(Self::EthereumSepolia),
@@ -94,6 +128,10 @@ impl ChainId {
                 input: i.to_string(),
             }),
         }
+    }
+
+    pub fn to_be_bytes(&self) -> [u8; 16] {
+        self.to_numeric_id().to_be_bytes()
     }
 }
 
@@ -146,19 +184,19 @@ mod tests {
 
     #[test]
     fn test_from_numeric_id() {
-        assert_eq!(ChainId::from_numberic_id(1), Ok(ChainId::EthereumMainnet));
+        assert_eq!(ChainId::from_numeric_id(1), Ok(ChainId::EthereumMainnet));
         assert_eq!(
-            ChainId::from_numberic_id(11155111),
+            ChainId::from_numeric_id(11155111),
             Ok(ChainId::EthereumSepolia)
         );
         assert_eq!(
-            ChainId::from_numberic_id(393402131332719809807700),
+            ChainId::from_numeric_id(393402131332719809807700),
             Ok(ChainId::StarknetMainnet)
         );
         assert_eq!(
-            ChainId::from_numberic_id(393402133025997798000961),
+            ChainId::from_numeric_id(393402133025997798000961),
             Ok(ChainId::StarknetSepolia)
         );
-        assert!(ChainId::from_numberic_id(999).is_err());
+        assert!(ChainId::from_numeric_id(999).is_err());
     }
 }

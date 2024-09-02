@@ -1,3 +1,4 @@
+use crate::primitives::chain_id::ChainId;
 use crate::primitives::solidity_types::traits::DatalakeCodecs;
 use crate::primitives::task::datalake::block_sampled::{
     BlockSampledCollection, BlockSampledDatalake,
@@ -21,7 +22,7 @@ impl DatalakeCodecs for BlockSampledDatalake {
     /// Encode the block sampled datalake
     fn encode(&self) -> Result<Vec<u8>> {
         let datalake_code: DynSolValue = self.get_datalake_type().to_u8().into();
-        let chain_id: DynSolValue = self.chain_id.into();
+        let chain_id: DynSolValue = self.chain_id.to_numeric_id().into();
         let block_range_start: DynSolValue = self.block_range_start.into();
         let block_range_end: DynSolValue = self.block_range_end.into();
         let sampled_property: DynSolValue = self.sampled_property.serialize()?.into();
@@ -58,7 +59,8 @@ impl DatalakeCodecs for BlockSampledDatalake {
             bail!("Encoded datalake is not a block sample datalake");
         }
 
-        let chain_id = value[1].as_uint().unwrap().0.to_string().parse::<u64>()?;
+        let chain_id =
+            ChainId::from_numeric_id(value[1].as_uint().unwrap().0.to_string().parse::<u128>()?)?;
         let block_range_start = value[2].as_uint().unwrap().0.to_string().parse::<u64>()?;
         let block_range_end = value[3].as_uint().unwrap().0.to_string().parse::<u64>()?;
         let increment = value[4].as_uint().unwrap().0.to_string().parse::<u64>()?;

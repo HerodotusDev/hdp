@@ -25,7 +25,7 @@ impl DatalakeEnvelope {
         }
     }
 
-    pub fn get_chain_id(&self) -> u64 {
+    pub fn get_chain_id(&self) -> crate::primitives::chain_id::ChainId {
         match self {
             DatalakeEnvelope::BlockSampled(datalake) => datalake.chain_id,
             DatalakeEnvelope::TransactionsInBlock(datalake) => datalake.chain_id,

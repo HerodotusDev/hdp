@@ -2,6 +2,7 @@ use alloy::{primitives::U256, transports::http::reqwest::Url};
 use anyhow::bail;
 use hdp::hdp_run;
 use hdp::preprocessor::module_registry::ModuleRegistry;
+use hdp::primitives::chain_id::ChainId;
 use hdp::primitives::{
     aggregate_fn::{integer::Operator, FunctionContext},
     task::{
@@ -30,11 +31,11 @@ pub async fn run_interactive() -> anyhow::Result<()> {
     println!("Welcome to Herodotus Data Processor interactive CLI! 🛰️");
     println!(
         r"
-        _   _   ____    ____  
-        | | | | |  _ \  |  _ \ 
+        _   _   ____    ____
+        | | | | |  _ \  |  _ \
         | |_| | | | | | | |_) |
-        |  _  | | |_| | |  __/ 
-        |_| |_| |____/  |_|    
+        |  _  | | |_| | |  __/
+        |_| |_| |____/  |_|
 "
     );
 
@@ -60,11 +61,10 @@ pub async fn run_interactive() -> anyhow::Result<()> {
                         DatalakeType::BlockSampled => {
                             // ================== Block Sampled Datalake Fields ==================
                             // 0. Chain ID
-                            let chain_id: u64 = inquire::Text::new("Chain ID")
+                            let chain_id: String = inquire::Text::new("Chain ID")
                                 .with_help_message("What is the chain ID? (Enter to set default)")
-                                .with_default("11155111")
-                                .prompt()?
-                                .parse()?;
+                                .with_default("ETH_SEPOLIA")
+                                .prompt()?;
                             // 1. Block range start
                             let block_range_start: u64 = inquire::Text::new("Block range start")
                                 .with_help_message(
@@ -138,7 +138,7 @@ pub async fn run_interactive() -> anyhow::Result<()> {
                                 }
                             };
                             let block_sampled_datalake = BlockSampledDatalake::new(
-                                chain_id,
+                                ChainId::from_str(&chain_id)?,
                                 block_range_start,
                                 block_range_end,
                                 increment,
@@ -148,11 +148,10 @@ pub async fn run_interactive() -> anyhow::Result<()> {
                         }
                         DatalakeType::TransactionsInBlock => {
                             // 0. Chain ID
-                            let chain_id: u64 = inquire::Text::new("Chain ID")
+                            let chain_id: String = inquire::Text::new("Chain ID")
                                 .with_help_message("What is the chain ID? (Enter to set default)")
-                                .with_default("11155111")
-                                .prompt()?
-                                .parse()?;
+                                .with_default("ETH_SEPOLIA")
+                                .prompt()?;
                             let target_block: u64 = inquire::Text::new("Enter target block number")
                                 .with_help_message(
                                     "What block you target to get transactions? (Enter to set default)",
@@ -225,7 +224,7 @@ pub async fn run_interactive() -> anyhow::Result<()> {
                                 }
                             };
                             let transactions_datalake = TransactionsInBlockDatalake::new(
-                                chain_id,
+                                ChainId::from_str(&chain_id)?,
                                 target_block,
                                 TransactionsCollection::from_str(&sampled_property)?,
                                 start_index,
@@ -327,7 +326,7 @@ pub async fn run_interactive() -> anyhow::Result<()> {
             },
             Err(_) => None,
         };
-        let chain_id: Option<u64> = match inquire::Text::new("Enter Chain ID: ")
+        let chain_id: Option<ChainId> = match inquire::Text::new("Enter Chain ID: ")
             .with_help_message("Skip if you have it in your .env file")
             .prompt()
         {

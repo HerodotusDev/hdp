@@ -1,11 +1,13 @@
 use crate::{
     constant::{DEFAULT_DRY_CAIRO_RUN_CAIRO_FILE, DEFAULT_SOUND_CAIRO_RUN_CAIRO_FILE},
     preprocessor::{compile::config::CompilerConfig, PreProcessor},
-    primitives::{processed_types::cairo_format::AsCairoFormat, task::TaskEnvelope},
+    primitives::{
+        chain_id::ChainId, processed_types::cairo_format::AsCairoFormat, task::TaskEnvelope,
+    },
     processor::Processor,
     provider::config::ProviderConfig,
 };
-use alloy::primitives::ChainId;
+
 use anyhow::Result;
 use reqwest::Url;
 use std::{collections::HashMap, env, fs, path::PathBuf};
@@ -15,7 +17,7 @@ use tracing::{debug, info};
 #[derive(Debug)]
 pub struct HdpRunConfig {
     // chain_id => provider config
-    pub provider_config: HashMap<u64, ProviderConfig>,
+    pub provider_config: HashMap<ChainId, ProviderConfig>,
     pub dry_run_program_path: PathBuf,
     pub sound_run_program_path: PathBuf,
     pub program_input_file: PathBuf,

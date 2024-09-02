@@ -1,8 +1,7 @@
-use std::path::PathBuf;
-
-use alloy::primitives::ChainId;
 use clap::{arg, Parser};
+use hdp::primitives::chain_id::ChainId;
 use starknet::providers::Url;
+use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
 pub struct RunModuleArgs {
