@@ -43,8 +43,6 @@ impl Default for HdpRunConfig {
 
 impl HdpRunConfig {
     pub fn init(
-        cli_rpc_url: Option<Url>,
-        cli_chain_id: Option<ChainId>,
         cli_dry_run_cairo_file: Option<PathBuf>,
         cli_sound_run_cairo_file: Option<PathBuf>,
         program_input_file: PathBuf,
@@ -53,22 +51,33 @@ impl HdpRunConfig {
         batch_proof_file: Option<PathBuf>,
         cli_cairo_pie_file: Option<PathBuf>,
     ) -> Self {
-        let chain_id = cli_chain_id.unwrap_or_else(|| {
-            env::var("CHAIN_ID")
-                .expect("CHAIN_ID must be set")
-                .parse()
-                .expect("CHAIN_ID must be a number")
-        });
-        let rpc_url = cli_rpc_url.unwrap_or_else(|| {
-            env::var("RPC_URL")
-                .expect("RPC_URL must be set")
-                .parse()
-                .expect("RPC_URL must be a valid URL")
-        });
-        let rpc_chunk_size = env::var("RPC_CHUNK_SIZE")
-            .unwrap_or_else(|_| "40".to_string())
-            .parse()
-            .expect("RPC_CHUNK_SIZE must be a number");
+        let mut provider_config = HashMap::new();
+
+        // Iterate through environment variables to find RPC_URL and RPC_CHUNK_SIZE configurations
+        for (key, value) in env::vars() {
+            if key.starts_with("RPC_URL_") {
+                let chain_id: ChainId = key[8..]
+                    .parse()
+                    .expect("Invalid chain ID in RPC_URL env var");
+                let rpc_url: Url = value.parse().expect("Invalid URL in RPC_URL env var");
+
+                let chunk_size_key = format!("RPC_CHUNK_SIZE_{}", chain_id);
+                let rpc_chunk_size: u64 = env::var(&chunk_size_key)
+                    .unwrap_or_else(|_| "40".to_string())
+                    .parse()
+                    .expect(&format!("{} must be a number", chunk_size_key));
+
+                provider_config.insert(
+                    chain_id,
+                    ProviderConfig {
+                        rpc_url,
+                        chain_id,
+                        max_requests: rpc_chunk_size,
+                    },
+                );
+            }
+        }
+
         let save_fetch_keys_file: Option<PathBuf> = cli_save_fetch_keys_file
             .or_else(|| env::var("SAVE_FETCH_KEYS_FILE").ok().map(PathBuf::from));
         let dry_run_cairo_path: PathBuf = cli_dry_run_cairo_file.unwrap_or_else(|| {
@@ -83,16 +92,6 @@ impl HdpRunConfig {
                 .parse()
                 .expect("SOUND_RUN_CAIRO_PATH must be a path to a cairo file")
         });
-
-        let mut provider_config = HashMap::new();
-        provider_config.insert(
-            chain_id,
-            ProviderConfig {
-                rpc_url,
-                chain_id,
-                max_requests: rpc_chunk_size,
-            },
-        );
 
         let config = HdpRunConfig {
             provider_config,
