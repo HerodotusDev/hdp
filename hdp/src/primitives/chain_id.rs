@@ -98,13 +98,13 @@ impl ChainId {
     /// A u128 representing the numeric chain ID:
     /// - 1 for Ethereum Mainnet
     /// - 11155111 for Ethereum Sepolia
-    /// - 393402131332719809807700 for Starknet Mainnet
-    /// - 393402133025997798000961 for Starknet Sepolia
+    /// - 393402131332719809807700 for Starknet Mainnet (SN_MAIN)
+    /// - 393402133025997798000961 for Starknet Sepolia (SN_SEPOLIA)
     pub fn to_numeric_id(&self) -> u128 {
         match self {
             ChainId::EthereumMainnet => 1,
             ChainId::EthereumSepolia => 11155111,
-            ChainId::StarknetMainnet => 393402131332719809807700,
+            ChainId::StarknetMainnet => 23448594291968334,
             ChainId::StarknetSepolia => 393402133025997798000961,
         }
     }
@@ -122,7 +122,7 @@ impl ChainId {
         match id {
             1 => Ok(Self::EthereumMainnet),
             11155111 => Ok(Self::EthereumSepolia),
-            393402131332719809807700 => Ok(Self::StarknetMainnet),
+            23448594291968334 => Ok(Self::StarknetMainnet),
             393402133025997798000961 => Ok(Self::StarknetSepolia),
             i => Err(ParseChainIdError {
                 input: i.to_string(),
@@ -172,10 +172,7 @@ mod tests {
     fn test_to_numeric_id() {
         assert_eq!(ChainId::EthereumMainnet.to_numeric_id(), 1);
         assert_eq!(ChainId::EthereumSepolia.to_numeric_id(), 11155111);
-        assert_eq!(
-            ChainId::StarknetMainnet.to_numeric_id(),
-            393402131332719809807700
-        );
+        assert_eq!(ChainId::StarknetMainnet.to_numeric_id(), 23448594291968334);
         assert_eq!(
             ChainId::StarknetSepolia.to_numeric_id(),
             393402133025997798000961
@@ -190,7 +187,7 @@ mod tests {
             Ok(ChainId::EthereumSepolia)
         );
         assert_eq!(
-            ChainId::from_numeric_id(393402131332719809807700),
+            ChainId::from_numeric_id(23448594291968334),
             Ok(ChainId::StarknetMainnet)
         );
         assert_eq!(
