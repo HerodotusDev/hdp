@@ -244,7 +244,7 @@ mod tests {
             PathBuf::from("/path/to/sound_run.cairo")
         );
         assert_eq!(config.program_input_file, PathBuf::from("input.json"));
-        assert_eq!(config.is_cairo_format, false);
+        assert!(!config.is_cairo_format);
         assert_eq!(
             config.save_fetch_keys_file,
             Some(PathBuf::from("/path/to/save_fetch_keys.json"))
