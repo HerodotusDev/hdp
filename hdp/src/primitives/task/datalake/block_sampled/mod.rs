@@ -9,9 +9,8 @@ pub use rlp_fields::*;
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        primitives::solidity_types::traits::DatalakeCodecs,
-        primitives::task::datalake::DatalakeCollection,
+    use crate::primitives::{
+        solidity_types::traits::DatalakeCodecs, task::datalake::DatalakeCollection, ChainId,
     };
 
     use super::*;
@@ -27,7 +26,7 @@ mod tests {
         let decoded_datalake =
             BlockSampledDatalake::decode(&encoded_block_sample_datalake).unwrap();
         let block_datalake = BlockSampledDatalake::new(
-            11155111,
+            ChainId::EthereumSepolia,
             10399990,
             10400000,
             1,
@@ -61,7 +60,7 @@ mod tests {
         let decoded_datalake =
             BlockSampledDatalake::decode(&encoded_block_sample_datalake).unwrap();
         let block_datalake = BlockSampledDatalake::new(
-            11155111,
+            ChainId::EthereumSepolia,
             10399990,
             10400000,
             1,
@@ -96,7 +95,7 @@ mod tests {
         let decoded_datalake =
             BlockSampledDatalake::decode(&encoded_block_sample_datalake).unwrap();
         let block_datalake = BlockSampledDatalake::new(
-            11155111,
+            ChainId::EthereumSepolia,
             10399990,
             10400000,
             1,

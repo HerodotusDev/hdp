@@ -13,14 +13,14 @@ use alloy::primitives::U256;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
-use crate::primitives::task::datalake::envelope::default_increment;
+use crate::primitives::{task::datalake::envelope::default_increment, ChainId};
 
 use super::TransactionsCollection;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TransactionsInBlockDatalake {
-    pub chain_id: u64,
+    pub chain_id: ChainId,
     // target block number
     pub target_block: u64,
     // start index of transactions range ( default 0 )
@@ -38,7 +38,7 @@ pub struct TransactionsInBlockDatalake {
 
 impl TransactionsInBlockDatalake {
     pub fn new(
-        chain_id: u64,
+        chain_id: ChainId,
         target_block: u64,
         sampled_property: TransactionsCollection,
         start_index: u64,

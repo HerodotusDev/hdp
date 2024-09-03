@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::primitives::task::datalake::envelope::default_increment;
+use crate::primitives::{task::datalake::envelope::default_increment, ChainId};
 
 use super::collection::BlockSampledCollection;
 
@@ -11,7 +11,7 @@ use super::collection::BlockSampledCollection;
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BlockSampledDatalake {
-    pub chain_id: u64,
+    pub chain_id: ChainId,
     /// The start of the block range
     pub block_range_start: u64,
     /// The end of the block range
@@ -25,7 +25,7 @@ pub struct BlockSampledDatalake {
 
 impl BlockSampledDatalake {
     pub fn new(
-        chain_id: u64,
+        chain_id: ChainId,
         block_range_start: u64,
         block_range_end: u64,
         increment: u64,

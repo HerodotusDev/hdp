@@ -106,12 +106,13 @@ impl BatchedDatalakeComputeCodecs for BatchedDatalakeCompute {
 mod tests {
     use std::str::FromStr;
 
-    use crate::{
-        primitives::aggregate_fn::FunctionContext,
-        primitives::task::datalake::{
+    use crate::primitives::{
+        aggregate_fn::FunctionContext,
+        task::datalake::{
             block_sampled::{BlockSampledCollection, BlockSampledDatalake},
             transactions::{IncludedTypes, TransactionsCollection, TransactionsInBlockDatalake},
         },
+        ChainId,
     };
 
     use super::*;
@@ -120,7 +121,7 @@ mod tests {
     fn test_block_sampled_commit() {
         let datalake_compute = DatalakeCompute {
             datalake: DatalakeEnvelope::BlockSampled(BlockSampledDatalake {
-                chain_id: 11155111,
+                chain_id: ChainId::EthereumSepolia,
                 block_range_start: 5858987,
                 block_range_end: 5858997,
                 increment: 2,
@@ -148,7 +149,7 @@ mod tests {
     fn test_transactions_commit() {
         let datalake_compute = DatalakeCompute {
             datalake: DatalakeEnvelope::TransactionsInBlock(TransactionsInBlockDatalake {
-                chain_id: 11155111,
+                chain_id: ChainId::EthereumSepolia,
                 target_block: 5605816,
                 start_index: 12,
                 end_index: 53,

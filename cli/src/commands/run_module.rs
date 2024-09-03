@@ -1,8 +1,5 @@
-use std::path::PathBuf;
-
-use alloy::primitives::ChainId;
 use clap::{arg, Parser};
-use starknet::providers::Url;
+use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
 pub struct RunModuleArgs {
@@ -29,18 +26,6 @@ pub struct RunModuleArgs {
     /// optionally can save keys for module task to file
     #[arg(long)]
     pub save_fetch_keys_file: Option<PathBuf>,
-
-    /// The RPC URL to fetch the data.
-    ///
-    /// Can be overwritten by `RPC_URL` environment variable.
-    #[arg(long)]
-    pub rpc_url: Option<Url>,
-
-    /// The chain id to fetch the data.
-    ///
-    /// Can be overwritten by `CHAIN_ID` environment variable
-    #[arg(long)]
-    pub chain_id: Option<ChainId>,
 
     /// dry run contract bootloader program.
     /// only used for module task

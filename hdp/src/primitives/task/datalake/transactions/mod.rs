@@ -12,9 +12,8 @@ mod tests {
 
     use std::str::FromStr;
 
-    use crate::{
-        primitives::solidity_types::traits::DatalakeCodecs,
-        primitives::task::datalake::DatalakeCollection,
+    use crate::primitives::{
+        solidity_types::traits::DatalakeCodecs, task::datalake::DatalakeCollection, ChainId,
     };
     use alloy::{
         hex,
@@ -28,7 +27,7 @@ mod tests {
         let encoded_datalake= "0x00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000aa36a700000000000000000000000000000000000000000000000000000000000f42400000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000001010101000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000020100000000000000000000000000000000000000000000000000000000000000";
         let sampled_property = TransactionsCollection::Transactions(TransactionField::Nonce);
         let transaction_datalake = TransactionsInBlockDatalake::new(
-            11155111,
+            ChainId::EthereumSepolia,
             1000000,
             sampled_property,
             1,
@@ -67,7 +66,7 @@ mod tests {
         let sampled_property =
             TransactionsCollection::TranasactionReceipts(TransactionReceiptField::Success);
         let transaction_datalake = TransactionsInBlockDatalake::new(
-            11155111,
+            ChainId::EthereumSepolia,
             1000000,
             sampled_property,
             1,

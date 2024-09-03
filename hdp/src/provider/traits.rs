@@ -1,4 +1,5 @@
 use crate::primitives::processed_types::block_proofs::ProcessedBlockProofs;
+use crate::primitives::ChainId;
 use std::future::Future;
 use std::pin::Pin;
 
@@ -34,7 +35,7 @@ pub trait ProofProvider: Send + Sync {
 /// returns generic provider that implemented [`ProofProvider`] trait
 pub fn new_provider_from_config(config: &ProviderConfig) -> Box<dyn ProofProvider> {
     match config.chain_id {
-        1 | 11155111 => Box::new(EvmProvider::new(config)),
+        ChainId::EthereumMainnet | ChainId::EthereumSepolia => Box::new(EvmProvider::new(config)),
         // TODO: change chain_id to string
         _ => panic!("not supported chain id"),
     }

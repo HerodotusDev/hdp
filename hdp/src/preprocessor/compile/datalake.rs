@@ -74,6 +74,7 @@ mod tests {
                 TransactionsInBlockDatalake,
             },
         },
+        ChainId,
     };
     use alloy::primitives::{address, B256, U256};
 
@@ -87,7 +88,7 @@ mod tests {
             DatalakeCompute {
                 compute: Computation::new(AggregationFunction::MIN, None),
                 datalake: DatalakeEnvelope::BlockSampled(BlockSampledDatalake {
-                    chain_id: 11155111,
+                    chain_id: ChainId::EthereumSepolia,
                     block_range_start: 10001,
                     block_range_end: 10005,
                     increment: 1,
@@ -97,7 +98,7 @@ mod tests {
             DatalakeCompute {
                 compute: Computation::new(AggregationFunction::AVG, None),
                 datalake: DatalakeEnvelope::BlockSampled(BlockSampledDatalake {
-                    chain_id: 11155111,
+                    chain_id: ChainId::EthereumSepolia,
                     block_range_start: 6127485,
                     block_range_end: 6127495,
                     increment: 1,
@@ -110,7 +111,7 @@ mod tests {
             DatalakeCompute {
                 compute: Computation::new(AggregationFunction::AVG, None),
                 datalake: DatalakeEnvelope::BlockSampled(BlockSampledDatalake {
-                    chain_id: 11155111,
+                    chain_id: ChainId::EthereumSepolia,
                     block_range_start: 6127485,
                     block_range_end: 6127490,
                     increment: 1,
@@ -147,7 +148,7 @@ mod tests {
             DatalakeCompute {
                 compute: Computation::new(AggregationFunction::MIN, None),
                 datalake: DatalakeEnvelope::TransactionsInBlock(TransactionsInBlockDatalake {
-                    chain_id: 11155111,
+                    chain_id: ChainId::EthereumSepolia,
                     target_block: 6127486,
                     start_index: 0,
                     end_index: 10,
@@ -161,7 +162,7 @@ mod tests {
             DatalakeCompute {
                 compute: Computation::new(AggregationFunction::MIN, None),
                 datalake: DatalakeEnvelope::TransactionsInBlock(TransactionsInBlockDatalake {
-                    chain_id: 11155111,
+                    chain_id: ChainId::EthereumSepolia,
                     target_block: 6127485,
                     start_index: 0,
                     end_index: 11,

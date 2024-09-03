@@ -1,10 +1,13 @@
 use crate::{
     constant::HERODOTUS_RS_INDEXER_URL,
-    primitives::block::header::{
-        MMRDataFromNewIndexer, MMRFromNewIndexer, MMRMetaFromNewIndexer, MMRProofFromNewIndexer,
+    primitives::{
+        block::header::{
+            MMRDataFromNewIndexer, MMRFromNewIndexer, MMRMetaFromNewIndexer, MMRProofFromNewIndexer,
+        },
+        ChainId,
     },
 };
-use alloy::primitives::{BlockNumber, ChainId};
+use alloy::primitives::BlockNumber;
 use reqwest::Client;
 use serde_json::{from_value, Value};
 use std::collections::HashMap;
@@ -35,6 +38,19 @@ pub enum IndexerError {
     GetHeadersProofError(String),
 }
 
+impl ChainId {
+    /// This method is only needed to interact with the indexer,
+    /// as the indexer uses these specific chain ID representations.
+    fn get_indexer_chain_id(&self) -> &str {
+        match self {
+            ChainId::EthereumMainnet => "1",
+            ChainId::EthereumSepolia => "11155111",
+            ChainId::StarknetMainnet => "STARKNET",
+            ChainId::StarknetSepolia => "SN_SEPOLIA",
+        }
+    }
+}
+
 /// Indexer client for fetching MMR and headers proof from Herodotus Indexer
 ///
 /// For more information, see: https://rs-indexer.api.herodotus.cloud/swagger
@@ -53,7 +69,7 @@ pub enum IndexerError {
 #[derive(Clone)]
 pub struct Indexer {
     client: Client,
-    pub chain_id: u64,
+    pub chain_id: ChainId,
 }
 
 #[derive(Debug)]
@@ -103,7 +119,7 @@ impl Indexer {
         let response = self
             .client
             .get(HERODOTUS_RS_INDEXER_URL)
-            .query(&self._query(from_block, to_block, self.chain_id))
+            .query(&self._query(from_block, to_block, self.chain_id.get_indexer_chain_id()))
             .send()
             .await
             .map_err(IndexerError::ReqwestError)?;
@@ -147,7 +163,7 @@ impl Indexer {
         &self,
         from_block: BlockNumber,
         to_block: BlockNumber,
-        chain_id: ChainId,
+        chain_id: &str,
     ) -> Vec<(String, String)> {
         let query = vec![
             ("deployed_on_chain".to_string(), chain_id.to_string()),
@@ -178,7 +194,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_headers_proof() -> Result<(), IndexerError> {
-        let indexer = Indexer::new(11155111);
+        let indexer = Indexer::new(ChainId::EthereumSepolia);
         let response = indexer.get_headers_proof(1, 1).await?;
         // check header length is 1
         assert!(response.headers.len() == 1);
@@ -187,7 +203,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_headers_proof_multiple_blocks() -> Result<(), IndexerError> {
-        let indexer = Indexer::new(11155111);
+        let indexer = Indexer::new(ChainId::EthereumSepolia);
         let response = indexer.get_headers_proof(0, 10).await?;
         // check header length is 11
         assert!(response.headers.len() == 11);
@@ -196,7 +212,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_invalid_query() {
-        let indexer = Indexer::new(11155111);
+        let indexer = Indexer::new(ChainId::EthereumSepolia);
         let response = indexer.get_headers_proof(10, 1).await;
         assert!(matches!(response, Err(IndexerError::InvalidBlockRange)));
     }

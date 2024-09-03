@@ -1,10 +1,11 @@
-use crate::{
-    primitives::solidity_types::traits::DatalakeCodecs,
-    primitives::task::datalake::{
+use crate::primitives::{
+    solidity_types::traits::DatalakeCodecs,
+    task::datalake::{
         datalake_type::DatalakeType,
         transactions::{IncludedTypes, TransactionsCollection, TransactionsInBlockDatalake},
         DatalakeCollection,
     },
+    ChainId,
 };
 use alloy::primitives::keccak256;
 use alloy::{
@@ -22,7 +23,7 @@ impl DatalakeCodecs for TransactionsInBlockDatalake {
     /// Encode the [`TransactionsInBlockDatalake`] into a hex string
     fn encode(&self) -> Result<Vec<u8>> {
         let datalake_code: DynSolValue = self.get_datalake_type().to_u8().into();
-        let chain_id: DynSolValue = self.chain_id.into();
+        let chain_id: DynSolValue = self.chain_id.to_numeric_id().into();
         let target_block: DynSolValue = self.target_block.into();
         let sampled_property: DynSolValue = self.sampled_property.serialize()?.into();
         let start_index: DynSolValue = self.start_index.into();
@@ -66,7 +67,8 @@ impl DatalakeCodecs for TransactionsInBlockDatalake {
             bail!("Encoded datalake is not a transactions datalake");
         }
 
-        let chain_id = value[1].as_uint().unwrap().0.to_string().parse::<u64>()?;
+        let chain_id =
+            ChainId::from_numeric_id(value[1].as_uint().unwrap().0.to_string().parse::<u128>()?)?;
         let target_block = value[2].as_uint().unwrap().0.to_string().parse::<u64>()?;
         let start_index = value[3].as_uint().unwrap().0.to_string().parse::<u64>()?;
         let end_index = value[4].as_uint().unwrap().0.to_string().parse::<u64>()?;

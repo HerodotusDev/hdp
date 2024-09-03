@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use alloy::primitives::{BlockNumber, ChainId, TxIndex};
+use alloy::primitives::{BlockNumber, TxIndex};
 use clap::{arg, command, Parser, Subcommand};
 use hdp::primitives::{
     aggregate_fn::{AggregationFunction, FunctionContext},
@@ -8,8 +8,8 @@ use hdp::primitives::{
         block_sampled::BlockSampledCollection,
         transactions::{IncludedTypes, TransactionsCollection},
     },
+    ChainId,
 };
-use starknet::providers::Url;
 
 #[derive(Parser, Debug)]
 pub struct RunDatalakeArgs {
@@ -22,12 +22,6 @@ pub struct RunDatalakeArgs {
 
     #[command(subcommand)]
     pub datalake: DataLakeCommands,
-
-    /// The RPC URL to fetch the datalake
-    pub rpc_url: Option<Url>,
-
-    /// The chain id to fetch the datalake
-    pub chain_id: Option<ChainId>,
 
     /// Path to save program input file after pre-processing.
     ///
@@ -63,6 +57,8 @@ pub enum DataLakeCommands {
     #[command(arg_required_else_help = true)]
     #[command(short_flag = 's')]
     BlockSampled {
+        /// Chain id
+        chain_id: ChainId,
         /// Block number range start (inclusive)
         block_range_start: BlockNumber,
         /// Block number range end (inclusive)
@@ -77,6 +73,8 @@ pub enum DataLakeCommands {
     #[command(arg_required_else_help = true)]
     #[command(short_flag = 't')]
     TransactionsInBlock {
+        /// Chain id
+        chain_id: ChainId,
         /// Target block number
         target_block: BlockNumber,
         /// Sampled property

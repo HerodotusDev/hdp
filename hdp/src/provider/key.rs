@@ -9,10 +9,13 @@ use std::{
     str::FromStr,
 };
 
-use crate::primitives::task::datalake::{
-    block_sampled::BlockSampledCollectionType, transactions::TransactionsCollectionType,
+use crate::primitives::{
+    task::datalake::{
+        block_sampled::BlockSampledCollectionType, transactions::TransactionsCollectionType,
+    },
+    ChainId,
 };
-use alloy::primitives::{Address, BlockNumber, ChainId, Keccak256, StorageKey, B256};
+use alloy::primitives::{Address, BlockNumber, Keccak256, StorageKey, B256};
 use serde::{Deserialize, Serialize};
 
 /// This is keys that are categorized into different subsets of keys.
@@ -48,7 +51,7 @@ impl CategorizedFetchKeys {
 pub fn categorize_fetch_keys(
     fetch_keys: Vec<FetchKeyEnvelope>,
 ) -> Vec<(ChainId, CategorizedFetchKeys)> {
-    let mut chain_id_map: HashMap<u64, CategorizedFetchKeys> = std::collections::HashMap::new();
+    let mut chain_id_map: HashMap<ChainId, CategorizedFetchKeys> = std::collections::HashMap::new();
 
     for key in fetch_keys {
         let chain_id = key.get_chain_id();
@@ -102,10 +105,30 @@ pub fn categorize_fetch_keys(
 }
 
 /// Key for fetching block header from provider.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Serialize, PartialEq, Eq, Hash)]
 pub struct HeaderMemorizerKey {
     pub chain_id: ChainId,
     pub block_number: BlockNumber,
+}
+
+impl<'de> Deserialize<'de> for HeaderMemorizerKey {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct Helper {
+            chain_id: u128,
+            block_number: BlockNumber,
+        }
+
+        let helper = Helper::deserialize(deserializer)?;
+
+        Ok(HeaderMemorizerKey {
+            chain_id: ChainId::from_numeric_id(helper.chain_id).expect("invalid deserialize"),
+            block_number: helper.block_number,
+        })
+    }
 }
 
 impl HeaderMemorizerKey {
@@ -126,11 +149,33 @@ impl HeaderMemorizerKey {
 }
 
 /// Key for fetching account from provider.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Serialize, PartialEq, Eq, Hash)]
 pub struct AccountMemorizerKey {
     pub chain_id: ChainId,
     pub block_number: BlockNumber,
     pub address: Address,
+}
+
+impl<'de> Deserialize<'de> for AccountMemorizerKey {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct Helper {
+            chain_id: u128,
+            block_number: BlockNumber,
+            address: Address,
+        }
+
+        let helper = Helper::deserialize(deserializer)?;
+
+        Ok(AccountMemorizerKey {
+            chain_id: ChainId::from_numeric_id(helper.chain_id).expect("invalid deserialize"),
+            block_number: helper.block_number,
+            address: helper.address,
+        })
+    }
 }
 
 impl AccountMemorizerKey {
@@ -153,12 +198,36 @@ impl AccountMemorizerKey {
 }
 
 /// Key for fetching storage value from provider.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Serialize, PartialEq, Eq, Hash)]
 pub struct StorageMemorizerKey {
     pub chain_id: ChainId,
     pub block_number: BlockNumber,
     pub address: Address,
     pub key: StorageKey,
+}
+
+impl<'de> Deserialize<'de> for StorageMemorizerKey {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct Helper {
+            chain_id: u128,
+            block_number: BlockNumber,
+            address: Address,
+            key: StorageKey,
+        }
+
+        let helper = Helper::deserialize(deserializer)?;
+
+        Ok(StorageMemorizerKey {
+            chain_id: ChainId::from_numeric_id(helper.chain_id).expect("invalid deserialize"),
+            block_number: helper.block_number,
+            address: helper.address,
+            key: helper.key,
+        })
+    }
 }
 
 impl StorageMemorizerKey {
@@ -188,11 +257,33 @@ impl StorageMemorizerKey {
 }
 
 /// Key for fetching transaction from provider.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Serialize, PartialEq, Eq, Hash)]
 pub struct TxMemorizerKey {
     pub chain_id: ChainId,
     pub block_number: BlockNumber,
     pub tx_index: u64,
+}
+
+impl<'de> Deserialize<'de> for TxMemorizerKey {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct Helper {
+            chain_id: u128,
+            block_number: BlockNumber,
+            tx_index: u64,
+        }
+
+        let helper = Helper::deserialize(deserializer)?;
+
+        Ok(TxMemorizerKey {
+            chain_id: ChainId::from_numeric_id(helper.chain_id).expect("invalid deserialize"),
+            block_number: helper.block_number,
+            tx_index: helper.tx_index,
+        })
+    }
 }
 
 impl TxMemorizerKey {
@@ -215,11 +306,33 @@ impl TxMemorizerKey {
 }
 
 /// Key for fetching transaction receipt from provider.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Serialize, PartialEq, Eq, Hash)]
 pub struct TxReceiptMemorizerKey {
     pub chain_id: ChainId,
     pub block_number: BlockNumber,
     pub tx_index: u64,
+}
+
+impl<'de> Deserialize<'de> for TxReceiptMemorizerKey {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct Helper {
+            chain_id: u128,
+            block_number: BlockNumber,
+            tx_index: u64,
+        }
+
+        let helper = Helper::deserialize(deserializer)?;
+
+        Ok(TxReceiptMemorizerKey {
+            chain_id: ChainId::from_numeric_id(helper.chain_id).expect("invalid deserialize"),
+            block_number: helper.block_number,
+            tx_index: helper.tx_index,
+        })
+    }
 }
 
 impl TxReceiptMemorizerKey {
@@ -311,60 +424,123 @@ impl FetchKeyEnvelope {
 
 #[cfg(test)]
 mod tests {
+
     use alloy::primitives::b256;
 
     use super::*;
 
     #[test]
     fn test_hash_header_key() {
-        let header_key = HeaderMemorizerKey::new(1, 100);
+        let header_key = HeaderMemorizerKey::new(ChainId::EthereumMainnet, 100);
         let header_key_hash = header_key.hash_key();
         assert_eq!(
             header_key_hash,
-            b256!("205342692a0b320915750abf5ad47709ea4c6c10e18802d5981070e47bd6f0c1")
+            b256!("6bc10761f4d566044340a77d51c936b8d1ee7d4ebfb3e62873d7d37eb8964505")
         )
     }
 
     #[test]
     fn test_hash_account_key() {
-        let account_key = AccountMemorizerKey::new(1, 100, Address::ZERO);
+        let account_key = AccountMemorizerKey::new(ChainId::EthereumMainnet, 100, Address::ZERO);
         let account_key_hash = account_key.hash_key();
         assert_eq!(
             account_key_hash,
-            b256!("4298fef03738f1a6d9f77e3d1ad8cf7906a60f4f9ecd63b34cb2a1ac61353e7a")
+            b256!("044229e95af51ab44d057270d10f948d7e6f0b98075abb702d535e237b573794")
         )
     }
 
     #[test]
     fn test_hash_storage_key() {
-        let storage_key = StorageMemorizerKey::new(1, 100, Address::ZERO, B256::ZERO);
+        let storage_key =
+            StorageMemorizerKey::new(ChainId::EthereumMainnet, 100, Address::ZERO, B256::ZERO);
         let storage_key_hash = storage_key.hash_key();
         assert_eq!(
             storage_key_hash,
-            b256!("22133ae0a8c6964d0e4fc28659442e311c4a9f6a82f16ea9f103e36a1085c11f")
+            b256!("c0aca94acc508394ff0ce22ebf1bbe1db21c35e6e4fa70d72bd6cac0742381b3")
         )
     }
 
     #[test]
     fn test_hash_tx_key() {
-        let tx_key = TxMemorizerKey::new(1, 100, 1);
+        let tx_key = TxMemorizerKey::new(ChainId::EthereumMainnet, 100, 1);
         let tx_key_hash = tx_key.hash_key();
         assert_eq!(
             tx_key_hash,
-            b256!("487ea7bf96eb1280f1075498855b55ec61ba7d354b5260e2504ef51140e0df63")
+            b256!("103cc4b0d6d6e45d7189c99425aa02b7ebd9b861e9bb4331a02364980e02481f")
         )
     }
 
     #[test]
     fn test_hash_tx_receipt_key() {
-        let tx_receipt = TxReceiptMemorizerKey::new(1, 100, 1);
+        let tx_receipt = TxReceiptMemorizerKey::new(ChainId::EthereumMainnet, 100, 1);
         let tx_receipt_hash = tx_receipt.hash_key();
         assert_eq!(
             tx_receipt_hash,
-            b256!("beac44bc7092d6c5c2c9ce2d6957c9b962ad4654a65c9b9a9b19a9c278ee5a83")
+            b256!("9b6f454da0ab2264a9a6897abd039c322de33972442eac072635c66ca5c7db86")
         )
     }
 
     #[test]
-    fn test_fetch_key_envelop() {}
+    fn test_parse_json_header_key() {
+        let json =
+            r#"{"type": "HeaderMemorizerKey", "key": {"chain_id": 11155111, "block_number": 100}}"#;
+        let parsed: FetchKeyEnvelope = serde_json::from_str(json).unwrap();
+        assert_eq!(
+            parsed,
+            FetchKeyEnvelope::Header(HeaderMemorizerKey::new(ChainId::EthereumSepolia, 100))
+        );
+    }
+
+    #[test]
+    fn test_parse_json_account_key() {
+        let json = r#"{"type": "AccountMemorizerKey", "key": {"chain_id": 1, "block_number": 100, "address": "0x0000000000000000000000000000000000000000"}}"#;
+        let parsed: FetchKeyEnvelope = serde_json::from_str(json).unwrap();
+        assert_eq!(
+            parsed,
+            FetchKeyEnvelope::Account(AccountMemorizerKey::new(
+                ChainId::EthereumMainnet,
+                100,
+                Address::ZERO
+            ))
+        );
+    }
+
+    #[test]
+    fn test_parse_json_storage_key() {
+        let json = r#"{"type": "StorageMemorizerKey", "key": {"chain_id": 1, "block_number": 100, "address": "0x0000000000000000000000000000000000000000", "key": "0x0000000000000000000000000000000000000000000000000000000000000000"}}"#;
+        let parsed: FetchKeyEnvelope = serde_json::from_str(json).unwrap();
+        assert_eq!(
+            parsed,
+            FetchKeyEnvelope::Storage(StorageMemorizerKey::new(
+                ChainId::EthereumMainnet,
+                100,
+                Address::ZERO,
+                B256::ZERO
+            ))
+        );
+    }
+
+    #[test]
+    fn test_parse_json_tx_key() {
+        let json = r#"{"type": "TxMemorizerKey", "key": {"chain_id": 1, "block_number": 100, "tx_index": 1}}"#;
+        let parsed: FetchKeyEnvelope = serde_json::from_str(json).unwrap();
+        assert_eq!(
+            parsed,
+            FetchKeyEnvelope::Tx(TxMemorizerKey::new(ChainId::EthereumMainnet, 100, 1))
+        );
+    }
+
+    #[test]
+    fn test_parse_json_tx_receipt_key() {
+        let json = r#"{"type": "TxReceiptMemorizerKey", "key": {"chain_id": 1, "block_number": 100, "tx_index": 1}}"#;
+        let parsed: FetchKeyEnvelope = serde_json::from_str(json).unwrap();
+        assert_eq!(
+            parsed,
+            FetchKeyEnvelope::TxReceipt(TxReceiptMemorizerKey::new(
+                ChainId::EthereumMainnet,
+                100,
+                1
+            ))
+        );
+    }
 }
