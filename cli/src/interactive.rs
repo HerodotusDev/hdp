@@ -350,8 +350,6 @@ pub async fn run_interactive() -> anyhow::Result<()> {
             .prompt()?
             .into();
         let config = hdp_run::HdpRunConfig::init(
-            rpc_url,
-            chain_id,
             None,
             None,
             cairo_input,
