@@ -24,6 +24,7 @@ serde = { workspace = true }
 serde_with = { workspace = true }
 serde_json = { workspace = true }
 starknet-crypto = { workspace = true }
+starknet-types-core = { workspace = true }
 starknet = { workspace = true }
 thiserror.workspace = true
 alloy-merkle-tree = { workspace = true }
@@ -33,6 +34,7 @@ reqwest = { workspace = true }
 lazy_static = { workspace = true }
 eth-trie-proofs = { workspace = true }
 itertools = { workspace = true }
+jsonrpsee = { version = "0.24.3", features = ["http-client", "client"] }
 
 [features]
 default = []
