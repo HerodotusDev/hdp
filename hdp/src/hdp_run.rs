@@ -55,8 +55,8 @@ impl HdpRunConfig {
 
         // Iterate through environment variables to find RPC_URL and RPC_CHUNK_SIZE configurations
         for (key, value) in env::vars() {
-            if key.starts_with("RPC_URL_") {
-                let chain_id: ChainId = key[8..]
+            if let Some(stripped_chain_id) = key.strip_prefix("RPC_URL_") {
+                let chain_id: ChainId = stripped_chain_id
                     .parse()
                     .expect("Invalid chain ID in RPC_URL env var");
                 let rpc_url: Url = value.parse().expect("Invalid URL in RPC_URL env var");
@@ -65,7 +65,7 @@ impl HdpRunConfig {
                 let rpc_chunk_size: u64 = env::var(&chunk_size_key)
                     .unwrap_or_else(|_| "40".to_string())
                     .parse()
-                    .expect(&format!("{} must be a number", chunk_size_key));
+                    .unwrap_or_else(|_| panic!("{} must be a number", chunk_size_key));
 
                 provider_config.insert(
                     chain_id,

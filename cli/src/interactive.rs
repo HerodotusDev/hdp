@@ -1,4 +1,4 @@
-use alloy::{primitives::U256, transports::http::reqwest::Url};
+use alloy::primitives::U256;
 use anyhow::bail;
 use hdp::hdp_run;
 use hdp::preprocessor::module_registry::ModuleRegistry;
@@ -63,7 +63,7 @@ pub async fn run_interactive() -> anyhow::Result<()> {
                             // 0. Chain ID
                             let chain_id: String = inquire::Text::new("Chain ID")
                                 .with_help_message("What is the chain ID? (Enter to set default)")
-                                .with_default("ETH_SEPOLIA")
+                                .with_default("ETHEREUM_SEPOLIA")
                                 .prompt()?;
                             // 1. Block range start
                             let block_range_start: u64 = inquire::Text::new("Block range start")
@@ -150,7 +150,7 @@ pub async fn run_interactive() -> anyhow::Result<()> {
                             // 0. Chain ID
                             let chain_id: String = inquire::Text::new("Chain ID")
                                 .with_help_message("What is the chain ID? (Enter to set default)")
-                                .with_default("ETH_SEPOLIA")
+                                .with_default("ETHEREUM_SEPOLIA")
                                 .prompt()?;
                             let target_block: u64 = inquire::Text::new("Enter target block number")
                                 .with_help_message(
@@ -316,29 +316,10 @@ pub async fn run_interactive() -> anyhow::Result<()> {
     .with_default(true)
     .prompt()?;
     if allow_run {
-        let rpc_url: Option<Url> = match inquire::Text::new("Enter RPC URL: ")
-            .with_help_message("Skip if you have it in your .env file")
-            .prompt()
-        {
-            Ok(url) => match url.as_str() {
-                "" => None,
-                _ => Some(url.parse()?),
-            },
-            Err(_) => None,
-        };
-        let chain_id: Option<ChainId> = match inquire::Text::new("Enter Chain ID: ")
-            .with_help_message("Skip if you have it in your .env file")
-            .prompt()
-        {
-            Ok(chain_id) => match chain_id.as_str() {
-                "" => None,
-                _ => Some(chain_id.parse()?),
-            },
-            Err(_) => None,
-        };
+        println!("Make sure to position correct rpc url related env variables.");
 
-        let output_file: PathBuf = inquire::Text::new("Enter Output file path: ")
-            .with_default("output.json")
+        let output_file: PathBuf = inquire::Text::new("Enter Batch proof file path: ")
+            .with_default("batch.json")
             .prompt()?
             .into();
         let cairo_input: PathBuf = inquire::Text::new("Enter Cairo input file path:")
