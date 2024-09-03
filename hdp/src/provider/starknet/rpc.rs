@@ -8,17 +8,18 @@ use alloy::primitives::BlockNumber;
 
 use futures::future::join_all;
 use jsonrpsee::{
-    core::{client::ClientT, BoxError, ClientError},
+    core::{client::ClientT, BoxError},
     http_client::{HttpClient, HttpClientBuilder},
     rpc_params,
 };
-use reqwest::{Client, Url};
+use reqwest::Url;
+use serde_json::json;
 use starknet_types_core::felt::Felt;
 use tokio::sync::{
     mpsc::{self, Sender},
     RwLock,
 };
-use tracing::debug;
+use tracing::{debug, error};
 
 use crate::provider::error::RpcProviderError;
 
@@ -130,20 +131,35 @@ async fn pathfinder_get_proof(
     block_number: BlockNumber,
     storage_key: Option<Felt>,
 ) -> Result<GetProofOutput, BoxError> {
-    match storage_key {
-        Some(key) => {
-            let params = rpc_params!["param1", "param2"];
-            let response: String = provider.request("method_name", params).await?;
-            let get_proof_output: GetProofOutput = serde_json::from_str(&response)?;
-            Ok(get_proof_output)
-        }
-        None => {
-            let params = rpc_params!["param1", "param2"];
-            let response: String = provider.request("method_name", params).await?;
-            let get_proof_output: GetProofOutput = serde_json::from_str(&response)?;
-            Ok(get_proof_output)
-        }
+    let mut keys = Vec::new();
+    if let Some(key) = storage_key {
+        keys.push(format!("{}", key.to_hex_string()));
     }
+
+    let request = json!({
+        "jsonrpc": "2.0",
+        "method": "pathfinder_getProof",
+        "params": {
+            "block_id": "latest",
+            "contract_address": format!("{}", address.to_hex_string()),
+            "keys": keys
+        },
+        "id": 0
+    });
+
+    println!("req:{}", request);
+
+    let response: serde_json::Value = provider
+        .request(
+            "pathfinder_getProof",
+            rpc_params![request["params"].clone()],
+        )
+        .await?;
+
+    println!("res:{}", response);
+
+    let get_proof_output: GetProofOutput = serde_json::from_value(response["result"].clone())?;
+    Ok(get_proof_output)
 }
 
 async fn handle_proof_result(
@@ -152,4 +168,48 @@ async fn handle_proof_result(
     blocks_map: Arc<RwLock<HashSet<BlockNumber>>>,
     rpc_sender: Sender<(BlockNumber, GetProofOutput)>,
 ) {
+    match proof {
+        Ok(proof) => {
+            blocks_map.write().await.insert(block_number);
+            rpc_sender.send((block_number, proof)).await.unwrap();
+        }
+        Err(e) => {
+            error!("❗️❗️❗️ Error fetching proof: {:?}", e);
+        }
+    }
+}
+#[cfg(test)]
+mod tests {
+    use core::str::FromStr;
+
+    use super::*;
+    use reqwest::Url;
+
+
+
+    fn test_provider() -> RpcProvider {
+        RpcProvider::new(Url::from_str(PATHFINDER_URL).unwrap(), 100)
+    }
+
+    #[tokio::test]
+    async fn test_get_proof() {
+        let provider = test_provider();
+        let proof = provider
+            .get_proofs(
+                [156600].to_vec(),
+                Felt::from_str(
+                    "0x23371b227eaecd8e8920cd429d2cd0f3fee6abaacca08d3ab82a7cdd",
+                )
+                .unwrap(),
+                Some(
+                    Felt::from_str(
+                        "0x1",
+                    )
+                    .unwrap(),
+                ),
+            )
+            .await;
+
+        println!("{:?}", proof);
+    }
 }
