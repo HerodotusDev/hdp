@@ -177,3 +177,88 @@ pub async fn run(hdp_run_config: &HdpRunConfig, tasks: Vec<TaskEnvelope>) -> Res
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::env;
+
+    #[test]
+    fn test_hdp_run_config_init_with_env() {
+        // Set up environment variables
+        env::set_var("RPC_URL_ETHEREUM_MAINNET", "https://example.com/rpc1");
+        env::set_var("RPC_CHUNK_SIZE_ETHEREUM_MAINNET", "50");
+        env::set_var("RPC_URL_STARKNET_MAINNET", "https://example.com/rpc2");
+        env::set_var("RPC_CHUNK_SIZE_STARKNET_MAINNET", "60");
+        env::set_var("DRY_RUN_CAIRO_PATH", "/path/to/dry_run.cairo");
+        env::set_var("SOUND_RUN_CAIRO_PATH", "/path/to/sound_run.cairo");
+        env::set_var("SAVE_FETCH_KEYS_FILE", "/path/to/save_fetch_keys.json");
+
+        // Initialize HdpRunConfig
+        let config = HdpRunConfig::init(
+            None,
+            None,
+            PathBuf::from("input.json"),
+            false,
+            None,
+            None,
+            None,
+        );
+
+        // Assert provider configurations
+        assert_eq!(config.provider_config.len(), 2);
+        assert!(config
+            .provider_config
+            .contains_key(&ChainId::EthereumMainnet));
+        assert!(config
+            .provider_config
+            .contains_key(&ChainId::StarknetMainnet));
+
+        let provider_config_1 = config
+            .provider_config
+            .get(&ChainId::EthereumMainnet)
+            .unwrap();
+        assert_eq!(
+            provider_config_1.rpc_url.to_string(),
+            "https://example.com/rpc1"
+        );
+        assert_eq!(provider_config_1.max_requests, 50);
+
+        let provider_config_2 = config
+            .provider_config
+            .get(&ChainId::StarknetMainnet)
+            .unwrap();
+        assert_eq!(
+            provider_config_2.rpc_url.to_string(),
+            "https://example.com/rpc2"
+        );
+        assert_eq!(provider_config_2.max_requests, 60);
+
+        // Assert other configurations
+        assert_eq!(
+            config.dry_run_program_path,
+            PathBuf::from("/path/to/dry_run.cairo")
+        );
+        assert_eq!(
+            config.sound_run_program_path,
+            PathBuf::from("/path/to/sound_run.cairo")
+        );
+        assert_eq!(config.program_input_file, PathBuf::from("input.json"));
+        assert_eq!(config.is_cairo_format, false);
+        assert_eq!(
+            config.save_fetch_keys_file,
+            Some(PathBuf::from("/path/to/save_fetch_keys.json"))
+        );
+        assert_eq!(config.batch_proof_file, None);
+        assert_eq!(config.cairo_pie_file, None);
+
+        // Clean up environment variables
+        env::remove_var("RPC_URL_1");
+        env::remove_var("RPC_CHUNK_SIZE_1");
+        env::remove_var("RPC_URL_2");
+        env::remove_var("RPC_CHUNK_SIZE_2");
+        env::remove_var("DRY_RUN_CAIRO_PATH");
+        env::remove_var("SOUND_RUN_CAIRO_PATH");
+        env::remove_var("SAVE_FETCH_KEYS_FILE");
+    }
+}
