@@ -13,18 +13,18 @@ pub struct GetProofOutput {
     /// absent the hash of the first node in the
     /// [contract_proof](GetProofOutput#contract_proof) is the global state
     /// commitment.
-    state_commitment: Option<Felt>,
+    pub state_commitment: Option<Felt>,
     /// Required to verify that the hash of the class commitment and the root of
     /// the [contract_proof](GetProofOutput::contract_proof) matches the
     /// [state_commitment](Self#state_commitment). Present only for Starknet
     /// blocks 0.11.0 onwards.
-    class_commitment: Option<Felt>,
+    pub class_commitment: Option<Felt>,
 
     /// Membership / Non-membership proof for the queried contract
-    contract_proof: Vec<TrieNode>,
+    pub contract_proof: Vec<TrieNode>,
 
     /// Additional contract data if it exists.
-    contract_data: Option<ContractData>,
+    pub contract_data: Option<ContractData>,
 }
 
 /// A node in a Starknet patricia-merkle trie.
@@ -32,8 +32,16 @@ pub struct GetProofOutput {
 /// See pathfinders merkle-tree crate for more information.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum TrieNode {
+    #[serde(rename = "binary")]
     Binary { left: Felt, right: Felt },
-    Edge { child: Felt, path: [u8; 32] },
+    #[serde(rename = "edge")]
+    Edge { child: Felt, path: Path },
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Path {
+    len: u64,
+    value: String,
 }
 
 impl TrieNode {
@@ -41,12 +49,13 @@ impl TrieNode {
         match self {
             TrieNode::Binary { left, right } => H::hash(left, right),
             TrieNode::Edge { child, path } => {
+                let bytes: [u8; 32] = path.value.as_bytes().try_into().unwrap();
                 let mut length = [0; 32];
                 // Safe as len() is guaranteed to be <= 251
-                length[31] = path.len() as u8;
-                let path = Felt::from_bytes_be_slice(path);
+                length[31] = bytes.len() as u8;
 
                 let length = Felt::from_bytes_be(&length);
+                let path = Felt::from_bytes_be(&bytes);
                 H::hash(child, &path) + length
             }
         }

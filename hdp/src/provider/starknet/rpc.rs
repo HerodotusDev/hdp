@@ -1,18 +1,12 @@
+use alloy::primitives::BlockNumber;
 use std::{
     collections::{HashMap, HashSet},
     sync::Arc,
     time::Instant,
 };
 
-use alloy::primitives::BlockNumber;
-
 use futures::future::join_all;
-use jsonrpsee::{
-    core::{client::ClientT, BoxError},
-    http_client::{HttpClient, HttpClientBuilder},
-    rpc_params,
-};
-use reqwest::Url;
+use reqwest::{Client, Url};
 use serde_json::json;
 use starknet_types_core::felt::Felt;
 use tokio::sync::{
@@ -27,17 +21,39 @@ use super::types::GetProofOutput;
 
 /// !Note: have to use pathfinder node as we need `pathfinder_getProof`
 pub struct RpcProvider {
-    client: HttpClient,
+    client: reqwest::Client,
+    url: Url,
     chunk_size: u64,
 }
 
 impl RpcProvider {
     pub fn new(rpc_url: Url, chunk_size: u64) -> Self {
-        let client = HttpClientBuilder::default().build(rpc_url).unwrap();
-        Self { client, chunk_size }
+        Self {
+            client: Client::new(),
+            url: rpc_url,
+            chunk_size,
+        }
     }
 
-    pub async fn get_account_proofs(&self, blocks: Vec<BlockNumber>, address: Felt) {}
+    /// Get account with proof in given vector of blocks
+    pub async fn get_account_proofs(
+        &self,
+        blocks: Vec<BlockNumber>,
+        address: Felt,
+    ) -> Result<HashMap<BlockNumber, GetProofOutput>, RpcProviderError> {
+        self.get_proofs(blocks, address, None).await
+    }
+
+    /// Get storage with proof in given vector of blocks and slot
+    pub async fn get_storage_proofs(
+        &self,
+        block_range: Vec<BlockNumber>,
+        address: Felt,
+        storage_key: Felt,
+    ) -> Result<HashMap<BlockNumber, GetProofOutput>, RpcProviderError> {
+        self.get_proofs(block_range, address, Some(storage_key))
+            .await
+    }
 
     async fn get_proofs(
         &self,
@@ -69,6 +85,7 @@ impl RpcProvider {
         let chunk_size = self.chunk_size;
         let provider_clone = self.client.clone();
         let target_blocks_length = blocks.len();
+        let url = self.url.clone();
 
         debug!(
             "fetching proofs for {}, with chunk size: {}",
@@ -99,9 +116,11 @@ impl RpcProvider {
                         let fetched_blocks_clone = blocks_map.clone();
                         let rpc_sender = rpc_sender.clone();
                         let provider_clone = provider_clone.clone();
+                        let url = url.clone();
                         async move {
                             let proof = pathfinder_get_proof(
                                 &provider_clone,
+                                url,
                                 address,
                                 block_number,
                                 storage_key,
@@ -126,44 +145,37 @@ impl RpcProvider {
 
 /// Fetches proof (account or storage) for a given block number
 async fn pathfinder_get_proof(
-    provider: &HttpClient,
+    provider: &reqwest::Client,
+    url: Url,
     address: Felt,
     block_number: BlockNumber,
     storage_key: Option<Felt>,
-) -> Result<GetProofOutput, BoxError> {
+) -> Result<GetProofOutput, RpcProviderError> {
     let mut keys = Vec::new();
     if let Some(key) = storage_key {
-        keys.push(format!("{}", key.to_hex_string()));
+        keys.push(key.to_hex_string());
     }
 
     let request = json!({
         "jsonrpc": "2.0",
+        "id": "0",
         "method": "pathfinder_getProof",
         "params": {
-            "block_id": "latest",
+            "block_id": {"block_number": block_number},
             "contract_address": format!("{}", address.to_hex_string()),
             "keys": keys
-        },
-        "id": 0
+        }
     });
 
-    println!("req:{}", request);
-
-    let response: serde_json::Value = provider
-        .request(
-            "pathfinder_getProof",
-            rpc_params![request["params"].clone()],
-        )
-        .await?;
-
-    println!("res:{}", response);
-
-    let get_proof_output: GetProofOutput = serde_json::from_value(response["result"].clone())?;
+    let response = provider.post(url).json(&request).send().await?;
+    let response_json =
+        serde_json::from_str::<serde_json::Value>(&response.text().await?)?["result"].clone();
+    let get_proof_output: GetProofOutput = serde_json::from_value(response_json)?;
     Ok(get_proof_output)
 }
 
 async fn handle_proof_result(
-    proof: Result<GetProofOutput, BoxError>,
+    proof: Result<GetProofOutput, RpcProviderError>,
     block_number: BlockNumber,
     blocks_map: Arc<RwLock<HashSet<BlockNumber>>>,
     rpc_sender: Sender<(BlockNumber, GetProofOutput)>,
@@ -185,31 +197,77 @@ mod tests {
     use super::*;
     use reqwest::Url;
 
-
+    const PATHFINDER_URL: &str = "https://pathfinder.sepolia.iosis.tech/";
 
     fn test_provider() -> RpcProvider {
         RpcProvider::new(Url::from_str(PATHFINDER_URL).unwrap(), 100)
     }
 
     #[tokio::test]
-    async fn test_get_proof() {
+    async fn test_get_100_range_storage_with_proof() {
+        // TODO: why the storage proof returns same value as account proof
+        let target_block_start = 156600;
+        let target_block_end = 156700;
+        let target_block_range = (target_block_start..=target_block_end).collect::<Vec<u64>>();
         let provider = test_provider();
         let proof = provider
-            .get_proofs(
-                [156600].to_vec(),
-                Felt::from_str(
-                    "0x23371b227eaecd8e8920cd429d2cd0f3fee6abaacca08d3ab82a7cdd",
-                )
-                .unwrap(),
-                Some(
-                    Felt::from_str(
-                        "0x1",
-                    )
+            .get_storage_proofs(
+                target_block_range.clone(),
+                Felt::from_str("0x23371b227eaecd8e8920cd429d2cd0f3fee6abaacca08d3ab82a7cdd")
                     .unwrap(),
-                ),
+                Felt::from_str("0x1").unwrap(),
             )
-            .await;
+            .await
+            .unwrap();
 
-        println!("{:?}", proof);
+        assert_eq!(proof.len(), target_block_range.len());
+        let output = proof.get(&target_block_start).unwrap();
+        println!("Proof: {:?}", output);
+        assert_eq!(
+            output.state_commitment.unwrap(),
+            Felt::from_str("0x26da0f5f0849cf69b4872ef5dced3ec68ce28c5e3f53207280113abb7feb158")
+                .unwrap()
+        );
+
+        assert_eq!(
+            output.class_commitment.unwrap(),
+            Felt::from_str("0x46c1a0374b8ccf8d928e62ef40974304732c8a28f10b2c494adfabfcff0fa0a")
+                .unwrap()
+        );
+
+        assert!(output.contract_data.is_none());
+    }
+
+    #[tokio::test]
+    async fn test_get_100_range_account_with_proof() {
+        let target_block_start = 156600;
+        let target_block_end = 156700;
+        let target_block_range = (target_block_start..=target_block_end).collect::<Vec<u64>>();
+        let provider = test_provider();
+        let proof = provider
+            .get_account_proofs(
+                target_block_range.clone(),
+                Felt::from_str("0x23371b227eaecd8e8920cd429d2cd0f3fee6abaacca08d3ab82a7cdd")
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(proof.len(), target_block_range.len());
+        let output = proof.get(&target_block_start).unwrap();
+        println!("Proof: {:?}", output);
+        assert_eq!(
+            output.state_commitment.unwrap(),
+            Felt::from_str("0x26da0f5f0849cf69b4872ef5dced3ec68ce28c5e3f53207280113abb7feb158")
+                .unwrap()
+        );
+
+        assert_eq!(
+            output.class_commitment.unwrap(),
+            Felt::from_str("0x46c1a0374b8ccf8d928e62ef40974304732c8a28f10b2c494adfabfcff0fa0a")
+                .unwrap()
+        );
+
+        assert!(output.contract_data.is_none());
     }
 }

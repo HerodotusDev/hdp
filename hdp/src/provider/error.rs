@@ -45,4 +45,10 @@ pub enum RpcProviderError {
             alloy::rpc::types::EIP1186AccountProofResponse,
         )>,
     ),
+
+    #[error("Failed to fetch proofs: {0}")]
+    ReqwestError(#[from] reqwest::Error),
+
+    #[error("Failed to parse response: {0}")]
+    SerdeJsonError(#[from] serde_json::Error),
 }
