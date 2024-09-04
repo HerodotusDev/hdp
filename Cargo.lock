@@ -2182,6 +2182,7 @@ dependencies = [
  "serde_with 2.3.3",
  "starknet",
  "starknet-crypto",
+ "starknet-types-core",
  "tempfile",
  "thiserror",
  "tokio",

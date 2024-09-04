@@ -1,8 +1,7 @@
+use alloy::primitives::BlockNumber;
 use thiserror::Error;
 
 use crate::provider::indexer::IndexerError;
-
-use super::evm::rpc::RpcProviderError;
 
 /// Error type for provider
 #[derive(Error, Debug)]
@@ -33,4 +32,23 @@ pub enum ProviderError {
 
     #[error("Fetch key error: {0}")]
     FetchKeyError(String),
+}
+
+/// Error from [`RpcProvider`]
+#[derive(Error, Debug)]
+pub enum RpcProviderError {
+    #[error("Failed to send proofs with mpsc")]
+    MpscError(
+        #[from]
+        tokio::sync::mpsc::error::SendError<(
+            BlockNumber,
+            alloy::rpc::types::EIP1186AccountProofResponse,
+        )>,
+    ),
+
+    #[error("Failed to fetch proofs: {0}")]
+    ReqwestError(#[from] reqwest::Error),
+
+    #[error("Failed to parse response: {0}")]
+    SerdeJsonError(#[from] serde_json::Error),
 }
