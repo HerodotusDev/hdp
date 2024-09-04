@@ -215,7 +215,7 @@ mod tests {
                 target_block_range.clone(),
                 Felt::from_str("0x23371b227eaecd8e8920cd429d2cd0f3fee6abaacca08d3ab82a7cdd")
                     .unwrap(),
-                Felt::from_str("0x1").unwrap(),
+                Felt::from_str("0x2").unwrap(),
             )
             .await
             .unwrap();
@@ -228,6 +228,8 @@ mod tests {
             Felt::from_str("0x26da0f5f0849cf69b4872ef5dced3ec68ce28c5e3f53207280113abb7feb158")
                 .unwrap()
         );
+
+        assert_eq!(output.contract_proof.len(), 23);
 
         assert_eq!(
             output.class_commitment.unwrap(),
@@ -261,6 +263,7 @@ mod tests {
             Felt::from_str("0x26da0f5f0849cf69b4872ef5dced3ec68ce28c5e3f53207280113abb7feb158")
                 .unwrap()
         );
+        assert_eq!(output.contract_proof.len(), 23);
 
         assert_eq!(
             output.class_commitment.unwrap(),
