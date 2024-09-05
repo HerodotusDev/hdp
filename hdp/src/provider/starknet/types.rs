@@ -6,7 +6,7 @@ use starknet_types_core::{felt::Felt, hash::StarkHash};
 
 /// Holds the membership/non-membership of a contract and its associated
 /// contract contract if the contract exists.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[skip_serializing_none]
 pub struct GetProofOutput {
     /// The global state commitment for Starknet 0.11.0 blocks onwards, if
@@ -25,8 +25,6 @@ pub struct GetProofOutput {
 
     /// Additional contract data if it exists.
     pub contract_data: Option<ContractData>,
-
-    pub storage_proofs: Option<Vec<Vec<TrieNode>>>,
 }
 
 /// A node in a Starknet patricia-merkle trie.
@@ -65,7 +63,7 @@ impl TrieNode {
 }
 
 /// Holds the data and proofs for a specific contract.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ContractData {
     /// Required to verify the contract state hash to contract root calculation.
     class_hash: Felt,
@@ -80,5 +78,5 @@ pub struct ContractData {
     contract_state_hash_version: Felt,
 
     /// The proofs associated with the queried storage values
-    storage_proofs: Vec<Vec<TrieNode>>,
+    pub storage_proofs: Vec<Vec<TrieNode>>,
 }
