@@ -170,6 +170,7 @@ async fn pathfinder_get_proof(
     let response = provider.post(url).json(&request).send().await?;
     let response_json =
         serde_json::from_str::<serde_json::Value>(&response.text().await?)?["result"].clone();
+    println!("response_json: {:?}", response_json);
     let get_proof_output: GetProofOutput = serde_json::from_value(response_json)?;
     Ok(get_proof_output)
 }
@@ -206,16 +207,21 @@ mod tests {
     #[tokio::test]
     async fn test_get_100_range_storage_with_proof() {
         // TODO: why the storage proof returns same value as account proof
-        let target_block_start = 156600;
-        let target_block_end = 156700;
+        let target_block_start = 56400;
+        let target_block_end = 56401;
         let target_block_range = (target_block_start..=target_block_end).collect::<Vec<u64>>();
         let provider = test_provider();
         let proof = provider
             .get_storage_proofs(
                 target_block_range.clone(),
-                Felt::from_str("0x23371b227eaecd8e8920cd429d2cd0f3fee6abaacca08d3ab82a7cdd")
-                    .unwrap(),
-                Felt::from_str("0x2").unwrap(),
+                Felt::from_str(
+                    "0x017E2D0662675DD83B4B58A0A659EAFA131FDD01FA6DABD5002D8815DD2D17A5",
+                )
+                .unwrap(),
+                Felt::from_str(
+                    "0x004C4FB1AB068F6039D5780C68DD0FA2F8742CCEB3426D19667778CA7F3518A9",
+                )
+                .unwrap(),
             )
             .await
             .unwrap();

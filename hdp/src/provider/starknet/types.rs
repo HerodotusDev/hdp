@@ -25,6 +25,8 @@ pub struct GetProofOutput {
 
     /// Additional contract data if it exists.
     pub contract_data: Option<ContractData>,
+
+    pub storage_proofs: Option<Vec<Vec<TrieNode>>>,
 }
 
 /// A node in a Starknet patricia-merkle trie.
