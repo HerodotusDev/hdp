@@ -4,13 +4,15 @@
 use crate::cairo_runner::dry_run::DryRunResult;
 use crate::cairo_runner::{cairo_dry_run, input::dry_run::DryRunnerProgramInput};
 use crate::constant::DRY_CAIRO_RUN_OUTPUT_FILE;
+
+use crate::primitives::processed_types::block_proofs::convert_to_mmr_meta_set;
 use crate::primitives::processed_types::cairo_format;
 use crate::primitives::task::ExtendedModule;
 use crate::provider::key::categorize_fetch_keys;
 use crate::provider::traits::new_provider_from_config;
 use core::panic;
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use tracing::info;
 
@@ -57,12 +59,11 @@ impl Compilable for ModuleVec {
             panic!("Multiple chain id is not supported yet");
         }
 
-        let mut headers = HashSet::new();
         let mut accounts = HashSet::new();
         let mut storages = HashSet::new();
         let mut transactions = HashSet::new();
         let mut transaction_receipts = HashSet::new();
-        let mut mmr_metas = HashSet::new();
+        let mut mmr_header_map = HashMap::new();
 
         info!("3. Fetching proofs from provider...");
         for (chain_id, keys) in keys_maps_chain {
@@ -75,22 +76,22 @@ impl Compilable for ModuleVec {
             let results = provider.fetch_proofs_from_keys(keys).await?;
 
             // TODO: can we do better?
-            headers.extend(results.headers.into_iter());
+            mmr_header_map.extend(convert_to_mmr_meta_set(results.mmr_with_headers));
             accounts.extend(results.accounts.into_iter());
             storages.extend(results.storages.into_iter());
             transactions.extend(results.transactions.into_iter());
             transaction_receipts.extend(results.transaction_receipts.into_iter());
-            mmr_metas.extend(results.mmr_metas.into_iter());
         }
 
+        // TODO : need fix
         let compiled_result = CompilationResult::new(
+            1,
             commit_results_maps,
-            headers,
+            mmr_header_map,
             accounts,
             storages,
             transactions,
             transaction_receipts,
-            mmr_metas,
         );
         Ok(compiled_result)
     }

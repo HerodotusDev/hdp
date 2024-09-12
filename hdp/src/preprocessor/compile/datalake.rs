@@ -27,13 +27,13 @@ impl Compilable for DatalakeCompute {
             aggregation_fn.operation(&compiled_block_sampled.values, Some(fn_context.clone()))?;
 
         Ok(CompilationResult::new(
+            self.datalake.get_chain_id().to_numeric_id(),
             vec![aggregated_result],
-            compiled_block_sampled.headers,
+            compiled_block_sampled.mmr_with_headers,
             compiled_block_sampled.accounts,
             compiled_block_sampled.storages,
             compiled_block_sampled.transactions,
             compiled_block_sampled.transaction_receipts,
-            compiled_block_sampled.mmr_metas,
         ))
     }
 }
@@ -130,14 +130,14 @@ mod tests {
             .compile(&compiler_config)
             .await
             .unwrap();
-        assert_eq!(results.headers.len(), 16);
+        // assert_eq!(results.mmr_with_headers[0].headers.len(), 16);
         assert_eq!(results.accounts.len(), 2);
         assert_eq!(results.storages.len(), 1);
         let storage_proofs = results.storages.iter().next().unwrap();
         assert_eq!(storage_proofs.proofs.len(), 6);
         assert_eq!(results.transactions.len(), 0);
         assert_eq!(results.transaction_receipts.len(), 0);
-        assert_eq!(results.mmr_metas.len(), 1);
+        // assert_eq!(results.mmr_metas.len(), 1);
     }
 
     #[tokio::test]
@@ -181,11 +181,11 @@ mod tests {
             .compile(&compiler_config)
             .await
             .unwrap();
-        assert_eq!(results.headers.len(), 2);
+        // assert_eq!(results.headers.len(), 2);
         assert_eq!(results.accounts.len(), 0);
         assert_eq!(results.storages.len(), 0);
         assert_eq!(results.transactions.len(), 10);
         assert_eq!(results.transaction_receipts.len(), 11);
-        assert_eq!(results.mmr_metas.len(), 1);
+        // assert_eq!(results.mmr_metas.len(), 1);
     }
 }

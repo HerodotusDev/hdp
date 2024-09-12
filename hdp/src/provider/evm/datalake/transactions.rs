@@ -1,7 +1,8 @@
 use crate::{
     primitives::{
         processed_types::{
-            header::ProcessedHeader, receipt::ProcessedReceipt, transaction::ProcessedTransaction,
+            header::ProcessedHeader, mmr::MMRMeta, receipt::ProcessedReceipt,
+            transaction::ProcessedTransaction,
         },
         task::datalake::{
             transactions::{TransactionsCollection, TransactionsInBlockDatalake},
@@ -13,7 +14,7 @@ use crate::{
 use alloy::primitives::U256;
 use anyhow::Result;
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 impl EvmProvider {
     pub async fn fetch_transactions(
@@ -22,7 +23,7 @@ impl EvmProvider {
     ) -> Result<FetchedDatalake, ProviderError> {
         let mut aggregation_set: Vec<U256> = Vec::new();
 
-        let (mmr_metas, headers_proofs) = self
+        let headers_proofs = self
             .get_range_of_header_proofs(
                 datalake.target_block,
                 datalake.target_block,
@@ -30,16 +31,17 @@ impl EvmProvider {
             )
             .await?;
 
-        let mut headers: HashSet<ProcessedHeader> = HashSet::new();
+        let mut mmr_with_headers: HashMap<MMRMeta, HashSet<ProcessedHeader>> = HashMap::new();
         let mut transactions: HashSet<ProcessedTransaction> = HashSet::new();
         let mut transaction_receipts: HashSet<ProcessedReceipt> = HashSet::new();
-        let fetched_block = headers_proofs.get(&datalake.target_block).unwrap();
+        let (fetched_block, mmr) = headers_proofs.get(&datalake.target_block).unwrap();
 
-        headers.insert(ProcessedHeader::new(
+        let processed_header = ProcessedHeader::new(
             fetched_block.rlp_block_header.clone(),
             fetched_block.element_index,
             fetched_block.siblings_hashes.clone(),
-        ));
+        );
+        mmr_with_headers.insert(mmr.clone(), [processed_header].into_iter().collect());
 
         match &datalake.sampled_property {
             TransactionsCollection::Transactions(property) => {
@@ -92,12 +94,11 @@ impl EvmProvider {
 
         Ok(FetchedDatalake {
             values: aggregation_set,
-            headers,
+            mmr_with_headers,
             accounts: HashSet::new(),
             storages: HashSet::new(),
             transactions,
             transaction_receipts,
-            mmr_metas,
         })
     }
 }

@@ -3,7 +3,9 @@
 
 use crate::constant::SOUND_CAIRO_RUN_OUTPUT_FILE;
 use crate::primitives::merkle_tree::{build_result_merkle_tree, build_task_merkle_tree};
-use crate::primitives::processed_types::block_proofs::ProcessedBlockProofs;
+use crate::primitives::processed_types::block_proofs::{
+    convert_to_mmr_with_headers, ProcessedBlockProofs,
+};
 use crate::primitives::processed_types::datalake_compute::ProcessedDatalakeCompute;
 use crate::primitives::processed_types::module::ProcessedModule;
 use crate::primitives::processed_types::query::ProcessorInput;
@@ -120,8 +122,8 @@ impl PreProcessor {
         }
 
         let proofs = ProcessedBlockProofs {
-            mmr_metas: Vec::from_iter(compiled_results.mmr_metas),
-            headers: Vec::from_iter(compiled_results.headers),
+            chain_id: 1,
+            mmr_with_headers: convert_to_mmr_with_headers(compiled_results.mmr_with_headers),
             accounts: Vec::from_iter(compiled_results.accounts),
             storages: Vec::from_iter(compiled_results.storages),
             transactions: Vec::from_iter(compiled_results.transactions),
@@ -131,7 +133,7 @@ impl PreProcessor {
             SOUND_CAIRO_RUN_OUTPUT_FILE.into(),
             result_merkle_tree.root(),
             task_merkle_root,
-            proofs,
+            vec![proofs],
             combined_tasks,
         );
         info!("1️⃣  Preprocessor completed successfully");

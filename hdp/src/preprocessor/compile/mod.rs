@@ -2,7 +2,7 @@ use alloy::primitives::U256;
 
 use config::CompilerConfig;
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use thiserror::Error;
 
 use crate::primitives::processed_types::{
@@ -52,10 +52,11 @@ pub trait Compilable {
 
 #[derive(Debug, Default, PartialEq)]
 pub struct CompilationResult {
+    pub chain_id: u128,
     /// results of tasks
     pub task_results: Vec<U256>,
-    /// Headers related to the datalake
-    pub headers: HashSet<ProcessedHeader>,
+    /// mmr_with_headers related to the datalake
+    pub mmr_with_headers: HashMap<MMRMeta, HashSet<ProcessedHeader>>,
     /// Accounts related to the datalake
     pub accounts: HashSet<ProcessedAccount>,
     /// Storages related to the datalake
@@ -64,39 +65,41 @@ pub struct CompilationResult {
     pub transactions: HashSet<ProcessedTransaction>,
     /// Transaction receipts related to the datalake
     pub transaction_receipts: HashSet<ProcessedReceipt>,
-    /// MMR meta data related to the headers
-    pub mmr_metas: HashSet<MMRMeta>,
 }
 
 impl CompilationResult {
     pub fn new(
+        chain_id: u128,
         task_results: Vec<U256>,
-        headers: HashSet<ProcessedHeader>,
+        mmr_with_headers: HashMap<MMRMeta, HashSet<ProcessedHeader>>,
         accounts: HashSet<ProcessedAccount>,
         storages: HashSet<ProcessedStorage>,
         transactions: HashSet<ProcessedTransaction>,
         transaction_receipts: HashSet<ProcessedReceipt>,
-        mmr_metas: HashSet<MMRMeta>,
     ) -> Self {
         Self {
+            chain_id,
             task_results,
-            headers,
+            mmr_with_headers,
             accounts,
             storages,
             transactions,
             transaction_receipts,
-            mmr_metas,
         }
     }
 
     /// Extend the current compilation results with another compilation results
     pub fn extend(&mut self, other: CompilationResult) {
-        self.headers.extend(other.headers);
+        for (mmr_meta, headers) in other.mmr_with_headers {
+            self.mmr_with_headers
+                .entry(mmr_meta)
+                .or_default()
+                .extend(headers);
+        }
         self.accounts.extend(other.accounts);
         self.storages.extend(other.storages);
         self.transactions.extend(other.transactions);
         self.transaction_receipts.extend(other.transaction_receipts);
         self.task_results.extend(other.task_results);
-        self.mmr_metas.extend(other.mmr_metas);
     }
 }
