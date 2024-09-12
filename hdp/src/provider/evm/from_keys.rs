@@ -83,7 +83,7 @@ impl EvmProvider {
             self._chunk_vec_blocks_for_indexer(block_range)
         };
 
-        let chain_id = keys.iter().next().unwrap().chain_id;
+        // let chain_id = keys.iter().next().unwrap().chain_id;
         let mut fetched_headers_proofs: HashMap<MMRMeta, HashSet<ProcessedHeader>> = HashMap::new();
 
         let real_target_blocks = keys.iter().map(|x| x.block_number).collect::<HashSet<_>>();
@@ -111,7 +111,7 @@ impl EvmProvider {
                 .collect();
 
             let fetched_mmr = indexer_response.mmr_meta;
-            let mmr_meta = MMRMeta::from_indexer(fetched_mmr, chain_id);
+            let mmr_meta = MMRMeta::from_indexer(fetched_mmr);
             fetched_headers_proofs
                 .entry(mmr_meta)
                 .and_modify(|existing_headers| {

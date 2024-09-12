@@ -103,7 +103,7 @@ impl EvmProvider {
                 .get_headers_proof(start_block, end_block)
                 .await?;
             let fetched_mmr = indexer_response.mmr_meta;
-            let mmr_meta = MMRMeta::from_indexer(fetched_mmr, self.header_provider.chain_id);
+            let mmr_meta = MMRMeta::from_indexer(fetched_mmr);
 
             // TODO lets think how not clone the mmr_meta
             fetched_headers_proofs_with_blocks_map.extend(

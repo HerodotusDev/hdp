@@ -85,7 +85,7 @@ impl Compilable for ModuleVec {
 
         // TODO : need fix
         let compiled_result = CompilationResult::new(
-            1,
+            11155111,
             commit_results_maps,
             mmr_header_map,
             accounts,

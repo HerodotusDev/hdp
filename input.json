@@ -4,7 +4,7 @@
   "result_root": "0x34b46123c4ab406cec0586364d8ed193353f0e9fb1b32cac0988fc0970dc50a2",
   "proofs": [
     {
-      "chain_id": 11155111,
+      "chain_id": 1,
       "mmr_with_headers": [
         {
           "mmr_meta": {
@@ -23,8 +23,7 @@
               "0x5f3202e8d32391896022ddb916b83f165d2d7486261304f3e029aad6258ba2c",
               "0x3a98faad3cc3bdeee0f2a346469fe4e67d364c98f8f5adf03f472000194081c",
               "0x48bb57587a1e690409d81b70f3fe2ee625f25f008ec0773e55a0e1293c9e025"
-            ],
-            "chain_id": 11155111
+            ]
           },
           "headers": [
             {
@@ -135,12 +134,25 @@
       ],
       "accounts": [
         {
-          "address": ["0x5d89d5862ca7e8af", "0x36b7d426ab6d61d6", "0x2f4722cf"],
+          "address": [
+            "0x5d89d5862ca7e8af",
+            "0x36b7d426ab6d61d6",
+            "0x2f4722cf"
+          ],
           "account_key": "0x7fd6daf0de598ff611452d8eb4ec5f7e99e8ef74d175073be14cdc936830b5d3",
           "proofs": [
             {
               "block_number": 6375109,
-              "proof_bytes_len": [532, 532, 532, 532, 532, 404, 83, 104],
+              "proof_bytes_len": [
+                532,
+                532,
+                532,
+                532,
+                532,
+                404,
+                83,
+                104
+              ],
               "proof": [
                 [
                   "0x444e529da01102f9",
@@ -575,13 +587,26 @@
       ],
       "storages": [
         {
-          "address": ["0x5d89d5862ca7e8af", "0x36b7d426ab6d61d6", "0x2f4722cf"],
-          "slot": ["0x0", "0x0", "0x0", "0x1000000000000000"],
+          "address": [
+            "0x5d89d5862ca7e8af",
+            "0x36b7d426ab6d61d6",
+            "0x2f4722cf"
+          ],
+          "slot": [
+            "0x0",
+            "0x0",
+            "0x0",
+            "0x1000000000000000"
+          ],
           "storage_key": "0x1b6847dc741a1b0cd08d278845f9d819d87b734759afb55fe2de5cb82a9ae672",
           "proofs": [
             {
               "block_number": 6375109,
-              "proof_bytes_len": [532, 83, 69],
+              "proof_bytes_len": [
+                532,
+                83,
+                69
+              ],
               "proof": [
                 [
                   "0xdaaaa563a01102f9",
