@@ -29,12 +29,22 @@ jobs:
         run: |
           cargo install --locked -f --path cli/
 
-      - name: Clone hdp-test repository
-        uses: actions/checkout@v4
-        with:
-          repository: HerodotusDev/hdp-test
-          token: ${{ secrets.REPO_ACCESS_TOKEN }}
-          path: hdp-test
+      - name: Clone and setup hdp-test repository
+        run: |
+          git clone https://x-access-token:${{ secrets.REPO_ACCESS_TOKEN }}@github.com/HerodotusDev/hdp-test.git hdp-test
+          cd hdp-test
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+
+          # Check if branch exists on remote
+          if git ls-remote --exit-code --heads origin ${{ github.ref_name }} >/dev/null 2>&1; then
+            echo "Branch ${{ github.ref_name }} exists on remote, checking out"
+            git checkout ${{ github.ref_name }}
+          else
+            echo "Branch ${{ github.ref_name }} does not exist on remote, creating from main"
+            git checkout main
+            git checkout -b ${{ github.ref_name }}
+          fi
 
       - name: Generate .env file
         run: |
@@ -58,11 +68,6 @@ jobs:
       - name: Commit and push new fixtures
         run: |
           cd hdp-test
-          git config user.name github-actions
-          git config user.email github-actions@github.com
-          git fetch origin
-          git checkout ${{ github.ref_name }}
-          git pull origin ${{ github.ref_name }}
           git add .
           git commit -m "Update fixtures"
           git push origin ${{ github.ref_name }}
@@ -77,6 +82,7 @@ jobs:
         with:
           repository: HerodotusDev/hdp-test
           token: ${{ secrets.REPO_ACCESS_TOKEN }}
+          fetch-depth: 0
 
       - name: Merge fixtures to main
         run: |
@@ -84,5 +90,5 @@ jobs:
           git config user.email github-actions@github.com
           git fetch origin
           git checkout main
-          git merge origin/${{ github.ref_name }}
+          git merge --no-ff origin/${{ github.ref_name }} -m "Merge ${{ github.ref_name }} into main"
           git push origin main
