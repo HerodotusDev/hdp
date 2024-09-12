@@ -60,9 +60,12 @@ jobs:
           cd hdp-test
           git config user.name github-actions
           git config user.email github-actions@github.com
+          git fetch origin
+          git checkout ${{ github.ref_name }}
+          git pull origin ${{ github.ref_name }}
           git add .
           git commit -m "Update fixtures"
-          git push origin HEAD:${{ github.ref_name }}
+          git push origin ${{ github.ref_name }}
 
   merge_to_main:
     needs: generate_fixtures
