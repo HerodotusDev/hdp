@@ -138,9 +138,7 @@ impl DatalakeField for HeaderField {
         match self {
             HeaderField::ParentHash => decoded.parent_hash.into(),
             HeaderField::OmmerHash => decoded.ommers_hash.into(),
-            HeaderField::Beneficiary => {
-                U256::from_str_radix(&decoded.beneficiary.to_string(), 16).unwrap()
-            }
+            HeaderField::Beneficiary => decoded.beneficiary.into_word().into(),
             HeaderField::StateRoot => decoded.state_root.into(),
             HeaderField::TransactionsRoot => decoded.transactions_root.into(),
             HeaderField::ReceiptsRoot => decoded.receipts_root.into(),
