@@ -29,22 +29,13 @@ jobs:
         run: |
           cargo install --locked -f --path cli/
 
-      - name: Clone and setup hdp-test repository
+      - name: Clone hdp-test repository
         run: |
-          git clone https://x-access-token:${{ secrets.REPO_ACCESS_TOKEN }}@github.com/HerodotusDev/hdp-test.git hdp-test
+          git clone -b ${{ github.ref_name }} https://x-access-token:${{ secrets.REPO_ACCESS_TOKEN }}@github.com/HerodotusDev/hdp-test.git hdp-test || git clone https://x-access-token:${{ secrets.REPO_ACCESS_TOKEN }}@github.com/HerodotusDev/hdp-test.git hdp-test
           cd hdp-test
+          git checkout -b ${{ github.ref_name }} || git checkout ${{ github.ref_name }}
           git config user.name github-actions
           git config user.email github-actions@github.com
-
-          # Check if branch exists on remote
-          if git ls-remote --exit-code --heads origin ${{ github.ref_name }} >/dev/null 2>&1; then
-            echo "Branch ${{ github.ref_name }} exists on remote, checking out"
-            git checkout ${{ github.ref_name }}
-          else
-            echo "Branch ${{ github.ref_name }} does not exist on remote, creating from main"
-            git checkout main
-            git checkout -b ${{ github.ref_name }}
-          fi
 
       - name: Generate .env file
         run: |
