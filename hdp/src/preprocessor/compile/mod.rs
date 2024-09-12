@@ -2,12 +2,15 @@ use alloy::primitives::U256;
 
 use config::CompilerConfig;
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use thiserror::Error;
 
+use crate::primitives::processed_types::block_proofs::{
+    convert_to_mmr_meta_set, convert_to_mmr_with_headers, MMRWithHeader,
+};
 use crate::primitives::processed_types::{
-    account::ProcessedAccount, header::ProcessedHeader, mmr::MMRMeta, receipt::ProcessedReceipt,
-    storage::ProcessedStorage, transaction::ProcessedTransaction,
+    account::ProcessedAccount, receipt::ProcessedReceipt, storage::ProcessedStorage,
+    transaction::ProcessedTransaction,
 };
 
 use crate::provider::error::ProviderError;
@@ -56,7 +59,7 @@ pub struct CompilationResult {
     /// results of tasks
     pub task_results: Vec<U256>,
     /// mmr_with_headers related to the datalake
-    pub mmr_with_headers: HashMap<MMRMeta, HashSet<ProcessedHeader>>,
+    pub mmr_with_headers: HashSet<MMRWithHeader>,
     /// Accounts related to the datalake
     pub accounts: HashSet<ProcessedAccount>,
     /// Storages related to the datalake
@@ -71,7 +74,7 @@ impl CompilationResult {
     pub fn new(
         chain_id: u128,
         task_results: Vec<U256>,
-        mmr_with_headers: HashMap<MMRMeta, HashSet<ProcessedHeader>>,
+        mmr_with_headers: HashSet<MMRWithHeader>,
         accounts: HashSet<ProcessedAccount>,
         storages: HashSet<ProcessedStorage>,
         transactions: HashSet<ProcessedTransaction>,
@@ -90,12 +93,18 @@ impl CompilationResult {
 
     /// Extend the current compilation results with another compilation results
     pub fn extend(&mut self, other: CompilationResult) {
-        for (mmr_meta, headers) in other.mmr_with_headers {
-            self.mmr_with_headers
+        let others_mmr_with_headers_set =
+            convert_to_mmr_meta_set(Vec::from_iter(other.mmr_with_headers));
+        let mut self_mmr_with_headers_set =
+            convert_to_mmr_meta_set(Vec::from_iter(self.mmr_with_headers.clone()));
+        for (mmr_meta, headers) in others_mmr_with_headers_set {
+            self_mmr_with_headers_set
                 .entry(mmr_meta)
                 .or_default()
                 .extend(headers);
         }
+        self.mmr_with_headers =
+            HashSet::from_iter(convert_to_mmr_with_headers(self_mmr_with_headers_set));
         self.accounts.extend(other.accounts);
         self.storages.extend(other.storages);
         self.transactions.extend(other.transactions);

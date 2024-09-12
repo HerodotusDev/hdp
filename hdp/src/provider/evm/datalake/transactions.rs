@@ -1,8 +1,8 @@
 use crate::{
     primitives::{
         processed_types::{
-            header::ProcessedHeader, mmr::MMRMeta, receipt::ProcessedReceipt,
-            transaction::ProcessedTransaction,
+            block_proofs::convert_to_mmr_with_headers, header::ProcessedHeader, mmr::MMRMeta,
+            receipt::ProcessedReceipt, transaction::ProcessedTransaction,
         },
         task::datalake::{
             transactions::{TransactionsCollection, TransactionsInBlockDatalake},
@@ -94,7 +94,7 @@ impl EvmProvider {
 
         Ok(FetchedDatalake {
             values: aggregation_set,
-            mmr_with_headers,
+            mmr_with_headers: HashSet::from_iter(convert_to_mmr_with_headers(mmr_with_headers)),
             accounts: HashSet::new(),
             storages: HashSet::new(),
             transactions,

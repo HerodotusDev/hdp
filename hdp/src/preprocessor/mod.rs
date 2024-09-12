@@ -3,9 +3,7 @@
 
 use crate::constant::SOUND_CAIRO_RUN_OUTPUT_FILE;
 use crate::primitives::merkle_tree::{build_result_merkle_tree, build_task_merkle_tree};
-use crate::primitives::processed_types::block_proofs::{
-    convert_to_mmr_with_headers, ProcessedBlockProofs,
-};
+use crate::primitives::processed_types::block_proofs::ProcessedBlockProofs;
 use crate::primitives::processed_types::datalake_compute::ProcessedDatalakeCompute;
 use crate::primitives::processed_types::module::ProcessedModule;
 use crate::primitives::processed_types::query::ProcessorInput;
@@ -121,9 +119,10 @@ impl PreProcessor {
             }
         }
 
+        // TODO: this chain id need to be fix
         let proofs = ProcessedBlockProofs {
-            chain_id: 1,
-            mmr_with_headers: convert_to_mmr_with_headers(compiled_results.mmr_with_headers),
+            chain_id: 11155111,
+            mmr_with_headers: Vec::from_iter(compiled_results.mmr_with_headers),
             accounts: Vec::from_iter(compiled_results.accounts),
             storages: Vec::from_iter(compiled_results.storages),
             transactions: Vec::from_iter(compiled_results.transactions),

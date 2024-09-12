@@ -3,11 +3,12 @@
 //!
 //! We need this type to bind encoded transaction and receipts to the block number and proofs.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
+use crate::primitives::processed_types::block_proofs::MMRWithHeader;
 use crate::primitives::processed_types::{
-    account::ProcessedAccount, header::ProcessedHeader, mmr::MMRMeta, receipt::ProcessedReceipt,
-    storage::ProcessedStorage, transaction::ProcessedTransaction,
+    account::ProcessedAccount, receipt::ProcessedReceipt, storage::ProcessedStorage,
+    transaction::ProcessedTransaction,
 };
 
 use alloy::primitives::U256;
@@ -74,7 +75,7 @@ pub struct FetchedDatalake {
     /// Targeted datalake's compiled results
     pub values: Vec<U256>,
     /// mmr_with_headers related to the datalake
-    pub mmr_with_headers: HashMap<MMRMeta, HashSet<ProcessedHeader>>,
+    pub mmr_with_headers: HashSet<MMRWithHeader>,
     /// Accounts related to the datalake
     pub accounts: HashSet<ProcessedAccount>,
     /// Storages related to the datalake
