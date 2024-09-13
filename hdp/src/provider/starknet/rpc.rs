@@ -170,6 +170,7 @@ async fn pathfinder_get_proof(
     let response = provider.post(url).json(&request).send().await?;
     let response_json =
         serde_json::from_str::<serde_json::Value>(&response.text().await?)?["result"].clone();
+    println!("response_json: {:?}", response_json);
     let get_proof_output: GetProofOutput = serde_json::from_value(response_json)?;
     Ok(get_proof_output)
 }
@@ -205,39 +206,46 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_100_range_storage_with_proof() {
-        // TODO: why the storage proof returns same value as account proof
-        let target_block_start = 156600;
-        let target_block_end = 156700;
+        let target_block_start = 56400;
+        let target_block_end = 56500;
         let target_block_range = (target_block_start..=target_block_end).collect::<Vec<u64>>();
         let provider = test_provider();
         let proof = provider
             .get_storage_proofs(
                 target_block_range.clone(),
-                Felt::from_str("0x23371b227eaecd8e8920cd429d2cd0f3fee6abaacca08d3ab82a7cdd")
-                    .unwrap(),
-                Felt::from_str("0x2").unwrap(),
+                Felt::from_str(
+                    "0x017E2D0662675DD83B4B58A0A659EAFA131FDD01FA6DABD5002D8815DD2D17A5",
+                )
+                .unwrap(),
+                Felt::from_str(
+                    "0x004C4FB1AB068F6039D5780C68DD0FA2F8742CCEB3426D19667778CA7F3518A9",
+                )
+                .unwrap(),
             )
             .await
             .unwrap();
 
         assert_eq!(proof.len(), target_block_range.len());
         let output = proof.get(&target_block_start).unwrap();
-        println!("Proof: {:?}", output);
+
         assert_eq!(
             output.state_commitment.unwrap(),
-            Felt::from_str("0x26da0f5f0849cf69b4872ef5dced3ec68ce28c5e3f53207280113abb7feb158")
+            Felt::from_str("0x598cf91d9a3a7176d01926e8442b8bd83299168f723cb2d52080e895400d9a1")
                 .unwrap()
         );
 
-        assert_eq!(output.contract_proof.len(), 23);
+        assert_eq!(output.contract_proof.len(), 17);
 
         assert_eq!(
             output.class_commitment.unwrap(),
-            Felt::from_str("0x46c1a0374b8ccf8d928e62ef40974304732c8a28f10b2c494adfabfcff0fa0a")
+            Felt::from_str("0x324d06b207f2891ef395ba1e7a0ef92b61a5772a294a289362dc37b0469c453")
                 .unwrap()
         );
 
-        assert!(output.contract_data.is_none());
+        assert_eq!(
+            output.contract_data.clone().unwrap().storage_proofs[0].len(),
+            5
+        );
     }
 
     #[tokio::test]
