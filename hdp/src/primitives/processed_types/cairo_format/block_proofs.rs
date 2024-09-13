@@ -14,11 +14,18 @@ impl AsCairoFormat for BaseProcessedBlockProofs {
 
     fn as_cairo_format(&self) -> Self::Output {
         ProcessedBlockProofs {
-            mmr_metas: self.mmr_metas.clone(),
-            headers: self
-                .headers
+            chain_id: self.chain_id,
+            mmr_with_headers: self
+                .mmr_with_headers
                 .iter()
-                .map(|header| header.as_cairo_format())
+                .map(|mmr_with_header| MMRWithHeader {
+                    mmr_meta: mmr_with_header.mmr_meta.clone(),
+                    headers: mmr_with_header
+                        .headers
+                        .iter()
+                        .map(|header| header.as_cairo_format())
+                        .collect(),
+                })
                 .collect(),
             accounts: self
                 .accounts
@@ -46,10 +53,16 @@ impl AsCairoFormat for BaseProcessedBlockProofs {
 
 #[derive(Serialize, Deserialize)]
 pub struct ProcessedBlockProofs {
-    pub mmr_metas: Vec<MMRMeta>,
-    pub headers: Vec<ProcessedHeader>,
+    pub chain_id: u128,
+    pub mmr_with_headers: Vec<MMRWithHeader>,
     pub accounts: Vec<ProcessedAccount>,
     pub storages: Vec<ProcessedStorage>,
     pub transactions: Vec<ProcessedTransaction>,
     pub transaction_receipts: Vec<ProcessedReceipt>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct MMRWithHeader {
+    pub mmr_meta: MMRMeta,
+    pub headers: Vec<ProcessedHeader>,
 }

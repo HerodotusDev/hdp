@@ -171,7 +171,7 @@ _Note: Fields marked with "-" are not applicable for the specified aggregate fun
 
 ```sh
 # CI check
-cargo make run-ci-flow
+just run-ci-flow
 ```
 
 ### Local Run
