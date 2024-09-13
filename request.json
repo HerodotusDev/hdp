@@ -14,6 +14,20 @@
       "compute": {
         "aggregateFnId": "avg"
       }
+    },
+    {
+      "type": "DatalakeCompute",
+      "datalake": {
+        "type": "BlockSampled",
+        "chainId": "ETHEREUM_MAINNET",
+        "blockRangeStart": 100,
+        "blockRangeEnd": 110,
+        "increment": 1,
+        "sampledProperty": "header.number"
+      },
+      "compute": {
+        "aggregateFnId": "avg"
+      }
     }
   ]
 }

@@ -1,13 +1,11 @@
 use alloy::primitives::U256;
-
 use config::CompilerConfig;
+use std::hash::Hash;
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use thiserror::Error;
 
-use crate::primitives::processed_types::block_proofs::{
-    convert_to_mmr_meta_set, convert_to_mmr_with_headers, MMRWithHeader,
-};
+use crate::primitives::processed_types::block_proofs::{MMRWithHeader, ProcessedBlockProofs};
 use crate::primitives::processed_types::{
     account::ProcessedAccount, receipt::ProcessedReceipt, storage::ProcessedStorage,
     transaction::ProcessedTransaction,
@@ -55,33 +53,30 @@ pub trait Compilable {
 
 #[derive(Debug, Default, PartialEq)]
 pub struct CompilationResult {
-    pub chain_id: u128,
     /// results of tasks
     pub task_results: Vec<U256>,
     /// mmr_with_headers related to the datalake
-    pub mmr_with_headers: HashSet<MMRWithHeader>,
+    pub mmr_with_headers: HashMap<u128, HashSet<MMRWithHeader>>,
     /// Accounts related to the datalake
-    pub accounts: HashSet<ProcessedAccount>,
+    pub accounts: HashMap<u128, HashSet<ProcessedAccount>>,
     /// Storages related to the datalake
-    pub storages: HashSet<ProcessedStorage>,
+    pub storages: HashMap<u128, HashSet<ProcessedStorage>>,
     /// Transactions related to the datalake
-    pub transactions: HashSet<ProcessedTransaction>,
+    pub transactions: HashMap<u128, HashSet<ProcessedTransaction>>,
     /// Transaction receipts related to the datalake
-    pub transaction_receipts: HashSet<ProcessedReceipt>,
+    pub transaction_receipts: HashMap<u128, HashSet<ProcessedReceipt>>,
 }
 
 impl CompilationResult {
     pub fn new(
-        chain_id: u128,
         task_results: Vec<U256>,
-        mmr_with_headers: HashSet<MMRWithHeader>,
-        accounts: HashSet<ProcessedAccount>,
-        storages: HashSet<ProcessedStorage>,
-        transactions: HashSet<ProcessedTransaction>,
-        transaction_receipts: HashSet<ProcessedReceipt>,
+        mmr_with_headers: HashMap<u128, HashSet<MMRWithHeader>>,
+        accounts: HashMap<u128, HashSet<ProcessedAccount>>,
+        storages: HashMap<u128, HashSet<ProcessedStorage>>,
+        transactions: HashMap<u128, HashSet<ProcessedTransaction>>,
+        transaction_receipts: HashMap<u128, HashSet<ProcessedReceipt>>,
     ) -> Self {
         Self {
-            chain_id,
             task_results,
             mmr_with_headers,
             accounts,
@@ -91,63 +86,85 @@ impl CompilationResult {
         }
     }
 
-    /// Extend the current compilation results with another compilation results
+    pub fn from_single_chain(
+        chain_id: u128,
+        task_results: Vec<U256>,
+
+        mmr_with_headers: HashSet<MMRWithHeader>,
+        accounts: HashSet<ProcessedAccount>,
+        storages: HashSet<ProcessedStorage>,
+        transactions: HashSet<ProcessedTransaction>,
+        transaction_receipts: HashSet<ProcessedReceipt>,
+    ) -> Self {
+        Self {
+            task_results,
+            mmr_with_headers: HashMap::from_iter(vec![(chain_id, mmr_with_headers)]),
+            accounts: HashMap::from_iter(vec![(chain_id, accounts)]),
+            storages: HashMap::from_iter(vec![(chain_id, storages)]),
+            transactions: HashMap::from_iter(vec![(chain_id, transactions)]),
+            transaction_receipts: HashMap::from_iter(vec![(chain_id, transaction_receipts)]),
+        }
+    }
+
     pub fn extend(&mut self, other: CompilationResult) {
-        let others_mmr_with_headers_set =
-            convert_to_mmr_meta_set(Vec::from_iter(other.mmr_with_headers));
-        let mut self_mmr_with_headers_set =
-            convert_to_mmr_meta_set(Vec::from_iter(self.mmr_with_headers.clone()));
-        for (mmr_meta, headers) in others_mmr_with_headers_set {
-            self_mmr_with_headers_set
-                .entry(mmr_meta)
-                .or_default()
-                .extend(headers);
-        }
-        self.mmr_with_headers =
-            HashSet::from_iter(convert_to_mmr_with_headers(self_mmr_with_headers_set));
-        self.accounts.extend(other.accounts);
-        self.storages.extend(other.storages);
-        self.transactions.extend(other.transactions);
-        self.transaction_receipts.extend(other.transaction_receipts);
         self.task_results.extend(other.task_results);
+
+        // Merge mmr_with_headers
+        // TODO: merge headers if there same mmr
+        merge_hash_maps(&mut self.mmr_with_headers, other.mmr_with_headers);
+
+        // Merge accounts
+        merge_hash_maps(&mut self.accounts, other.accounts);
+
+        // Merge storages
+        merge_hash_maps(&mut self.storages, other.storages);
+
+        // Merge transactions
+        merge_hash_maps(&mut self.transactions, other.transactions);
+
+        // Merge transaction_receipts
+        merge_hash_maps(&mut self.transaction_receipts, other.transaction_receipts);
+    }
+
+    pub fn to_processed_block_vec(self) -> Vec<ProcessedBlockProofs> {
+        let mut processed_block_vec = Vec::new();
+
+        for (chain_id, mmr_with_headers) in self.mmr_with_headers {
+            let accounts = self.accounts.get(&chain_id).cloned().unwrap_or_default();
+            let storages = self.storages.get(&chain_id).cloned().unwrap_or_default();
+            let transactions = self
+                .transactions
+                .get(&chain_id)
+                .cloned()
+                .unwrap_or_default();
+            let transaction_receipts = self
+                .transaction_receipts
+                .get(&chain_id)
+                .cloned()
+                .unwrap_or_default();
+
+            let processed_block = ProcessedBlockProofs {
+                chain_id,
+                mmr_with_headers: mmr_with_headers.into_iter().collect(),
+                accounts: accounts.into_iter().collect(),
+                storages: storages.into_iter().collect(),
+                transactions: transactions.into_iter().collect(),
+                transaction_receipts: transaction_receipts.into_iter().collect(),
+            };
+
+            processed_block_vec.push(processed_block);
+        }
+
+        processed_block_vec
     }
 }
 
-#[derive(Debug, Default, PartialEq)]
-pub struct DatalakeCompileResult {
-    pub chain_id: u128,
-    /// results of tasks
-    pub task_results: Vec<U256>,
-    /// mmr_with_headers related to the datalake
-    pub mmr_with_headers: HashSet<MMRWithHeader>,
-    /// Accounts related to the datalake
-    pub accounts: HashSet<ProcessedAccount>,
-    /// Storages related to the datalake
-    pub storages: HashSet<ProcessedStorage>,
-    /// Transactions related to the datalake
-    pub transactions: HashSet<ProcessedTransaction>,
-    /// Transaction receipts related to the datalake
-    pub transaction_receipts: HashSet<ProcessedReceipt>,
-}
-
-impl DatalakeCompileResult {
-    pub fn new(
-        chain_id: u128,
-        task_results: Vec<U256>,
-        mmr_with_headers: HashSet<MMRWithHeader>,
-        accounts: HashSet<ProcessedAccount>,
-        storages: HashSet<ProcessedStorage>,
-        transactions: HashSet<ProcessedTransaction>,
-        transaction_receipts: HashSet<ProcessedReceipt>,
-    ) -> Self {
-        Self {
-            chain_id,
-            task_results,
-            mmr_with_headers,
-            accounts,
-            storages,
-            transactions,
-            transaction_receipts,
-        }
+// Helper function to merge HashMaps with HashSet values
+fn merge_hash_maps<T>(base: &mut HashMap<u128, HashSet<T>>, other: HashMap<u128, HashSet<T>>)
+where
+    T: Eq + Hash + Clone,
+{
+    for (key, value) in other {
+        base.entry(key).or_default().extend(value);
     }
 }

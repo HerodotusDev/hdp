@@ -11,7 +11,7 @@ use crate::provider::key::categorize_fetch_keys;
 use crate::provider::traits::new_provider_from_config;
 use core::panic;
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use tracing::info;
 
@@ -57,11 +57,11 @@ pub async fn compile_modules(
         panic!("Multiple chain id is not supported yet");
     }
 
-    let mut accounts = HashSet::new();
-    let mut storages = HashSet::new();
-    let mut transactions = HashSet::new();
-    let mut transaction_receipts = HashSet::new();
-    let mut mmr_header_map = HashSet::new();
+    let mut accounts = HashMap::new();
+    let mut storages = HashMap::new();
+    let mut transactions = HashMap::new();
+    let mut transaction_receipts = HashMap::new();
+    let mut mmr_header_map = HashMap::new();
 
     info!("3. Fetching proofs from provider...");
     for (chain_id, keys) in keys_maps_chain {
@@ -73,17 +73,29 @@ pub async fn compile_modules(
         let provider = new_provider_from_config(target_provider_config);
         let results = provider.fetch_proofs_from_keys(keys).await?;
 
-        // TODO: can we do better?
-        mmr_header_map.extend(results.mmr_with_headers.into_iter());
-        accounts.extend(results.accounts.into_iter());
-        storages.extend(results.storages.into_iter());
-        transactions.extend(results.transactions.into_iter());
-        transaction_receipts.extend(results.transaction_receipts.into_iter());
+        mmr_header_map.insert(
+            chain_id.to_numeric_id(),
+            HashSet::from_iter(results.mmr_with_headers.into_iter()),
+        );
+        accounts.insert(
+            chain_id.to_numeric_id(),
+            HashSet::from_iter(results.accounts.into_iter()),
+        );
+        storages.insert(
+            chain_id.to_numeric_id(),
+            HashSet::from_iter(results.storages.into_iter()),
+        );
+        transactions.insert(
+            chain_id.to_numeric_id(),
+            HashSet::from_iter(results.transactions.into_iter()),
+        );
+        transaction_receipts.insert(
+            chain_id.to_numeric_id(),
+            HashSet::from_iter(results.transaction_receipts.into_iter()),
+        );
     }
 
-    // TODO : need fix
     let compiled_result = CompilationResult::new(
-        11155111,
         commit_results_maps,
         mmr_header_map,
         accounts,

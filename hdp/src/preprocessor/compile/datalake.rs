@@ -25,7 +25,7 @@ pub async fn compile_datalake(
     let aggregated_result =
         aggregation_fn.operation(&compiled_block_sampled.values, Some(fn_context.clone()))?;
 
-    Ok(CompilationResult::new(
+    Ok(CompilationResult::from_single_chain(
         datalake.datalake.get_chain_id().to_numeric_id(),
         vec![aggregated_result],
         compiled_block_sampled.mmr_with_headers,
@@ -129,9 +129,11 @@ mod tests {
             .await
             .unwrap();
         // assert_eq!(results.mmr_with_headers[0].headers.len(), 16);
-        assert_eq!(results.accounts.len(), 2);
-        assert_eq!(results.storages.len(), 1);
+        let account_proofs = results.accounts.iter().next().unwrap();
+        assert_eq!(account_proofs.1.len(), 2);
         let storage_proofs = results.storages.iter().next().unwrap();
+        assert_eq!(storage_proofs.1.len(), 1);
+        let storage_proofs = storage_proofs.1.iter().next().unwrap();
         assert_eq!(storage_proofs.proofs.len(), 6);
         assert_eq!(results.transactions.len(), 0);
         assert_eq!(results.transaction_receipts.len(), 0);
