@@ -25,6 +25,42 @@ pub struct MMRWithHeader {
     pub headers: Vec<ProcessedHeader>,
 }
 
+pub fn mmr_with_header_vec_to_map(
+    target: Vec<MMRWithHeader>,
+) -> HashMap<MMRMeta, HashSet<ProcessedHeader>> {
+    let mut map = HashMap::new();
+    for target_item in target {
+        map.entry(target_item.mmr_meta)
+            .and_modify(|existing_headers: &mut HashSet<ProcessedHeader>| {
+                existing_headers.extend(target_item.headers.iter().cloned());
+            })
+            .or_insert_with(|| target_item.headers.into_iter().collect());
+    }
+    map
+}
+
+impl MMRWithHeader {
+    pub fn to_map(self) -> HashMap<MMRMeta, HashSet<ProcessedHeader>> {
+        let mut map = HashMap::new();
+        map.insert(self.mmr_meta, HashSet::from_iter(self.headers));
+        map
+    }
+
+    pub fn extend(self, other: MMRWithHeader) -> Vec<MMRWithHeader> {
+        let mut self_map = self.to_map();
+        let other_map = other.to_map();
+        for (mmr, headers) in other_map {
+            self_map
+                .entry(mmr)
+                .and_modify(|existing_headers| {
+                    existing_headers.extend(headers.iter().cloned());
+                })
+                .or_insert_with(|| headers.into_iter().collect());
+        }
+        convert_to_mmr_with_headers(self_map)
+    }
+}
+
 pub fn convert_to_mmr_with_headers(
     map: HashMap<MMRMeta, HashSet<ProcessedHeader>>,
 ) -> Vec<MMRWithHeader> {

@@ -5,35 +5,53 @@ use tracing::{debug, info};
 
 use super::{config::CompilerConfig, Compilable, CompilationResult, CompileError};
 
-pub async fn compile_datalake(
-    datalake: &DatalakeCompute,
-    compile_config: &CompilerConfig,
-) -> Result<CompilationResult, CompileError> {
-    info!("target task: {:#?}", datalake);
-    // ========== datalake ==============
-    let target_provider_config = compile_config
-        .provider_config
-        .get(&datalake.datalake.get_chain_id())
-        .expect("target task's chain had not been configured.");
-    let provider = new_provider_from_config(target_provider_config);
-    let compiled_block_sampled = provider.fetch_proofs(datalake).await?;
-    debug!("values to aggregate : {:#?}", compiled_block_sampled.values);
+impl Compilable for DatalakeCompute {
+    async fn compile(
+        &self,
+        compile_config: &CompilerConfig,
+    ) -> Result<CompilationResult, CompileError> {
+        // Log the target datalake task being processed
+        info!("target task: {:#?}", self);
 
-    // ========== compute ==============
-    let aggregation_fn = &datalake.compute.aggregate_fn_id;
-    let fn_context = &datalake.compute.aggregate_fn_ctx;
-    let aggregated_result =
-        aggregation_fn.operation(&compiled_block_sampled.values, Some(fn_context.clone()))?;
+        // ========== Fetch Provider Configuration ==============
+        // Retrieve the provider configuration for the specific chain ID of the datalake
+        let chain_id = self.datalake.get_chain_id();
+        let target_provider_config = compile_config
+            .provider_config
+            .get(&chain_id)
+            .expect("target task's chain had not been configured.");
 
-    Ok(CompilationResult::from_single_chain(
-        datalake.datalake.get_chain_id().to_numeric_id(),
-        vec![aggregated_result],
-        compiled_block_sampled.mmr_with_headers,
-        compiled_block_sampled.accounts,
-        compiled_block_sampled.storages,
-        compiled_block_sampled.transactions,
-        compiled_block_sampled.transaction_receipts,
-    ))
+        // Create a new provider instance from the configuration
+        let provider = new_provider_from_config(target_provider_config);
+
+        // ========== Fetch Proofs ==============
+        // Fetch the proofs from the provider for the given datalake task
+        let compiled_block_sampled = provider.fetch_proofs(self).await?;
+        debug!("values to aggregate : {:#?}", compiled_block_sampled.values);
+
+        // ========== Compute Aggregated Result ==============
+        // Get the aggregation function and its context from the datalake compute
+        let aggregation_function = &self.compute.aggregate_fn_id;
+        let function_context = &self.compute.aggregate_fn_ctx;
+
+        // Compute the aggregated result using the fetched values and context
+        let aggregated_result = aggregation_function.operation(
+            &compiled_block_sampled.values,
+            Some(function_context.clone()),
+        )?;
+
+        // ========== Return Compilation Result ==============
+        // Return the compilation result, which is specific to a single chain context
+        Ok(CompilationResult::from_single_chain(
+            chain_id.to_numeric_id(),
+            vec![aggregated_result],
+            compiled_block_sampled.mmr_with_headers,
+            compiled_block_sampled.accounts,
+            compiled_block_sampled.storages,
+            compiled_block_sampled.transactions,
+            compiled_block_sampled.transaction_receipts,
+        ))
+    }
 }
 
 pub type DatalakeComputeVec = Vec<DatalakeCompute>;
@@ -46,7 +64,7 @@ impl Compilable for DatalakeComputeVec {
         let mut final_results = CompilationResult::default();
 
         for datalake_compute in self {
-            let current_results = compile_datalake(datalake_compute, compile_config).await?;
+            let current_results = datalake_compute.compile(compile_config).await?;
             final_results.extend(current_results);
         }
 

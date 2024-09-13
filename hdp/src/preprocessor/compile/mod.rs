@@ -5,7 +5,9 @@ use std::hash::Hash;
 use std::collections::{HashMap, HashSet};
 use thiserror::Error;
 
-use crate::primitives::processed_types::block_proofs::{MMRWithHeader, ProcessedBlockProofs};
+use crate::primitives::processed_types::block_proofs::{
+    convert_to_mmr_with_headers, mmr_with_header_vec_to_map, MMRWithHeader, ProcessedBlockProofs,
+};
 use crate::primitives::processed_types::{
     account::ProcessedAccount, receipt::ProcessedReceipt, storage::ProcessedStorage,
     transaction::ProcessedTransaction,
@@ -110,8 +112,7 @@ impl CompilationResult {
         self.task_results.extend(other.task_results);
 
         // Merge mmr_with_headers
-        // TODO: merge headers if there same mmr
-        merge_hash_maps(&mut self.mmr_with_headers, other.mmr_with_headers);
+        merge_header_mmr_maps(&mut self.mmr_with_headers, other.mmr_with_headers);
 
         // Merge accounts
         merge_hash_maps(&mut self.accounts, other.accounts);
@@ -166,5 +167,31 @@ where
 {
     for (key, value) in other {
         base.entry(key).or_default().extend(value);
+    }
+}
+
+// TODO too complicated. refactor with method in MMRWithHeader
+fn merge_header_mmr_maps(
+    base: &mut HashMap<u128, HashSet<MMRWithHeader>>,
+    other: HashMap<u128, HashSet<MMRWithHeader>>,
+) {
+    for (key, other_headers) in other {
+        base.entry(key)
+            .and_modify(|base_headers| {
+                // Merge using the extend method from MMRWithHeader
+                let mut new_headers =
+                    mmr_with_header_vec_to_map(base_headers.iter().cloned().collect::<Vec<_>>());
+                for item in other_headers.clone() {
+                    new_headers
+                        .entry(item.mmr_meta)
+                        .and_modify(|existing_headers| {
+                            existing_headers.extend(item.headers.iter().cloned());
+                        })
+                        .or_insert_with(|| item.headers.into_iter().collect());
+                }
+                let new_headers_vec = convert_to_mmr_with_headers(new_headers);
+                *base_headers = HashSet::from_iter(new_headers_vec);
+            })
+            .or_insert(other_headers);
     }
 }
