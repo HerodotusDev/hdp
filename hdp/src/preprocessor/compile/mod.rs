@@ -112,3 +112,42 @@ impl CompilationResult {
         self.task_results.extend(other.task_results);
     }
 }
+
+#[derive(Debug, Default, PartialEq)]
+pub struct DatalakeCompileResult {
+    pub chain_id: u128,
+    /// results of tasks
+    pub task_results: Vec<U256>,
+    /// mmr_with_headers related to the datalake
+    pub mmr_with_headers: HashSet<MMRWithHeader>,
+    /// Accounts related to the datalake
+    pub accounts: HashSet<ProcessedAccount>,
+    /// Storages related to the datalake
+    pub storages: HashSet<ProcessedStorage>,
+    /// Transactions related to the datalake
+    pub transactions: HashSet<ProcessedTransaction>,
+    /// Transaction receipts related to the datalake
+    pub transaction_receipts: HashSet<ProcessedReceipt>,
+}
+
+impl DatalakeCompileResult {
+    pub fn new(
+        chain_id: u128,
+        task_results: Vec<U256>,
+        mmr_with_headers: HashSet<MMRWithHeader>,
+        accounts: HashSet<ProcessedAccount>,
+        storages: HashSet<ProcessedStorage>,
+        transactions: HashSet<ProcessedTransaction>,
+        transaction_receipts: HashSet<ProcessedReceipt>,
+    ) -> Self {
+        Self {
+            chain_id,
+            task_results,
+            mmr_with_headers,
+            accounts,
+            storages,
+            transactions,
+            transaction_receipts,
+        }
+    }
+}

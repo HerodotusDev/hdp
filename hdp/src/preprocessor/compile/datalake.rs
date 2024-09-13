@@ -5,37 +5,35 @@ use tracing::{debug, info};
 
 use super::{config::CompilerConfig, Compilable, CompilationResult, CompileError};
 
-impl Compilable for DatalakeCompute {
-    async fn compile(
-        &self,
-        compile_config: &CompilerConfig,
-    ) -> Result<CompilationResult, CompileError> {
-        info!("target task: {:#?}", self);
-        // ========== datalake ==============
-        let target_provider_config = compile_config
-            .provider_config
-            .get(&self.datalake.get_chain_id())
-            .expect("target task's chain had not been configured.");
-        let provider = new_provider_from_config(target_provider_config);
-        let compiled_block_sampled = provider.fetch_proofs(self).await?;
-        debug!("values to aggregate : {:#?}", compiled_block_sampled.values);
+pub async fn compile_datalake(
+    datalake: &DatalakeCompute,
+    compile_config: &CompilerConfig,
+) -> Result<CompilationResult, CompileError> {
+    info!("target task: {:#?}", datalake);
+    // ========== datalake ==============
+    let target_provider_config = compile_config
+        .provider_config
+        .get(&datalake.datalake.get_chain_id())
+        .expect("target task's chain had not been configured.");
+    let provider = new_provider_from_config(target_provider_config);
+    let compiled_block_sampled = provider.fetch_proofs(datalake).await?;
+    debug!("values to aggregate : {:#?}", compiled_block_sampled.values);
 
-        // ========== compute ==============
-        let aggregation_fn = &self.compute.aggregate_fn_id;
-        let fn_context = &self.compute.aggregate_fn_ctx;
-        let aggregated_result =
-            aggregation_fn.operation(&compiled_block_sampled.values, Some(fn_context.clone()))?;
+    // ========== compute ==============
+    let aggregation_fn = &datalake.compute.aggregate_fn_id;
+    let fn_context = &datalake.compute.aggregate_fn_ctx;
+    let aggregated_result =
+        aggregation_fn.operation(&compiled_block_sampled.values, Some(fn_context.clone()))?;
 
-        Ok(CompilationResult::new(
-            self.datalake.get_chain_id().to_numeric_id(),
-            vec![aggregated_result],
-            compiled_block_sampled.mmr_with_headers,
-            compiled_block_sampled.accounts,
-            compiled_block_sampled.storages,
-            compiled_block_sampled.transactions,
-            compiled_block_sampled.transaction_receipts,
-        ))
-    }
+    Ok(CompilationResult::new(
+        datalake.datalake.get_chain_id().to_numeric_id(),
+        vec![aggregated_result],
+        compiled_block_sampled.mmr_with_headers,
+        compiled_block_sampled.accounts,
+        compiled_block_sampled.storages,
+        compiled_block_sampled.transactions,
+        compiled_block_sampled.transaction_receipts,
+    ))
 }
 
 pub type DatalakeComputeVec = Vec<DatalakeCompute>;
@@ -48,7 +46,7 @@ impl Compilable for DatalakeComputeVec {
         let mut final_results = CompilationResult::default();
 
         for datalake_compute in self {
-            let current_results = datalake_compute.compile(compile_config).await?;
+            let current_results = compile_datalake(datalake_compute, compile_config).await?;
             final_results.extend(current_results);
         }
 

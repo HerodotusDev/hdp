@@ -13,7 +13,8 @@ use crate::primitives::task::TaskEnvelope;
 use alloy::dyn_abi::DynSolValue;
 use alloy::primitives::{Bytes, B256};
 use compile::config::CompilerConfig;
-use compile::{Compilable, CompileError};
+use compile::task::compile_tasks;
+use compile::CompileError;
 
 use thiserror::Error;
 use tracing::{debug, info};
@@ -49,8 +50,7 @@ impl PreProcessor {
         tasks: Vec<TaskEnvelope>,
     ) -> Result<ProcessorInput, PreProcessorError> {
         // 1. compile the given tasks
-        let compiled_results = tasks
-            .compile(&self.compile_config)
+        let compiled_results = compile_tasks(&tasks, &self.compile_config)
             .await
             .map_err(PreProcessorError::CompileError)?;
 
