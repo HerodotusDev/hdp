@@ -4,7 +4,6 @@
 use crate::cairo_runner::dry_run::DryRunResult;
 use crate::cairo_runner::{cairo_dry_run, input::dry_run::DryRunnerProgramInput};
 use crate::constant::DRY_CAIRO_RUN_OUTPUT_FILE;
-
 use crate::primitives::processed_types::cairo_format;
 use crate::primitives::task::ExtendedModule;
 use crate::provider::key::categorize_fetch_keys;

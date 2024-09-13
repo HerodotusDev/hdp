@@ -135,8 +135,10 @@ mod tests {
         assert_eq!(storage_proofs.1.len(), 1);
         let storage_proofs = storage_proofs.1.iter().next().unwrap();
         assert_eq!(storage_proofs.proofs.len(), 6);
-        assert_eq!(results.transactions.len(), 0);
-        assert_eq!(results.transaction_receipts.len(), 0);
+        let tx_proofs = results.transactions.iter().next().unwrap();
+        assert_eq!(tx_proofs.1.len(), 0);
+        let tx_receipt_proofs = results.transaction_receipts.iter().next().unwrap();
+        assert_eq!(tx_receipt_proofs.1.len(), 0);
         // assert_eq!(results.mmr_metas.len(), 1);
     }
 
@@ -181,11 +183,16 @@ mod tests {
             .compile(&compiler_config)
             .await
             .unwrap();
+
         // assert_eq!(results.headers.len(), 2);
-        assert_eq!(results.accounts.len(), 0);
-        assert_eq!(results.storages.len(), 0);
-        assert_eq!(results.transactions.len(), 10);
-        assert_eq!(results.transaction_receipts.len(), 11);
+        let accounts_proofs = results.accounts.iter().next().unwrap();
+        assert_eq!(accounts_proofs.1.len(), 0);
+        let storages_proofs = results.storages.iter().next().unwrap();
+        assert_eq!(storages_proofs.1.len(), 0);
+        let tx_proofs = results.transactions.iter().next().unwrap();
+        assert_eq!(tx_proofs.1.len(), 10);
+        let tx_receipt_proofs = results.transaction_receipts.iter().next().unwrap();
+        assert_eq!(tx_receipt_proofs.1.len(), 11);
         // assert_eq!(results.mmr_metas.len(), 1);
     }
 }
