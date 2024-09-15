@@ -9,15 +9,12 @@ pub use rlp_fields::*;
 
 #[cfg(test)]
 mod tests {
-
-    use std::str::FromStr;
-
     use crate::primitives::{
         solidity_types::traits::DatalakeCodecs, task::datalake::DatalakeCollection, ChainId,
     };
     use alloy::{
         hex,
-        primitives::{B256, U256},
+        primitives::{b256, U256},
     };
 
     use super::*;
@@ -42,8 +39,7 @@ mod tests {
 
         assert_eq!(
             transaction_datalake.commit(),
-            B256::from_str("0x0a1ad7357827238fdbea5c8f34df65e7313c18388026fad78a75d4b5a6be71b7")
-                .unwrap()
+            b256!("0a1ad7357827238fdbea5c8f34df65e7313c18388026fad78a75d4b5a6be71b7")
         );
 
         assert_eq!(
@@ -79,8 +75,7 @@ mod tests {
 
         assert_eq!(
             transaction_datalake.commit(),
-            B256::from_str("0x991d3d38a26f54aed67f8391bab26c855dedd2fd810931542625b6ad4f7c1e42")
-                .unwrap()
+            b256!("991d3d38a26f54aed67f8391bab26c855dedd2fd810931542625b6ad4f7c1e42")
         );
 
         assert_eq!(

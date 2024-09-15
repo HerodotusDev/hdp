@@ -31,7 +31,8 @@ impl ModuleInput {
     pub fn new(visibility: Visibility, value: &str) -> Self {
         Self {
             visibility,
-            value: FieldElement::from_hex_be(value).unwrap(),
+            value: FieldElement::from_hex_be(value)
+                .expect("invalid hex string value to convert FieldElement"),
         }
     }
 }
@@ -59,6 +60,13 @@ impl FromStr for ModuleInput {
         };
 
         Ok(ModuleInput::new(visibility, parts[1]))
+    }
+}
+
+impl From<String> for ModuleInput {
+    fn from(s: String) -> Self {
+        s.parse()
+            .unwrap_or_else(|_| ModuleInput::new(Visibility::Private, &s))
     }
 }
 

@@ -188,6 +188,7 @@ impl From<U256> for Uint256 {
 #[cfg(test)]
 mod tests {
 
+    use alloy::primitives::b256;
     use starknet::macros::felt;
 
     use super::*;
@@ -201,8 +202,7 @@ mod tests {
         .into();
         assert_eq!(
             result0,
-            B256::from_str("0x988c19313bcbfb19fcc4da12e3adb46c0f6fbdd08af91b1d8df80c6e755159f1")
-                .unwrap()
+            b256!("988c19313bcbfb19fcc4da12e3adb46c0f6fbdd08af91b1d8df80c6e755159f1")
         );
 
         let result1: B256 = Uint256::from_field_element_tuple(
@@ -212,8 +212,7 @@ mod tests {
         .into();
         assert_eq!(
             result1,
-            B256::from_str("0x0988c19313bcbfb19fcc4da12e3adb460f6fbdd08af91b1d8df80c6e755159f1")
-                .unwrap()
+            b256!("0988c19313bcbfb19fcc4da12e3adb460f6fbdd08af91b1d8df80c6e755159f1")
         );
 
         let result2: B256 = Uint256::from_field_element_tuple(
@@ -223,8 +222,7 @@ mod tests {
         .into();
         assert_eq!(
             result2,
-            B256::from_str("0x00988c19313bcbfb19fcc4da12e3adb40f6fbdd08af91b1d8df80c6e755159f1")
-                .unwrap()
+            b256!("00988c19313bcbfb19fcc4da12e3adb40f6fbdd08af91b1d8df80c6e755159f1")
         );
     }
 

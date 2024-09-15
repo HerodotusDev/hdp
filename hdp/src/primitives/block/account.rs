@@ -49,18 +49,15 @@ impl From<&EIP1186AccountProofResponse> for Account {
 mod tests {
     use super::*;
     use alloy::hex;
-    use alloy::primitives::U256;
-    use std::str::FromStr;
+    use alloy::primitives::{b256, U256};
 
     #[test]
     fn test_get_account_rlp() {
         let account = Account::new(
             U64::from(1),
             U256::from(0),
-            B256::from_str("0x1c35dfde2b62d99d3a74fda76446b60962c4656814bdd7815eb6e5b8be1e7185")
-                .unwrap(),
-            B256::from_str("0xcd4f25236fff0ccac15e82bf4581beb08e95e1b5ba89de6031c75893cd91245c")
-                .unwrap(),
+            b256!("1c35dfde2b62d99d3a74fda76446b60962c4656814bdd7815eb6e5b8be1e7185"),
+            b256!("cd4f25236fff0ccac15e82bf4581beb08e95e1b5ba89de6031c75893cd91245c"),
         );
         let account_rlp = account.rlp_encode();
         assert_eq!(
@@ -71,10 +68,8 @@ mod tests {
         let account = Account::new(
             U64::from(2),
             U256::from(0),
-            B256::from_str("0x1c35dfde2b62d99d3a74fda76446b60962c4656814bdd7815eb6e5b8be1e7185")
-                .unwrap(),
-            B256::from_str("0xcd4f25236fff0ccac15e82bf4581beb08e95e1b5ba89de6031c75893cd91245c")
-                .unwrap(),
+            b256!("1c35dfde2b62d99d3a74fda76446b60962c4656814bdd7815eb6e5b8be1e7185"),
+            b256!("cd4f25236fff0ccac15e82bf4581beb08e95e1b5ba89de6031c75893cd91245c"),
         );
         let account_rlp = account.rlp_encode();
         assert_eq!(
@@ -85,10 +80,8 @@ mod tests {
         let account = Account::new(
             U64::from(2),
             U256::from(0x1),
-            B256::from_str("0x1c35dfde2b62d99d3a74fda76446b60962c4656814bdd7815eb6e5b8be1e7185")
-                .unwrap(),
-            B256::from_str("0xcd4f25236fff0ccac15e82bf4581beb08e95e1b5ba89de6031c75893cd91245c")
-                .unwrap(),
+            b256!("1c35dfde2b62d99d3a74fda76446b60962c4656814bdd7815eb6e5b8be1e7185"),
+            b256!("cd4f25236fff0ccac15e82bf4581beb08e95e1b5ba89de6031c75893cd91245c"),
         );
         let account_rlp = account.rlp_encode();
         assert_eq!(
@@ -106,14 +99,8 @@ mod tests {
             Account::new(
                 U64::from(1),
                 U256::from(0),
-                B256::from_str(
-                    "0x1c35dfde2b62d99d3a74fda76446b60962c4656814bdd7815eb6e5b8be1e7185"
-                )
-                .unwrap(),
-                B256::from_str(
-                    "0xcd4f25236fff0ccac15e82bf4581beb08e95e1b5ba89de6031c75893cd91245c"
-                )
-                .unwrap()
+                b256!("1c35dfde2b62d99d3a74fda76446b60962c4656814bdd7815eb6e5b8be1e7185"),
+                b256!("cd4f25236fff0ccac15e82bf4581beb08e95e1b5ba89de6031c75893cd91245c")
             )
         );
     }

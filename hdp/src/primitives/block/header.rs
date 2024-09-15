@@ -378,8 +378,8 @@ impl BlockHeaderFromRpc {
     }
 }
 
-impl From<&BlockHeaderFromRpc> for Header {
-    fn from(value: &BlockHeaderFromRpc) -> Self {
+impl From<BlockHeaderFromRpc> for Header {
+    fn from(value: BlockHeaderFromRpc) -> Self {
         Self {
             parent_hash: B256::from_str(&value.parent_hash).expect("Invalid hex string"),
             ommers_hash: B256::from_str(&value.sha3_uncles).expect("Invalid hex string"),
@@ -400,23 +400,18 @@ impl From<&BlockHeaderFromRpc> for Header {
             nonce: u64::from_str_radix(&value.nonce[2..], 16).expect("Invalid hex string"),
             base_fee_per_gas: value
                 .base_fee_per_gas
-                .clone()
                 .map(|x| u64::from_str_radix(&x[2..], 16).expect("Invalid hex string")),
             withdrawals_root: value
                 .withdrawals_root
-                .clone()
                 .map(|x| B256::from_str(&x).expect("Invalid hex string")),
             blob_gas_used: value
                 .blob_gas_used
-                .clone()
                 .map(|x| u64::from_str_radix(&x[2..], 16).expect("Invalid hex string")),
             excess_blob_gas: value
                 .excess_blob_gas
-                .clone()
                 .map(|x| u64::from_str_radix(&x[2..], 16).expect("Invalid hex string")),
             parent_beacon_block_root: value
                 .parent_beacon_block_root
-                .clone()
                 .map(|x| B256::from_str(&x).expect("Invalid hex string")),
         }
     }

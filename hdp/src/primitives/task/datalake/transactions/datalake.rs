@@ -5,6 +5,7 @@
 //! Example: `TransactionsInBlockDatalake { target_block: 100, sampled_property: "tx.to", increment: 1 }`
 //! represents all transactions in block 100 with a `tx.to` property sampled with an increment of 1.
 
+use core::fmt::Display;
 use std::num::ParseIntError;
 use std::str::FromStr;
 
@@ -157,6 +158,13 @@ impl IncludedTypes {
     }
 }
 
+impl Display for IncludedTypes {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let bytes = self.to_be_bytes();
+        write!(f, "{},{},{},{}", bytes[0], bytes[1], bytes[2], bytes[3])
+    }
+}
+
 impl From<IncludedTypes> for U256 {
     fn from(value: IncludedTypes) -> U256 {
         let mut bytes = [0; 32];
@@ -231,5 +239,18 @@ mod tests {
         assert!(!included_types.is_included(TxType::Eip2930));
         assert!(included_types.is_included(TxType::Eip1559));
         assert!(!included_types.is_included(TxType::Eip4844));
+    }
+
+    #[test]
+    fn test_included_types_from_str_to_str() {
+        let input_str = "1,0,1,0";
+        let included_types = IncludedTypes::from_str(input_str).unwrap();
+        assert!(included_types.is_included(TxType::Legacy));
+        assert!(!included_types.is_included(TxType::Eip2930));
+        assert!(included_types.is_included(TxType::Eip1559));
+        assert!(!included_types.is_included(TxType::Eip4844));
+
+        let output_str = included_types.to_string();
+        assert_eq!(input_str, output_str);
     }
 }
