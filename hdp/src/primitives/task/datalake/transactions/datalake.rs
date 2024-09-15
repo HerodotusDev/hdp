@@ -17,22 +17,27 @@ use crate::primitives::{task::datalake::envelope::default_increment, ChainId};
 
 use super::TransactionsCollection;
 
+/// [`TransactionsInBlockDatalake`] is a struct that represents a transactions datalake.
+/// It contains chain id, target block, transaction range, sampled property, and other properties.
+///
+/// Transaction range: [start_index..end_index] with specified increment
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TransactionsInBlockDatalake {
+    /// Chain id of the datalake
     pub chain_id: ChainId,
-    // target block number
+    /// Target block number
     pub target_block: u64,
-    // start index of transactions range ( default 0 )
+    /// Start index of transactions range (default 0)
     pub start_index: u64,
-    // end index of transactions range, not included in the range ( default last )
+    /// End index of transactions range, not included in the range (default last)
     pub end_index: u64,
-    // increment of transactions, Defaults to 1 if not present.
+    /// Increment of transactions, Defaults to 1 if not present.
     #[serde(default = "default_increment")]
     pub increment: u64,
-    // filter out the specific type of Txs
+    /// Filter out the specific type of Txs
     pub included_types: IncludedTypes,
-    // ex. "tx.to" , "tx.gas_price" or "tx_receipt.success", "tx_receipt.cumulative_gas_used"
+    /// Sampled property (e.g., "tx.to", "tx.gas_price", "tx_receipt.success", "tx_receipt.cumulative_gas_used")
     pub sampled_property: TransactionsCollection,
 }
 
@@ -75,6 +80,14 @@ pub struct IncludedTypes {
 }
 
 impl IncludedTypes {
+    /// All transaction types(Legacy, EIP-1559, EIP-2930, EIP-4844) are included
+    pub const ALL: Self = Self {
+        legacy: true,
+        eip1559: true,
+        eip2930: true,
+        eip4844: true,
+    };
+
     pub fn to_be_bytes(&self) -> [u8; 4] {
         let mut bytes = [0; 4];
         if self.legacy {
@@ -186,7 +199,7 @@ mod tests {
 
     #[test]
     fn test_included_types() {
-        let included_types = IncludedTypes::from_bytes(&[1, 1, 1, 1]);
+        let included_types = IncludedTypes::ALL;
         assert!(included_types.is_included(TxType::Legacy));
         assert!(included_types.is_included(TxType::Eip2930));
         assert!(included_types.is_included(TxType::Eip1559));

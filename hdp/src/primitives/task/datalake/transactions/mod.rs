@@ -33,7 +33,7 @@ mod tests {
             1,
             10,
             2,
-            IncludedTypes::from_bytes(&[1, 1, 1, 1]),
+            IncludedTypes::ALL,
         );
 
         let encoded = transaction_datalake.encode().unwrap();
