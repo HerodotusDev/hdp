@@ -54,7 +54,7 @@ impl Compilable for ModuleVec {
 
         // Extract the dry run module result
         let dry_run_module = dry_run_results.into_iter().next().unwrap();
-        let commit_results = vec![dry_run_module.result.to_combined_string().into()];
+        let commit_results = vec![dry_run_module.result.into()];
 
         // 3. Categorize fetch keys by chain ID
         let categorized_keys = categorize_fetch_keys(dry_run_module.fetch_keys);

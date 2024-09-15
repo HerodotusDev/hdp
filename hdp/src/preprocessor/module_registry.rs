@@ -64,8 +64,10 @@ impl ModuleRegistry {
         local_class_path: Option<PathBuf>,
         module_inputs: Vec<String>,
     ) -> Result<ExtendedModule, ModuleRegistryError> {
-        let program_hash =
-            program_hash.map(|program_hash| FieldElement::from_hex_be(&program_hash).unwrap());
+        let program_hash = program_hash.map(|program_hash| {
+            FieldElement::from_hex_be(&program_hash)
+                .expect("program hash cannot be converted to FieldElement")
+        });
         let module_inputs: Result<Vec<ModuleInput>, _> = module_inputs
             .into_iter()
             .map(|input| ModuleInput::from_str(&input))
@@ -103,7 +105,8 @@ impl ModuleRegistry {
         };
 
         let program_hash = casm.compiled_class_hash();
-        let converted_hash = FieldElement::from_bytes_be(&program_hash.to_bytes_be()).unwrap();
+        let converted_hash = FieldElement::from_bytes_be(&program_hash.to_bytes_be())
+            .expect("program hash cannot be converted to FieldElement");
         info!("program Hash: {:#?}", converted_hash);
 
         let module = Module {

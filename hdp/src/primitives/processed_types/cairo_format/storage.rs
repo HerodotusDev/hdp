@@ -14,9 +14,8 @@ impl AsCairoFormat for BaseProcessedStorage {
     type Output = ProcessedStorage;
 
     fn as_cairo_format(&self) -> Self::Output {
-        let address_chunk_result =
-            FieldElementVectorUnit::from_bytes(self.address.as_ref()).unwrap();
-        let slot_chunk_result = FieldElementVectorUnit::from_bytes(self.slot.as_ref()).unwrap();
+        let address_chunk_result = FieldElementVectorUnit::from_bytes(self.address.as_ref());
+        let slot_chunk_result = FieldElementVectorUnit::from_bytes(self.slot.as_ref());
         let storage_key = self.storage_key;
         let proofs = self
             .proofs

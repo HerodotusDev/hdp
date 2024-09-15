@@ -13,6 +13,12 @@ pub enum ChainId {
     StarknetSepolia,
 }
 
+impl Default for ChainId {
+    fn default() -> Self {
+        Self::EthereumSepolia
+    }
+}
+
 #[derive(Error, Debug, PartialEq)]
 #[error("Failed to parse ChainId: {input}")]
 pub struct ParseChainIdError {

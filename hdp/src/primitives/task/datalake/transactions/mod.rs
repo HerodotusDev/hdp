@@ -33,7 +33,7 @@ mod tests {
             1,
             10,
             2,
-            IncludedTypes::from(&[1, 1, 1, 1]),
+            IncludedTypes::from_bytes(&[1, 1, 1, 1]),
         );
 
         let encoded = transaction_datalake.encode().unwrap();
@@ -51,10 +51,8 @@ mod tests {
             TransactionsCollection::Transactions(TransactionField::Nonce)
         );
 
-        assert_eq!(
-            transaction_datalake.included_types.to_uint256(),
-            U256::from(0x01010101)
-        );
+        let converted: U256 = (&transaction_datalake.included_types).into();
+        assert_eq!(converted, U256::from(0x01010101));
 
         let decoded = TransactionsInBlockDatalake::decode(&encoded).unwrap();
         assert_eq!(decoded, transaction_datalake);
@@ -72,7 +70,7 @@ mod tests {
             1,
             10,
             2,
-            IncludedTypes::from(&[1, 0, 0, 1]),
+            IncludedTypes::from_bytes(&[1, 0, 0, 1]),
         );
 
         let encoded = transaction_datalake.encode().unwrap();
@@ -90,10 +88,8 @@ mod tests {
             TransactionsCollection::TranasactionReceipts(TransactionReceiptField::Success)
         );
 
-        assert_eq!(
-            transaction_datalake.included_types.to_uint256(),
-            U256::from(0x01000001)
-        );
+        let converted: U256 = (&transaction_datalake.included_types).into();
+        assert_eq!(converted, U256::from(0x01000001));
 
         let decoded = TransactionsInBlockDatalake::decode(&encoded).unwrap();
         assert_eq!(decoded, transaction_datalake);

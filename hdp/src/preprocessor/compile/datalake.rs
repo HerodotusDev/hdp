@@ -173,7 +173,7 @@ mod tests {
                     start_index: 0,
                     end_index: 10,
                     increment: 1,
-                    included_types: IncludedTypes::from(&[1, 1, 1, 1]),
+                    included_types: IncludedTypes::from_bytes(&[1, 1, 1, 1]),
                     sampled_property: TransactionsCollection::Transactions(
                         TransactionField::GasLimit,
                     ),
@@ -187,7 +187,7 @@ mod tests {
                     start_index: 0,
                     end_index: 11,
                     increment: 1,
-                    included_types: IncludedTypes::from(&[1, 1, 1, 1]),
+                    included_types: IncludedTypes::from_bytes(&[1, 1, 1, 1]),
                     sampled_property: TransactionsCollection::TranasactionReceipts(
                         TransactionReceiptField::Success,
                     ),

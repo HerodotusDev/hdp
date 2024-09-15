@@ -30,7 +30,7 @@ impl Account {
     }
 
     pub fn rlp_decode(mut rlp: &[u8]) -> Self {
-        <Account>::decode(&mut rlp).unwrap()
+        <Account>::decode(&mut rlp).expect("rlp decode failed.")
     }
 }
 

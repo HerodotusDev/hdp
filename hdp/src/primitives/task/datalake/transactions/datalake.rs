@@ -114,7 +114,15 @@ impl IncludedTypes {
         included_types
     }
 
-    pub fn from(included_types: &[u8]) -> Self {
+    /// Converts a slice of bytes into an [`IncludedTypes`] instance.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if:
+    /// - The input slice is not exactly 4 bytes long.
+    /// - Any byte in the slice is not 0 or 1.
+    /// - All bytes in the slice are 0 (i.e., no transaction type is included).
+    pub fn from_bytes(included_types: &[u8]) -> Self {
         if included_types.len() != 4 {
             panic!("Included types must be 4 bytes long");
         }
@@ -134,19 +142,24 @@ impl IncludedTypes {
         let inner_bytes = self.to_be_bytes();
         inner_bytes[target_type as usize] != 0
     }
+}
 
-    pub fn to_uint256(&self) -> U256 {
+impl From<&IncludedTypes> for U256 {
+    fn from(value: &IncludedTypes) -> U256 {
         let mut bytes = [0; 32];
-        let inner_bytes = self.to_be_bytes();
+        let inner_bytes = value.to_be_bytes();
         bytes[28..32].copy_from_slice(&inner_bytes);
         U256::from_be_bytes(bytes)
     }
+}
 
-    pub fn from_uint256(value: U256) -> Self {
+// Implementation of From<U256> for Self
+impl From<U256> for IncludedTypes {
+    fn from(value: U256) -> IncludedTypes {
         let bytes: [u8; 32] = value.to_be_bytes();
         let mut inner = [0; 4];
         inner.copy_from_slice(&bytes[28..32]);
-        Self::from_be_bytes(inner)
+        IncludedTypes::from_be_bytes(inner)
     }
 }
 
@@ -163,7 +176,7 @@ impl FromStr for IncludedTypes {
             panic!("Included types must be 4 bytes long");
         }
 
-        Ok(IncludedTypes::from(&included_types))
+        Ok(IncludedTypes::from_bytes(&included_types))
     }
 }
 
@@ -173,16 +186,16 @@ mod tests {
 
     #[test]
     fn test_included_types() {
-        let included_types = IncludedTypes::from(&[1, 1, 1, 1]);
+        let included_types = IncludedTypes::from_bytes(&[1, 1, 1, 1]);
         assert!(included_types.is_included(TxType::Legacy));
         assert!(included_types.is_included(TxType::Eip2930));
         assert!(included_types.is_included(TxType::Eip1559));
         assert!(included_types.is_included(TxType::Eip4844));
 
-        let uint256 = included_types.to_uint256();
+        let uint256: U256 = (&included_types).into();
         assert_eq!(uint256, U256::from(0x01010101));
 
-        let included_types = IncludedTypes::from_uint256(uint256);
+        let included_types = IncludedTypes::from(uint256);
         assert!(included_types.is_included(TxType::Legacy));
         assert!(included_types.is_included(TxType::Eip2930));
         assert!(included_types.is_included(TxType::Eip1559));
@@ -191,16 +204,16 @@ mod tests {
 
     #[test]
     fn test_included_types_partial() {
-        let included_types = IncludedTypes::from(&[1, 0, 1, 0]);
+        let included_types = IncludedTypes::from_bytes(&[1, 0, 1, 0]);
         assert!(included_types.is_included(TxType::Legacy));
         assert!(!included_types.is_included(TxType::Eip2930));
         assert!(included_types.is_included(TxType::Eip1559));
         assert!(!included_types.is_included(TxType::Eip4844));
 
-        let uint256 = included_types.to_uint256();
+        let uint256: U256 = (&included_types).into();
         assert_eq!(uint256, U256::from(0x01000100));
 
-        let included_types = IncludedTypes::from_uint256(uint256);
+        let included_types = IncludedTypes::from(uint256);
         assert!(included_types.is_included(TxType::Legacy));
         assert!(!included_types.is_included(TxType::Eip2930));
         assert!(included_types.is_included(TxType::Eip1559));
