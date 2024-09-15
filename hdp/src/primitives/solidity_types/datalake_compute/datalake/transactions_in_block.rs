@@ -29,7 +29,7 @@ impl DatalakeCodecs for TransactionsInBlockDatalake {
         let start_index: DynSolValue = self.start_index.into();
         let end_index: DynSolValue = self.end_index.into();
         let increment: DynSolValue = self.increment.into();
-        let converted: U256 = (&self.included_types).into();
+        let converted: U256 = self.included_types.into();
         let included_types: DynSolValue = converted.into();
 
         let tuple_value = DynSolValue::Tuple(vec![

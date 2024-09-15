@@ -66,7 +66,7 @@ impl TransactionsInBlockDatalake {
 /// 1: EIP-2930
 /// 2: EIP-1559
 /// 3: EIP-4844
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct IncludedTypes {
     legacy: bool,
     eip2930: bool,
@@ -144,8 +144,8 @@ impl IncludedTypes {
     }
 }
 
-impl From<&IncludedTypes> for U256 {
-    fn from(value: &IncludedTypes) -> U256 {
+impl From<IncludedTypes> for U256 {
+    fn from(value: IncludedTypes) -> U256 {
         let mut bytes = [0; 32];
         let inner_bytes = value.to_be_bytes();
         bytes[28..32].copy_from_slice(&inner_bytes);
@@ -192,7 +192,7 @@ mod tests {
         assert!(included_types.is_included(TxType::Eip1559));
         assert!(included_types.is_included(TxType::Eip4844));
 
-        let uint256: U256 = (&included_types).into();
+        let uint256: U256 = included_types.into();
         assert_eq!(uint256, U256::from(0x01010101));
 
         let included_types = IncludedTypes::from(uint256);
@@ -210,7 +210,7 @@ mod tests {
         assert!(included_types.is_included(TxType::Eip1559));
         assert!(!included_types.is_included(TxType::Eip4844));
 
-        let uint256: U256 = (&included_types).into();
+        let uint256: U256 = included_types.into();
         assert_eq!(uint256, U256::from(0x01000100));
 
         let included_types = IncludedTypes::from(uint256);

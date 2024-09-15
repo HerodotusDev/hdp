@@ -51,7 +51,7 @@ mod tests {
             TransactionsCollection::Transactions(TransactionField::Nonce)
         );
 
-        let converted: U256 = (&transaction_datalake.included_types).into();
+        let converted: U256 = transaction_datalake.included_types.into();
         assert_eq!(converted, U256::from(0x01010101));
 
         let decoded = TransactionsInBlockDatalake::decode(&encoded).unwrap();
@@ -88,7 +88,7 @@ mod tests {
             TransactionsCollection::TranasactionReceipts(TransactionReceiptField::Success)
         );
 
-        let converted: U256 = (&transaction_datalake.included_types).into();
+        let converted: U256 = transaction_datalake.included_types.into();
         assert_eq!(converted, U256::from(0x01000001));
 
         let decoded = TransactionsInBlockDatalake::decode(&encoded).unwrap();
