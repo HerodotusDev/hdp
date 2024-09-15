@@ -13,7 +13,7 @@ impl AsCairoFormat for BaseProcessedHeader {
     type Output = ProcessedHeader;
 
     fn as_cairo_format(&self) -> Self::Output {
-        let felts_unit = FieldElementVectorUnit::from_bytes(&self.rlp).unwrap();
+        let felts_unit = FieldElementVectorUnit::from_bytes(&self.rlp);
         let proof = self.proof.clone();
         ProcessedHeader {
             rlp: felts_unit.felts,

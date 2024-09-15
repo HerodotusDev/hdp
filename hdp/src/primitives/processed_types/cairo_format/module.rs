@@ -13,7 +13,7 @@ impl AsCairoFormat for BaseProcessedModule {
     type Output = ProcessedModule;
 
     fn as_cairo_format(&self) -> Self::Output {
-        let module_task_felts = FieldElementVectorUnit::from_bytes(&self.encoded_task).unwrap();
+        let module_task_felts = FieldElementVectorUnit::from_bytes(&self.encoded_task);
         ProcessedModule {
             module_class: self.module_class.clone(),
             encoded_task: module_task_felts.felts,

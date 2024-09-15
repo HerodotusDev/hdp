@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 use starknet_types_core::{felt::Felt, hash::StarkHash};
 
-/// Codebase is from https://github.com/eqlabs/pathfinder/tree/ae81d84b7c4157891069bd02ef810a29b60a94e3
+/// Codebase is from <https://github.com/eqlabs/pathfinder/tree/ae81d84b7c4157891069bd02ef810a29b60a94e3>
 
 /// Holds the membership/non-membership of a contract and its associated
 /// contract contract if the contract exists.

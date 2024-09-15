@@ -18,11 +18,11 @@ pub enum ProviderError {
     #[error("MMR not found")]
     MmrNotFound,
 
-    /// Error from the [`Indexer`]
+    /// Error from the [`IndexerError`]
     #[error("Failed from indexer")]
     IndexerError(#[from] IndexerError),
 
-    /// Error from [`RpcProvider`]
+    /// Error from [`RpcProviderError`]
     #[error("Failed to get proofs: {0}")]
     EvmRpcProviderError(#[from] RpcProviderError),
 
@@ -34,7 +34,7 @@ pub enum ProviderError {
     FetchKeyError(String),
 }
 
-/// Error from [`RpcProvider`]
+/// Error from rpc
 #[derive(Error, Debug)]
 pub enum RpcProviderError {
     #[error("Failed to send proofs with mpsc")]

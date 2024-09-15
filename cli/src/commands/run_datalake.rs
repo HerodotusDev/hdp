@@ -17,7 +17,7 @@ pub struct RunDatalakeArgs {
     pub aggregate_fn_id: AggregationFunction,
     /// Optional context for applying conditions on the aggregate function "count".
     /// Format: "{operator}.{value}" (e.g., "eq.100" for equality, "gt.100" for greater-than).
-    /// Supported operators are in the [`Operator`] enum.
+    /// Supported operators are in the Operator enum.
     pub aggregate_fn_ctx: Option<FunctionContext>,
 
     #[command(subcommand)]

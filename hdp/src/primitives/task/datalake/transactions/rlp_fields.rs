@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::primitives::task::datalake::DatalakeField;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum TransactionField {
     // ===== Transaction fields =====
     Nonce,
@@ -207,7 +207,7 @@ impl Display for TransactionField {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum TransactionReceiptField {
     Success,
     CumulativeGasUsed,

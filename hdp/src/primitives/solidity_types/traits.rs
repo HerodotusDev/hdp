@@ -22,7 +22,7 @@ pub trait Codecs {
         Self: Sized;
 }
 
-/// Codecs for [`DatalakeCompute`]
+/// Codecs for datalake task
 pub trait DatalakeComputeCodecs {
     fn decode(encoded_datalake: &[u8], encoded_compute: &[u8]) -> Result<Self>
     where
@@ -31,7 +31,7 @@ pub trait DatalakeComputeCodecs {
     fn commit(&self) -> B256;
 }
 
-/// Codecs for [`BatchedDatalakeCompute`]
+/// Codecs for vector of datalake task
 pub trait BatchedDatalakeComputeCodecs {
     fn decode(encoded_datalake: &[u8], encoded_compute: &[u8]) -> Result<Self>
     where

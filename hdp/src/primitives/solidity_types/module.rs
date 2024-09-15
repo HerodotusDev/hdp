@@ -34,8 +34,8 @@ impl Module {
 
 #[cfg(test)]
 mod tests {
+    use alloy::primitives::b256;
     use starknet_crypto::FieldElement;
-    use std::str::FromStr;
 
     use crate::primitives::task::module::{ModuleInput, Visibility};
 
@@ -62,8 +62,7 @@ mod tests {
         let expected_commit = module.commit();
         assert_eq!(
             expected_commit,
-            B256::from_str("0x879869b6d237b92bfdd3f3f7b76baaa9ebb2a3ad5e8478d12cca258d3def05af")
-                .unwrap()
+            b256!("879869b6d237b92bfdd3f3f7b76baaa9ebb2a3ad5e8478d12cca258d3def05af")
         );
     }
 
@@ -88,8 +87,7 @@ mod tests {
         let expected_commit = module.commit();
         assert_eq!(
             expected_commit,
-            B256::from_str("0xd81ebd27b719967e1df4edf64c9e3ce87635089e3462306af340a393625d8726")
-                .unwrap()
+            b256!("d81ebd27b719967e1df4edf64c9e3ce87635089e3462306af340a393625d8726")
         );
     }
 }

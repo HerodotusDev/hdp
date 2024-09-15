@@ -13,10 +13,14 @@ clean:
 clippy:
     cargo clippy --all-targets --all-features -- -Dwarnings
 
+# Generate documentation for the project
+docs:
+    cargo doc --no-deps
+
 # Execute all unit tests in the workspace
 test:
     cargo llvm-cov nextest --features test_utils
 
-# Run the entire CI pipeline including format, clippy, and test checks
-run-ci-flow: format clippy test
+# Run the entire CI pipeline including format, clippy, docs, and test checks
+run-ci-flow: format clippy docs test
     @echo "CI flow completed"
