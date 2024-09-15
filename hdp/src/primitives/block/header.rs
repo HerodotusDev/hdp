@@ -131,7 +131,6 @@ impl Header {
     }
 
     /// Heavy function that will calculate hash of data and will *not* save the change to metadata.
-    /// Use [`Header::seal`], [`SealedHeader`] and unlock if you need hash to be persistent.
     pub fn hash_slow(&self) -> B256 {
         keccak256(alloy_rlp::encode(self))
     }
@@ -343,7 +342,7 @@ impl Header {
 }
 
 /// Block header returned from RPC
-/// https://ethereum.org/en/developers/docs/apis/json-rpc#eth_getblockbynumber
+/// <https://ethereum.org/en/developers/docs/apis/json-rpc#eth_getblockbynumber>
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct BlockHeaderFromRpc {

@@ -49,13 +49,13 @@ impl DatalakeCodecs for TransactionsInBlockDatalake {
         }
     }
 
-    /// Get the commitment hash of the [`TransactionsDatalake`]
+    /// Get the commitment hash of the [`TransactionsInBlockDatalake`]
     fn commit(&self) -> B256 {
         let encoded_datalake = self.encode().expect("Encoding failed");
         keccak256(encoded_datalake)
     }
 
-    /// Decode the encoded transactions datalake hex string into a [`TransactionsDatalake`]
+    /// Decode the encoded transactions datalake hex string into a [`TransactionsInBlockDatalake`]
     fn decode(encoded: &[u8]) -> Result<Self> {
         let abi_type: DynSolType =
             "(uint256,uint256, uint256, uint256, uint256, uint256, uint256, bytes)".parse()?;

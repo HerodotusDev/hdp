@@ -53,7 +53,7 @@ impl ChainId {
 
 /// Indexer client for fetching MMR and headers proof from Herodotus Indexer
 ///
-/// For more information, see: https://rs-indexer.api.herodotus.cloud/swagger
+/// For more information, see: <https://rs-indexer.api.herodotus.cloud/swagger>
 ///
 /// How to use:
 /// ```rust
