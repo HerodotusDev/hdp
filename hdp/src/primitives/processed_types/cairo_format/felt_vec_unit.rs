@@ -1,14 +1,14 @@
 use serde::Serialize;
 use serde_with::serde_as;
 use starknet::core::serde::unsigned_field_element::UfeHex;
-use starknet_crypto::FieldElement;
+use starknet_types_core::felt::Felt;
 
 #[serde_as]
 #[derive(Serialize, Debug)]
 pub struct FieldElementVectorUnit {
     /// Chunked vector of field elements
     #[serde_as(as = "Vec<UfeHex>")]
-    pub felts: Vec<FieldElement>,
+    pub felts: Vec<Felt>,
     /// Length of the original byte array before chunking into field elements
     pub bytes_len: u64,
 }
@@ -17,7 +17,7 @@ impl FieldElementVectorUnit {
     /// Converts a byte slice into a `FieldElementVectorUnit`.
     ///
     /// This function takes a slice of bytes and converts it into a `FieldElementVectorUnit`,
-    /// which consists of a vector of `FieldElement`s and the length of the original byte slice.
+    /// which consists of a vector of [`Felt`]s and the length of the original byte slice.
     ///
     /// # Panics
     ///
@@ -34,8 +34,7 @@ impl FieldElementVectorUnit {
                 let len = chunk.len();
                 arr[..len].copy_from_slice(chunk);
                 let le_int = u64::from_le_bytes(arr);
-                FieldElement::from_dec_str(&le_int.to_string())
-                    .expect("Invalid to convert FieldElement")
+                Felt::from_dec_str(&le_int.to_string()).expect("Invalid to convert FieldElement")
             })
             .collect();
 
@@ -62,7 +61,7 @@ mod tests {
         let result = FieldElementVectorUnit::from_bytes(&bytes);
         assert_eq!(result.bytes_len, 1);
         assert_eq!(result.felts.len(), 1);
-        assert_eq!(result.felts[0], FieldElement::from_hex_be("0x1").unwrap());
+        assert_eq!(result.felts[0], Felt::from_hex("0x1").unwrap());
     }
 
     #[test]
@@ -71,10 +70,7 @@ mod tests {
         let result = FieldElementVectorUnit::from_bytes(&bytes);
         assert_eq!(result.bytes_len, 8);
         assert_eq!(result.felts.len(), 1);
-        assert_eq!(
-            result.felts[0],
-            FieldElement::from_hex_be("efcdab9078563412").unwrap()
-        );
+        assert_eq!(result.felts[0], Felt::from_hex("efcdab9078563412").unwrap());
     }
 
     #[test]
@@ -83,13 +79,7 @@ mod tests {
         let result = FieldElementVectorUnit::from_bytes(&bytes);
         assert_eq!(result.bytes_len, 16);
         assert_eq!(result.felts.len(), 2);
-        assert_eq!(
-            result.felts[0],
-            FieldElement::from_hex_be("efcdab9078563412").unwrap()
-        );
-        assert_eq!(
-            result.felts[1],
-            FieldElement::from_hex_be("8877665544332211").unwrap()
-        );
+        assert_eq!(result.felts[0], Felt::from_hex("efcdab9078563412").unwrap());
+        assert_eq!(result.felts[1], Felt::from_hex("8877665544332211").unwrap());
     }
 }

@@ -1,7 +1,7 @@
 use alloy::primitives::hex::{self};
 use alloy::primitives::{FixedBytes, B256, U256};
 use anyhow::Result;
-use starknet_crypto::FieldElement;
+use starknet_crypto::Felt;
 
 /// Convert a `FixedBytes<32>` which originally encoded from utf8 string into original utf8 string value
 pub fn fixed_bytes_str_to_utf8_str(input_bytes: FixedBytes<32>) -> Result<String> {
@@ -46,8 +46,8 @@ pub fn tx_index_to_tx_key(tx_index: u64) -> String {
     format!("0x{}", hex::encode(binding))
 }
 
-/// Convert a `FieldElement` into a `FixedBytes<32>`
-pub fn felt_to_bytes32(felt: FieldElement) -> FixedBytes<32> {
+/// Convert a [`Felt`] into a [`FixedBytes<32>`
+pub fn felt_to_bytes32(felt: Felt) -> FixedBytes<32> {
     let felt_bytes = felt.to_bytes_be();
     B256::from(felt_bytes)
 }
@@ -60,7 +60,6 @@ pub fn hex_string_to_uint(hex_string: &str) -> u64 {
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
 
     use super::*;
     use alloy::primitives::{hex::FromHex, FixedBytes};
@@ -141,10 +140,9 @@ mod tests {
 
     #[test]
     fn test_felt_to_bytes32() {
-        let felt = FieldElement::from_str(
-            "0x034d4ff54bc5c6cfee6719bfaa94ffa374071e8d656b74823681a955e9033dd9",
-        )
-        .unwrap();
+        let felt =
+            Felt::from_hex("0x034d4ff54bc5c6cfee6719bfaa94ffa374071e8d656b74823681a955e9033dd9")
+                .unwrap();
         let bytes32 = felt_to_bytes32(felt);
         assert_eq!(bytes32, felt.to_bytes_be());
     }

@@ -1,27 +1,26 @@
 //! This module contains the `Uint256` type, which is a 256-bit unsigned integer.
 //! This is compatible with Cairo `uint256` type.
 
+use crate::primitives::utils::bytes_to_hex_string;
 use alloy::primitives::{hex::FromHex, B256, U256};
 use anyhow::Result;
 use core::fmt::Display;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use starknet::core::serde::unsigned_field_element::UfeHex;
-use starknet_crypto::FieldElement;
+use starknet_types_core::felt::Felt;
 use std::str::FromStr;
 
-use crate::primitives::utils::bytes_to_hex_string;
-
 /// [`Uint256`] represents a 256-bit unsigned integer.
-/// It is implemented as a struct with two [`FieldElement`] values: `high` and `low`.
-/// Each [`FieldElement`] represents 128 bits of the 256-bit integer.
+/// It is implemented as a struct with two [`Felt`] values: `high` and `low`.
+/// Each [`Felt`] represents 128 bits of the 256-bit integer.
 #[serde_as]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub struct Uint256 {
     #[serde_as(as = "UfeHex")]
-    pub low: FieldElement, // Represents the least significant 128 bits
+    pub low: Felt, // Represents the least significant 128 bits
     #[serde_as(as = "UfeHex")]
-    pub high: FieldElement, // Represents the most significant 128 bits
+    pub high: Felt, // Represents the most significant 128 bits
 }
 
 impl Default for Uint256 {
@@ -34,8 +33,8 @@ impl Default for Uint256 {
 impl Uint256 {
     /// Constant representing zero as a `Uint256`.
     pub const ZERO: Self = Self {
-        high: FieldElement::ZERO,
-        low: FieldElement::ZERO,
+        high: Felt::ZERO,
+        low: Felt::ZERO,
     };
 
     /// Creates a `Uint256` from two byte slices representing the high and low parts.
@@ -48,8 +47,8 @@ impl Uint256 {
     /// A `Result` containing the new `Uint256` or an error if conversion fails.
     pub fn from_bytes_tuple(high: &[u8], low: &[u8]) -> Result<Self> {
         Ok(Self {
-            high: FieldElement::from_byte_slice_be(high)?,
-            low: FieldElement::from_byte_slice_be(low)?,
+            high: Felt::from_bytes_be_slice(high),
+            low: Felt::from_bytes_be_slice(low),
         })
     }
 
@@ -63,20 +62,20 @@ impl Uint256 {
     /// A `Result` containing the new `Uint256` or an error if conversion fails.
     pub fn from_hex_tuple(high: &str, low: &str) -> Result<Self> {
         Ok(Self {
-            high: FieldElement::from_hex_be(high)?,
-            low: FieldElement::from_hex_be(low)?,
+            high: Felt::from_hex(high)?,
+            low: Felt::from_hex(low)?,
         })
     }
 
-    /// Creates a `Uint256` from two [`FieldElement`]s representing the high and low parts.
+    /// Creates a `Uint256` from two [`Felt`]s representing the high and low parts.
     ///
     /// # Arguments
-    /// * `high` - A `FieldElement` representing the most significant 128 bits
-    /// * `low` - A `FieldElement` representing the least significant 128 bits
+    /// * `high` - A `Felt` representing the most significant 128 bits
+    /// * `low` - A `Felt` representing the least significant 128 bits
     ///
     /// # Returns
     /// A new `Uint256` instance.
-    pub fn from_field_element_tuple(high: FieldElement, low: FieldElement) -> Self {
+    pub fn from_field_element_tuple(high: Felt, low: Felt) -> Self {
         Self { high, low }
     }
 
@@ -96,8 +95,8 @@ impl Uint256 {
         let low_part = fix_hex[16..].to_vec();
 
         Ok(Self {
-            high: FieldElement::from_hex_be(&bytes_to_hex_string(&high_part))?,
-            low: FieldElement::from_hex_be(&bytes_to_hex_string(&low_part))?,
+            high: Felt::from_hex(&bytes_to_hex_string(&high_part))?,
+            low: Felt::from_hex(&bytes_to_hex_string(&low_part))?,
         })
     }
 
@@ -113,8 +112,8 @@ impl Uint256 {
         let padded_hex = format!("{:0>64}", clean_hex);
         let (high_part, low_part) = padded_hex.split_at(32);
         Ok(Self {
-            high: FieldElement::from_hex_be(&format!("0x{}", high_part))?,
-            low: FieldElement::from_hex_be(&format!("0x{}", low_part))?,
+            high: Felt::from_hex(&format!("0x{}", high_part))?,
+            low: Felt::from_hex(&format!("0x{}", low_part))?,
         })
     }
 
@@ -130,8 +129,8 @@ impl Uint256 {
         let low_part = bytes[16..].to_vec();
 
         Ok(Self {
-            high: FieldElement::from_hex_be(&bytes_to_hex_string(&high_part))?,
-            low: FieldElement::from_hex_be(&bytes_to_hex_string(&low_part))?,
+            high: Felt::from_hex(&bytes_to_hex_string(&high_part))?,
+            low: Felt::from_hex(&bytes_to_hex_string(&low_part))?,
         })
     }
 }

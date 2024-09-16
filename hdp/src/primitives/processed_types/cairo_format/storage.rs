@@ -4,7 +4,7 @@ use alloy::primitives::StorageKey;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use starknet::core::serde::unsigned_field_element::UfeHex;
-use starknet_crypto::FieldElement;
+use starknet_types_core::felt::Felt;
 
 use crate::primitives::processed_types::storage::ProcessedStorage as BaseProcessedStorage;
 
@@ -36,10 +36,10 @@ impl AsCairoFormat for BaseProcessedStorage {
 pub struct ProcessedStorage {
     // chunked address
     #[serde_as(as = "Vec<UfeHex>")]
-    pub address: Vec<FieldElement>,
+    pub address: Vec<Felt>,
     // chunked storage slot
     #[serde_as(as = "Vec<UfeHex>")]
-    pub slot: Vec<FieldElement>,
+    pub slot: Vec<Felt>,
     pub storage_key: StorageKey,
     pub proofs: Vec<ProcessedMPTProof>,
 }

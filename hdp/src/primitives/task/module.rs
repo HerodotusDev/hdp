@@ -5,7 +5,7 @@
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use starknet::core::serde::unsigned_field_element::UfeHex;
-use starknet_crypto::FieldElement;
+use starknet_types_core::felt::Felt;
 use std::{path::PathBuf, str::FromStr};
 
 #[serde_as]
@@ -14,7 +14,7 @@ use std::{path::PathBuf, str::FromStr};
 pub struct Module {
     /// Note that this program_hash is pure cairo program hash
     #[serde_as(as = "UfeHex")]
-    pub program_hash: FieldElement,
+    pub program_hash: Felt,
     pub inputs: Vec<ModuleInput>,
     pub local_class_path: Option<PathBuf>,
 }
@@ -24,15 +24,14 @@ pub struct Module {
 pub struct ModuleInput {
     pub visibility: Visibility,
     #[serde_as(as = "UfeHex")]
-    pub value: FieldElement,
+    pub value: Felt,
 }
 
 impl ModuleInput {
     pub fn new(visibility: Visibility, value: &str) -> Self {
         Self {
             visibility,
-            value: FieldElement::from_hex_be(value)
-                .expect("invalid hex string value to convert FieldElement"),
+            value: Felt::from_hex(value).expect("invalid hex string value to convert Felt"),
         }
     }
 }
@@ -72,7 +71,7 @@ impl From<String> for ModuleInput {
 
 impl Module {
     pub fn new(
-        program_hash: FieldElement,
+        program_hash: Felt,
         inputs: Vec<ModuleInput>,
         local_class_path: Option<PathBuf>,
     ) -> Self {
@@ -83,7 +82,7 @@ impl Module {
         }
     }
 
-    pub fn get_program_hash(&self) -> FieldElement {
+    pub fn get_program_hash(&self) -> Felt {
         self.program_hash
     }
 
@@ -92,7 +91,7 @@ impl Module {
     }
 
     /// Collect all the public inputs
-    pub fn get_public_inputs(&self) -> Vec<FieldElement> {
+    pub fn get_public_inputs(&self) -> Vec<Felt> {
         self.inputs
             .iter()
             .filter(|x| x.visibility == Visibility::Public)
@@ -112,7 +111,7 @@ mod tests {
         assert_eq!(
             module,
             ModuleInput {
-                value: FieldElement::from_hex_be("0x123").unwrap(),
+                value: Felt::from_hex("0x123").unwrap(),
                 visibility: Visibility::Public
             }
         );
@@ -122,7 +121,7 @@ mod tests {
         assert_eq!(
             module,
             ModuleInput {
-                value: FieldElement::from_hex_be("0x1").unwrap(),
+                value: Felt::from_hex("0x1").unwrap(),
                 visibility: Visibility::Private
             }
         );

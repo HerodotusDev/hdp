@@ -5,7 +5,7 @@ use crate::primitives::processed_types::transaction::ProcessedTransaction as Bas
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use starknet::core::serde::unsigned_field_element::UfeHex;
-use starknet_crypto::FieldElement;
+use starknet_types_core::felt::Felt;
 
 impl AsCairoFormat for BaseProcessedTransaction {
     type Output = ProcessedTransaction;
@@ -19,8 +19,7 @@ impl AsCairoFormat for BaseProcessedTransaction {
             .collect();
 
         let proof_bytes_len = proof_felts.iter().map(|f| f.bytes_len).collect();
-        let proof_result: Vec<Vec<FieldElement>> =
-            proof_felts.iter().map(|f| f.felts.clone()).collect();
+        let proof_result: Vec<Vec<Felt>> = proof_felts.iter().map(|f| f.felts.clone()).collect();
         ProcessedTransaction {
             key,
             block_number: self.block_number,
@@ -38,7 +37,7 @@ pub struct ProcessedTransaction {
     /// proof_bytes_len is the byte( 8 bit ) length from each proof string
     pub proof_bytes_len: Vec<u64>,
     #[serde_as(as = "Vec<Vec<UfeHex>>")]
-    pub proof: Vec<Vec<FieldElement>>,
+    pub proof: Vec<Vec<Felt>>,
 }
 
 #[cfg(test)]

@@ -4,7 +4,7 @@ use super::{felt_vec_unit::FieldElementVectorUnit, traits::AsCairoFormat};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use starknet::core::serde::unsigned_field_element::UfeHex;
-use starknet_crypto::FieldElement;
+use starknet_types_core::felt::Felt;
 
 impl AsCairoFormat for BaseProcessedDatalakeCompute {
     type Output = ProcessedDatalakeCompute;
@@ -28,10 +28,10 @@ impl AsCairoFormat for BaseProcessedDatalakeCompute {
 pub struct ProcessedDatalakeCompute {
     pub task_bytes_len: u64,
     #[serde_as(as = "Vec<UfeHex>")]
-    pub encoded_task: Vec<FieldElement>,
+    pub encoded_task: Vec<Felt>,
     pub datalake_bytes_len: u64,
     #[serde_as(as = "Vec<UfeHex>")]
-    pub encoded_datalake: Vec<FieldElement>,
+    pub encoded_datalake: Vec<Felt>,
     pub datalake_type: u8,
     pub property_type: u8,
 }
