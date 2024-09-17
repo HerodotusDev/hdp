@@ -13,7 +13,7 @@ use crate::{
     },
 };
 use reqwest::Client;
-use starknet_crypto::FieldElement;
+use starknet_types_core::felt::Felt;
 use std::{path::PathBuf, str::FromStr};
 use thiserror::Error;
 use tracing::info;
@@ -65,8 +65,7 @@ impl ModuleRegistry {
         module_inputs: Vec<String>,
     ) -> Result<ExtendedModule, ModuleRegistryError> {
         let program_hash = program_hash.map(|program_hash| {
-            FieldElement::from_hex_be(&program_hash)
-                .expect("program hash cannot be converted to FieldElement")
+            Felt::from_hex(&program_hash).expect("program hash cannot be converted to FieldElement")
         });
         let module_inputs: Result<Vec<ModuleInput>, _> = module_inputs
             .into_iter()
@@ -82,7 +81,7 @@ impl ModuleRegistry {
 
     pub async fn get_extended_module_from_class_source(
         &self,
-        program_hash: Option<FieldElement>,
+        program_hash: Option<Felt>,
         local_class_path: Option<PathBuf>,
         module_inputs: Vec<ModuleInput>,
     ) -> Result<ExtendedModule, ModuleRegistryError> {
@@ -105,8 +104,7 @@ impl ModuleRegistry {
         };
 
         let program_hash = casm.compiled_class_hash();
-        let converted_hash = FieldElement::from_bytes_be(&program_hash.to_bytes_be())
-            .expect("program hash cannot be converted to FieldElement");
+        let converted_hash = Felt::from_bytes_be(&program_hash.to_bytes_be());
         info!("program Hash: {:#?}", converted_hash);
 
         let module = Module {
@@ -141,7 +139,7 @@ impl ModuleRegistry {
 
     async fn get_module_class_from_program_hash(
         &self,
-        program_hash: FieldElement,
+        program_hash: Felt,
     ) -> Result<CasmContractClass, ModuleRegistryError> {
         let program_hash_hex = format!("{:#x}", program_hash);
 
@@ -182,13 +180,12 @@ mod tests {
 
     use super::*;
 
-    fn init() -> (ModuleRegistry, FieldElement) {
+    fn init() -> (ModuleRegistry, Felt) {
         let module_registry = ModuleRegistry::new();
         // This is test contract class hash
-        let program_hash = FieldElement::from_hex_be(
-            "0x64041a339b1edd10de83cf031cfa938645450f971d2527c90d4c2ce68d7d412",
-        )
-        .unwrap();
+        let program_hash =
+            Felt::from_hex("0x64041a339b1edd10de83cf031cfa938645450f971d2527c90d4c2ce68d7d412")
+                .unwrap();
 
         (module_registry, program_hash)
     }
@@ -214,10 +211,8 @@ mod tests {
 
         assert_eq!(
             extended_modules.task.program_hash,
-            FieldElement::from_hex_be(
-                "0x64041a339b1edd10de83cf031cfa938645450f971d2527c90d4c2ce68d7d412"
-            )
-            .unwrap()
+            Felt::from_hex("0x64041a339b1edd10de83cf031cfa938645450f971d2527c90d4c2ce68d7d412")
+                .unwrap()
         );
         assert_eq!(extended_modules.task.inputs, vec![]);
     }

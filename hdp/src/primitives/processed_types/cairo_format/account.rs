@@ -4,7 +4,7 @@
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use starknet::core::serde::unsigned_field_element::UfeHex;
-use starknet_crypto::FieldElement;
+use starknet_types_core::felt::Felt;
 
 use crate::primitives::processed_types::account::ProcessedAccount as BaseProcessedAccount;
 
@@ -33,7 +33,7 @@ impl AsCairoFormat for BaseProcessedAccount {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub struct ProcessedAccount {
     #[serde_as(as = "Vec<UfeHex>")]
-    pub address: Vec<FieldElement>,
+    pub address: Vec<Felt>,
     pub account_key: String,
     pub proofs: Vec<ProcessedMPTProof>,
 }

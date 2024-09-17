@@ -35,13 +35,15 @@ tracing = "0.1"
 reqwest = { version = "0.11", features = ["json"] }
 rand = "0.8.4"
 regex = "1"
-starknet = "0.10.0"
-starknet-crypto = "0.6.1"
-starknet-types-core = "0.1.0"
+starknet = "0.11.0"
+starknet-crypto = "0.7.1"
+starknet-types-core = "0.1.5"
 cairo-lang-starknet-classes = "2.7.0"
 cairo-vm = "1.0.0-rc6"
 futures = "0.3.30"
 lazy_static = "1.4.0"
 thiserror = "1.0"
-eth-trie-proofs = "0.1.1"
+eth-trie-proofs = { version = "0.1.1", git = "https://github.com/HerodotusDev/trie-proofs.git" }
+sn-trie-proofs = { version = "0.1.0", git = "https://github.com/HerodotusDev/trie-proofs.git" }
+
 itertools = "0.10"
