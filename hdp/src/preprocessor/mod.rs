@@ -1,7 +1,6 @@
 //!  Preprocessor is reponsible for identifying the required values.
 //!  This will be most abstract layer of the preprocessor.
 
-use crate::constant::SOUND_CAIRO_RUN_OUTPUT_FILE;
 use crate::primitives::merkle_tree::{build_result_merkle_tree, build_task_merkle_tree};
 use crate::primitives::processed_types::datalake_compute::ProcessedDatalakeCompute;
 use crate::primitives::processed_types::module::ProcessedModule;
@@ -121,7 +120,6 @@ impl PreProcessor {
         // TODO: this chain id need to be fix
         let proofs = compiled_results.to_processed_block_vec();
         let processed_result = ProcessorInput::new(
-            SOUND_CAIRO_RUN_OUTPUT_FILE.into(),
             result_merkle_tree.root(),
             task_merkle_root,
             proofs,

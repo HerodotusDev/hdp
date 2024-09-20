@@ -7,12 +7,10 @@ use serde::Deserialize;
 
 use super::{AsCairoFormat, ProcessedBlockProofs, ProcessedTask};
 
-impl AsCairoFormat for BasedProcessorInput {
-    type Output = ProcessorInput;
-
-    fn as_cairo_format(&self) -> Self::Output {
+impl BasedProcessorInput {
+    pub fn as_cairo_format(&self, cairo_run_output_path: PathBuf) -> ProcessorInput {
         ProcessorInput {
-            cairo_run_output_path: self.cairo_run_output_path.clone(),
+            cairo_run_output_path: cairo_run_output_path.clone(),
             task_root: self.tasks_root,
             result_root: self.results_root,
             proofs: self

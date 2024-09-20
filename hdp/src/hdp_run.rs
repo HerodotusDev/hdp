@@ -1,7 +1,10 @@
 use crate::{
-    constant::{DEFAULT_DRY_CAIRO_RUN_CAIRO_FILE, DEFAULT_SOUND_CAIRO_RUN_CAIRO_FILE},
+    constant::{
+        DEFAULT_DRY_CAIRO_RUN_CAIRO_FILE, DEFAULT_SOUND_CAIRO_RUN_CAIRO_FILE,
+        SOUND_CAIRO_RUN_OUTPUT_FILE,
+    },
     preprocessor::{compile::config::CompilerConfig, PreProcessor},
-    primitives::{processed_types::cairo_format::AsCairoFormat, task::TaskEnvelope, ChainId},
+    primitives::{task::TaskEnvelope, ChainId},
     processor::Processor,
     provider::config::ProviderConfig,
 };
@@ -126,8 +129,10 @@ pub async fn run(hdp_run_config: &HdpRunConfig, tasks: Vec<TaskEnvelope>) -> Res
     let preprocessor_result = preprocessor.process(tasks).await?;
 
     let input_string = match hdp_run_config.is_cairo_format {
-        true => serde_json::to_string_pretty(&preprocessor_result.as_cairo_format())
-            .map_err(|e| anyhow::anyhow!("Failed to serialize preprocessor result: {}", e))?,
+        true => serde_json::to_string_pretty(
+            &preprocessor_result.as_cairo_format(SOUND_CAIRO_RUN_OUTPUT_FILE.into()),
+        )
+        .map_err(|e| anyhow::anyhow!("Failed to serialize preprocessor result: {}", e))?,
         false => serde_json::to_string_pretty(&preprocessor_result)
             .map_err(|e| anyhow::anyhow!("Failed to serialize preprocessor result: {}", e))?,
     };
@@ -167,7 +172,10 @@ pub async fn run(hdp_run_config: &HdpRunConfig, tasks: Vec<TaskEnvelope>) -> Res
             .ok_or_else(|| anyhow::anyhow!("PIE path should be specified"))?;
         let processor = Processor::new(hdp_run_config.sound_run_program_path.clone());
         processor
-            .process(preprocessor_result.as_cairo_format(), pie_file_path)
+            .process(
+                preprocessor_result.as_cairo_format(SOUND_CAIRO_RUN_OUTPUT_FILE.into()),
+                pie_file_path,
+            )
             .await?;
 
         info!(

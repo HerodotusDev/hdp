@@ -1,6 +1,5 @@
 use ::serde::{Deserialize, Serialize};
 use alloy::primitives::B256;
-use std::path::PathBuf;
 
 use super::{
     block_proofs::ProcessedBlockProofs, mmr::MMRMeta, processor_output::ProcessorOutput,
@@ -9,8 +8,6 @@ use super::{
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ProcessorInput {
-    /// Path to the directory where the cairo-run output will be stored.
-    pub cairo_run_output_path: PathBuf,
     // U256 type
     pub tasks_root: B256,
     // U256 type
@@ -21,14 +18,12 @@ pub struct ProcessorInput {
 
 impl ProcessorInput {
     pub fn new(
-        cairo_run_output_path: PathBuf,
         results_root: B256,
         tasks_root: B256,
         proofs: Vec<ProcessedBlockProofs>,
         tasks: Vec<ProcessedTask>,
     ) -> Self {
         Self {
-            cairo_run_output_path,
             results_root,
             tasks_root,
             proofs,
