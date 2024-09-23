@@ -2155,7 +2155,7 @@ dependencies = [
 
 [[package]]
 name = "hdp"
-version = "0.4.0"
+version = "0.6.0-hotfix"
 dependencies = [
  "alloy",
  "alloy-merkle-tree",
@@ -2182,7 +2182,7 @@ dependencies = [
 
 [[package]]
 name = "hdp-cli"
-version = "0.4.0"
+version = "0.6.0-hotfix"
 dependencies = [
  "alloy",
  "anyhow",
@@ -3329,7 +3329,7 @@ dependencies = [
 
 [[package]]
 name = "private-input-module"
-version = "0.4.0"
+version = "0.6.0-hotfix"
 dependencies = [
  "hdp",
  "serde_json",
