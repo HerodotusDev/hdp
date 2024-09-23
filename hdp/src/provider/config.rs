@@ -5,8 +5,8 @@ use crate::primitives::ChainId;
 /// EVM provider configuration
 #[derive(Clone, Debug)]
 pub struct ProviderConfig {
-    /// RPC url
-    pub rpc_url: Url,
+    /// provider url
+    pub provider_url: Url,
     /// Chain id
     pub chain_id: ChainId,
     /// Max number of requests to send in parallel
@@ -27,7 +27,7 @@ const TEST_RPC_URL: &str = "https://eth-sepolia.g.alchemy.com/v2/xar76cftwEtqTBW
 impl Default for ProviderConfig {
     fn default() -> Self {
         Self {
-            rpc_url: TEST_RPC_URL.parse().unwrap(),
+            provider_url: TEST_RPC_URL.parse().unwrap(),
             chain_id: ChainId::EthereumSepolia,
             max_requests: TEST_MAX_REQUESTS,
         }

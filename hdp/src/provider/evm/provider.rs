@@ -70,13 +70,13 @@ impl Default for EvmProvider {
 
 impl EvmProvider {
     pub fn new(config: &ProviderConfig) -> Self {
-        let rpc_provider = RpcProvider::new(config.rpc_url.clone(), config.max_requests);
+        let rpc_provider = RpcProvider::new(config.provider_url.clone(), config.max_requests);
         let header_provider = Indexer::new(config.chain_id);
 
         Self {
             rpc_provider,
             header_provider,
-            tx_provider_url: config.rpc_url.clone(),
+            tx_provider_url: config.provider_url.clone(),
         }
     }
 
