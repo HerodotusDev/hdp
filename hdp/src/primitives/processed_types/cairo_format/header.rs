@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use starknet::core::serde::unsigned_field_element::UfeHex;
-use starknet_crypto::FieldElement;
+use starknet_crypto::Felt;
 
 use crate::primitives::processed_types::header::{
     ProcessedHeader as BaseProcessedHeader, ProcessedHeaderProof as BasedProcessedHeaderProof,
@@ -31,7 +31,7 @@ impl AsCairoFormat for BaseProcessedHeader {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub struct ProcessedHeader {
     #[serde_as(as = "Vec<UfeHex>")]
-    pub rlp: Vec<FieldElement>,
+    pub rlp: Vec<Felt>,
     /// rlp_bytes_len is the byte( 8 bit ) length from rlp string
     pub rlp_bytes_len: u64,
     pub proof: BasedProcessedHeaderProof,

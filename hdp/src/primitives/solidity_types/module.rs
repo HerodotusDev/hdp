@@ -34,8 +34,9 @@ impl Module {
 
 #[cfg(test)]
 mod tests {
-    use starknet_crypto::FieldElement;
     use std::str::FromStr;
+
+    use starknet_crypto::Felt;
 
     use crate::primitives::task::module::{ModuleInput, Visibility};
 
@@ -44,7 +45,7 @@ mod tests {
     #[test]
     pub fn module_encode() {
         let module = Module {
-            program_hash: FieldElement::from_hex_be(
+            program_hash: Felt::from_hex(
                 "0x00af1333b8346c1ac941efe380f3122a71c1f7cbad19301543712e74f765bfca",
             )
             .unwrap(),
@@ -70,7 +71,7 @@ mod tests {
     #[test]
     pub fn module_encode_with_private_input() {
         let module = Module {
-            program_hash: FieldElement::from_hex_be(
+            program_hash: Felt::from_hex(
                 "0x00af1333b8346c1ac941efe380f3122a71c1f7cbad19301543712e74f765bfca",
             )
             .unwrap(),

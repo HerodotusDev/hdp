@@ -5,7 +5,7 @@ use cairo_lang_starknet_classes::casm_contract_class::CasmContractClass;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use starknet::core::serde::unsigned_field_element::UfeHex;
-use starknet_crypto::FieldElement;
+use starknet_crypto::Felt;
 
 use super::{AsCairoFormat, FieldElementVectorUnit};
 
@@ -53,7 +53,7 @@ impl DryRunProcessedModule {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ProcessedModule {
     #[serde_as(as = "Vec<UfeHex>")]
-    pub encoded_task: Vec<FieldElement>,
+    pub encoded_task: Vec<Felt>,
     pub task_bytes_len: u64,
     pub inputs: Vec<ModuleInput>,
     /// Detail class code of the module.
@@ -63,7 +63,7 @@ pub struct ProcessedModule {
 
 impl ProcessedModule {
     pub fn new(
-        encoded_task: Vec<FieldElement>,
+        encoded_task: Vec<Felt>,
         task_bytes_len: u64,
         inputs: Vec<ModuleInput>,
         module_class: CasmContractClass,

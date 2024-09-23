@@ -7,7 +7,7 @@ use crate::provider::key::{
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use starknet::core::serde::unsigned_field_element::UfeHex;
-use starknet_crypto::FieldElement;
+use starknet_crypto::Felt;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
@@ -25,7 +25,7 @@ pub struct DryRunnedModule {
     pub fetch_keys: Vec<FetchKeyEnvelope>,
     pub result: Uint256,
     #[serde_as(as = "UfeHex")]
-    pub program_hash: FieldElement,
+    pub program_hash: Felt,
 }
 
 fn deserialize_fetch_keys<'de, D>(deserializer: D) -> Result<Vec<FetchKeyEnvelope>, D::Error>

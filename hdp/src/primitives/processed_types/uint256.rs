@@ -6,7 +6,7 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use starknet::core::serde::unsigned_field_element::UfeHex;
-use starknet_crypto::FieldElement;
+use starknet_crypto::Felt;
 use std::str::FromStr;
 
 use crate::primitives::utils::bytes_to_hex_string;
@@ -15,20 +15,20 @@ use crate::primitives::utils::bytes_to_hex_string;
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub struct Uint256 {
     #[serde_as(as = "UfeHex")]
-    pub low: FieldElement,
+    pub low: Felt,
     #[serde_as(as = "UfeHex")]
-    pub high: FieldElement,
+    pub high: Felt,
 }
 
 impl Uint256 {
     pub fn from_strs(high: &str, low: &str) -> Result<Self> {
         Ok(Self {
-            high: FieldElement::from_hex_be(high)?,
-            low: FieldElement::from_hex_be(low)?,
+            high: Felt::from_hex(high)?,
+            low: Felt::from_hex(low)?,
         })
     }
 
-    pub fn from_felts(high: FieldElement, low: FieldElement) -> Self {
+    pub fn from_felts(high: Felt, low: Felt) -> Self {
         Self { high, low }
     }
 
@@ -41,8 +41,8 @@ impl Uint256 {
         let low_part = fix_hex[16..].to_vec();
 
         Ok(Self {
-            high: FieldElement::from_hex_be(&bytes_to_hex_string(&high_part))?,
-            low: FieldElement::from_hex_be(&bytes_to_hex_string(&low_part))?,
+            high: Felt::from_hex(&bytes_to_hex_string(&high_part))?,
+            low: Felt::from_hex(&bytes_to_hex_string(&low_part))?,
         })
     }
 
@@ -51,8 +51,8 @@ impl Uint256 {
         let padded_hex = format!("{:0>64}", clean_hex);
         let (high_part, low_part) = padded_hex.split_at(32);
         Ok(Self {
-            high: FieldElement::from_hex_be(&format!("0x{}", high_part))?,
-            low: FieldElement::from_hex_be(&format!("0x{}", low_part))?,
+            high: Felt::from_hex(&format!("0x{}", high_part))?,
+            low: Felt::from_hex(&format!("0x{}", low_part))?,
         })
     }
 
@@ -86,8 +86,8 @@ mod tests {
     #[test]
     fn test_combine_parts_into_big_endian_hex() {
         let uint256 = Uint256::from_felts(
-            FieldElement::from_hex_be("0x988c19313bcbfb19fcc4da12e3adb46c").unwrap(),
-            FieldElement::from_hex_be("0xf6fbdd08af91b1d8df80c6e755159f1").unwrap(),
+            Felt::from_hex("0x988c19313bcbfb19fcc4da12e3adb46c").unwrap(),
+            Felt::from_hex("0xf6fbdd08af91b1d8df80c6e755159f1").unwrap(),
         );
         assert_eq!(
             uint256.to_combined_string(),
