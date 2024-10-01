@@ -176,7 +176,7 @@ pub async fn entry_run(args: RunArgs) -> Result<()> {
         args.dry_run_cairo_file,
         args.sound_run_cairo_file,
         args.program_input_file,
-        args.cairo_format,
+        args.not_cairo_format,
         None,
         args.batch_proof_file,
         args.cairo_pie_file,

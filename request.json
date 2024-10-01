@@ -1,43 +1,24 @@
 {
+  "id": "bq_01J8F5S491GZKFPJ3GP0FR1V10",
+  "clientId": "01J178YH1TZG8HB88H9BHD7X1H",
+  "taskHashes": [
+    "0xc99705277aa57d3284fdc76c135a76d9c3289bb3ea5a411526af719f7baba6cc"
+  ],
+  "complexity": 12771,
   "destinationChainId": "ETHEREUM_SEPOLIA",
   "tasks": [
     {
+      "id": "0xc99705277aa57d3284fdc76c135a76d9c3289bb3ea5a411526af719f7baba6cc",
+      "datalakeId": "0xdad5db5401deec72457d0e88ac68089ae075ad57e3e41d1328850fe4ac5d2c1c",
+      "complexity": 12771,
       "type": "DatalakeCompute",
       "datalake": {
         "type": "BlockSampled",
         "chainId": "ETHEREUM_SEPOLIA",
-        "blockRangeStart": 6375109,
-        "blockRangeEnd": 6375109,
+        "blockRangeStart": 5641516,
+        "blockRangeEnd": 5641516,
         "increment": 1,
-        "sampledProperty": "storage.0xaFE8A72C86d5895DD6616daB26d4b736Cf22472f.0x0000000000000000000000000000000000000000000000000000000000000010"
-      },
-      "compute": {
-        "aggregateFnId": "avg"
-      }
-    },
-    {
-      "type": "DatalakeCompute",
-      "datalake": {
-        "type": "BlockSampled",
-        "chainId": "ETHEREUM_MAINNET",
-        "blockRangeStart": 100,
-        "blockRangeEnd": 110,
-        "increment": 1,
-        "sampledProperty": "header.number"
-      },
-      "compute": {
-        "aggregateFnId": "avg"
-      }
-    },
-    {
-      "type": "DatalakeCompute",
-      "datalake": {
-        "type": "BlockSampled",
-        "chainId": "ETHEREUM_SEPOLIA",
-        "blockRangeStart": 6375109,
-        "blockRangeEnd": 6375111,
-        "increment": 1,
-        "sampledProperty": "storage.0xaFE8A72C86d5895DD6616daB26d4b736Cf22472f.0x0000000000000000000000000000000000000000000000000000000000000010"
+        "sampledProperty": "storage.0x75cec1db9dceb703200eaa6595f66885c962b920.0x0000000000000000000000000000000000000000000000000000000000000001"
       },
       "compute": {
         "aggregateFnId": "sum"

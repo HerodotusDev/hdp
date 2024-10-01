@@ -29,7 +29,7 @@ impl Default for StarknetProvider {
 
 impl StarknetProvider {
     pub fn new(config: &ProviderConfig) -> Self {
-        let rpc_provider = RpcProvider::new(config.rpc_url.to_owned(), config.max_requests);
+        let rpc_provider = RpcProvider::new(config.provider_url.to_owned(), config.max_requests);
         let indexer = Indexer::new(config.chain_id);
         Self {
             rpc_provider,

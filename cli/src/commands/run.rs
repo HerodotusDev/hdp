@@ -21,8 +21,8 @@ pub struct RunArgs {
     /// Set this boolean to true to generate cairo format program_input_file
     ///
     /// By default, program_input_file is generated in cairo format. If you dont want, set this to false.
-    #[arg(long, default_value_t = true)]
-    pub cairo_format: bool,
+    #[arg(long, default_value_t = false)]
+    pub not_cairo_format: bool,
 
     /// Path to save batch proof file after pre-processing.
     ///
