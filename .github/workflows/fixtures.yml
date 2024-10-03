@@ -1,0 +1,85 @@
+name: Generate and Merge Fixtures
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - dev
+
+jobs:
+  generate_fixtures:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
+
+      - name: Display Python version
+        run: python -c "import sys; print(sys.version)"
+
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+
+      - name: Install CLI binary
+        run: |
+          cargo install --locked -f --path cli/
+
+      - name: Clone hdp-test repository
+        run: |
+          git clone -b ${{ github.ref_name }} https://x-access-token:${{ secrets.REPO_ACCESS_TOKEN }}@github.com/HerodotusDev/hdp-test.git hdp-test || git clone https://x-access-token:${{ secrets.REPO_ACCESS_TOKEN }}@github.com/HerodotusDev/hdp-test.git hdp-test
+          cd hdp-test
+          git checkout -b ${{ github.ref_name }} || git checkout ${{ github.ref_name }}
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+
+      - name: Generate .env file
+        run: |
+          cd hdp-test
+          cat << EOF > .env
+          RPC_URL_ETHEREUM_SEPOLIA=${{ secrets.RPC_URL_ETHEREUM_SEPOLIA }}
+          RPC_CHUNK_SIZE_ETHEREUM_SEPOLIA=${{ secrets.RPC_CHUNK_SIZE_ETHEREUM_SEPOLIA }}
+          DRY_RUN_CAIRO_PATH=${{ secrets.DRY_RUN_CAIRO_PATH }}
+          SOUND_RUN_CAIRO_PATH=${{ secrets.SOUND_RUN_CAIRO_PATH }}
+          SAVE_FETCH_KEYS_FILE=${{ secrets.SAVE_FETCH_KEYS_FILE }}
+          EOF
+
+      - name: Set up and generate fixtures
+        run: |
+          cd hdp-test
+          make cleanup
+          make setup
+          source venv/bin/activate
+          make generate
+
+      - name: Commit and push new fixtures
+        run: |
+          cd hdp-test
+          git add .
+          git commit -m "Update fixtures"
+          git push origin ${{ github.ref_name }}
+
+  merge_to_main:
+    needs: generate_fixtures
+    if: github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout hdp-test repository
+        uses: actions/checkout@v4
+        with:
+          repository: HerodotusDev/hdp-test
+          token: ${{ secrets.REPO_ACCESS_TOKEN }}
+          fetch-depth: 0
+
+      - name: Merge fixtures to main
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git fetch origin
+          git checkout main
+          git merge --no-ff origin/${{ github.ref_name }} -m "Merge ${{ github.ref_name }} into main"
+          git push origin main
