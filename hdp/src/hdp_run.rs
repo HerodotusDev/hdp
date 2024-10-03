@@ -19,7 +19,7 @@ pub struct HdpRunConfig {
     pub dry_run_program_path: PathBuf,
     pub sound_run_program_path: PathBuf,
     pub program_input_file: PathBuf,
-    pub is_cairo_format: bool,
+    pub is_not_cairo_format: bool,
     pub batch_proof_file: Option<PathBuf>,
     pub cairo_pie_file: Option<PathBuf>,
     pub save_fetch_keys_file: Option<PathBuf>,
@@ -33,7 +33,7 @@ impl Default for HdpRunConfig {
             dry_run_program_path: DEFAULT_DRY_CAIRO_RUN_CAIRO_FILE.into(),
             sound_run_program_path: DEFAULT_SOUND_CAIRO_RUN_CAIRO_FILE.into(),
             program_input_file: "program_input.json".into(),
-            is_cairo_format: false,
+            is_not_cairo_format: false,
             cairo_pie_file: None,
             batch_proof_file: None,
             save_fetch_keys_file: None,
@@ -46,23 +46,23 @@ impl HdpRunConfig {
         cli_dry_run_cairo_file: Option<PathBuf>,
         cli_sound_run_cairo_file: Option<PathBuf>,
         program_input_file: PathBuf,
-        cli_is_cairo_format: bool,
+        cli_is_not_cairo_format: bool,
         cli_save_fetch_keys_file: Option<PathBuf>,
         batch_proof_file: Option<PathBuf>,
         cli_cairo_pie_file: Option<PathBuf>,
     ) -> Self {
         let mut provider_config = HashMap::new();
 
-        // Iterate through environment variables to find RPC_URL and RPC_CHUNK_SIZE configurations
+        // Iterate through environment variables to find PROVIDER_URL and PROVIDER_CHUNK_SIZE configurations
         for (key, value) in env::vars() {
-            if let Some(stripped_chain_id) = key.strip_prefix("RPC_URL_") {
+            if let Some(stripped_chain_id) = key.strip_prefix("PROVIDER_URL_") {
                 let chain_id: ChainId = stripped_chain_id
                     .parse()
-                    .expect("Invalid chain ID in RPC_URL env var");
-                let rpc_url: Url = value.parse().expect("Invalid URL in RPC_URL env var");
+                    .expect("Invalid chain ID in PROVIDER_URL env var");
+                let provider_url: Url = value.parse().expect("Invalid URL in PROVIDER_URL env var");
 
-                let chunk_size_key = format!("RPC_CHUNK_SIZE_{}", chain_id);
-                let rpc_chunk_size: u64 = env::var(&chunk_size_key)
+                let chunk_size_key = format!("PROVIDER_CHUNK_SIZE_{}", chain_id);
+                let provider_chunk_size: u64 = env::var(&chunk_size_key)
                     .unwrap_or_else(|_| "40".to_string())
                     .parse()
                     .unwrap_or_else(|_| panic!("{} must be a number", chunk_size_key));
@@ -70,9 +70,9 @@ impl HdpRunConfig {
                 provider_config.insert(
                     chain_id,
                     ProviderConfig {
-                        rpc_url,
+                        provider_url,
                         chain_id,
-                        max_requests: rpc_chunk_size,
+                        max_requests: provider_chunk_size,
                     },
                 );
             }
@@ -98,7 +98,7 @@ impl HdpRunConfig {
             dry_run_program_path: dry_run_cairo_path,
             sound_run_program_path: sound_run_cairo_path,
             program_input_file,
-            is_cairo_format: cli_is_cairo_format,
+            is_not_cairo_format: cli_is_not_cairo_format,
             save_fetch_keys_file,
             batch_proof_file,
             cairo_pie_file: cli_cairo_pie_file,
@@ -125,10 +125,10 @@ pub async fn run(hdp_run_config: &HdpRunConfig, tasks: Vec<TaskEnvelope>) -> Res
     let preprocessor = PreProcessor::new_with_config(compiler_config);
     let preprocessor_result = preprocessor.process(tasks).await?;
 
-    let input_string = match hdp_run_config.is_cairo_format {
-        true => serde_json::to_string_pretty(&preprocessor_result.as_cairo_format())
+    let input_string = match hdp_run_config.is_not_cairo_format {
+        false => serde_json::to_string_pretty(&preprocessor_result.as_cairo_format())
             .map_err(|e| anyhow::anyhow!("Failed to serialize preprocessor result: {}", e))?,
-        false => serde_json::to_string_pretty(&preprocessor_result)
+        true => serde_json::to_string_pretty(&preprocessor_result)
             .map_err(|e| anyhow::anyhow!("Failed to serialize preprocessor result: {}", e))?,
     };
 
@@ -186,10 +186,10 @@ mod tests {
     #[test]
     fn test_hdp_run_config_init_with_env() {
         // Set up environment variables
-        env::set_var("RPC_URL_ETHEREUM_MAINNET", "https://example.com/rpc1");
-        env::set_var("RPC_CHUNK_SIZE_ETHEREUM_MAINNET", "50");
-        env::set_var("RPC_URL_STARKNET_MAINNET", "https://example.com/rpc2");
-        env::set_var("RPC_CHUNK_SIZE_STARKNET_MAINNET", "60");
+        env::set_var("PROVIDER_URL_ETHEREUM_MAINNET", "https://example.com/rpc1");
+        env::set_var("PROVIDER_CHUNK_SIZE_ETHEREUM_MAINNET", "50");
+        env::set_var("PROVIDER_URL_STARKNET_MAINNET", "https://example.com/rpc2");
+        env::set_var("PROVIDER_CHUNK_SIZE_STARKNET_MAINNET", "60");
         env::set_var("DRY_RUN_CAIRO_PATH", "/path/to/dry_run.cairo");
         env::set_var("SOUND_RUN_CAIRO_PATH", "/path/to/sound_run.cairo");
         env::set_var("SAVE_FETCH_KEYS_FILE", "/path/to/save_fetch_keys.json");
@@ -219,7 +219,7 @@ mod tests {
             .get(&ChainId::EthereumMainnet)
             .unwrap();
         assert_eq!(
-            provider_config_1.rpc_url.to_string(),
+            provider_config_1.provider_url.to_string(),
             "https://example.com/rpc1"
         );
         assert_eq!(provider_config_1.max_requests, 50);
@@ -229,7 +229,7 @@ mod tests {
             .get(&ChainId::StarknetMainnet)
             .unwrap();
         assert_eq!(
-            provider_config_2.rpc_url.to_string(),
+            provider_config_2.provider_url.to_string(),
             "https://example.com/rpc2"
         );
         assert_eq!(provider_config_2.max_requests, 60);
@@ -244,7 +244,7 @@ mod tests {
             PathBuf::from("/path/to/sound_run.cairo")
         );
         assert_eq!(config.program_input_file, PathBuf::from("input.json"));
-        assert!(!config.is_cairo_format);
+        assert!(!config.is_not_cairo_format);
         assert_eq!(
             config.save_fetch_keys_file,
             Some(PathBuf::from("/path/to/save_fetch_keys.json"))
@@ -253,10 +253,10 @@ mod tests {
         assert_eq!(config.cairo_pie_file, None);
 
         // Clean up environment variables
-        env::remove_var("RPC_URL_1");
-        env::remove_var("RPC_CHUNK_SIZE_1");
-        env::remove_var("RPC_URL_2");
-        env::remove_var("RPC_CHUNK_SIZE_2");
+        env::remove_var("PROVIDER_URL_1");
+        env::remove_var("PROVIDER_CHUNK_SIZE_1");
+        env::remove_var("PROVIDER_URL_2");
+        env::remove_var("PROVIDER_CHUNK_SIZE_2");
         env::remove_var("DRY_RUN_CAIRO_PATH");
         env::remove_var("SOUND_RUN_CAIRO_PATH");
         env::remove_var("SAVE_FETCH_KEYS_FILE");
