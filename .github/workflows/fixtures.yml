@@ -41,6 +41,7 @@ jobs:
         run: |
           cd hdp-test
           cat << EOF > .env
+          RPC_URL=${{ secrets.RPC_URL }}
           RPC_URL_ETHEREUM_SEPOLIA=${{ secrets.RPC_URL_ETHEREUM_SEPOLIA }}
           RPC_CHUNK_SIZE_ETHEREUM_SEPOLIA=${{ secrets.RPC_CHUNK_SIZE_ETHEREUM_SEPOLIA }}
           DRY_RUN_CAIRO_PATH=${{ secrets.DRY_RUN_CAIRO_PATH }}
