@@ -1,20 +1,18 @@
 //! Account struct and its associated methods
 
-use alloy::{
-    primitives::B256, primitives::U256, primitives::U64, rpc::types::EIP1186AccountProofResponse,
-};
+use alloy::{primitives::B256, primitives::U256, rpc::types::EIP1186AccountProofResponse};
 use alloy_rlp::{Decodable, Encodable, RlpDecodable, RlpEncodable};
 
 #[derive(Debug, RlpDecodable, RlpEncodable, PartialEq)]
 pub struct Account {
-    pub nonce: U64,
+    pub nonce: u64,
     pub balance: U256,
     pub storage_root: B256,
     pub code_hash: B256,
 }
 
 impl Account {
-    pub fn new(nonce: U64, balance: U256, storage_root: B256, code_hash: B256) -> Self {
+    pub fn new(nonce: u64, balance: U256, storage_root: B256, code_hash: B256) -> Self {
         Account {
             nonce,
             balance,
@@ -55,7 +53,7 @@ mod tests {
     #[test]
     fn test_get_account_rlp() {
         let account = Account::new(
-            U64::from(1),
+            1,
             U256::from(0),
             B256::from_str("0x1c35dfde2b62d99d3a74fda76446b60962c4656814bdd7815eb6e5b8be1e7185")
                 .unwrap(),
@@ -69,7 +67,7 @@ mod tests {
         );
 
         let account = Account::new(
-            U64::from(2),
+            2,
             U256::from(0),
             B256::from_str("0x1c35dfde2b62d99d3a74fda76446b60962c4656814bdd7815eb6e5b8be1e7185")
                 .unwrap(),
@@ -83,7 +81,7 @@ mod tests {
         );
 
         let account = Account::new(
-            U64::from(2),
+            2,
             U256::from(0x1),
             B256::from_str("0x1c35dfde2b62d99d3a74fda76446b60962c4656814bdd7815eb6e5b8be1e7185")
                 .unwrap(),
@@ -104,7 +102,7 @@ mod tests {
         assert_eq!(
             account,
             Account::new(
-                U64::from(1),
+                1,
                 U256::from(0),
                 B256::from_str(
                     "0x1c35dfde2b62d99d3a74fda76446b60962c4656814bdd7815eb6e5b8be1e7185"

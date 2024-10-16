@@ -12,6 +12,8 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      PROVIDER_URL_ETHEREUM_SEPOLIA: ${{ secrets.PROVIDER_URL_ETHEREUM_SEPOLIA }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v4

@@ -186,8 +186,8 @@ mod tests {
     #[test]
     fn test_hdp_run_config_init_with_env() {
         // Set up environment variables
-        env::set_var("PROVIDER_URL_ETHEREUM_MAINNET", "https://example.com/rpc1");
-        env::set_var("PROVIDER_CHUNK_SIZE_ETHEREUM_MAINNET", "50");
+        env::set_var("PROVIDER_URL_ETHEREUM_SEPOLIA", "https://example.com/rpc1");
+        env::set_var("PROVIDER_CHUNK_SIZE_ETHEREUM_SEPOLIA", "50");
         env::set_var("PROVIDER_URL_STARKNET_MAINNET", "https://example.com/rpc2");
         env::set_var("PROVIDER_CHUNK_SIZE_STARKNET_MAINNET", "60");
         env::set_var("DRY_RUN_CAIRO_PATH", "/path/to/dry_run.cairo");
@@ -209,14 +209,14 @@ mod tests {
         assert_eq!(config.provider_config.len(), 2);
         assert!(config
             .provider_config
-            .contains_key(&ChainId::EthereumMainnet));
+            .contains_key(&ChainId::EthereumSepolia));
         assert!(config
             .provider_config
             .contains_key(&ChainId::StarknetMainnet));
 
         let provider_config_1 = config
             .provider_config
-            .get(&ChainId::EthereumMainnet)
+            .get(&ChainId::EthereumSepolia)
             .unwrap();
         assert_eq!(
             provider_config_1.provider_url.to_string(),

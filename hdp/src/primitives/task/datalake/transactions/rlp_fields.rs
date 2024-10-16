@@ -276,8 +276,8 @@ impl DatalakeField for TransactionReceiptField {
 
         match self {
             TransactionReceiptField::Success => match raw_tx_receipt.status() {
-                Eip658Value::Eip658(bool) => U256::from(*bool as u8),
-                Eip658Value::PostState(state) => (*state).into(),
+                Eip658Value::Eip658(bool) => U256::from(bool as u8),
+                Eip658Value::PostState(state) => state.into(),
             },
             TransactionReceiptField::CumulativeGasUsed => {
                 U256::from(raw_tx_receipt.cumulative_gas_used())

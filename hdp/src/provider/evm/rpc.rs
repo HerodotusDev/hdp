@@ -240,14 +240,23 @@ fn handle_error(e: RpcError<TransportErrorKind>) -> Option<u64> {
 #[cfg(test)]
 #[cfg(feature = "test_utils")]
 mod tests {
-    use alloy::primitives::{address, b256, B256, U256};
-
-    use crate::provider::evm::provider::EvmProvider;
-
     use super::*;
+    use crate::provider::evm::provider::EvmProvider;
+    use alloy::primitives::{address, b256, B256, U256};
+    use dotenv::dotenv;
+    use std::sync::Once;
+
+    static INIT: Once = Once::new();
+
+    fn initialize() {
+        INIT.call_once(|| {
+            dotenv().ok();
+        });
+    }
 
     #[tokio::test]
     async fn test_get_100_range_storage_with_proof_by_storage_key() {
+        initialize();
         let start_time = Instant::now();
         let provider = EvmProvider::default().rpc_provider;
         let block_range_start = 6127485;
@@ -271,6 +280,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_100_range_storage_with_proof_by_storage_slot() {
+        initialize();
         let start_time = Instant::now();
         let provider = EvmProvider::default().rpc_provider;
         let block_range_start = 6127485;
@@ -295,6 +305,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_100_range_account_with_proof() {
+        initialize();
         let start_time = Instant::now();
         let provider = EvmProvider::default().rpc_provider;
         let block_range_start = 6127485;

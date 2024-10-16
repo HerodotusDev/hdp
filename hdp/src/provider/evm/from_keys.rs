@@ -353,10 +353,21 @@ mod tests {
     use crate::provider::key::FetchKeyEnvelope;
     use crate::provider::key::{AccountMemorizerKey, HeaderMemorizerKey};
     use alloy::primitives::address;
+    use dotenv::dotenv;
+    use std::sync::Once;
+
+    static INIT: Once = Once::new();
+
+    fn initialize() {
+        INIT.call_once(|| {
+            dotenv().ok();
+        });
+    }
 
     #[tokio::test]
     #[cfg(feature = "test_utils")]
     async fn test_get_proofs_from_header_keys() {
+        initialize();
         let target_chain_id = crate::primitives::ChainId::EthereumSepolia;
         let provider = EvmProvider::default();
         let keys = vec![
@@ -373,6 +384,7 @@ mod tests {
     #[tokio::test]
     #[cfg(feature = "test_utils")]
     async fn test_get_proofs_from_accounts_keys() {
+        initialize();
         let target_chain_id = crate::primitives::ChainId::EthereumSepolia;
         let provider = EvmProvider::default();
         let target_address = address!("7f2c6f930306d3aa736b3a6c6a98f512f74036d4");
@@ -399,6 +411,7 @@ mod tests {
     #[tokio::test]
     #[cfg(feature = "test_utils")]
     async fn test_proofs_from_storage_keys() {
+        initialize();
         let start_fetch = Instant::now();
         let target_chain_id = crate::primitives::ChainId::EthereumSepolia;
         let provider = EvmProvider::default();
@@ -455,6 +468,7 @@ mod tests {
     #[tokio::test]
     #[cfg(feature = "test_utils")]
     async fn test_get_proofs_from_tx_keys() {
+        initialize();
         let target_chain_id = crate::primitives::ChainId::EthereumSepolia;
         let provider = EvmProvider::default();
         let keys = vec![

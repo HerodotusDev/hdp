@@ -21,7 +21,13 @@ pub struct ProviderConfig {
 #[cfg(feature = "test_utils")]
 pub const TEST_MAX_REQUESTS: u64 = 100;
 #[cfg(feature = "test_utils")]
-const TEST_RPC_URL: &str = "https://eth-sepolia.g.alchemy.com/v2/xar76cftwEtqTBWdF4ZFy9n8FLHAETDv";
+use lazy_static::lazy_static;
+
+#[cfg(feature = "test_utils")]
+lazy_static! {
+    static ref TEST_RPC_URL: String = std::env::var("PROVIDER_URL_ETHEREUM_SEPOLIA")
+        .expect("Environment variable PROVIDER_URL_ETHEREUM_SEPOLIA not set");
+}
 
 #[cfg(feature = "test_utils")]
 impl Default for ProviderConfig {
