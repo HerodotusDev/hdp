@@ -3,7 +3,7 @@ resolver = "2"
 members = ["cli", "examples/private-input-module", "hdp"]
 
 [workspace.package]
-version = "0.6.0-hotfix"
+version = "0.7.0"
 edition = "2021"
 license-file = "LICENSE"
 authors = ["Pia <pia@herodotus.dev>"]
