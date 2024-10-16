@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::primitives::{block::header::MMRMetaFromNewIndexer, utils::hex_string_to_uint, ChainId};
+use crate::primitives::{block::header::MMRMetaFromNewIndexer, utils::hex_string_to_uint};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub struct MMRMeta {
@@ -9,29 +9,26 @@ pub struct MMRMeta {
     pub size: u64,
     // hex encoded
     pub peaks: Vec<String>,
-    pub chain_id: u128,
 }
 
 impl MMRMeta {
-    pub fn new(id: u64, root: String, size: u64, peaks: Vec<String>, chain_id: u128) -> Self {
+    pub fn new(id: u64, root: String, size: u64, peaks: Vec<String>) -> Self {
         MMRMeta {
             id,
             root,
             size,
             peaks,
-            chain_id,
         }
     }
 }
 
 impl MMRMeta {
-    pub fn from_indexer(val: MMRMetaFromNewIndexer, chain_id: ChainId) -> Self {
+    pub fn from_indexer(val: MMRMetaFromNewIndexer) -> Self {
         MMRMeta {
             id: hex_string_to_uint(&val.mmr_id),
             root: val.mmr_root,
             size: val.mmr_size,
             peaks: val.mmr_peaks,
-            chain_id: chain_id.to_numeric_id(),
         }
     }
 }
@@ -61,7 +58,6 @@ mod tests {
                 "0x66c82fce8bfc291095c6c9255b1f7ccf725a1e91e8ae8cd8c43ceb111c21480".to_string(),
                 "0x2e5274895f9cd556bb8dee5b2551e9cda9aa3caa23532f9824abcc62d5ad273".to_string(),
             ],
-            11155111,
         );
 
         let processed_string = include_str!("../../../../fixtures/primitives/mmr.json");

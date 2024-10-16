@@ -53,13 +53,14 @@ impl ChainId {
 
 /// Indexer client for fetching MMR and headers proof from Herodotus Indexer
 ///
-/// For more information, see: https://rs-indexer.api.herodotus.cloud/swagger
+/// For more information, see: <https://rs-indexer.api.herodotus.cloud/swagger>
 ///
 /// How to use:
 /// ```rust
 /// use hdp::provider::indexer::{Indexer, IndexerError};
+/// use hdp::primitives::ChainId;
 ///
-/// async fn call_indexer(chain_id: u64, block_range_start: u64, block_range_end: u64) -> Result<(), IndexerError> {
+/// async fn call_indexer(chain_id: ChainId, block_range_start: u64, block_range_end: u64) -> Result<(), IndexerError> {
 ///     let indexer = Indexer::new(chain_id);
 ///     let response = indexer.get_headers_proof(block_range_start, block_range_end).await?;
 ///     Ok(())
