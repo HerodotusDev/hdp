@@ -1,18 +1,30 @@
 {
-  "destinationChainId": "ETHEREUM_SEPOLIA",
+  "id": "bq_01J8F5S491GZKFPJ3GP0FR1V10",
+  "clientId": "01J178YH1TZG8HB88H9BHD7X1H",
+  "taskHashes": [
+    "0xc99705277aa57d3284fdc76c135a76d9c3289bb3ea5a411526af719f7baba6cc"
+  ],
+  "complexity": 12771,
   "tasks": [
     {
+      "id": "0xc99705277aa57d3284fdc76c135a76d9c3289bb3ea5a411526af719f7baba6cc",
+      "datalakeId": "0xdad5db5401deec72457d0e88ac68089ae075ad57e3e41d1328850fe4ac5d2c1c",
+      "complexity": 12771,
       "type": "DatalakeCompute",
       "datalake": {
         "type": "BlockSampled",
         "chainId": "ETHEREUM_SEPOLIA",
-        "blockRangeStart": 6375109,
-        "blockRangeEnd": 6375109,
-        "increment": 1,
-        "sampledProperty": "storage.0xaFE8A72C86d5895DD6616daB26d4b736Cf22472f.0x0000000000000000000000000000000000000000000000000000000000000010"
+        "blockRangeStart": 5515000,
+        "blockRangeEnd": 5515028,
+        "increment": 10,
+        "sampledProperty": "header.base_fee_per_gas"
       },
       "compute": {
-        "aggregateFnId": "avg"
+        "aggregateFnId": "count",
+        "aggregateFnCtx": {
+          "operator": "gt",
+          "valueToCompare": "1000000000000000000"
+        }
       }
     },
     {
@@ -43,5 +55,6 @@
         "aggregateFnId": "sum"
       }
     }
-  ]
+  ],
+  "destinationChainId": "ETHEREUM_SEPOLIA"
 }

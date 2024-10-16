@@ -4,6 +4,7 @@
 use cairo_lang_starknet_classes::casm_contract_class::{
     CasmContractClass, StarknetSierraCompilationError,
 };
+use starknet_crypto::Felt;
 
 use crate::{
     constant::HERODOTUS_PROGRAM_REGISTRY_URL,
@@ -13,7 +14,6 @@ use crate::{
     },
 };
 use reqwest::Client;
-use starknet_types_core::felt::Felt;
 use std::{path::PathBuf, str::FromStr};
 use thiserror::Error;
 use tracing::info;
@@ -177,6 +177,8 @@ impl ModuleRegistry {
 
 #[cfg(test)]
 mod tests {
+
+    use starknet_crypto::Felt;
 
     use super::*;
 

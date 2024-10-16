@@ -62,13 +62,13 @@ impl Default for EvmProvider {
 
 impl EvmProvider {
     pub fn new(config: &ProviderConfig) -> Self {
-        let rpc_provider = RpcProvider::new(config.rpc_url.clone(), config.max_requests);
+        let rpc_provider = RpcProvider::new(config.provider_url.clone(), config.max_requests);
         let header_provider = Indexer::new(config.chain_id);
 
         Self {
             rpc_provider,
             header_provider,
-            tx_provider_url: config.rpc_url.clone(),
+            tx_provider_url: config.provider_url.clone(),
         }
     }
 
@@ -417,11 +417,22 @@ mod tests {
     use super::*;
     use alloy::primitives::address;
     use alloy::primitives::B256;
+    use dotenv::dotenv;
+    use std::sync::Once;
+
+    static INIT: Once = Once::new();
+
+    fn initialize() {
+        INIT.call_once(|| {
+            dotenv().ok();
+        });
+    }
 
     #[ignore = "too many requests, recommend to run locally"]
     #[tokio::test]
     #[cfg(feature = "test_utils")]
     async fn test_get_2000_range_of_account_proofs() -> Result<(), ProviderError> {
+        initialize();
         let start_time = Instant::now();
         let provider = EvmProvider::default();
         let target_address = address!("7f2c6f930306d3aa736b3a6c6a98f512f74036d4");
@@ -440,6 +451,7 @@ mod tests {
     #[tokio::test]
     #[cfg(feature = "test_utils")]
     async fn test_get_2000_range_of_storage_proofs() -> Result<(), ProviderError> {
+        initialize();
         let start_time = Instant::now();
         let provider = EvmProvider::default();
         let target_address = address!("75CeC1db9dCeb703200EAa6595f66885C962B920");
@@ -458,6 +470,7 @@ mod tests {
     #[tokio::test]
     #[cfg(feature = "test_utils")]
     async fn test_get_2000_range_of_header_proofs() -> Result<(), ProviderError> {
+        initialize();
         let start_time = Instant::now();
         let provider = EvmProvider::default();
         let header_response = provider
@@ -474,6 +487,7 @@ mod tests {
     #[tokio::test]
     #[cfg(feature = "test_utils")]
     async fn test_get_parallel_4_all_tx_with_proof_from_block() {
+        initialize();
         let provider = EvmProvider::default();
 
         let task1 = {
@@ -527,6 +541,7 @@ mod tests {
     #[tokio::test]
     #[cfg(feature = "test_utils")]
     async fn test_get_parallel_4_all_tx_receipt_with_proof_from_block() {
+        initialize();
         let provider = EvmProvider::default();
         let task1 = {
             let provider = provider.clone();
@@ -580,6 +595,7 @@ mod tests {
     #[tokio::test]
     #[cfg(feature = "test_utils")]
     async fn test_error_get_tx_with_proof_from_block() {
+        initialize();
         let provider = EvmProvider::default();
         let response = provider
             .get_tx_with_proof_from_block(6127485, 0, 2000, 1)
@@ -594,6 +610,7 @@ mod tests {
     #[tokio::test]
     #[cfg(feature = "test_utils")]
     async fn test_error_get_tx_receipt_with_proof_from_block() {
+        initialize();
         let provider = EvmProvider::default();
         let response = provider
             .get_tx_receipt_with_proof_from_block(6127485, 0, 2000, 1)

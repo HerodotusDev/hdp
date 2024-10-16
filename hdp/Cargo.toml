@@ -10,7 +10,7 @@ homepage.workspace = true
 exclude.workspace = true
 keywords.workspace = true
 categories.workspace = true
-readme = "../../README.md"
+readme = "../README.md"
 
 [dependencies]
 anyhow = { workspace = true }
@@ -46,6 +46,7 @@ criterion = { version = "0.4", features = [
     "async_futures",
     "html_reports",
 ] }
+dotenv = "0.15.0"
 
 [[bench]]
 name = "provider_benchmark"

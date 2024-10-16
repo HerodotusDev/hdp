@@ -27,7 +27,7 @@ pub fn build_result_merkle_tree(
         results_commitments.push(result_commitment);
         results_leaves.push(DynSolValue::FixedBytes(result_commitment, 32));
     }
-    let tree = StandardMerkleTree::of(results_leaves);
+    let tree = StandardMerkleTree::of(&results_leaves);
     (tree, results_commitments)
 }
 
@@ -37,7 +37,7 @@ pub fn build_task_merkle_tree(tasks_commitments: &[B256]) -> StandardMerkleTree 
     tasks_commitments
         .iter()
         .for_each(|tc| task_leaves.push(DynSolValue::FixedBytes(*tc, 32)));
-    StandardMerkleTree::of(task_leaves)
+    StandardMerkleTree::of(&task_leaves)
 }
 
 #[cfg(test)]

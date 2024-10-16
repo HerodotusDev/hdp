@@ -75,8 +75,11 @@ impl Compilable for DatalakeComputeVec {
 #[cfg(test)]
 #[cfg(feature = "test_utils")]
 mod tests {
+    use dotenv::dotenv;
     use std::path::PathBuf;
+    use std::sync::Once;
 
+    use super::*;
     use crate::primitives::{
         aggregate_fn::AggregationFunction,
         task::datalake::{
@@ -94,10 +97,17 @@ mod tests {
     };
     use alloy::primitives::{address, B256, U256};
 
-    use super::*;
+    static INIT: Once = Once::new();
+
+    fn initialize() {
+        INIT.call_once(|| {
+            dotenv().ok();
+        });
+    }
 
     #[tokio::test]
     async fn test_compile_block_sampled_datalake_compute_vec() {
+        initialize();
         let program_path = "../../build/compiled_cairo/contract_dry_run.json";
 
         let datalake_compute_vec = vec![
@@ -162,6 +172,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_compile_transactions_datalake_compute_vec() {
+        initialize();
         let program_path = "../../build/compiled_cairo/contract_dry_run.json";
 
         let datalake_compute_vec = vec![

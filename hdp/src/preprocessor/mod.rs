@@ -69,9 +69,11 @@ impl PreProcessor {
                     let result_commitment = results_commitments[i];
                     let compiled_result = compiled_results.task_results[i];
                     let result_proof = result_merkle_tree
-                        .get_proof(&DynSolValue::FixedBytes(result_commitment, 32));
-                    let task_proof =
-                        tasks_merkle_tree.get_proof(&DynSolValue::FixedBytes(task_commitment, 32));
+                        .get_proof(&DynSolValue::FixedBytes(result_commitment, 32))
+                        .unwrap();
+                    let task_proof = tasks_merkle_tree
+                        .get_proof(&DynSolValue::FixedBytes(task_commitment, 32))
+                        .unwrap();
                     let encoded_task = datalake_compute.encode()?;
                     let datalake_type = datalake_compute.datalake.get_datalake_type();
                     let property_type = datalake_compute.datalake.get_collection_type().to_index();
@@ -98,9 +100,11 @@ impl PreProcessor {
                     let compiled_result = compiled_results.task_results[i];
                     debug!("compiled_result: {:#?}", compiled_result);
                     let result_proof = result_merkle_tree
-                        .get_proof(&DynSolValue::FixedBytes(result_commitment, 32));
-                    let task_proof =
-                        tasks_merkle_tree.get_proof(&DynSolValue::FixedBytes(task_commitment, 32));
+                        .get_proof(&DynSolValue::FixedBytes(result_commitment, 32))
+                        .unwrap();
+                    let task_proof = tasks_merkle_tree
+                        .get_proof(&DynSolValue::FixedBytes(task_commitment, 32))
+                        .unwrap();
                     let processed_module = ProcessedModule::new(
                         Bytes::from(encoded_task),
                         task_commitment,
