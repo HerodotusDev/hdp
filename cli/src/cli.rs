@@ -106,7 +106,7 @@ pub async fn module_entry_run(args: RunModuleArgs) -> Result<()> {
         .get_extended_module_from_class_source_string(
             args.program_hash,
             args.local_class_path,
-            args.module_inputs,
+            args.module_inputs.unwrap_or_default(),
         )
         .await?;
     // TODO: for now, we only support one task if its a module

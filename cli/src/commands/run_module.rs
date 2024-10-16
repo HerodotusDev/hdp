@@ -8,8 +8,8 @@ pub struct RunModuleArgs {
     /// The first element is visibility, and the second element is the value.
     ///
     /// e.g. "private.0x1234,public.0xabcd"
-    #[arg(long, required = true, use_value_delimiter = true)]
-    pub module_inputs: Vec<String>,
+    #[arg(long, use_value_delimiter = true)]
+    pub module_inputs: Option<Vec<String>>,
 
     /// Program hash of the contract class.
     /// (Note: either class_hash or local_class_path should be provided)
