@@ -29,6 +29,8 @@ jobs:
           rustup component add clippy
           rustup component add rustfmt
       - name: Install cargo-make
+        env:
+          PROVIDER_URL_ETHEREUM_SEPOLIA: ${{ secrets.PROVIDER_URL_ETHEREUM_SEPOLIA }}
         run: cargo install --debug cargo-make
       - name: Run clippy and formatter checks
         run: cargo make run-ci-flow
