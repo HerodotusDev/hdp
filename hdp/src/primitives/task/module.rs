@@ -5,7 +5,7 @@
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use starknet::core::serde::unsigned_field_element::UfeHex;
-use starknet_crypto::Felt;
+use starknet_types_core::felt::Felt;
 use std::{path::PathBuf, str::FromStr};
 
 #[serde_as]
@@ -31,7 +31,7 @@ impl ModuleInput {
     pub fn new(visibility: Visibility, value: &str) -> Self {
         Self {
             visibility,
-            value: Felt::from_hex(value).unwrap(),
+            value: Felt::from_hex(value).expect("invalid hex string value to convert Felt"),
         }
     }
 }
@@ -59,6 +59,13 @@ impl FromStr for ModuleInput {
         };
 
         Ok(ModuleInput::new(visibility, parts[1]))
+    }
+}
+
+impl From<String> for ModuleInput {
+    fn from(s: String) -> Self {
+        s.parse()
+            .unwrap_or_else(|_| ModuleInput::new(Visibility::Private, &s))
     }
 }
 

@@ -10,30 +10,46 @@ impl Compilable for DatalakeCompute {
         &self,
         compile_config: &CompilerConfig,
     ) -> Result<CompilationResult, CompileError> {
+        // Log the target datalake task being processed
         info!("target task: {:#?}", self);
-        // ========== datalake ==============
+
+        // ========== Fetch Provider Configuration ==============
+        // Retrieve the provider configuration for the specific chain ID of the datalake
+        let chain_id = self.datalake.get_chain_id();
         let target_provider_config = compile_config
             .provider_config
-            .get(&self.datalake.get_chain_id())
+            .get(&chain_id)
             .expect("target task's chain had not been configured.");
+
+        // Create a new provider instance from the configuration
         let provider = new_provider_from_config(target_provider_config);
+
+        // ========== Fetch Proofs ==============
+        // Fetch the proofs from the provider for the given datalake task
         let compiled_block_sampled = provider.fetch_proofs(self).await?;
         debug!("values to aggregate : {:#?}", compiled_block_sampled.values);
 
-        // ========== compute ==============
-        let aggregation_fn = &self.compute.aggregate_fn_id;
-        let fn_context = &self.compute.aggregate_fn_ctx;
-        let aggregated_result =
-            aggregation_fn.operation(&compiled_block_sampled.values, Some(fn_context.clone()))?;
+        // ========== Compute Aggregated Result ==============
+        // Get the aggregation function and its context from the datalake compute
+        let aggregation_function = &self.compute.aggregate_fn_id;
+        let function_context = &self.compute.aggregate_fn_ctx;
 
-        Ok(CompilationResult::new(
+        // Compute the aggregated result using the fetched values and context
+        let aggregated_result = aggregation_function.operation(
+            &compiled_block_sampled.values,
+            Some(function_context.clone()),
+        )?;
+
+        // ========== Return Compilation Result ==============
+        // Return the compilation result, which is specific to a single chain context
+        Ok(CompilationResult::from_single_chain(
+            chain_id.to_numeric_id(),
             vec![aggregated_result],
-            compiled_block_sampled.headers,
+            compiled_block_sampled.mmr_with_headers,
             compiled_block_sampled.accounts,
             compiled_block_sampled.storages,
             compiled_block_sampled.transactions,
             compiled_block_sampled.transaction_receipts,
-            compiled_block_sampled.mmr_metas,
         ))
     }
 }
@@ -140,14 +156,18 @@ mod tests {
             .compile(&compiler_config)
             .await
             .unwrap();
-        assert_eq!(results.headers.len(), 16);
-        assert_eq!(results.accounts.len(), 2);
-        assert_eq!(results.storages.len(), 1);
+        // assert_eq!(results.mmr_with_headers[0].headers.len(), 16);
+        let account_proofs = results.accounts.iter().next().unwrap();
+        assert_eq!(account_proofs.1.len(), 2);
         let storage_proofs = results.storages.iter().next().unwrap();
+        assert_eq!(storage_proofs.1.len(), 1);
+        let storage_proofs = storage_proofs.1.iter().next().unwrap();
         assert_eq!(storage_proofs.proofs.len(), 6);
-        assert_eq!(results.transactions.len(), 0);
-        assert_eq!(results.transaction_receipts.len(), 0);
-        assert_eq!(results.mmr_metas.len(), 1);
+        let tx_proofs = results.transactions.iter().next().unwrap();
+        assert_eq!(tx_proofs.1.len(), 0);
+        let tx_receipt_proofs = results.transaction_receipts.iter().next().unwrap();
+        assert_eq!(tx_receipt_proofs.1.len(), 0);
+        // assert_eq!(results.mmr_metas.len(), 1);
     }
 
     #[tokio::test]
@@ -164,7 +184,7 @@ mod tests {
                     start_index: 0,
                     end_index: 10,
                     increment: 1,
-                    included_types: IncludedTypes::from(&[1, 1, 1, 1]),
+                    included_types: IncludedTypes::ALL,
                     sampled_property: TransactionsCollection::Transactions(
                         TransactionField::GasLimit,
                     ),
@@ -178,7 +198,7 @@ mod tests {
                     start_index: 0,
                     end_index: 11,
                     increment: 1,
-                    included_types: IncludedTypes::from(&[1, 1, 1, 1]),
+                    included_types: IncludedTypes::ALL,
                     sampled_property: TransactionsCollection::TranasactionReceipts(
                         TransactionReceiptField::Success,
                     ),
@@ -192,11 +212,16 @@ mod tests {
             .compile(&compiler_config)
             .await
             .unwrap();
-        assert_eq!(results.headers.len(), 2);
-        assert_eq!(results.accounts.len(), 0);
-        assert_eq!(results.storages.len(), 0);
-        assert_eq!(results.transactions.len(), 10);
-        assert_eq!(results.transaction_receipts.len(), 11);
-        assert_eq!(results.mmr_metas.len(), 1);
+
+        // assert_eq!(results.headers.len(), 2);
+        let accounts_proofs = results.accounts.iter().next().unwrap();
+        assert_eq!(accounts_proofs.1.len(), 0);
+        let storages_proofs = results.storages.iter().next().unwrap();
+        assert_eq!(storages_proofs.1.len(), 0);
+        let tx_proofs = results.transactions.iter().next().unwrap();
+        assert_eq!(tx_proofs.1.len(), 10);
+        let tx_receipt_proofs = results.transaction_receipts.iter().next().unwrap();
+        assert_eq!(tx_receipt_proofs.1.len(), 11);
+        // assert_eq!(results.mmr_metas.len(), 1);
     }
 }

@@ -180,7 +180,7 @@ mod tests {
             1,
             100,
             1,
-            IncludedTypes::from(&[0, 0, 1, 1]),
+            IncludedTypes::from_bytes(&[0, 0, 1, 1]),
         );
 
         let transaction_datalake2 = TransactionsInBlockDatalake::new(
@@ -190,7 +190,7 @@ mod tests {
             1,
             100,
             1,
-            IncludedTypes::from(&[0, 0, 1, 1]),
+            IncludedTypes::from_bytes(&[0, 0, 1, 1]),
         );
 
         let datalakes = vec![
@@ -215,7 +215,7 @@ mod tests {
             1,
             100,
             1,
-            IncludedTypes::from(&[0, 0, 1, 1]),
+            IncludedTypes::from_bytes(&[0, 0, 1, 1]),
         );
 
         let transaction_datalake2 = TransactionsInBlockDatalake::new(
@@ -225,7 +225,7 @@ mod tests {
             1,
             100,
             1,
-            IncludedTypes::from(&[0, 0, 1, 1]),
+            IncludedTypes::from_bytes(&[0, 0, 1, 1]),
         );
 
         assert_eq!(
@@ -247,7 +247,7 @@ mod tests {
             1,
             100,
             1,
-            IncludedTypes::from(&[0, 0, 1, 1]),
+            IncludedTypes::from_bytes(&[0, 0, 1, 1]),
         );
 
         let transaction_datalake2 = TransactionsInBlockDatalake::new(
@@ -257,7 +257,7 @@ mod tests {
             1,
             100,
             1,
-            IncludedTypes::from(&[0, 0, 1, 1]),
+            IncludedTypes::from_bytes(&[0, 0, 1, 1]),
         );
 
         let datalakes = vec![
@@ -282,7 +282,7 @@ mod tests {
             1,
             100,
             1,
-            IncludedTypes::from(&[0, 0, 1, 1]),
+            IncludedTypes::from_bytes(&[0, 0, 1, 1]),
         );
 
         let transaction_datalake2 = TransactionsInBlockDatalake::new(
@@ -292,7 +292,7 @@ mod tests {
             1,
             100,
             1,
-            IncludedTypes::from(&[0, 0, 1, 1]),
+            IncludedTypes::from_bytes(&[0, 0, 1, 1]),
         );
 
         assert_eq!(

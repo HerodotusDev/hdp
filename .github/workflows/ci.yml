@@ -30,7 +30,6 @@ jobs:
         run: |
           rustup component add clippy
           rustup component add rustfmt
-      - name: Install cargo-make
-        run: cargo install --debug cargo-make
+      - uses: taiki-e/install-action@just
       - name: Run clippy and formatter checks
-        run: cargo make run-ci-flow
+        run: just run-ci-flow

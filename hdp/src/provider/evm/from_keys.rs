@@ -1,6 +1,8 @@
 use super::provider::EvmProvider;
 use crate::primitives::processed_types::account::ProcessedAccount;
-use crate::primitives::processed_types::block_proofs::ProcessedBlockProofs;
+use crate::primitives::processed_types::block_proofs::{
+    convert_to_mmr_with_headers, ProcessedBlockProofs,
+};
 use crate::primitives::processed_types::header::ProcessedHeader;
 use crate::primitives::processed_types::mmr::MMRMeta;
 use crate::primitives::processed_types::mpt::ProcessedMPTProof;
@@ -27,8 +29,9 @@ impl EvmProvider {
         &self,
         fetch_keys: CategorizedFetchKeys,
     ) -> Result<ProcessedBlockProofs, ProviderError> {
+        let chain_id = self.header_provider.chain_id.to_numeric_id();
         // fetch proofs using keys and construct result
-        let (headers, mmr_metas) = self.get_headers_from_keys(fetch_keys.headers).await?;
+        let mmr_with_headers = self.get_headers_from_keys(fetch_keys.headers).await?;
         let mut accounts = if fetch_keys.accounts.is_empty() {
             HashSet::new()
         } else {
@@ -53,8 +56,8 @@ impl EvmProvider {
         accounts.extend(accounts_from_storage_key);
         let accounts_result: Vec<ProcessedAccount> = accounts.into_iter().collect();
         Ok(ProcessedBlockProofs {
-            mmr_metas,
-            headers: headers.into_iter().collect(),
+            chain_id,
+            mmr_with_headers: convert_to_mmr_with_headers(mmr_with_headers),
             accounts: accounts_result,
             storages: storages.into_iter().collect(),
             transactions,
@@ -65,7 +68,7 @@ impl EvmProvider {
     async fn get_headers_from_keys(
         &self,
         keys: HashSet<HeaderMemorizerKey>,
-    ) -> Result<(HashSet<ProcessedHeader>, Vec<MMRMeta>), ProviderError> {
+    ) -> Result<HashMap<MMRMeta, HashSet<ProcessedHeader>>, ProviderError> {
         let start_fetch = Instant::now();
 
         let block_range = keys.iter().map(|x| x.block_number).collect::<Vec<_>>();
@@ -80,9 +83,8 @@ impl EvmProvider {
             self._chunk_vec_blocks_for_indexer(block_range)
         };
 
-        let chain_id = keys.iter().next().unwrap().chain_id;
-        let mut fetched_headers_proofs: HashSet<ProcessedHeader> = HashSet::new();
-        let mut mmrs = HashSet::new();
+        // let chain_id = keys.iter().next().unwrap().chain_id;
+        let mut fetched_headers_proofs: HashMap<MMRMeta, HashSet<ProcessedHeader>> = HashMap::new();
 
         let real_target_blocks = keys.iter().map(|x| x.block_number).collect::<HashSet<_>>();
         for target_blocks in target_blocks_batch {
@@ -94,8 +96,8 @@ impl EvmProvider {
                 .get_headers_proof(start_block, end_block)
                 .await?;
 
-            // filter only the keys that are in the real target blocks
-            let keys_in_real_target_blocks = indexer_response
+            // filter only the keys that are in the real target blocks and create ProcessedHeaders
+            let keys_in_real_target_blocks: Vec<ProcessedHeader> = indexer_response
                 .headers
                 .into_iter()
                 .filter(|(block_number, _)| real_target_blocks.contains(block_number))
@@ -105,20 +107,24 @@ impl EvmProvider {
                         header_proof.element_index,
                         header_proof.siblings_hashes,
                     )
-                });
+                })
+                .collect();
 
-            fetched_headers_proofs.extend(keys_in_real_target_blocks);
             let fetched_mmr = indexer_response.mmr_meta;
-            let mmr_meta = MMRMeta::from_indexer(fetched_mmr, chain_id);
-            mmrs.insert(mmr_meta);
+            let mmr_meta = MMRMeta::from_indexer(fetched_mmr);
+            fetched_headers_proofs
+                .entry(mmr_meta)
+                .and_modify(|existing_headers| {
+                    existing_headers.extend(keys_in_real_target_blocks.iter().cloned());
+                })
+                .or_insert_with(|| keys_in_real_target_blocks.into_iter().collect());
         }
 
         let duration = start_fetch.elapsed();
         info!("time taken (Headers Proofs Fetch): {:?}", duration);
 
-        if !mmrs.is_empty() {
-            let vec_mmrs = mmrs.into_iter().collect::<Vec<_>>();
-            Ok((fetched_headers_proofs, vec_mmrs))
+        if !fetched_headers_proofs.is_empty() {
+            Ok(fetched_headers_proofs)
         } else {
             Err(ProviderError::MmrNotFound)
         }
@@ -378,7 +384,7 @@ mod tests {
         let (chain_id, fetched_keys) = categorize_fetch_keys(keys).into_iter().next().unwrap();
         assert_eq!(chain_id, target_chain_id);
         let proofs = provider.fetch_proofs_from_keys(fetched_keys).await.unwrap();
-        assert_eq!(proofs.headers.len(), 3);
+        assert_eq!(proofs.mmr_with_headers[0].headers.len(), 3);
     }
 
     #[tokio::test]
@@ -405,7 +411,7 @@ mod tests {
         assert_eq!(chain_id, target_chain_id);
         let proofs = provider.fetch_proofs_from_keys(fetched_keys).await.unwrap();
         assert_eq!(proofs.accounts[0].proofs.len(), 3);
-        assert_eq!(proofs.headers.len(), 3);
+        assert_eq!(proofs.mmr_with_headers[0].headers.len(), 3);
     }
 
     #[tokio::test]
@@ -460,7 +466,7 @@ mod tests {
         let proofs = provider.fetch_proofs_from_keys(fetched_keys).await.unwrap();
         let duration = start_fetch.elapsed();
         println!("Time taken (Total Proofs Fetch): {:?}", duration);
-        assert_eq!(proofs.headers.len(), 6);
+        assert_eq!(proofs.mmr_with_headers[0].headers.len(), 6);
         assert_eq!(proofs.accounts[0].proofs.len(), 6);
         assert_eq!(proofs.storages[0].proofs.len(), 6);
     }
@@ -479,7 +485,7 @@ mod tests {
         let (chain_id, fetched_keys) = categorize_fetch_keys(keys).into_iter().next().unwrap();
         assert_eq!(chain_id, target_chain_id);
         let proofs = provider.fetch_proofs_from_keys(fetched_keys).await.unwrap();
-        assert_eq!(proofs.headers.len(), 2);
+        assert_eq!(proofs.mmr_with_headers[0].headers.len(), 2);
         assert_eq!(proofs.transactions.len(), 3);
     }
 }

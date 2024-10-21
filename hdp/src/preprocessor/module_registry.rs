@@ -14,7 +14,6 @@ use crate::{
     },
 };
 use reqwest::Client;
-
 use std::{path::PathBuf, str::FromStr};
 use thiserror::Error;
 use tracing::info;
@@ -65,7 +64,9 @@ impl ModuleRegistry {
         local_class_path: Option<PathBuf>,
         module_inputs: Vec<String>,
     ) -> Result<ExtendedModule, ModuleRegistryError> {
-        let program_hash = program_hash.map(|program_hash| Felt::from_hex(&program_hash).unwrap());
+        let program_hash = program_hash.map(|program_hash| {
+            Felt::from_hex(&program_hash).expect("program hash cannot be converted to FieldElement")
+        });
         let module_inputs: Result<Vec<ModuleInput>, _> = module_inputs
             .into_iter()
             .map(|input| ModuleInput::from_str(&input))

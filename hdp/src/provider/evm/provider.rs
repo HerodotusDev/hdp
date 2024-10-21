@@ -19,10 +19,7 @@ use eth_trie_proofs::{
 };
 use itertools::Itertools;
 use reqwest::Url;
-use std::{
-    collections::{HashMap, HashSet},
-    time::Instant,
-};
+use std::{collections::HashMap, time::Instant};
 use tracing::info;
 
 use crate::{
@@ -32,13 +29,8 @@ use crate::{
 
 use super::rpc::RpcProvider;
 
-type HeaderProofsResult = Result<
-    (
-        HashSet<MMRMeta>,
-        HashMap<BlockNumber, MMRProofFromNewIndexer>,
-    ),
-    ProviderError,
->;
+type HeaderProofsResult =
+    Result<HashMap<BlockNumber, (MMRProofFromNewIndexer, MMRMeta)>, ProviderError>;
 type AccountProofsResult = Result<HashMap<BlockNumber, EIP1186AccountProofResponse>, ProviderError>;
 type StorageProofsResult = Result<HashMap<BlockNumber, EIP1186AccountProofResponse>, ProviderError>;
 type TxProofsResult = Result<Vec<FetchedTransactionProof>, ProviderError>;
@@ -97,8 +89,10 @@ impl EvmProvider {
         let target_blocks_batch: Vec<Vec<BlockNumber>> =
             self._chunk_block_range(from_block, to_block, increment);
 
-        let mut fetched_headers_proofs_with_blocks_map = HashMap::new();
-        let mut mmrs = HashSet::new();
+        let mut fetched_headers_proofs_with_blocks_map: HashMap<
+            u64,
+            (MMRProofFromNewIndexer, MMRMeta),
+        > = HashMap::new();
 
         for target_blocks in target_blocks_batch {
             let (start_block, end_block) =
@@ -108,20 +102,24 @@ impl EvmProvider {
                 .header_provider
                 .get_headers_proof(start_block, end_block)
                 .await?;
-
-            fetched_headers_proofs_with_blocks_map.extend(indexer_response.headers);
             let fetched_mmr = indexer_response.mmr_meta;
-            let mmr_meta = MMRMeta::from_indexer(fetched_mmr, self.header_provider.chain_id);
-            mmrs.insert(mmr_meta);
+            let mmr_meta = MMRMeta::from_indexer(fetched_mmr);
+
+            // TODO lets think how not clone the mmr_meta
+            fetched_headers_proofs_with_blocks_map.extend(
+                indexer_response
+                    .headers
+                    .into_iter()
+                    .map(|(block_number, header_proof)| {
+                        (block_number, (header_proof, mmr_meta.clone()))
+                    }),
+            );
         }
 
         let duration = start_fetch.elapsed();
         info!("time taken (Headers Proofs Fetch): {:?}", duration);
-        if !mmrs.is_empty() {
-            Ok((mmrs, fetched_headers_proofs_with_blocks_map))
-        } else {
-            Err(ProviderError::MmrNotFound)
-        }
+
+        Ok(fetched_headers_proofs_with_blocks_map)
     }
 
     /// Fetches the account proofs for the given block range.
@@ -475,10 +473,11 @@ mod tests {
         initialize();
         let start_time = Instant::now();
         let provider = EvmProvider::default();
-        let (_meta, header_response) = provider
+        let header_response = provider
             .get_range_of_header_proofs(6127485, 6127485 + 2000 - 1, 1)
             .await?;
         assert_eq!(header_response.len(), 2000);
+
         // assert_eq!(meta.mmr_id, 26);
         let duration = start_time.elapsed();
         println!("Time taken (Header Fetch): {:?}", duration);
