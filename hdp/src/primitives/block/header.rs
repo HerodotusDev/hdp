@@ -5,7 +5,7 @@ use alloy::{
     primitives::{keccak256, Address, BlockNumber, Bloom, Bytes, B256, B64, U256},
 };
 use alloy_rlp::{length_of_length, BufMut, Decodable, Encodable};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 
 // =============================================================================
 // Header (credit: https://github.com/paradigmxyz/reth/blob/main/crates/primitives/src/header.rs#L133)
@@ -476,15 +476,45 @@ pub struct MMRMetaFromNewIndexer {
     pub mmr_size: u64,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone)]
 pub struct RlpBlockHeader {
-    #[serde(rename = "String")]
     pub value: String,
+}
+
+#[derive(Deserialize)]
+struct RawRlpBlockHeader {
+    #[serde(rename = "LittleEndian8ByteChunks")]
+    value_chunks: Vec<String>,
+}
+
+impl<'de> Deserialize<'de> for RlpBlockHeader {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let raw: RawRlpBlockHeader = RawRlpBlockHeader::deserialize(deserializer)?;
+        
+        let value: String = raw.value_chunks.into_iter()
+            .map(|chunk| {
+                // Remove "0x" prefix if present
+               let chunk = chunk.trim_start_matches("0x");
+                // Decode hex string to bytes
+                let mut bytes = hex::decode(chunk).map_err(serde::de::Error::custom)?;
+                // Reverse bytes to convert from LE to BE
+                bytes.reverse();
+                // Encode back to hex string
+                Ok(hex::encode(bytes))
+            })
+            .collect::<Result<Vec<String>, D::Error>>()?
+            .join("");
+
+        Ok(RlpBlockHeader { value })
+    }
 }
 
 impl From<RlpBlockHeader> for Bytes {
     fn from(rlp_block_header: RlpBlockHeader) -> Self {
-        Bytes::from(hex::decode(rlp_block_header.value).expect("Cannot decode RLP block header"))
+        Bytes::from(hex::decode(&rlp_block_header.value).expect("Cannot decode RLP block header"))
     }
 }
 
@@ -540,3 +570,6 @@ mod tests {
         assert_eq!(decoded, expected_header);
     }
 }
+
+
+
