@@ -493,11 +493,13 @@ impl<'de> Deserialize<'de> for RlpBlockHeader {
         D: Deserializer<'de>,
     {
         let raw: RawRlpBlockHeader = RawRlpBlockHeader::deserialize(deserializer)?;
-        
-        let value: String = raw.value_chunks.into_iter()
+
+        let value: String = raw
+            .value_chunks
+            .into_iter()
             .map(|chunk| {
                 // Remove "0x" prefix if present
-               let chunk = chunk.trim_start_matches("0x");
+                let chunk = chunk.trim_start_matches("0x");
                 // Decode hex string to bytes
                 let mut bytes = hex::decode(chunk).map_err(serde::de::Error::custom)?;
                 // Reverse bytes to convert from LE to BE
@@ -570,6 +572,3 @@ mod tests {
         assert_eq!(decoded, expected_header);
     }
 }
-
-
-
