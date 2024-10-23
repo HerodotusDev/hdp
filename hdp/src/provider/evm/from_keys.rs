@@ -1,6 +1,6 @@
 use super::provider::EvmProvider;
 use crate::primitives::processed_types::account::ProcessedAccount;
-use crate::primitives::processed_types::block_proofs::ProcessedBlockProofs;
+use crate::primitives::processed_types::block_proofs::{convert_to_mmr_with_headers, ProcessedBlockProofs};
 use crate::primitives::processed_types::header::ProcessedHeader;
 use crate::primitives::processed_types::mmr::MMRMeta;
 use crate::primitives::processed_types::mpt::ProcessedMPTProof;
