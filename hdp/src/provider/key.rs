@@ -261,7 +261,7 @@ impl EvmStorageKey {
 pub struct EvmBlockTxKey {
     pub chain_id: ChainId,
     pub block_number: BlockNumber,
-    pub tx_index: u64,
+    pub index: u64,
 }
 
 impl<'de> Deserialize<'de> for EvmBlockTxKey {
@@ -273,7 +273,7 @@ impl<'de> Deserialize<'de> for EvmBlockTxKey {
         struct Helper {
             chain_id: u128,
             block_number: BlockNumber,
-            tx_index: u64,
+            index: u64,
         }
 
         let helper = Helper::deserialize(deserializer)?;
@@ -281,17 +281,17 @@ impl<'de> Deserialize<'de> for EvmBlockTxKey {
         Ok(EvmBlockTxKey {
             chain_id: ChainId::from_numeric_id(helper.chain_id).expect("invalid deserialize"),
             block_number: helper.block_number,
-            tx_index: helper.tx_index,
+            index: helper.index,
         })
     }
 }
 
 impl EvmBlockTxKey {
-    pub fn new(chain_id: ChainId, block_number: BlockNumber, tx_index: u64) -> Self {
+    pub fn new(chain_id: ChainId, block_number: BlockNumber, index: u64) -> Self {
         Self {
             chain_id,
             block_number,
-            tx_index,
+            index,
         }
     }
 
@@ -300,7 +300,7 @@ impl EvmBlockTxKey {
         keccak.update([TransactionsCollectionType::Transactions.to_u8()]);
         keccak.update(self.chain_id.to_be_bytes());
         keccak.update(self.block_number.to_be_bytes());
-        keccak.update(self.tx_index.to_be_bytes());
+        keccak.update(self.index.to_be_bytes());
         keccak.finalize()
     }
 }
@@ -310,7 +310,7 @@ impl EvmBlockTxKey {
 pub struct EvmBlockReceiptKey {
     pub chain_id: ChainId,
     pub block_number: BlockNumber,
-    pub tx_index: u64,
+    pub index: u64,
 }
 
 impl<'de> Deserialize<'de> for EvmBlockReceiptKey {
@@ -322,7 +322,7 @@ impl<'de> Deserialize<'de> for EvmBlockReceiptKey {
         struct Helper {
             chain_id: u128,
             block_number: BlockNumber,
-            tx_index: u64,
+            index: u64,
         }
 
         let helper = Helper::deserialize(deserializer)?;
@@ -330,17 +330,17 @@ impl<'de> Deserialize<'de> for EvmBlockReceiptKey {
         Ok(EvmBlockReceiptKey {
             chain_id: ChainId::from_numeric_id(helper.chain_id).expect("invalid deserialize"),
             block_number: helper.block_number,
-            tx_index: helper.tx_index,
+            index: helper.index,
         })
     }
 }
 
 impl EvmBlockReceiptKey {
-    pub fn new(chain_id: ChainId, block_number: BlockNumber, tx_index: u64) -> Self {
+    pub fn new(chain_id: ChainId, block_number: BlockNumber, index: u64) -> Self {
         Self {
             chain_id,
             block_number,
-            tx_index,
+            index,
         }
     }
 
@@ -349,7 +349,7 @@ impl EvmBlockReceiptKey {
         keccak.update([TransactionsCollectionType::TransactionReceipts.to_u8()]);
         keccak.update(self.chain_id.to_be_bytes());
         keccak.update(self.block_number.to_be_bytes());
-        keccak.update(self.tx_index.to_be_bytes());
+        keccak.update(self.index.to_be_bytes());
         keccak.finalize()
     }
 }
@@ -522,7 +522,7 @@ mod tests {
 
     #[test]
     fn test_parse_json_tx_key() {
-        let json = r#"{"type": "EvmBlockTxKey", "key": {"chain_id": 1, "block_number": 100, "tx_index": 1}}"#;
+        let json = r#"{"type": "EvmBlockTxKey", "key": {"chain_id": 1, "block_number": 100, "index": 1}}"#;
         let parsed: EvmFetchKeyEnvelope = serde_json::from_str(json).unwrap();
         assert_eq!(
             parsed,
@@ -532,7 +532,7 @@ mod tests {
 
     #[test]
     fn test_parse_json_tx_receipt_key() {
-        let json = r#"{"type": "EvmBlockReceiptKey", "key": {"chain_id": 1, "block_number": 100, "tx_index": 1}}"#;
+        let json = r#"{"type": "EvmBlockReceiptKey", "key": {"chain_id": 1, "block_number": 100, "index": 1}}"#;
         let parsed: EvmFetchKeyEnvelope = serde_json::from_str(json).unwrap();
         assert_eq!(
             parsed,

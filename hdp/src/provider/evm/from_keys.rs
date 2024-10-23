@@ -256,7 +256,7 @@ impl EvmProvider {
         let mut block_to_tx_range: HashMap<BlockNumber, Vec<TxIndex>> = HashMap::new();
         for key in keys {
             let tx_range = block_to_tx_range.entry(key.block_number).or_default();
-            tx_range.push(key.tx_index);
+            tx_range.push(key.index);
         }
 
         for (block_number, tx_range) in block_to_tx_range {
@@ -304,7 +304,7 @@ impl EvmProvider {
         let mut block_to_tx_range: HashMap<BlockNumber, Vec<TxIndex>> = HashMap::new();
         for key in keys {
             let tx_range = block_to_tx_range.entry(key.block_number).or_default();
-            tx_range.push(key.tx_index);
+            tx_range.push(key.index);
         }
 
         for (block_number, tx_range) in block_to_tx_range {
