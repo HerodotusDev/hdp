@@ -46,7 +46,7 @@ pub fn tx_index_to_tx_key(tx_index: u64) -> String {
     format!("0x{}", hex::encode(binding))
 }
 
-/// Convert a `FieldElement` into a `FixedBytes<32>`
+/// Convert a [`Felt`] into a [`FixedBytes<32>`]
 pub fn felt_to_bytes32(felt: Felt) -> FixedBytes<32> {
     let felt_bytes = felt.to_bytes_be();
     B256::from(felt_bytes)

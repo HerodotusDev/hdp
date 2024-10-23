@@ -4,7 +4,7 @@
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use starknet::core::serde::unsigned_field_element::UfeHex;
-use starknet_crypto::Felt;
+use starknet_types_core::felt::Felt;
 
 use crate::primitives::processed_types::account::ProcessedAccount as BaseProcessedAccount;
 
@@ -14,8 +14,7 @@ impl AsCairoFormat for BaseProcessedAccount {
     type Output = ProcessedAccount;
 
     fn as_cairo_format(&self) -> Self::Output {
-        let address_chunk_result =
-            FieldElementVectorUnit::from_bytes(self.address.as_ref()).unwrap();
+        let address_chunk_result = FieldElementVectorUnit::from_bytes(self.address.as_ref());
         let account_key = &self.account_key;
         let proofs = self
             .proofs

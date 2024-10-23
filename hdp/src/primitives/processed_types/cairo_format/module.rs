@@ -5,7 +5,7 @@ use cairo_lang_starknet_classes::casm_contract_class::CasmContractClass;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use starknet::core::serde::unsigned_field_element::UfeHex;
-use starknet_crypto::Felt;
+use starknet_types_core::felt::Felt;
 
 use super::{AsCairoFormat, FieldElementVectorUnit};
 
@@ -13,7 +13,7 @@ impl AsCairoFormat for BaseProcessedModule {
     type Output = ProcessedModule;
 
     fn as_cairo_format(&self) -> Self::Output {
-        let module_task_felts = FieldElementVectorUnit::from_bytes(&self.encoded_task).unwrap();
+        let module_task_felts = FieldElementVectorUnit::from_bytes(&self.encoded_task);
         ProcessedModule {
             module_class: self.module_class.clone(),
             encoded_task: module_task_felts.felts,
