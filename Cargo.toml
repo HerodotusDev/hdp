@@ -3,10 +3,10 @@ resolver = "2"
 members = ["cli", "examples/private-input-module", "hdp"]
 
 [workspace.package]
-version = "0.7.0"
 edition = "2021"
+version = "0.8.0"
 license-file = "LICENSE"
-authors = ["Pia <pia@herodotus.dev>"]
+authors = ["Herodotus Data Processor Team"]
 repository = "https://github.com/HerodotusDev/hdp"
 homepage = "https://herodotus.dev/"
 exclude = ["benches/", "fixtures/", "examples/"]
@@ -42,5 +42,6 @@ cairo-vm = "1.0.0-rc6"
 futures = "0.3.30"
 lazy_static = "1.4.0"
 thiserror = "1.0"
+sn-trie-proofs = { version = "0.1.1" }
 eth-trie-proofs = "0.1.2"
 itertools = "0.10"

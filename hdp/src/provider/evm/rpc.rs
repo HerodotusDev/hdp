@@ -15,25 +15,13 @@ use alloy::{
 };
 use futures::future::join_all;
 use reqwest::Url;
-use thiserror::Error;
 use tokio::sync::{
     mpsc::{self, Sender},
     RwLock,
 };
 use tracing::debug;
 
-/// Error from [`RpcProvider`]
-#[derive(Error, Debug)]
-pub enum RpcProviderError {
-    #[error("Failed to send proofs with mpsc")]
-    MpscError(
-        #[from]
-        tokio::sync::mpsc::error::SendError<(
-            BlockNumber,
-            alloy::rpc::types::EIP1186AccountProofResponse,
-        )>,
-    ),
-}
+use crate::provider::error::RpcProviderError;
 
 /// RPC provider for fetching data from Ethereum RPC
 /// It is a wrapper around the alloy provider, using eth_getProof for fetching account and storage proofs

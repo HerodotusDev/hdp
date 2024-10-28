@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use starknet::core::serde::unsigned_field_element::UfeHex;
-use starknet_crypto::Felt;
+use starknet_types_core::felt::Felt;
 
 use crate::primitives::processed_types::header::{
     ProcessedHeader as BaseProcessedHeader, ProcessedHeaderProof as BasedProcessedHeaderProof,
@@ -13,7 +13,7 @@ impl AsCairoFormat for BaseProcessedHeader {
     type Output = ProcessedHeader;
 
     fn as_cairo_format(&self) -> Self::Output {
-        let felts_unit = FieldElementVectorUnit::from_bytes(&self.rlp).unwrap();
+        let felts_unit = FieldElementVectorUnit::from_bytes(&self.rlp);
         let proof = self.proof.clone();
         ProcessedHeader {
             rlp: felts_unit.felts,

@@ -9,15 +9,12 @@ pub use rlp_fields::*;
 
 #[cfg(test)]
 mod tests {
-
-    use std::str::FromStr;
-
     use crate::primitives::{
         solidity_types::traits::DatalakeCodecs, task::datalake::DatalakeCollection, ChainId,
     };
     use alloy::{
         hex,
-        primitives::{B256, U256},
+        primitives::{b256, U256},
     };
 
     use super::*;
@@ -33,7 +30,7 @@ mod tests {
             1,
             10,
             2,
-            IncludedTypes::from(&[1, 1, 1, 1]),
+            IncludedTypes::ALL,
         );
 
         let encoded = transaction_datalake.encode().unwrap();
@@ -42,8 +39,7 @@ mod tests {
 
         assert_eq!(
             transaction_datalake.commit(),
-            B256::from_str("0x0a1ad7357827238fdbea5c8f34df65e7313c18388026fad78a75d4b5a6be71b7")
-                .unwrap()
+            b256!("0a1ad7357827238fdbea5c8f34df65e7313c18388026fad78a75d4b5a6be71b7")
         );
 
         assert_eq!(
@@ -51,10 +47,8 @@ mod tests {
             TransactionsCollection::Transactions(TransactionField::Nonce)
         );
 
-        assert_eq!(
-            transaction_datalake.included_types.to_uint256(),
-            U256::from(0x01010101)
-        );
+        let converted: U256 = transaction_datalake.included_types.into();
+        assert_eq!(converted, U256::from(0x01010101));
 
         let decoded = TransactionsInBlockDatalake::decode(&encoded).unwrap();
         assert_eq!(decoded, transaction_datalake);
@@ -72,7 +66,7 @@ mod tests {
             1,
             10,
             2,
-            IncludedTypes::from(&[1, 0, 0, 1]),
+            IncludedTypes::from_bytes(&[1, 0, 0, 1]),
         );
 
         let encoded = transaction_datalake.encode().unwrap();
@@ -81,8 +75,7 @@ mod tests {
 
         assert_eq!(
             transaction_datalake.commit(),
-            B256::from_str("0x991d3d38a26f54aed67f8391bab26c855dedd2fd810931542625b6ad4f7c1e42")
-                .unwrap()
+            b256!("991d3d38a26f54aed67f8391bab26c855dedd2fd810931542625b6ad4f7c1e42")
         );
 
         assert_eq!(
@@ -90,10 +83,8 @@ mod tests {
             TransactionsCollection::TranasactionReceipts(TransactionReceiptField::Success)
         );
 
-        assert_eq!(
-            transaction_datalake.included_types.to_uint256(),
-            U256::from(0x01000001)
-        );
+        let converted: U256 = transaction_datalake.included_types.into();
+        assert_eq!(converted, U256::from(0x01000001));
 
         let decoded = TransactionsInBlockDatalake::decode(&encoded).unwrap();
         assert_eq!(decoded, transaction_datalake);

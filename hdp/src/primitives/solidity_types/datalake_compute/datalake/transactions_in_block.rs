@@ -7,7 +7,7 @@ use crate::primitives::{
     },
     ChainId,
 };
-use alloy::primitives::keccak256;
+use alloy::primitives::{keccak256, U256};
 use alloy::{
     dyn_abi::{DynSolType, DynSolValue},
     primitives::B256,
@@ -29,7 +29,8 @@ impl DatalakeCodecs for TransactionsInBlockDatalake {
         let start_index: DynSolValue = self.start_index.into();
         let end_index: DynSolValue = self.end_index.into();
         let increment: DynSolValue = self.increment.into();
-        let included_types: DynSolValue = self.included_types.to_uint256().into();
+        let converted: U256 = self.included_types.into();
+        let included_types: DynSolValue = converted.into();
 
         let tuple_value = DynSolValue::Tuple(vec![
             datalake_code,
@@ -48,13 +49,13 @@ impl DatalakeCodecs for TransactionsInBlockDatalake {
         }
     }
 
-    /// Get the commitment hash of the [`TransactionsDatalake`]
+    /// Get the commitment hash of the [`TransactionsInBlockDatalake`]
     fn commit(&self) -> B256 {
         let encoded_datalake = self.encode().expect("Encoding failed");
         keccak256(encoded_datalake)
     }
 
-    /// Decode the encoded transactions datalake hex string into a [`TransactionsDatalake`]
+    /// Decode the encoded transactions datalake hex string into a [`TransactionsInBlockDatalake`]
     fn decode(encoded: &[u8]) -> Result<Self> {
         let abi_type: DynSolType =
             "(uint256,uint256, uint256, uint256, uint256, uint256, uint256, bytes)".parse()?;
@@ -73,7 +74,7 @@ impl DatalakeCodecs for TransactionsInBlockDatalake {
         let start_index = value[3].as_uint().unwrap().0.to_string().parse::<u64>()?;
         let end_index = value[4].as_uint().unwrap().0.to_string().parse::<u64>()?;
         let increment = value[5].as_uint().unwrap().0.to_string().parse::<u64>()?;
-        let included_types = IncludedTypes::from_uint256(value[6].as_uint().unwrap().0);
+        let included_types = IncludedTypes::from(value[6].as_uint().unwrap().0);
         let sampled_property = TransactionsCollection::deserialize(value[7].as_bytes().unwrap())?;
 
         Ok(Self {

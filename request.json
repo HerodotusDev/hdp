@@ -26,6 +26,34 @@
           "valueToCompare": "1000000000000000000"
         }
       }
+    },
+    {
+      "type": "DatalakeCompute",
+      "datalake": {
+        "type": "BlockSampled",
+        "chainId": "ETHEREUM_MAINNET",
+        "blockRangeStart": 100,
+        "blockRangeEnd": 110,
+        "increment": 1,
+        "sampledProperty": "header.number"
+      },
+      "compute": {
+        "aggregateFnId": "avg"
+      }
+    },
+    {
+      "type": "DatalakeCompute",
+      "datalake": {
+        "type": "BlockSampled",
+        "chainId": "ETHEREUM_SEPOLIA",
+        "blockRangeStart": 6375109,
+        "blockRangeEnd": 6375111,
+        "increment": 1,
+        "sampledProperty": "storage.0xaFE8A72C86d5895DD6616daB26d4b736Cf22472f.0x0000000000000000000000000000000000000000000000000000000000000010"
+      },
+      "compute": {
+        "aggregateFnId": "sum"
+      }
     }
   ],
   "destinationChainId": "ETHEREUM_SEPOLIA"

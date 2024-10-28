@@ -1,8 +1,8 @@
 use crate::constant::DRY_CAIRO_RUN_OUTPUT_FILE;
 use crate::primitives::processed_types::uint256::Uint256;
 use crate::provider::key::{
-    AccountMemorizerKey, FetchKeyEnvelope, HeaderMemorizerKey, StorageMemorizerKey, TxMemorizerKey,
-    TxReceiptMemorizerKey,
+    EvmAccountKey, EvmBlockReceiptKey, EvmBlockTxKey, EvmFetchKeyEnvelope, EvmHeaderKey,
+    EvmStorageKey,
 };
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
@@ -22,13 +22,13 @@ pub type DryRunResult = Vec<DryRunnedModule>;
 #[derive(Serialize, Deserialize, Debug)]
 pub struct DryRunnedModule {
     #[serde(deserialize_with = "deserialize_fetch_keys")]
-    pub fetch_keys: Vec<FetchKeyEnvelope>,
+    pub fetch_keys: Vec<EvmFetchKeyEnvelope>,
     pub result: Uint256,
     #[serde_as(as = "UfeHex")]
     pub program_hash: Felt,
 }
 
-fn deserialize_fetch_keys<'de, D>(deserializer: D) -> Result<Vec<FetchKeyEnvelope>, D::Error>
+fn deserialize_fetch_keys<'de, D>(deserializer: D) -> Result<Vec<EvmFetchKeyEnvelope>, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
@@ -45,30 +45,30 @@ where
         .into_iter()
         .map(|helper| {
             let envelope = match helper.key_type.as_str() {
-                "HeaderMemorizerKey" => {
-                    let key: HeaderMemorizerKey =
+                "EvmHeaderKey" => {
+                    let key: EvmHeaderKey =
                         serde_json::from_value(helper.key).map_err(serde::de::Error::custom)?;
-                    FetchKeyEnvelope::Header(key)
+                    EvmFetchKeyEnvelope::Header(key)
                 }
-                "AccountMemorizerKey" => {
-                    let key: AccountMemorizerKey =
+                "EvmAccountKey" => {
+                    let key: EvmAccountKey =
                         serde_json::from_value(helper.key).map_err(serde::de::Error::custom)?;
-                    FetchKeyEnvelope::Account(key)
+                    EvmFetchKeyEnvelope::Account(key)
                 }
-                "StorageMemorizerKey" => {
-                    let key: StorageMemorizerKey =
+                "EvmStorageKey" => {
+                    let key: EvmStorageKey =
                         serde_json::from_value(helper.key).map_err(serde::de::Error::custom)?;
-                    FetchKeyEnvelope::Storage(key)
+                    EvmFetchKeyEnvelope::Storage(key)
                 }
-                "TxMemorizerKey" => {
-                    let key: TxMemorizerKey =
+                "EvmBlockTxKey" => {
+                    let key: EvmBlockTxKey =
                         serde_json::from_value(helper.key).map_err(serde::de::Error::custom)?;
-                    FetchKeyEnvelope::Tx(key)
+                    EvmFetchKeyEnvelope::Tx(key)
                 }
-                "TxReceiptMemorizerKey" => {
-                    let key: TxReceiptMemorizerKey =
+                "EvmBlockReceiptKey" => {
+                    let key: EvmBlockReceiptKey =
                         serde_json::from_value(helper.key).map_err(serde::de::Error::custom)?;
-                    FetchKeyEnvelope::TxReceipt(key)
+                    EvmFetchKeyEnvelope::TxReceipt(key)
                 }
                 _ => {
                     return Err(serde::de::Error::custom(format!(
@@ -170,10 +170,11 @@ mod tests {
         let result = dry_runner.run(input).unwrap();
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].fetch_keys.len(), 3);
-        assert_eq!(result[0].result, Uint256::from_strs("0x0", "0x0").unwrap());
+        assert_eq!(result[0].result, Uint256::ZERO);
         assert_eq!(
             result[0].program_hash,
-            felt!("0x04df21eb479ae4416fbdc00abab6fab43bff0b8083be4d1fd8602c8fbfbd2274")
+            Felt::from_hex("0x04df21eb479ae4416fbdc00abab6fab43bff0b8083be4d1fd8602c8fbfbd2274")
+                .unwrap()
         );
     }
 
@@ -184,14 +185,14 @@ mod tests {
             {
                 "fetch_keys": [
                 {
-                    "type": "HeaderMemorizerKey",
+                    "type": "EvmHeaderKey",
                     "key": {
                         "chain_id": 11155111,
                         "block_number": 5186021
                     }
                 },
                 {
-                    "type": "AccountMemorizerKey",
+                    "type": "EvmAccountKey",
                     "key": {
                         "chain_id": 11155111,
                         "block_number": 5186023,
@@ -199,7 +200,7 @@ mod tests {
                     }
                 },
                 {
-                    "type": "StorageMemorizerKey",
+                    "type": "EvmStorageKey",
                     "key": {
                         "chain_id": 11155111,
                         "block_number": 5186022,
@@ -233,7 +234,7 @@ mod tests {
             println!("Fetch key {}: {:?}", i, key);
         }
 
-        assert_eq!(module.result, Uint256::from_strs("0x0", "0x0").unwrap());
+        assert_eq!(module.result, Uint256::ZERO);
         assert_eq!(
             module.program_hash,
             felt!("0xc8580f74b6e6e04d8073602ad0c0d55538b56bf8307fefebb6b65b1bbf2a27")
@@ -241,15 +242,15 @@ mod tests {
 
         // Additional assertions for each key type
         match &module.fetch_keys[0] {
-            FetchKeyEnvelope::Header(key) => {
+            EvmFetchKeyEnvelope::Header(key) => {
                 assert_eq!(key.chain_id, ChainId::from_numeric_id(11155111).unwrap());
                 assert_eq!(key.block_number, 5186021);
             }
-            _ => panic!("Expected HeaderMemorizerKey"),
+            _ => panic!("Expected EvmHeaderKey"),
         }
 
         match &module.fetch_keys[1] {
-            FetchKeyEnvelope::Account(key) => {
+            EvmFetchKeyEnvelope::Account(key) => {
                 assert_eq!(key.chain_id, ChainId::from_numeric_id(11155111).unwrap());
                 assert_eq!(key.block_number, 5186023);
                 assert_eq!(
@@ -257,11 +258,11 @@ mod tests {
                     Address::from_str("0x13CB6AE34A13a0977F4d7101eBc24B87Bb23F0d5").unwrap()
                 );
             }
-            _ => panic!("Expected AccountMemorizerKey"),
+            _ => panic!("Expected EvmAccountKey"),
         }
 
         match &module.fetch_keys[2] {
-            FetchKeyEnvelope::Storage(key) => {
+            EvmFetchKeyEnvelope::Storage(key) => {
                 assert_eq!(key.chain_id, ChainId::from_numeric_id(11155111).unwrap());
                 assert_eq!(key.block_number, 5186022);
                 assert_eq!(
@@ -276,7 +277,7 @@ mod tests {
                     .unwrap()
                 );
             }
-            _ => panic!("Expected StorageMemorizerKey"),
+            _ => panic!("Expected EvmStorageKey"),
         }
     }
 }

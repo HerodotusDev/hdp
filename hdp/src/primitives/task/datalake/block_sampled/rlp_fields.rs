@@ -13,7 +13,7 @@ use crate::{
     primitives::task::datalake::DatalakeField,
 };
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "String")]
 pub enum HeaderField {
     ParentHash,
@@ -138,9 +138,7 @@ impl DatalakeField for HeaderField {
         match self {
             HeaderField::ParentHash => decoded.parent_hash.into(),
             HeaderField::OmmerHash => decoded.ommers_hash.into(),
-            HeaderField::Beneficiary => {
-                U256::from_str_radix(&decoded.beneficiary.to_string(), 16).unwrap()
-            }
+            HeaderField::Beneficiary => decoded.beneficiary.into_word().into(),
             HeaderField::StateRoot => decoded.state_root.into(),
             HeaderField::TransactionsRoot => decoded.transactions_root.into(),
             HeaderField::ReceiptsRoot => decoded.receipts_root.into(),
@@ -240,7 +238,7 @@ impl Display for HeaderField {
 
 // == Account Field ==
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "String")]
 pub enum AccountField {
     Nonce,

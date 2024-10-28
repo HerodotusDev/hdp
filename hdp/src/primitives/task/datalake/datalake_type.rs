@@ -2,10 +2,10 @@ use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
-/// Identifier for a [`BlockSampledDatalake`] type.
+/// Identifier for a BlockSampledDatalake
 pub const BLOCK_SAMPLED_DATALAKE_TYPE_ID: u8 = 0;
 
-/// Identifier for an [`TransactionsDatalake`] type.
+/// Identifier for a TransactionsDatalake
 pub const TRANSACTIONS_IN_BLOCK_DATALAKE_TYPE_ID: u8 = 1;
 
 #[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq)]

@@ -230,7 +230,7 @@ pub async fn run_interactive() -> anyhow::Result<()> {
                                 start_index,
                                 end_index,
                                 increment,
-                                IncludedTypes::from(&included_types),
+                                IncludedTypes::from_bytes(&included_types),
                             );
                             DatalakeEnvelope::TransactionsInBlock(transactions_datalake)
                         }

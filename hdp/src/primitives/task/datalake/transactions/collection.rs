@@ -37,7 +37,7 @@ impl FromStr for TransactionsCollectionType {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "String")]
 pub enum TransactionsCollection {
     Transactions(TransactionField),

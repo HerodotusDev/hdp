@@ -5,7 +5,7 @@ use crate::primitives::processed_types::receipt::ProcessedReceipt as BaseProcess
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use starknet::core::serde::unsigned_field_element::UfeHex;
-use starknet_crypto::Felt;
+use starknet_types_core::felt::Felt;
 
 impl AsCairoFormat for BaseProcessedReceipt {
     type Output = ProcessedReceipt;
@@ -15,7 +15,7 @@ impl AsCairoFormat for BaseProcessedReceipt {
         let proof_felts: Vec<FieldElementVectorUnit> = self
             .proof
             .iter()
-            .map(|proof| FieldElementVectorUnit::from_bytes(proof).unwrap())
+            .map(|proof| FieldElementVectorUnit::from_bytes(proof))
             .collect();
 
         let proof_bytes_len = proof_felts.iter().map(|f| f.bytes_len).collect();

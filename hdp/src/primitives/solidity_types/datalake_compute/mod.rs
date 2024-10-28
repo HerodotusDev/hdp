@@ -106,6 +106,8 @@ impl BatchedDatalakeComputeCodecs for BatchedDatalakeCompute {
 mod tests {
     use std::str::FromStr;
 
+    use alloy::primitives::b256;
+
     use crate::primitives::{
         aggregate_fn::FunctionContext,
         task::datalake::{
@@ -140,8 +142,7 @@ mod tests {
 
         assert_eq!(
             datalake_compute.commit(),
-            B256::from_str("0x931644ee9576d1a377d4c5ba642a9f96361663f31d867d36169623f782a887fc")
-                .unwrap()
+            b256!("931644ee9576d1a377d4c5ba642a9f96361663f31d867d36169623f782a887fc")
         )
     }
 
@@ -170,8 +171,7 @@ mod tests {
 
         assert_eq!(
             datalake_compute.commit(),
-            B256::from_str("0xa15da24b3eb2bb5260f59a71c3934b64e2747d8e934563ad532e7f877a061bed")
-                .unwrap()
+            b256!("a15da24b3eb2bb5260f59a71c3934b64e2747d8e934563ad532e7f877a061bed")
         )
     }
 }

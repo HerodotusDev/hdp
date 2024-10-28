@@ -5,12 +5,13 @@ use crate::primitives::{task::datalake::envelope::default_increment, ChainId};
 use super::collection::BlockSampledCollection;
 
 /// [`BlockSampledDatalake`] is a struct that represents a block sampled datalake.
-/// It contains the block range, the sampled property, and the increment.
+/// It contains chain id, block range, the sampled property, and the increment.
 ///
-/// The block range is inclusive, so the block range is from `block_range_start` to `block_range_end`
+/// Inclusive block range: [block_range_start..block_range_end]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BlockSampledDatalake {
+    /// Chain id of the datalake
     pub chain_id: ChainId,
     /// The start of the block range
     pub block_range_start: u64,

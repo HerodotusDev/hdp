@@ -15,7 +15,11 @@ impl AsCairoFormat for BasedProcessorInput {
             cairo_run_output_path: self.cairo_run_output_path.clone(),
             task_root: self.tasks_root,
             result_root: self.results_root,
-            proofs: self.proofs.as_cairo_format(),
+            proofs: self
+                .proofs
+                .iter()
+                .map(|proof| proof.as_cairo_format())
+                .collect(),
             tasks: self
                 .tasks
                 .iter()
@@ -34,7 +38,7 @@ pub struct ProcessorInput {
     /// Batched results root of all tasks.
     pub result_root: B256,
     /// Fetched proofs per each fetch point.
-    pub proofs: ProcessedBlockProofs,
+    pub proofs: Vec<ProcessedBlockProofs>,
     /// tasks to be executed.
     pub tasks: Vec<ProcessedTask>,
 }

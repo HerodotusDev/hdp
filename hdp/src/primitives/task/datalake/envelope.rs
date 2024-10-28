@@ -18,10 +18,8 @@ pub enum DatalakeEnvelope {
 impl DatalakeEnvelope {
     pub fn get_collection_type(&self) -> Box<dyn DatalakeCollection> {
         match self {
-            DatalakeEnvelope::BlockSampled(datalake) => Box::new(datalake.sampled_property.clone()),
-            DatalakeEnvelope::TransactionsInBlock(datalake) => {
-                Box::new(datalake.sampled_property.clone())
-            }
+            DatalakeEnvelope::BlockSampled(datalake) => Box::new(datalake.sampled_property),
+            DatalakeEnvelope::TransactionsInBlock(datalake) => Box::new(datalake.sampled_property),
         }
     }
 
