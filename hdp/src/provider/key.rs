@@ -82,10 +82,7 @@ pub fn categorize_fetch_keys(
             EvmFetchKeyEnvelope::Tx(tx_key) => {
                 target_categorized_fetch_keys
                     .headers
-                    .insert(EvmHeaderKey::new(
-                        tx_key.chain_id,
-                        tx_key.block_number,
-                    ));
+                    .insert(EvmHeaderKey::new(tx_key.chain_id, tx_key.block_number));
                 target_categorized_fetch_keys.block_txs.insert(tx_key);
             }
             EvmFetchKeyEnvelope::TxReceipt(tx_receipt_key) => {
@@ -522,7 +519,8 @@ mod tests {
 
     #[test]
     fn test_parse_json_tx_key() {
-        let json = r#"{"type": "EvmBlockTxKey", "key": {"chain_id": 1, "block_number": 100, "index": 1}}"#;
+        let json =
+            r#"{"type": "EvmBlockTxKey", "key": {"chain_id": 1, "block_number": 100, "index": 1}}"#;
         let parsed: EvmFetchKeyEnvelope = serde_json::from_str(json).unwrap();
         assert_eq!(
             parsed,

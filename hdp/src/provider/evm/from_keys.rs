@@ -1,6 +1,8 @@
 use super::provider::EvmProvider;
 use crate::primitives::processed_types::account::ProcessedAccount;
-use crate::primitives::processed_types::block_proofs::{convert_to_mmr_with_headers, ProcessedBlockProofs};
+use crate::primitives::processed_types::block_proofs::{
+    convert_to_mmr_with_headers, ProcessedBlockProofs,
+};
 use crate::primitives::processed_types::header::ProcessedHeader;
 use crate::primitives::processed_types::mmr::MMRMeta;
 use crate::primitives::processed_types::mpt::ProcessedMPTProof;
@@ -9,8 +11,8 @@ use crate::primitives::processed_types::storage::ProcessedStorage;
 use crate::primitives::processed_types::transaction::ProcessedTransaction;
 use crate::provider::error::ProviderError;
 use crate::provider::key::{
-    EvmAccountKey, CategorizedFetchKeys, EvmHeaderKey, EvmStorageKey,
-    EvmBlockTxKey, EvmBlockReceiptKey,
+    CategorizedFetchKeys, EvmAccountKey, EvmBlockReceiptKey, EvmBlockTxKey, EvmHeaderKey,
+    EvmStorageKey,
 };
 use alloy::primitives::{Address, BlockNumber, Bytes, TxIndex, B256};
 use alloy::transports::{RpcError, TransportErrorKind};
@@ -483,7 +485,7 @@ mod tests {
         let (chain_id, fetched_keys) = categorize_fetch_keys(keys).into_iter().next().unwrap();
         assert_eq!(chain_id, target_chain_id);
         let proofs = provider.fetch_proofs_from_keys(fetched_keys).await.unwrap();
-        assert_eq!(proofs.headers.len(), 2);
+        assert_eq!(proofs.mmr_with_headers[0].headers.len(), 2);
         assert_eq!(proofs.transactions.len(), 3);
     }
 }
