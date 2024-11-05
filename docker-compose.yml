@@ -3,6 +3,9 @@ services:
     build:
       context: .
       dockerfile: ./runner.dockerfile
+      args:
+        HDP_PROGRAM_HASH: 0x0581f639627ec3af482532a1847f59b6521418b59cbe5e2a5657196e3ed886ea
+        DRY_RUN_PROGRAM_HASH: 0x062a6397fa977a8e25887000cef90053ca599e3615830dfeb4cc18f79e534afc
     env_file:
       - .env
     volumes:

@@ -1,0 +1,87 @@
+name: Build and Push Docker Images
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - dev
+
+jobs:
+  build-and-push-images:
+    # Add this condition to check for the label
+    runs-on: [self-hosted]
+    permissions:
+      contents: write
+      id-token: write
+    # Add this condition to check for the skip label
+    if: "!contains(github.event.head_commit.message, '[skip build]')"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # - name: Log in to Docker Hub
+      #   uses: docker/login-action@v3
+      #   with:
+      #     username: ${{ secrets.DOCKERHUB_USERNAME }}
+      #     password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # - name: Create remote builder certificates
+      #   run: |
+      #     echo "${{ secrets.BUILDKIT_CA_PEM }}" > ${{ github.workspace }}/client-ca.pem
+      #     echo "${{ secrets.BUILDKIT_CERT_PEM }}" > ${{ github.workspace }}/client-cert.pem
+      #     echo "${{ secrets.BUILDKIT_KEY_PEM }}" > ${{ github.workspace }}/client-key.pem
+
+      # - name: Set up Docker Buildx
+      #   uses: docker/setup-buildx-action@v3
+      #   with:
+      #     driver: remote
+      #     endpoint: "tcp://buildkit.herodotus.dev:5000"
+      #     driver-opts: |
+      #       cacert=${{ github.workspace }}/client-ca.pem
+      #       cert=${{ github.workspace }}/client-cert.pem
+      #       key=${{ github.workspace }}/client-key.pem
+      #     cleanup: true
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3.1.0
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          version: "lab:latest"
+          driver: cloud
+          endpoint: "dataprocessor/github"
+          cleanup: true
+
+      - name: Fetch HDP & Dry Run for Build
+        run: |
+          ./script/prepare_image_build.sh
+
+      - name: Bump version and push tag
+        id: bump_version
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          NEW_VERSION=$(cargo metadata --no-deps --format-version=1 | jq -r '.packages[0].version')
+          echo "Project version is $NEW_VERSION"
+          echo "NEW_VERSION=${NEW_VERSION}" >> $GITHUB_ENV
+          git push --follow-tags
+
+      - name: Build and push Runner Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: runner.dockerfile
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            dataprocessor/hdp-runner:latest
+            dataprocessor/hdp-runner:v${{ env.NEW_VERSION }}
+          cache-from: |
+            type=registry,ref=dataprocessor/hdp-runner:buildcache-amd64,platform=linux/amd64
+            type=registry,ref=dataprocessor/hdp-runner:buildcache-arm64,platform=linux/arm64
+          cache-to: |
+            type=registry,ref=dataprocessor/hdp-runner:buildcache-amd64,mode=max,platform=linux/amd64
+            type=registry,ref=dataprocessor/hdp-runner:buildcache-arm64,mode=max,platform=linux/arm64

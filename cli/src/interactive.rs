@@ -2,6 +2,7 @@ use alloy::primitives::U256;
 use anyhow::bail;
 use hdp::hdp_run;
 use hdp::preprocessor::module_registry::ModuleRegistry;
+use hdp::primitives::task::module::Module;
 use hdp::primitives::ChainId;
 use hdp::primitives::{
     aggregate_fn::{integer::Operator, FunctionContext},
@@ -296,14 +297,9 @@ pub async fn run_interactive() -> anyhow::Result<()> {
             .map(|s| s.parse().unwrap())
             .collect();
 
+            let module = Module::new_from_str(Some(module_program_hash), None, module_inputs)?;
             let module_registry = ModuleRegistry::new();
-            let module = module_registry
-                .get_extended_module_from_class_source_string(
-                    Some(module_program_hash),
-                    None,
-                    module_inputs,
-                )
-                .await?;
+            let module = module_registry.get_extended_module(module).await?;
 
             vec![TaskEnvelope::Module(module)]
         }

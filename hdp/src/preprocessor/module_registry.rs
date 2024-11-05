@@ -8,13 +8,10 @@ use starknet_crypto::Felt;
 
 use crate::{
     constant::HERODOTUS_PROGRAM_REGISTRY_URL,
-    primitives::task::{
-        module::{Module, ModuleInput},
-        ExtendedModule,
-    },
+    primitives::task::{module::Module, ExtendedModule},
 };
 use reqwest::Client;
-use std::{path::PathBuf, str::FromStr};
+use std::path::PathBuf;
 use thiserror::Error;
 use tracing::info;
 
@@ -58,59 +55,16 @@ impl ModuleRegistry {
         Self { client }
     }
 
-    pub async fn get_extended_module_from_class_source_string(
+    pub async fn get_extended_module(
         &self,
-        program_hash: Option<String>,
-        local_class_path: Option<PathBuf>,
-        module_inputs: Vec<String>,
+        module: Module,
     ) -> Result<ExtendedModule, ModuleRegistryError> {
-        let program_hash = program_hash.map(|program_hash| {
-            Felt::from_hex(&program_hash).expect("program hash cannot be converted to FieldElement")
-        });
-        let module_inputs: Result<Vec<ModuleInput>, _> = module_inputs
-            .into_iter()
-            .map(|input| ModuleInput::from_str(&input))
-            .collect();
-
-        let module_inputs =
-            module_inputs.map_err(|e| ModuleRegistryError::TypeConversionError(e.to_string()))?;
-
-        self.get_extended_module_from_class_source(program_hash, local_class_path, module_inputs)
-            .await
-    }
-
-    pub async fn get_extended_module_from_class_source(
-        &self,
-        program_hash: Option<Felt>,
-        local_class_path: Option<PathBuf>,
-        module_inputs: Vec<ModuleInput>,
-    ) -> Result<ExtendedModule, ModuleRegistryError> {
-        if program_hash.is_some() && local_class_path.is_some() {
-            return Err(ModuleRegistryError::ClassSourceError(
-                "Only one of program_hash or local_class_path must be provided".to_string(),
-            ));
-        }
-
-        let casm = if let Some(ref local_class_path) = local_class_path {
+        let casm = if let Some(ref local_class_path) = module.local_class_path {
             self.get_module_class_from_local_path(local_class_path)
                 .await?
-        } else if let Some(program_hash) = program_hash {
-            self.get_module_class_from_program_hash(program_hash)
-                .await?
         } else {
-            return Err(ModuleRegistryError::ClassSourceError(
-                "One of program_hash or local_class_path must be provided".to_string(),
-            ));
-        };
-
-        let program_hash = casm.compiled_class_hash();
-        let converted_hash = Felt::from_bytes_be(&program_hash.to_bytes_be());
-        info!("program Hash: {:#?}", converted_hash);
-
-        let module = Module {
-            program_hash: converted_hash,
-            inputs: module_inputs,
-            local_class_path,
+            self.get_module_class_from_program_hash(module.program_hash)
+                .await?
         };
 
         Ok(ExtendedModule {
@@ -204,12 +158,10 @@ mod tests {
     #[tokio::test]
     async fn test_get_multiple_module_classes() {
         let (module_registry, program_hash) = init();
-        println!("{}", program_hash);
 
-        let extended_modules = module_registry
-            .get_extended_module_from_class_source(Some(program_hash), None, vec![])
-            .await
-            .unwrap();
+        let module = Module::new(program_hash, vec![], None);
+
+        let extended_modules = module_registry.get_extended_module(module).await.unwrap();
 
         assert_eq!(
             extended_modules.task.program_hash,

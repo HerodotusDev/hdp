@@ -11,6 +11,7 @@ use anyhow::Result;
 use clap::Parser;
 use hdp::primitives::processed_types::cairo_format::query::ProcessorInput;
 use hdp::primitives::request::{SubmitBatchQuery, Task};
+use hdp::primitives::task::module::Module;
 use hdp::processor::{self, Processor};
 use hdp::{
     hdp_run,
@@ -101,14 +102,13 @@ pub async fn module_entry_run(args: RunModuleArgs) -> Result<()> {
         args.batch_proof_file,
         args.cairo_pie_file,
     );
+    let module = Module::new_from_str(
+        args.program_hash,
+        args.local_class_path,
+        args.module_inputs.unwrap_or_default(),
+    )?;
     let module_registry = ModuleRegistry::new();
-    let module = module_registry
-        .get_extended_module_from_class_source_string(
-            args.program_hash,
-            args.local_class_path,
-            args.module_inputs.unwrap_or_default(),
-        )
-        .await?;
+    let module = module_registry.get_extended_module(module).await?;
     // TODO: for now, we only support one task if its a module
     let tasks = vec![TaskEnvelope::Module(module)];
 
@@ -189,13 +189,7 @@ pub async fn entry_run(args: RunArgs) -> Result<()> {
                 task_envelopes.push(TaskEnvelope::DatalakeCompute(task));
             }
             Task::Module(task) => {
-                let module = module_registry
-                    .get_extended_module_from_class_source(
-                        Some(task.program_hash),
-                        None,
-                        task.inputs,
-                    )
-                    .await?;
+                let module = module_registry.get_extended_module(task).await?;
                 task_envelopes.push(TaskEnvelope::Module(module));
             }
         }
