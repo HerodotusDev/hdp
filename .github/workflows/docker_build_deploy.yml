@@ -8,13 +8,6 @@ on:
 
 jobs:
   build-and-push-images:
-    # Add this condition to check for the label
-    runs-on: [self-hosted]
-    permissions:
-      contents: write
-      id-token: write
-    # Add this condition to check for the skip label
-    if: "!contains(github.event.head_commit.message, '[skip build]')"
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
