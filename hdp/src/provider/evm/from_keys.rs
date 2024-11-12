@@ -31,26 +31,26 @@ impl EvmProvider {
     ) -> Result<ProcessedBlockProofs, ProviderError> {
         let chain_id = self.header_provider.chain_id.to_numeric_id();
         // fetch proofs using keys and construct result
-        let mmr_with_headers = self.get_headers_from_keys(fetch_keys.headers).await?;
-        let mut accounts = if fetch_keys.accounts.is_empty() {
+        let mmr_with_headers = self.get_headers_from_keys(fetch_keys.evm_headers).await?;
+        let mut accounts = if fetch_keys.evm_accounts.is_empty() {
             HashSet::new()
         } else {
-            self.get_accounts_from_keys(fetch_keys.accounts).await?
+            self.get_accounts_from_keys(fetch_keys.evm_accounts).await?
         };
-        let (accounts_from_storage_key, storages) = if fetch_keys.storage.is_empty() {
+        let (accounts_from_storage_key, storages) = if fetch_keys.evm_storages.is_empty() {
             (HashSet::new(), HashSet::new())
         } else {
-            self.get_storages_from_keys(fetch_keys.storage).await?
+            self.get_storages_from_keys(fetch_keys.evm_storages).await?
         };
-        let transactions = if fetch_keys.block_txs.is_empty() {
+        let transactions = if fetch_keys.evm_txs.is_empty() {
             vec![]
         } else {
-            self.get_txs_from_keys(fetch_keys.block_txs).await?
+            self.get_txs_from_keys(fetch_keys.evm_txs).await?
         };
-        let transaction_receipts = if fetch_keys.block_receipts.is_empty() {
+        let transaction_receipts = if fetch_keys.evm_receipts.is_empty() {
             vec![]
         } else {
-            self.get_tx_receipts_from_keys(fetch_keys.block_receipts)
+            self.get_tx_receipts_from_keys(fetch_keys.evm_receipts)
                 .await?
         };
         accounts.extend(accounts_from_storage_key);
@@ -356,7 +356,7 @@ mod tests {
     use super::*;
     use crate::provider::evm::provider::EvmProvider;
     use crate::provider::key::categorize_fetch_keys;
-    use crate::provider::key::EvmFetchKeyEnvelope;
+    use crate::provider::key::FetchKeyEnvelope;
     use crate::provider::key::{EvmAccountKey, EvmHeaderKey};
     use alloy::primitives::address;
     use dotenv::dotenv;
@@ -377,9 +377,9 @@ mod tests {
         let target_chain_id = crate::primitives::ChainId::EthereumSepolia;
         let provider = EvmProvider::default();
         let keys = vec![
-            EvmFetchKeyEnvelope::Header(EvmHeaderKey::new(target_chain_id, 1)),
-            EvmFetchKeyEnvelope::Header(EvmHeaderKey::new(target_chain_id, 2)),
-            EvmFetchKeyEnvelope::Header(EvmHeaderKey::new(target_chain_id, 3)),
+            FetchKeyEnvelope::EvmHeader(EvmHeaderKey::new(target_chain_id, 1)),
+            FetchKeyEnvelope::EvmHeader(EvmHeaderKey::new(target_chain_id, 2)),
+            FetchKeyEnvelope::EvmHeader(EvmHeaderKey::new(target_chain_id, 3)),
         ];
         let (chain_id, fetched_keys) = categorize_fetch_keys(keys).into_iter().next().unwrap();
         assert_eq!(chain_id, target_chain_id);
@@ -395,13 +395,13 @@ mod tests {
         let provider = EvmProvider::default();
         let target_address = address!("7f2c6f930306d3aa736b3a6c6a98f512f74036d4");
         let keys = vec![
-            EvmFetchKeyEnvelope::Account(EvmAccountKey::new(
+            FetchKeyEnvelope::EvmAccount(EvmAccountKey::new(
                 target_chain_id,
                 6127485,
                 target_address,
             )),
-            EvmFetchKeyEnvelope::Account(EvmAccountKey::new(target_chain_id, 0, target_address)),
-            EvmFetchKeyEnvelope::Account(EvmAccountKey::new(
+            FetchKeyEnvelope::EvmAccount(EvmAccountKey::new(target_chain_id, 0, target_address)),
+            FetchKeyEnvelope::EvmAccount(EvmAccountKey::new(
                 target_chain_id,
                 6127487,
                 target_address,
@@ -424,37 +424,37 @@ mod tests {
         let target_address = address!("7f2c6f930306d3aa736b3a6c6a98f512f74036d4");
         let target_slot = B256::ZERO;
         let keys = vec![
-            EvmFetchKeyEnvelope::Storage(EvmStorageKey::new(
+            FetchKeyEnvelope::EvmStorage(EvmStorageKey::new(
                 target_chain_id,
                 0,
                 target_address,
                 target_slot,
             )),
-            EvmFetchKeyEnvelope::Storage(EvmStorageKey::new(
+            FetchKeyEnvelope::EvmStorage(EvmStorageKey::new(
                 target_chain_id,
                 6127486,
                 target_address,
                 target_slot,
             )),
-            EvmFetchKeyEnvelope::Storage(EvmStorageKey::new(
+            FetchKeyEnvelope::EvmStorage(EvmStorageKey::new(
                 target_chain_id,
                 6127487,
                 target_address,
                 target_slot,
             )),
-            EvmFetchKeyEnvelope::Storage(EvmStorageKey::new(
+            FetchKeyEnvelope::EvmStorage(EvmStorageKey::new(
                 target_chain_id,
                 4127497,
                 target_address,
                 target_slot,
             )),
-            EvmFetchKeyEnvelope::Storage(EvmStorageKey::new(
+            FetchKeyEnvelope::EvmStorage(EvmStorageKey::new(
                 target_chain_id,
                 4127487,
                 target_address,
                 target_slot,
             )),
-            EvmFetchKeyEnvelope::Storage(EvmStorageKey::new(
+            FetchKeyEnvelope::EvmStorage(EvmStorageKey::new(
                 target_chain_id,
                 4127477,
                 target_address,
@@ -478,9 +478,9 @@ mod tests {
         let target_chain_id = crate::primitives::ChainId::EthereumSepolia;
         let provider = EvmProvider::default();
         let keys = vec![
-            EvmFetchKeyEnvelope::Tx(EvmBlockTxKey::new(target_chain_id, 1000, 0)),
-            EvmFetchKeyEnvelope::Tx(EvmBlockTxKey::new(target_chain_id, 1001, 1)),
-            EvmFetchKeyEnvelope::Tx(EvmBlockTxKey::new(target_chain_id, 1000, 2)),
+            FetchKeyEnvelope::EvmTx(EvmBlockTxKey::new(target_chain_id, 1000, 0)),
+            FetchKeyEnvelope::EvmTx(EvmBlockTxKey::new(target_chain_id, 1001, 1)),
+            FetchKeyEnvelope::EvmTx(EvmBlockTxKey::new(target_chain_id, 1000, 2)),
         ];
         let (chain_id, fetched_keys) = categorize_fetch_keys(keys).into_iter().next().unwrap();
         assert_eq!(chain_id, target_chain_id);

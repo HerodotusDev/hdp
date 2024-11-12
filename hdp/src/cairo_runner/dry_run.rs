@@ -1,8 +1,7 @@
 use crate::constant::DRY_CAIRO_RUN_OUTPUT_FILE;
 use crate::primitives::processed_types::uint256::Uint256;
 use crate::provider::key::{
-    EvmAccountKey, EvmBlockReceiptKey, EvmBlockTxKey, EvmFetchKeyEnvelope, EvmHeaderKey,
-    EvmStorageKey,
+    EvmAccountKey, EvmBlockReceiptKey, EvmBlockTxKey, EvmHeaderKey, EvmStorageKey, FetchKeyEnvelope,
 };
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
@@ -22,13 +21,13 @@ pub type DryRunResult = Vec<DryRunnedModule>;
 #[derive(Serialize, Deserialize, Debug)]
 pub struct DryRunnedModule {
     #[serde(deserialize_with = "deserialize_fetch_keys")]
-    pub fetch_keys: Vec<EvmFetchKeyEnvelope>,
+    pub fetch_keys: Vec<FetchKeyEnvelope>,
     pub result: Uint256,
     #[serde_as(as = "UfeHex")]
     pub program_hash: Felt,
 }
 
-fn deserialize_fetch_keys<'de, D>(deserializer: D) -> Result<Vec<EvmFetchKeyEnvelope>, D::Error>
+fn deserialize_fetch_keys<'de, D>(deserializer: D) -> Result<Vec<FetchKeyEnvelope>, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
@@ -48,27 +47,27 @@ where
                 "EvmHeaderKey" => {
                     let key: EvmHeaderKey =
                         serde_json::from_value(helper.key).map_err(serde::de::Error::custom)?;
-                    EvmFetchKeyEnvelope::Header(key)
+                    FetchKeyEnvelope::EvmHeader(key)
                 }
                 "EvmAccountKey" => {
                     let key: EvmAccountKey =
                         serde_json::from_value(helper.key).map_err(serde::de::Error::custom)?;
-                    EvmFetchKeyEnvelope::Account(key)
+                    FetchKeyEnvelope::EvmAccount(key)
                 }
                 "EvmStorageKey" => {
                     let key: EvmStorageKey =
                         serde_json::from_value(helper.key).map_err(serde::de::Error::custom)?;
-                    EvmFetchKeyEnvelope::Storage(key)
+                    FetchKeyEnvelope::EvmStorage(key)
                 }
                 "EvmBlockTxKey" => {
                     let key: EvmBlockTxKey =
                         serde_json::from_value(helper.key).map_err(serde::de::Error::custom)?;
-                    EvmFetchKeyEnvelope::Tx(key)
+                    FetchKeyEnvelope::EvmTx(key)
                 }
                 "EvmBlockReceiptKey" => {
                     let key: EvmBlockReceiptKey =
                         serde_json::from_value(helper.key).map_err(serde::de::Error::custom)?;
-                    EvmFetchKeyEnvelope::TxReceipt(key)
+                    FetchKeyEnvelope::EvmTxReceipt(key)
                 }
                 _ => {
                     return Err(serde::de::Error::custom(format!(
@@ -242,7 +241,7 @@ mod tests {
 
         // Additional assertions for each key type
         match &module.fetch_keys[0] {
-            EvmFetchKeyEnvelope::Header(key) => {
+            FetchKeyEnvelope::EvmHeader(key) => {
                 assert_eq!(key.chain_id, ChainId::from_numeric_id(11155111).unwrap());
                 assert_eq!(key.block_number, 5186021);
             }
@@ -250,7 +249,7 @@ mod tests {
         }
 
         match &module.fetch_keys[1] {
-            EvmFetchKeyEnvelope::Account(key) => {
+            FetchKeyEnvelope::EvmAccount(key) => {
                 assert_eq!(key.chain_id, ChainId::from_numeric_id(11155111).unwrap());
                 assert_eq!(key.block_number, 5186023);
                 assert_eq!(
@@ -262,7 +261,7 @@ mod tests {
         }
 
         match &module.fetch_keys[2] {
-            EvmFetchKeyEnvelope::Storage(key) => {
+            FetchKeyEnvelope::EvmStorage(key) => {
                 assert_eq!(key.chain_id, ChainId::from_numeric_id(11155111).unwrap());
                 assert_eq!(key.block_number, 5186022);
                 assert_eq!(
