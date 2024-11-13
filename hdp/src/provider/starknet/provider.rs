@@ -9,7 +9,6 @@ use crate::provider::{config::ProviderConfig, error::ProviderError, indexer::Ind
 
 use super::{rpc::RpcProvider, types::GetProofOutput};
 
-type AccountProofsResult = Result<HashMap<BlockNumber, GetProofOutput>, ProviderError>;
 type StorageProofsResult = Result<HashMap<BlockNumber, GetProofOutput>, ProviderError>;
 
 pub struct StarknetProvider {
@@ -37,38 +36,6 @@ impl StarknetProvider {
         }
     }
 
-    /// Fetches the account proofs for the given block range.
-    /// The account proofs are fetched from the RPC provider.
-    ///
-    /// Return:
-    /// - Account proofs mapped by block number
-    pub async fn get_range_of_account_proofs(
-        &self,
-        from_block: BlockNumber,
-        to_block: BlockNumber,
-        increment: u64,
-        address: Felt,
-    ) -> AccountProofsResult {
-        let start_fetch = Instant::now();
-
-        let target_blocks_batch: Vec<Vec<BlockNumber>> =
-            self._chunk_block_range(from_block, to_block, increment);
-
-        let mut fetched_accounts_proofs_with_blocks_map = HashMap::new();
-        for target_blocks in target_blocks_batch {
-            fetched_accounts_proofs_with_blocks_map.extend(
-                self.rpc_provider
-                    .get_account_proofs(target_blocks, address)
-                    .await?,
-            );
-        }
-
-        let duration = start_fetch.elapsed();
-        info!("time taken (Account Proofs Fetch): {:?}", duration);
-
-        Ok(fetched_accounts_proofs_with_blocks_map)
-    }
-
     /// Fetches the storage proofs for the given block range.
     /// The storage proofs are fetched from the RPC provider.
     ///
@@ -91,7 +58,7 @@ impl StarknetProvider {
         for target_blocks in target_blocks_batch {
             processed_accounts.extend(
                 self.rpc_provider
-                    .get_storage_proofs(target_blocks, address, storage_slot)
+                    .get_storage_proofs(target_blocks, address, vec![storage_slot])
                     .await?,
             );
         }

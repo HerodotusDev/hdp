@@ -1,5 +1,5 @@
 use crate::{
-    constant::HERODOTUS_RS_INDEXER_URL,
+    constant::{HERODOTUS_RS_INDEXER_STAGING_URL, HERODOTUS_RS_INDEXER_URL},
     primitives::{
         block::header::{
             MMRDataFromNewIndexer, MMRFromNewIndexer, MMRMetaFromNewIndexer, MMRProofFromNewIndexer,
@@ -53,7 +53,7 @@ impl ChainId {
 
 /// Indexer client for fetching MMR and headers proof from Herodotus Indexer
 ///
-/// For more information, see: <https://rs-indexer.api.herodotus.cloud/swagger>
+/// For more information, see: <https://staging.rs-indexer.api.herodotus.cloud/swagger>
 ///
 /// How to use:
 /// ```rust
@@ -69,8 +69,9 @@ impl ChainId {
 
 #[derive(Clone)]
 pub struct Indexer {
+    url: String,
     client: Client,
-    pub chain_id: ChainId,
+    pub from_chain_id: ChainId,
 }
 
 #[derive(Debug)]
@@ -92,11 +93,17 @@ impl IndexerHeadersProofResponse {
 }
 
 impl Indexer {
-    pub fn new(chain_id: ChainId) -> Self {
+    pub fn new(from_chain_id: ChainId) -> Self {
         Self {
             client: Client::new(),
-            chain_id,
+            from_chain_id,
+            url: HERODOTUS_RS_INDEXER_URL.to_string(),
         }
+    }
+
+    pub fn staging(mut self) -> Self {
+        self.url = HERODOTUS_RS_INDEXER_STAGING_URL.to_string();
+        self
     }
 
     /// Fetch MMR and headers proof from Herodotus Indexer
@@ -117,10 +124,23 @@ impl Indexer {
 
         let target_length = (to_block - from_block + 1) as usize;
 
+        println!(
+            "query:{:?}",
+            &self._query(
+                from_block,
+                to_block,
+                self.from_chain_id.get_indexer_chain_id(),
+            )
+        );
+
         let response = self
             .client
-            .get(HERODOTUS_RS_INDEXER_URL)
-            .query(&self._query(from_block, to_block, self.chain_id.get_indexer_chain_id()))
+            .get(&self.url)
+            .query(&self._query(
+                from_block,
+                to_block,
+                self.from_chain_id.get_indexer_chain_id(),
+            ))
             .send()
             .await
             .map_err(IndexerError::ReqwestError)?;
@@ -164,11 +184,15 @@ impl Indexer {
         &self,
         from_block: BlockNumber,
         to_block: BlockNumber,
-        chain_id: &str,
+        from_chain_id: &str,
     ) -> Vec<(String, String)> {
+        // TODO: handle deployed_on_chain dynamically
         let query = vec![
-            ("deployed_on_chain".to_string(), chain_id.to_string()),
-            ("accumulates_chain".to_string(), chain_id.to_string()),
+            (
+                "deployed_on_chain".to_string(),
+                ChainId::EthereumSepolia.get_indexer_chain_id().to_string(),
+            ),
+            ("accumulates_chain".to_string(), from_chain_id.to_string()),
             ("hashing_function".to_string(), "poseidon".to_string()),
             ("contract_type".to_string(), "AGGREGATOR".to_string()),
             (
@@ -197,6 +221,15 @@ mod tests {
     async fn test_get_headers_proof() -> Result<(), IndexerError> {
         let indexer = Indexer::new(ChainId::EthereumSepolia);
         let response = indexer.get_headers_proof(1, 1).await?;
+        // check header length is 1
+        assert!(response.headers.len() == 1);
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_get_sn_headers_proof() -> Result<(), IndexerError> {
+        let indexer = Indexer::new(ChainId::StarknetSepolia).staging();
+        let response = indexer.get_headers_proof(250000, 250000).await?;
         // check header length is 1
         assert!(response.headers.len() == 1);
         Ok(())

@@ -29,7 +29,7 @@ impl EvmProvider {
         &self,
         fetch_keys: CategorizedFetchKeys,
     ) -> Result<ProcessedBlockProofs, ProviderError> {
-        let chain_id = self.header_provider.chain_id.to_numeric_id();
+        let chain_id = self.header_provider.from_chain_id.to_numeric_id();
         // fetch proofs using keys and construct result
         let mmr_with_headers = self.get_headers_from_keys(fetch_keys.evm_headers).await?;
         let mut accounts = if fetch_keys.evm_accounts.is_empty() {
@@ -103,7 +103,7 @@ impl EvmProvider {
                 .filter(|(block_number, _)| real_target_blocks.contains(block_number))
                 .map(|(_, header_proof)| {
                     ProcessedHeader::new(
-                        header_proof.rlp_block_header,
+                        header_proof.block_header.get_evm_block_header(),
                         header_proof.element_index,
                         header_proof.siblings_hashes,
                     )

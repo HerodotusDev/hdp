@@ -44,10 +44,10 @@ impl EvmProvider {
                 for block in block_range {
                     let (fetched_block, mmr) = headers_proofs.get(&block).unwrap();
                     let value = property.decode_field_from_rlp(&Bytes::from(
-                        fetched_block.rlp_block_header.clone(),
+                        fetched_block.block_header.get_evm_block_header(),
                     ));
                     let processed_header = ProcessedHeader::new(
-                        fetched_block.rlp_block_header.clone(),
+                        fetched_block.block_header.get_evm_block_header(),
                         fetched_block.element_index,
                         fetched_block.siblings_hashes.clone(),
                     );
@@ -83,7 +83,7 @@ impl EvmProvider {
 
                     let value = property.decode_field_from_rlp(&account);
                     let processed_header = ProcessedHeader::new(
-                        fetched_block.rlp_block_header.clone(),
+                        fetched_block.block_header.get_evm_block_header(),
                         fetched_block.element_index,
                         fetched_block.siblings_hashes.clone(),
                     );
@@ -128,7 +128,7 @@ impl EvmProvider {
                     let storage_proof = storages_and_proofs_result.get(&i).unwrap().clone();
 
                     let processed_header = ProcessedHeader::new(
-                        fetched_block.rlp_block_header.clone(),
+                        fetched_block.block_header.get_evm_block_header(),
                         fetched_block.element_index,
                         fetched_block.siblings_hashes.clone(),
                     );

@@ -6,6 +6,7 @@ use alloy::{
 };
 use alloy_rlp::{length_of_length, BufMut, Decodable, Encodable};
 use serde::{Deserialize, Deserializer, Serialize};
+use starknet_crypto::Felt;
 
 // =============================================================================
 // Header (credit: https://github.com/paradigmxyz/reth/blob/main/crates/primitives/src/header.rs#L133)
@@ -519,9 +520,44 @@ pub struct MMRProofFromNewIndexer {
     pub block_number: u64,
     pub element_hash: String,
     pub element_index: u64,
-    #[serde(rename = "rlp_block_header")]
-    pub rlp_block_header: RlpBlockHeader,
+    #[serde(flatten)]
+    pub block_header: BlockHeaderType,
     pub siblings_hashes: Vec<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(untagged)]
+pub enum BlockHeaderType {
+    Ethereum {
+        #[serde(rename = "rlp_block_header")]
+        rlp_block_header: RlpBlockHeader,
+    },
+    StarkNet {
+        #[serde(rename = "block_header")]
+        block_header: StarkNetBlockHeader,
+    },
+}
+
+impl BlockHeaderType {
+    pub fn get_evm_block_header(&self) -> RlpBlockHeader {
+        match self {
+            BlockHeaderType::Ethereum { rlp_block_header } => rlp_block_header.clone(),
+            _ => panic!("Not an Ethereum block header"),
+        }
+    }
+
+    pub fn get_sn_block_header(&self) -> StarkNetBlockHeader {
+        match self {
+            BlockHeaderType::StarkNet { block_header } => block_header.clone(),
+            _ => panic!("Not a StarkNet block header"),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct StarkNetBlockHeader {
+    #[serde(rename = "Fields")]
+    pub fields: Vec<Felt>,
 }
 
 #[cfg(test)]

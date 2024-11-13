@@ -1,5 +1,7 @@
 pub mod cairo_format;
 
+pub mod starknet;
+
 pub mod account;
 pub mod block_proofs;
 pub mod datalake_compute;
