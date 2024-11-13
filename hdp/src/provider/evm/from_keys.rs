@@ -1,7 +1,7 @@
 use super::provider::EvmProvider;
 use crate::primitives::processed_types::account::ProcessedAccount;
 use crate::primitives::processed_types::block_proofs::{
-    convert_to_mmr_with_headers, ProcessedBlockProofs,
+    convert_to_mmr_with_headers, EvmBlockProofs, ProcessedBlockProofs,
 };
 use crate::primitives::processed_types::header::ProcessedHeader;
 use crate::primitives::processed_types::mmr::MMRMeta;
@@ -55,14 +55,14 @@ impl EvmProvider {
         };
         accounts.extend(accounts_from_storage_key);
         let accounts_result: Vec<ProcessedAccount> = accounts.into_iter().collect();
-        Ok(ProcessedBlockProofs {
+        Ok(ProcessedBlockProofs::Evm(EvmBlockProofs {
             chain_id,
             mmr_with_headers: convert_to_mmr_with_headers(mmr_with_headers),
             accounts: accounts_result,
             storages: storages.into_iter().collect(),
             transactions,
             transaction_receipts,
-        })
+        }))
     }
 
     async fn get_headers_from_keys(
@@ -383,7 +383,12 @@ mod tests {
         ];
         let (chain_id, fetched_keys) = categorize_fetch_keys(keys).into_iter().next().unwrap();
         assert_eq!(chain_id, target_chain_id);
-        let proofs = provider.fetch_proofs_from_keys(fetched_keys).await.unwrap();
+        let proofs = provider
+            .fetch_proofs_from_keys(fetched_keys)
+            .await
+            .unwrap()
+            .get_evm_proofs()
+            .unwrap();
         assert_eq!(proofs.mmr_with_headers[0].headers.len(), 3);
     }
 
@@ -409,7 +414,12 @@ mod tests {
         ];
         let (chain_id, fetched_keys) = categorize_fetch_keys(keys).into_iter().next().unwrap();
         assert_eq!(chain_id, target_chain_id);
-        let proofs = provider.fetch_proofs_from_keys(fetched_keys).await.unwrap();
+        let proofs = provider
+            .fetch_proofs_from_keys(fetched_keys)
+            .await
+            .unwrap()
+            .get_evm_proofs()
+            .unwrap();
         assert_eq!(proofs.accounts[0].proofs.len(), 3);
         assert_eq!(proofs.mmr_with_headers[0].headers.len(), 3);
     }
@@ -463,7 +473,12 @@ mod tests {
         ];
         let (chain_id, fetched_keys) = categorize_fetch_keys(keys).into_iter().next().unwrap();
         assert_eq!(chain_id, target_chain_id);
-        let proofs = provider.fetch_proofs_from_keys(fetched_keys).await.unwrap();
+        let proofs = provider
+            .fetch_proofs_from_keys(fetched_keys)
+            .await
+            .unwrap()
+            .get_evm_proofs()
+            .unwrap();
         let duration = start_fetch.elapsed();
         println!("Time taken (Total Proofs Fetch): {:?}", duration);
         assert_eq!(proofs.mmr_with_headers[0].headers.len(), 6);
@@ -484,7 +499,12 @@ mod tests {
         ];
         let (chain_id, fetched_keys) = categorize_fetch_keys(keys).into_iter().next().unwrap();
         assert_eq!(chain_id, target_chain_id);
-        let proofs = provider.fetch_proofs_from_keys(fetched_keys).await.unwrap();
+        let proofs = provider
+            .fetch_proofs_from_keys(fetched_keys)
+            .await
+            .unwrap()
+            .get_evm_proofs()
+            .unwrap();
         assert_eq!(proofs.mmr_with_headers[0].headers.len(), 2);
         assert_eq!(proofs.transactions.len(), 3);
     }

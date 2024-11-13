@@ -129,11 +129,11 @@ pub fn categorize_fetch_keys(
 #[derive(Debug, Clone, Serialize, PartialEq, Eq, Hash)]
 pub struct StarknetHeaderKey {
     pub chain_id: ChainId,
-    pub block_number: Felt,
+    pub block_number: u64,
 }
 
 impl StarknetHeaderKey {
-    pub fn new(chain_id: ChainId, block_number: Felt) -> Self {
+    pub fn new(chain_id: ChainId, block_number: u64) -> Self {
         Self {
             chain_id,
             block_number,
@@ -149,7 +149,7 @@ impl<'de> Deserialize<'de> for StarknetHeaderKey {
         #[derive(Deserialize)]
         struct Helper {
             chain_id: u128,
-            block_number: Felt,
+            block_number: u64,
         }
 
         let helper = Helper::deserialize(deserializer)?;
@@ -164,7 +164,7 @@ impl<'de> Deserialize<'de> for StarknetHeaderKey {
 #[derive(Debug, Clone, Serialize, PartialEq, Eq, Hash)]
 pub struct StarknetStorageKey {
     pub chain_id: ChainId,
-    pub block_number: Felt,
+    pub block_number: u64,
     pub contract_address: Felt,
     pub storage_address: Felt,
 }
@@ -172,7 +172,7 @@ pub struct StarknetStorageKey {
 impl StarknetStorageKey {
     pub fn new(
         chain_id: ChainId,
-        block_number: Felt,
+        block_number: u64,
         contract_address: Felt,
         storage_address: Felt,
     ) -> Self {
@@ -193,7 +193,7 @@ impl<'de> Deserialize<'de> for StarknetStorageKey {
         #[derive(Deserialize)]
         struct Helper {
             chain_id: u128,
-            block_number: Felt,
+            block_number: u64,
             contract_address: Felt,
             storage_address: Felt,
         }
@@ -658,26 +658,26 @@ mod tests {
 
     #[test]
     fn test_parse_json_sn_header_key() {
-        let json = r#"{"type": "StarknetHeaderKey", "key": {"chain_id": 393402133025997798000961, "block_number": "0x1234" }}"#;
+        let json = r#"{"type": "StarknetHeaderKey", "key": {"chain_id": 393402133025997798000961, "block_number": 4660 }}"#;
         let parsed: FetchKeyEnvelope = serde_json::from_str(json).unwrap();
         assert_eq!(
             parsed,
             FetchKeyEnvelope::StarknetHeader(StarknetHeaderKey::new(
                 ChainId::StarknetSepolia,
-                Felt::from_hex("0x1234").unwrap()
+                4660
             ))
         );
     }
 
     #[test]
     fn test_parse_json_sn_storage_key() {
-        let json = r#"{"type": "StarknetStorageKey", "key": {"chain_id": 393402133025997798000961, "block_number": "0x1234", "contract_address": "0x1234", "storage_address": "0x1234" }}"#;
+        let json = r#"{"type": "StarknetStorageKey", "key": {"chain_id": 393402133025997798000961, "block_number": 4660, "contract_address": "0x1234", "storage_address": "0x1234" }}"#;
         let parsed: FetchKeyEnvelope = serde_json::from_str(json).unwrap();
         assert_eq!(
             parsed,
             FetchKeyEnvelope::StarknetStorage(StarknetStorageKey::new(
                 ChainId::StarknetSepolia,
-                Felt::from_hex("0x1234").unwrap(),
+                4660,
                 Felt::from_hex("0x1234").unwrap(),
                 Felt::from_hex("0x1234").unwrap()
             ))

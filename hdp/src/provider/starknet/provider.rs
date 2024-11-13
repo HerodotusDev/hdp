@@ -1,7 +1,8 @@
-use std::{collections::HashMap, time::Instant};
+use std::{collections::HashMap, str::FromStr, time::Instant};
 
 use alloy::primitives::BlockNumber;
 use itertools::Itertools;
+use reqwest::Url;
 use starknet_types_core::felt::Felt;
 use tracing::info;
 
@@ -16,23 +17,28 @@ pub struct StarknetProvider {
     pub(crate) rpc_provider: RpcProvider,
     /// Header provider
     //TODO: indexer is not supported for starknet yet
-    pub(crate) _header_provider: Indexer,
+    pub(crate) header_provider: Indexer,
 }
 
 #[cfg(feature = "test_utils")]
 impl Default for StarknetProvider {
     fn default() -> Self {
-        Self::new(&ProviderConfig::default())
+        Self::new(&ProviderConfig {
+            provider_url: Url::from_str("https://pathfinder.sepolia.iosis.tech/").unwrap(),
+            chain_id: crate::primitives::ChainId::StarknetSepolia,
+            max_requests: 1,
+        })
     }
 }
 
 impl StarknetProvider {
     pub fn new(config: &ProviderConfig) -> Self {
         let rpc_provider = RpcProvider::new(config.provider_url.to_owned(), config.max_requests);
-        let indexer = Indexer::new(config.chain_id);
+        // TODO: for now starknet is only supported on staging environmnet
+        let indexer = Indexer::new(config.chain_id).staging();
         Self {
             rpc_provider,
-            _header_provider: indexer,
+            header_provider: indexer,
         }
     }
 
@@ -84,5 +90,46 @@ impl StarknetProvider {
             .into_iter()
             .map(|chunk| chunk.collect())
             .collect()
+    }
+
+    /// Chunks the blocks range into smaller ranges of 800 blocks.
+    /// It simply consider the number of blocks in the range and divide it by 800.
+    /// This is targeted for account and storage proofs in optimized way
+    pub(crate) fn _chunk_vec_blocks_keys(
+        &self,
+        blocks: Vec<(BlockNumber, Vec<Felt>)>,
+    ) -> Vec<Vec<(BlockNumber, Vec<Felt>)>> {
+        blocks.chunks(800).map(|chunk| chunk.to_vec()).collect()
+    }
+
+    /// Chunks the blocks into smaller ranges of 800 blocks.
+    /// This is targeted for indexer to fetch header proofs in optimized way
+    pub(crate) fn _chunk_vec_blocks_for_indexer(
+        &self,
+        blocks: Vec<BlockNumber>,
+    ) -> Vec<Vec<BlockNumber>> {
+        // Sort the blocks
+        let mut sorted_blocks = blocks.clone();
+        sorted_blocks.sort();
+
+        let mut result: Vec<Vec<BlockNumber>> = Vec::new();
+        let mut current_chunk: Vec<BlockNumber> = Vec::new();
+
+        for &block in sorted_blocks.iter() {
+            // Check if the current chunk is empty or if the difference is within 800 blocks
+            if current_chunk.is_empty() || block - current_chunk[0] <= 800 {
+                current_chunk.push(block);
+            } else {
+                // Push the current chunk to result and start a new chunk
+                result.push(current_chunk);
+                current_chunk = vec![block];
+            }
+        }
+
+        if !current_chunk.is_empty() {
+            result.push(current_chunk);
+        }
+
+        result
     }
 }

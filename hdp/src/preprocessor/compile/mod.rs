@@ -6,7 +6,8 @@ use std::collections::{HashMap, HashSet};
 use thiserror::Error;
 
 use crate::primitives::processed_types::block_proofs::{
-    convert_to_mmr_with_headers, mmr_with_header_vec_to_map, MMRWithHeader, ProcessedBlockProofs,
+    convert_to_mmr_with_headers, mmr_with_header_vec_to_map, EvmBlockProofs, MMRWithHeader,
+    ProcessedBlockProofs,
 };
 use crate::primitives::processed_types::{
     account::ProcessedAccount, receipt::ProcessedReceipt, storage::ProcessedStorage,
@@ -144,14 +145,14 @@ impl CompilationResult {
                 .cloned()
                 .unwrap_or_default();
 
-            let processed_block = ProcessedBlockProofs {
+            let processed_block = ProcessedBlockProofs::Evm(EvmBlockProofs {
                 chain_id,
                 mmr_with_headers: mmr_with_headers.into_iter().collect(),
                 accounts: accounts.into_iter().collect(),
                 storages: storages.into_iter().collect(),
                 transactions: transactions.into_iter().collect(),
                 transaction_receipts: transaction_receipts.into_iter().collect(),
-            };
+            });
 
             processed_block_vec.push(processed_block);
         }

@@ -160,6 +160,8 @@ async fn pathfinder_get_proof(
         }
     });
 
+    println!("request: {:?}", request);
+
     let response = provider.post(url).json(&request).send().await?;
     let response_json =
         serde_json::from_str::<serde_json::Value>(&response.text().await?)?["result"].clone();
@@ -199,8 +201,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_100_range_storage_with_proof() {
-        let target_block_start = 56400;
-        let target_block_end = 56500;
+        let target_block_start = 250000;
+        let target_block_end = 250001;
         let target_block_range = (target_block_start..=target_block_end).collect::<Vec<u64>>();
         let provider = test_provider();
         let proof = provider
@@ -211,7 +213,7 @@ mod tests {
                 )
                 .unwrap(),
                 vec![Felt::from_str(
-                    "0x004C4FB1AB068F6039D5780C68DD0FA2F8742CCEB3426D19667778CA7F3518A9",
+                    "0x032ce6490b615c86e31587e14d6140e5a46231d9b8bf870fd708d71140c3ed2f",
                 )
                 .unwrap()],
             )
@@ -237,7 +239,7 @@ mod tests {
 
         assert_eq!(
             output.contract_data.clone().unwrap().storage_proofs[0].len(),
-            5
+            4
         );
     }
 

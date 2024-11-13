@@ -13,9 +13,10 @@ impl AsCairoFormat for BaseProcessedBlockProofs {
     type Output = ProcessedBlockProofs;
 
     fn as_cairo_format(&self) -> Self::Output {
+        let evm_proof = self.clone().get_evm_proofs().unwrap();
         ProcessedBlockProofs {
-            chain_id: self.chain_id,
-            mmr_with_headers: self
+            chain_id: evm_proof.chain_id,
+            mmr_with_headers: evm_proof
                 .mmr_with_headers
                 .iter()
                 .map(|mmr_with_header| MMRWithHeader {
@@ -27,22 +28,22 @@ impl AsCairoFormat for BaseProcessedBlockProofs {
                         .collect(),
                 })
                 .collect(),
-            accounts: self
+            accounts: evm_proof
                 .accounts
                 .iter()
                 .map(|account| account.as_cairo_format())
                 .collect(),
-            storages: self
+            storages: evm_proof
                 .storages
                 .iter()
                 .map(|storage| storage.as_cairo_format())
                 .collect(),
-            transactions: self
+            transactions: evm_proof
                 .transactions
                 .iter()
                 .map(|transaction| transaction.as_cairo_format())
                 .collect(),
-            transaction_receipts: self
+            transaction_receipts: evm_proof
                 .transaction_receipts
                 .iter()
                 .map(|receipt| receipt.as_cairo_format())

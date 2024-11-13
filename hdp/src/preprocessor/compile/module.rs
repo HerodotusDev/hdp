@@ -79,7 +79,11 @@ impl Compilable for ModuleVec {
                 .get(&chain_id)
                 .expect("target task's chain had not been configured.");
             let provider = new_provider_from_config(target_provider_config);
-            let results = provider.fetch_proofs_from_keys(keys).await?;
+            let results = provider
+                .fetch_proofs_from_keys(keys)
+                .await?
+                .get_evm_proofs()
+                .unwrap();
 
             // Update the maps with fetched results
             mmr_header_map.insert(

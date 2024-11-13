@@ -124,15 +124,6 @@ impl Indexer {
 
         let target_length = (to_block - from_block + 1) as usize;
 
-        println!(
-            "query:{:?}",
-            &self._query(
-                from_block,
-                to_block,
-                self.from_chain_id.get_indexer_chain_id(),
-            )
-        );
-
         let response = self
             .client
             .get(&self.url)
@@ -144,6 +135,15 @@ impl Indexer {
             .send()
             .await
             .map_err(IndexerError::ReqwestError)?;
+
+        println!(
+            "query: {:?}",
+            self._query(
+                from_block,
+                to_block,
+                self.from_chain_id.get_indexer_chain_id()
+            )
+        );
 
         // validate status
         if response.status().is_success() {

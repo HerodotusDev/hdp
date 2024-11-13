@@ -4,13 +4,59 @@ use serde::{Deserialize, Serialize};
 
 use super::{
     account::ProcessedAccount, header::ProcessedHeader, mmr::MMRMeta, receipt::ProcessedReceipt,
-    storage::ProcessedStorage, transaction::ProcessedTransaction,
+    starknet, storage::ProcessedStorage, transaction::ProcessedTransaction,
 };
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
+#[serde(untagged)]
+pub enum ProcessedBlockProofs {
+    Evm(EvmBlockProofs),
+    StarkNet(StarkNetBlockProofs),
+}
+
+impl ProcessedBlockProofs {
+    pub fn get_chain_id(&self) -> u128 {
+        match self {
+            ProcessedBlockProofs::Evm(evm) => evm.chain_id,
+            ProcessedBlockProofs::StarkNet(starknet) => starknet.chain_id,
+        }
+    }
+
+    pub fn get_evm_proofs(self) -> Option<EvmBlockProofs> {
+        match self {
+            ProcessedBlockProofs::Evm(evm) => Some(evm),
+            ProcessedBlockProofs::StarkNet(_) => None,
+        }
+    }
+
+    pub fn get_starknet_proofs(self) -> Option<StarkNetBlockProofs> {
+        match self {
+            ProcessedBlockProofs::Evm(_) => None,
+            ProcessedBlockProofs::StarkNet(starknet) => Some(starknet),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
+pub struct StarkNetBlockProofs {
+    pub chain_id: u128,
+    pub mmr_with_headers: Vec<MMRWithHeaderStarkNet>,
+    pub storages: Vec<starknet::storage::ProcessedStorage>,
+    // Since accounts, transactions, and transaction_receipts do not exist for StarkNet,
+    // we omit them or include any StarkNet-specific fields if necessary.
+    // Add any StarkNet-specific fields here.
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
+pub struct MMRWithHeaderStarkNet {
+    pub mmr_meta: MMRMeta,
+    pub headers: Vec<starknet::header::ProcessedHeader>,
+}
 
 /// Provider should fetch all the proofs and rlp values from given keys.
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
-pub struct ProcessedBlockProofs {
+pub struct EvmBlockProofs {
     pub chain_id: u128,
     pub mmr_with_headers: Vec<MMRWithHeader>,
     pub accounts: Vec<ProcessedAccount>,
@@ -66,6 +112,17 @@ pub fn convert_to_mmr_with_headers(
 ) -> Vec<MMRWithHeader> {
     map.into_iter()
         .map(|(mmr_meta, headers)| MMRWithHeader {
+            mmr_meta,
+            headers: headers.into_iter().collect(),
+        })
+        .collect()
+}
+
+pub fn convert_to_mmr_with_sn_headers(
+    map: HashMap<MMRMeta, HashSet<starknet::header::ProcessedHeader>>,
+) -> Vec<MMRWithHeaderStarkNet> {
+    map.into_iter()
+        .map(|(mmr_meta, headers)| MMRWithHeaderStarkNet {
             mmr_meta,
             headers: headers.into_iter().collect(),
         })
