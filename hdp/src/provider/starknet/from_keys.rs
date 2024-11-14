@@ -249,7 +249,5 @@ mod tests {
         let duration = start_fetch.elapsed();
         println!("Time taken (Total Proofs Fetch): {:?}", duration);
         assert_eq!(proofs.mmr_with_headers[0].headers.len(), 6);
-
-        // assert_eq!(proofs.storages[0].proofs.len(), 6);
     }
 }

@@ -160,12 +160,9 @@ async fn pathfinder_get_proof(
         }
     });
 
-    println!("request: {:?}", request);
-
     let response = provider.post(url).json(&request).send().await?;
     let response_json =
         serde_json::from_str::<serde_json::Value>(&response.text().await?)?["result"].clone();
-    println!("response_json: {:?}", response_json);
     let get_proof_output: GetProofOutput = serde_json::from_value(response_json)?;
     Ok(get_proof_output)
 }
