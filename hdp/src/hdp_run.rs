@@ -23,6 +23,7 @@ pub struct HdpRunConfig {
     pub batch_proof_file: Option<PathBuf>,
     pub cairo_pie_file: Option<PathBuf>,
     pub save_fetch_keys_file: Option<PathBuf>,
+    pub destination_chain_id: ChainId,
 }
 
 #[cfg(feature = "test_utils")]
@@ -37,6 +38,7 @@ impl Default for HdpRunConfig {
             cairo_pie_file: None,
             batch_proof_file: None,
             save_fetch_keys_file: None,
+            destination_chain_id: ChainId::Unknown,
         }
     }
 }
@@ -50,6 +52,7 @@ impl HdpRunConfig {
         cli_save_fetch_keys_file: Option<PathBuf>,
         batch_proof_file: Option<PathBuf>,
         cli_cairo_pie_file: Option<PathBuf>,
+        destination_chain_id: ChainId,
     ) -> Self {
         let mut provider_config = HashMap::new();
 
@@ -102,6 +105,7 @@ impl HdpRunConfig {
             save_fetch_keys_file,
             batch_proof_file,
             cairo_pie_file: cli_cairo_pie_file,
+            destination_chain_id,
         };
 
         debug!("Running with configuration: {:#?}", config);
@@ -203,6 +207,7 @@ mod tests {
             None,
             None,
             None,
+            ChainId::EthereumSepolia,
         );
 
         // Assert provider configurations

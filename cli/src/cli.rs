@@ -101,6 +101,7 @@ pub async fn module_entry_run(args: RunModuleArgs) -> Result<()> {
         args.save_fetch_keys_file,
         args.batch_proof_file,
         args.cairo_pie_file,
+        args.destination_chain_id,
     );
     let module = Module::new_from_str(
         args.program_hash,
@@ -125,6 +126,7 @@ pub async fn datalake_entry_run(args: RunDatalakeArgs) -> Result<()> {
         None,
         args.batch_proof_file,
         args.cairo_pie_file,
+        args.destination_chain_id,
     );
     let parsed_datalake = match args.datalake {
         DataLakeCommands::BlockSampled {
@@ -172,6 +174,10 @@ pub async fn entry_run(args: RunArgs) -> Result<()> {
         fs::read_to_string(args.request_file).expect("No request file exist in the path");
     let parsed: SubmitBatchQuery = serde_json::from_str(&request_context)
         .expect("Invalid format of request. Cannot parse it.");
+    let destination_chain_id = args
+        .destination_chain_id
+        .unwrap_or(parsed.destination_chain_id);
+
     let config = hdp_run::HdpRunConfig::init(
         args.dry_run_cairo_file,
         args.sound_run_cairo_file,
@@ -180,6 +186,7 @@ pub async fn entry_run(args: RunArgs) -> Result<()> {
         None,
         args.batch_proof_file,
         args.cairo_pie_file,
+        destination_chain_id,
     );
     let module_registry = ModuleRegistry::new();
     let mut task_envelopes = Vec::new();

@@ -314,6 +314,12 @@ pub async fn run_interactive() -> anyhow::Result<()> {
     if allow_run {
         println!("Make sure to position correct rpc url related env variables.");
 
+        let destination_chain_id: ChainId = inquire::Text::new("Enter destination chain id:")
+            .with_help_message("Enter destination chain id")
+            .with_default("ETHEREUM_SEPOLIA")
+            .prompt()?
+            .parse()?;
+
         let output_file: PathBuf = inquire::Text::new("Enter Batch proof file path: ")
             .with_default("batch.json")
             .prompt()?
@@ -334,6 +340,7 @@ pub async fn run_interactive() -> anyhow::Result<()> {
             None,
             Some(output_file),
             Some(pie_file),
+            destination_chain_id,
         );
 
         hdp::run(&config, tasks).await?

@@ -1,3 +1,5 @@
+use hdp::primitives::ChainId;
+
 use crate::commands::Parser;
 use std::path::PathBuf;
 
@@ -39,4 +41,8 @@ pub struct RunArgs {
     /// This will trigger processing(=pie generation) step
     #[arg(short, long, requires("program_input_file"))]
     pub cairo_pie_file: Option<PathBuf>,
+
+    /// Destination chain id
+    #[arg(long)]
+    pub destination_chain_id: Option<ChainId>,
 }

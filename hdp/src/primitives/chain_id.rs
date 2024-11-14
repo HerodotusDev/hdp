@@ -11,6 +11,7 @@ pub enum ChainId {
     EthereumSepolia,
     StarknetMainnet,
     StarknetSepolia,
+    Unknown,
 }
 
 #[derive(Error, Debug, PartialEq)]
@@ -75,6 +76,7 @@ impl Display for ChainId {
             ChainId::EthereumSepolia => write!(f, "ETHEREUM_SEPOLIA"),
             ChainId::StarknetMainnet => write!(f, "STARKNET_MAINNET"),
             ChainId::StarknetSepolia => write!(f, "STARKNET_SEPOLIA"),
+            ChainId::Unknown => write!(f, "UNKNOWN"),
         }
     }
 }
@@ -86,6 +88,7 @@ impl Debug for ChainId {
             ChainId::EthereumSepolia => write!(f, "ETHEREUM_SEPOLIA"),
             ChainId::StarknetMainnet => write!(f, "STARKNET_MAINNET"),
             ChainId::StarknetSepolia => write!(f, "STARKNET_SEPOLIA"),
+            ChainId::Unknown => write!(f, "UNKNOWN"),
         }
     }
 }
@@ -106,6 +109,7 @@ impl ChainId {
             ChainId::EthereumSepolia => 11155111,
             ChainId::StarknetMainnet => 23448594291968334,
             ChainId::StarknetSepolia => 393402133025997798000961,
+            ChainId::Unknown => 0,
         }
     }
 

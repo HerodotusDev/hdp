@@ -47,6 +47,7 @@ impl ChainId {
             ChainId::EthereumSepolia => "11155111",
             ChainId::StarknetMainnet => "STARKNET",
             ChainId::StarknetSepolia => "SN_SEPOLIA",
+            ChainId::Unknown => "UNKNOWN",
         }
     }
 }
