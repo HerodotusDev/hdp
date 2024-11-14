@@ -38,7 +38,7 @@ impl Default for HdpRunConfig {
             cairo_pie_file: None,
             batch_proof_file: None,
             save_fetch_keys_file: None,
-            destination_chain_id: ChainId::Unknown,
+            destination_chain_id: ChainId::EthereumSepolia,
         }
     }
 }
