@@ -117,14 +117,13 @@ impl StarknetProvider {
         // group by address => block range => storage keys
         let mut address_to_block_range_storage_keys: HashMap<Felt, HashMap<u64, Vec<Felt>>> =
             HashMap::new();
-        let mut chain_id = None;
+        let chain_id = keys.iter().map(|x| x.chain_id).next().unwrap();
         for key in keys {
             let mapped_value = address_to_block_range_storage_keys
                 .entry(key.contract_address)
                 .or_default();
             let storage_keys = mapped_value.entry(key.block_number).or_default();
             storage_keys.push(key.storage_address);
-            chain_id = Some(key.chain_id);
         }
 
         // loop through each address and chunk fetch requests
@@ -150,7 +149,7 @@ impl StarknetProvider {
                 for (block_number, storage_keys) in target {
                     let proof = storage_proof.get(&block_number).unwrap();
                     let storage_proof_of_block = SNProcessedStorage::new(
-                        chain_id.unwrap(),
+                        chain_id,
                         block_number,
                         address,
                         storage_keys,
@@ -204,37 +203,37 @@ mod tests {
         let keys = vec![
             FetchKeyEnvelope::StarknetStorage(StarknetStorageKey::new(
                 target_chain_id,
-                250000,
+                208473,
                 target_address,
                 target_slot,
             )),
             FetchKeyEnvelope::StarknetStorage(StarknetStorageKey::new(
                 target_chain_id,
-                250001,
+                208483,
                 target_address,
                 target_slot,
             )),
             FetchKeyEnvelope::StarknetStorage(StarknetStorageKey::new(
                 target_chain_id,
-                250002,
+                208383,
                 target_address,
                 target_slot,
             )),
             FetchKeyEnvelope::StarknetStorage(StarknetStorageKey::new(
                 target_chain_id,
-                250003,
+                208384,
                 target_address,
                 target_slot,
             )),
             FetchKeyEnvelope::StarknetStorage(StarknetStorageKey::new(
                 target_chain_id,
-                250004,
+                208385,
                 target_address,
                 target_slot,
             )),
             FetchKeyEnvelope::StarknetStorage(StarknetStorageKey::new(
                 target_chain_id,
-                250005,
+                208386,
                 target_address,
                 target_slot,
             )),
@@ -250,7 +249,5 @@ mod tests {
         let duration = start_fetch.elapsed();
         println!("Time taken (Total Proofs Fetch): {:?}", duration);
         assert_eq!(proofs.mmr_with_headers[0].headers.len(), 6);
-
-        // assert_eq!(proofs.storages[0].proofs.len(), 6);
     }
 }

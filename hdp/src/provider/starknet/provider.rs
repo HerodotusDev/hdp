@@ -1,8 +1,11 @@
-use std::{collections::HashMap, str::FromStr, time::Instant};
-
 use alloy::primitives::BlockNumber;
 use itertools::Itertools;
+#[cfg(feature = "test_utils")]
 use reqwest::Url;
+#[cfg(feature = "test_utils")]
+use std::str::FromStr;
+use std::{collections::HashMap, time::Instant};
+
 use starknet_types_core::felt::Felt;
 use tracing::info;
 

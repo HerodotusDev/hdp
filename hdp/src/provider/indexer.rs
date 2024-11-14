@@ -54,7 +54,7 @@ impl ChainId {
 
 /// Indexer client for fetching MMR and headers proof from Herodotus Indexer
 ///
-/// For more information, see: <https://staging.rs-indexer.api.herodotus.cloud/swagger>
+/// For more information, see: <https://rs-indexer.api.herodotus.cloud/swagger>
 ///
 /// How to use:
 /// ```rust
@@ -102,6 +102,9 @@ impl Indexer {
         }
     }
 
+    /// Set indexer environment to staging
+    ///
+    /// Check out documentation: <https://staging.rs-indexer.api.herodotus.cloud/swagger>
     pub fn staging(mut self) -> Self {
         self.url = HERODOTUS_RS_INDEXER_STAGING_URL.to_string();
         self
@@ -136,15 +139,6 @@ impl Indexer {
             .send()
             .await
             .map_err(IndexerError::ReqwestError)?;
-
-        println!(
-            "query: {:?}",
-            self._query(
-                from_block,
-                to_block,
-                self.from_chain_id.get_indexer_chain_id()
-            )
-        );
 
         // validate status
         if response.status().is_success() {
@@ -230,7 +224,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_sn_headers_proof() -> Result<(), IndexerError> {
         let indexer = Indexer::new(ChainId::StarknetSepolia).staging();
-        let response = indexer.get_headers_proof(250000, 250000).await?;
+        let response = indexer.get_headers_proof(208483, 208483).await?;
         // check header length is 1
         assert!(response.headers.len() == 1);
         Ok(())

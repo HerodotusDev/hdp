@@ -202,7 +202,7 @@ impl EvmProvider {
         let start_fetch = Instant::now();
 
         let mut fetched_transaction_proofs = vec![];
-        let mut tx_trie_provider = TxsMptHandler::new(self.tx_provider_url.clone()).unwrap();
+        let mut tx_trie_provider = TxsMptHandler::new(self.tx_provider_url.clone())?;
 
         loop {
             let trie_response = tx_trie_provider
@@ -232,8 +232,7 @@ impl EvmProvider {
             }
 
             let tx_trie_proof = tx_trie_provider
-                .get_proof(tx_index)
-                .unwrap()
+                .get_proof(tx_index)?
                 .into_iter()
                 .map(Bytes::from)
                 .collect::<Vec<_>>();
@@ -302,8 +301,7 @@ impl EvmProvider {
             }
 
             let tx_receipt_trie_proof = tx_receipt_trie_provider
-                .get_proof(tx_index)
-                .unwrap()
+                .get_proof(tx_index)?
                 .into_iter()
                 .map(Bytes::from)
                 .collect::<Vec<_>>();

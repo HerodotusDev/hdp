@@ -92,7 +92,6 @@ impl CompilationResult {
     pub fn from_single_chain(
         chain_id: u128,
         task_results: Vec<U256>,
-
         mmr_with_headers: HashSet<MMRWithHeader>,
         accounts: HashSet<ProcessedAccount>,
         storages: HashSet<ProcessedStorage>,
