@@ -171,8 +171,10 @@ impl StarknetProvider {
 #[cfg(feature = "test_utils")]
 mod tests {
     use super::*;
+    use crate::provider::key::{categorize_fetch_keys, FetchKeyEnvelope};
     use dotenv::dotenv;
     use starknet_crypto::Felt;
+    use std::str::FromStr;
     use std::sync::Once;
 
     static INIT: Once = Once::new();
@@ -186,10 +188,6 @@ mod tests {
     #[tokio::test]
     #[cfg(feature = "test_utils")]
     async fn test_proofs_from_storage_keys() {
-        use std::str::FromStr;
-
-        use crate::provider::key::{categorize_fetch_keys, FetchKeyEnvelope};
-
         initialize();
         let start_fetch = Instant::now();
         let target_chain_id = crate::primitives::ChainId::StarknetSepolia;
