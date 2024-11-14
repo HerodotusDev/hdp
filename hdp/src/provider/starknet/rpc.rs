@@ -201,8 +201,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_100_range_storage_with_proof() {
-        let target_block_start = 250000;
-        let target_block_end = 250001;
+        let target_block_start = 208383;
+        let target_block_end = 208483;
         let target_block_range = (target_block_start..=target_block_end).collect::<Vec<u64>>();
         let provider = test_provider();
         let proof = provider
@@ -225,15 +225,15 @@ mod tests {
 
         assert_eq!(
             output.state_commitment.unwrap(),
-            Felt::from_str("0x598cf91d9a3a7176d01926e8442b8bd83299168f723cb2d52080e895400d9a1")
+            Felt::from_str("0x16ba8b273b95235c11e0ad8c4238a510282495280df5abe7cbfb3c53e2d9c2d")
                 .unwrap()
         );
 
-        assert_eq!(output.contract_proof.len(), 17);
+        assert_eq!(output.contract_proof.len(), 19);
 
         assert_eq!(
             output.class_commitment.unwrap(),
-            Felt::from_str("0x324d06b207f2891ef395ba1e7a0ef92b61a5772a294a289362dc37b0469c453")
+            Felt::from_str("0x20cce483edc6fbb1290469dfacd96656414689fe82cf60bcc73cda7a1a8a90f")
                 .unwrap()
         );
 

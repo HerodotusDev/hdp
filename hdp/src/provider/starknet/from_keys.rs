@@ -204,37 +204,37 @@ mod tests {
         let keys = vec![
             FetchKeyEnvelope::StarknetStorage(StarknetStorageKey::new(
                 target_chain_id,
-                250000,
+                208473,
                 target_address,
                 target_slot,
             )),
             FetchKeyEnvelope::StarknetStorage(StarknetStorageKey::new(
                 target_chain_id,
-                250001,
+                208483,
                 target_address,
                 target_slot,
             )),
             FetchKeyEnvelope::StarknetStorage(StarknetStorageKey::new(
                 target_chain_id,
-                250002,
+                208383,
                 target_address,
                 target_slot,
             )),
             FetchKeyEnvelope::StarknetStorage(StarknetStorageKey::new(
                 target_chain_id,
-                250003,
+                208384,
                 target_address,
                 target_slot,
             )),
             FetchKeyEnvelope::StarknetStorage(StarknetStorageKey::new(
                 target_chain_id,
-                250004,
+                208385,
                 target_address,
                 target_slot,
             )),
             FetchKeyEnvelope::StarknetStorage(StarknetStorageKey::new(
                 target_chain_id,
-                250005,
+                208386,
                 target_address,
                 target_slot,
             )),
