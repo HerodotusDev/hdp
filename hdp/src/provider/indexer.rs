@@ -101,6 +101,9 @@ impl Indexer {
         }
     }
 
+    /// Set indexer environment to staging
+    ///
+    /// Check out documentation: <https://staging.rs-indexer.api.herodotus.cloud/swagger>
     pub fn staging(mut self) -> Self {
         self.url = HERODOTUS_RS_INDEXER_STAGING_URL.to_string();
         self
@@ -135,15 +138,6 @@ impl Indexer {
             .send()
             .await
             .map_err(IndexerError::ReqwestError)?;
-
-        println!(
-            "query: {:?}",
-            self._query(
-                from_block,
-                to_block,
-                self.from_chain_id.get_indexer_chain_id()
-            )
-        );
 
         // validate status
         if response.status().is_success() {

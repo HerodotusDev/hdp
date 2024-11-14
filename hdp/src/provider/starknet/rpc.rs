@@ -242,38 +242,4 @@ mod tests {
             4
         );
     }
-
-    // #[tokio::test]
-    // async fn test_get_100_range_account_with_proof() {
-    //     let target_block_start = 156600;
-    //     let target_block_end = 156700;
-    //     let target_block_range = (target_block_start..=target_block_end).collect::<Vec<u64>>();
-    //     let provider = test_provider();
-    //     let proof = provider
-    //         .get_account_proofs(
-    //             target_block_range.clone(),
-    //             Felt::from_str("0x23371b227eaecd8e8920cd429d2cd0f3fee6abaacca08d3ab82a7cdd")
-    //                 .unwrap(),
-    //         )
-    //         .await
-    //         .unwrap();
-
-    //     assert_eq!(proof.len(), target_block_range.len());
-    //     let output = proof.get(&target_block_start).unwrap();
-    //     println!("Proof: {:?}", output);
-    //     assert_eq!(
-    //         output.state_commitment.unwrap(),
-    //         Felt::from_str("0x26da0f5f0849cf69b4872ef5dced3ec68ce28c5e3f53207280113abb7feb158")
-    //             .unwrap()
-    //     );
-    //     assert_eq!(output.contract_proof.len(), 23);
-
-    //     assert_eq!(
-    //         output.class_commitment.unwrap(),
-    //         Felt::from_str("0x46c1a0374b8ccf8d928e62ef40974304732c8a28f10b2c494adfabfcff0fa0a")
-    //             .unwrap()
-    //     );
-
-    //     assert!(output.contract_data.is_none());
-    // }
 }

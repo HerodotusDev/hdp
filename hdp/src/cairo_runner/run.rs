@@ -93,7 +93,8 @@ impl Runner {
         output: String,
         cairo_run_output_path: &PathBuf,
     ) -> Result<CairoRunOutput, CairoRunnerError> {
-        let number_of_steps = Regex::new(r"Number of steps: (\d+)").unwrap();
+        let number_of_steps =
+            Regex::new(r"Number of steps: (\d+)").expect("Failed to create regex");
         if let Some(number_of_steps_caps) = number_of_steps.captures(&output) {
             let number_of_steps = number_of_steps_caps[1].parse::<usize>()?;
             info!("number of steps: {:#?}", number_of_steps);
