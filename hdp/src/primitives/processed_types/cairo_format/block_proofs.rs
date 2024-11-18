@@ -54,7 +54,7 @@ impl AsCairoFormat for BaseProcessedBlockProofs {
 
 #[derive(Serialize, Deserialize)]
 pub struct ProcessedBlockProofs {
-    pub chain_id: u128,
+    pub chain_id: String,
     pub mmr_with_headers: Vec<MMRWithHeader>,
     pub accounts: Vec<ProcessedAccount>,
     pub storages: Vec<ProcessedStorage>,

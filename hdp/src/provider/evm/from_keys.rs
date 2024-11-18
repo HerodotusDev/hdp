@@ -14,6 +14,7 @@ use crate::provider::key::{
     CategorizedFetchKeys, EvmAccountKey, EvmBlockReceiptKey, EvmBlockTxKey, EvmHeaderKey,
     EvmStorageKey,
 };
+use alloy::hex;
 use alloy::primitives::{Address, BlockNumber, Bytes, TxIndex, B256};
 use alloy::transports::{RpcError, TransportErrorKind};
 use eth_trie_proofs::tx_receipt_trie::TxReceiptsMptHandler;
@@ -56,7 +57,7 @@ impl EvmProvider {
         accounts.extend(accounts_from_storage_key);
         let accounts_result: Vec<ProcessedAccount> = accounts.into_iter().collect();
         Ok(ProcessedBlockProofs::Evm(EvmBlockProofs {
-            chain_id,
+            chain_id: format!("0x{}", hex::encode(chain_id.to_be_bytes())),
             mmr_with_headers: convert_to_mmr_with_headers(mmr_with_headers),
             accounts: accounts_result,
             storages: storages.into_iter().collect(),

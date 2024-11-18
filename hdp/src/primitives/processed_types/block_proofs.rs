@@ -15,10 +15,10 @@ pub enum ProcessedBlockProofs {
 }
 
 impl ProcessedBlockProofs {
-    pub fn get_chain_id(&self) -> u128 {
+    pub fn get_chain_id(&self) -> String {
         match self {
-            ProcessedBlockProofs::Evm(evm) => evm.chain_id,
-            ProcessedBlockProofs::StarkNet(starknet) => starknet.chain_id,
+            ProcessedBlockProofs::Evm(evm) => evm.chain_id.to_owned(),
+            ProcessedBlockProofs::StarkNet(starknet) => starknet.chain_id.to_owned(),
         }
     }
 
@@ -39,7 +39,7 @@ impl ProcessedBlockProofs {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub struct StarkNetBlockProofs {
-    pub chain_id: u128,
+    pub chain_id: String,
     pub mmr_with_headers: Vec<MMRWithHeaderStarkNet>,
     pub storages: Vec<starknet::storage::ProcessedStorage>,
     // Since accounts, transactions, and transaction_receipts do not exist for StarkNet,
@@ -57,7 +57,7 @@ pub struct MMRWithHeaderStarkNet {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub struct EvmBlockProofs {
-    pub chain_id: u128,
+    pub chain_id: String,
     pub mmr_with_headers: Vec<MMRWithHeader>,
     pub accounts: Vec<ProcessedAccount>,
     pub storages: Vec<ProcessedStorage>,

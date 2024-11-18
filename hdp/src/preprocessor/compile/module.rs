@@ -79,6 +79,8 @@ impl Compilable for ModuleVec {
                 .get(&chain_id)
                 .expect("target task's chain had not been configured.");
             let provider = new_provider_from_config(target_provider_config);
+
+            // TODO: handle starknet
             let results = provider
                 .fetch_proofs_from_keys(keys)
                 .await?

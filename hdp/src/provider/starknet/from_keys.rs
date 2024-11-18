@@ -3,6 +3,7 @@ use std::{
     time::Instant,
 };
 
+use alloy::hex;
 use starknet_crypto::Felt;
 use tracing::info;
 
@@ -37,7 +38,7 @@ impl StarknetProvider {
         };
 
         Ok(ProcessedBlockProofs::StarkNet(StarkNetBlockProofs {
-            chain_id,
+            chain_id: format!("0x{}", hex::encode(chain_id.to_be_bytes())),
             mmr_with_headers: convert_to_mmr_with_sn_headers(mmr_with_headers),
             storages: storages.into_iter().collect(),
         }))
