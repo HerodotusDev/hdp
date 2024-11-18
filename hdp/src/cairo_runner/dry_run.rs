@@ -1,7 +1,8 @@
 use crate::constant::DRY_CAIRO_RUN_OUTPUT_FILE;
 use crate::primitives::processed_types::uint256::Uint256;
 use crate::provider::key::{
-    EvmAccountKey, EvmBlockReceiptKey, EvmBlockTxKey, EvmHeaderKey, EvmStorageKey, FetchKeyEnvelope,
+    EvmAccountKey, EvmBlockReceiptKey, EvmBlockTxKey, EvmHeaderKey, EvmStorageKey,
+    FetchKeyEnvelope, StarknetHeaderKey, StarknetStorageKey,
 };
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
@@ -68,6 +69,16 @@ where
                     let key: EvmBlockReceiptKey =
                         serde_json::from_value(helper.key).map_err(serde::de::Error::custom)?;
                     FetchKeyEnvelope::EvmTxReceipt(key)
+                }
+                "StarknetHeaderKey" => {
+                    let key: StarknetHeaderKey =
+                        serde_json::from_value(helper.key).map_err(serde::de::Error::custom)?;
+                    FetchKeyEnvelope::StarknetHeader(key)
+                }
+                "StarknetStorageKey" => {
+                    let key: StarknetStorageKey =
+                        serde_json::from_value(helper.key).map_err(serde::de::Error::custom)?;
+                    FetchKeyEnvelope::StarknetStorage(key)
                 }
                 _ => {
                     return Err(serde::de::Error::custom(format!(
@@ -186,14 +197,14 @@ mod tests {
                 {
                     "type": "EvmHeaderKey",
                     "key": {
-                        "chain_id": 11155111,
+                        "chain_id": "0xAA36A7",
                         "block_number": 5186021
                     }
                 },
                 {
                     "type": "EvmAccountKey",
                     "key": {
-                        "chain_id": 11155111,
+                        "chain_id": "0xAA36A7",
                         "block_number": 5186023,
                         "address": "0x13CB6AE34A13a0977F4d7101eBc24B87Bb23F0d5"
                     }
@@ -201,10 +212,17 @@ mod tests {
                 {
                     "type": "EvmStorageKey",
                     "key": {
-                        "chain_id": 11155111,
+                        "chain_id": "0xAA36A7",
                         "block_number": 5186022,
                         "address": "0x13CB6AE34A13a0977F4d7101eBc24B87Bb23F0d5",
                         "key": "0x487ea7bf96eb1280f1075498855b55ec61ba7d354b5260e2504ef51140e0df63"
+                    }
+                },
+                {
+                    "type": "StarknetHeaderKey",
+                    "key": {
+                        "chain_id": "0x534E5F5345504F4C4941",
+                        "block_number": 155555
                     }
                 }
                 ],
@@ -227,7 +245,7 @@ mod tests {
 
         assert_eq!(fetch_keys.len(), 1);
         let module = &fetch_keys[0];
-        assert_eq!(module.fetch_keys.len(), 3);
+        assert_eq!(module.fetch_keys.len(), 4);
 
         for (i, key) in module.fetch_keys.iter().enumerate() {
             println!("Fetch key {}: {:?}", i, key);
@@ -277,6 +295,14 @@ mod tests {
                 );
             }
             _ => panic!("Expected EvmStorageKey"),
+        }
+
+        match &module.fetch_keys[3] {
+            FetchKeyEnvelope::StarknetHeader(key) => {
+                assert_eq!(key.chain_id, ChainId::StarknetSepolia);
+                assert_eq!(key.block_number, 155555);
+            }
+            _ => panic!("Expected StarknetHeader"),
         }
     }
 }
