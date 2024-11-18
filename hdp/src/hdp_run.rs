@@ -75,6 +75,7 @@ impl HdpRunConfig {
                     ProviderConfig {
                         provider_url,
                         chain_id,
+                        deployed_on_chain_id: destination_chain_id,
                         max_requests: provider_chunk_size,
                     },
                 );

@@ -29,6 +29,7 @@ impl Default for StarknetProvider {
         Self::new(&ProviderConfig {
             provider_url: Url::from_str("https://pathfinder.sepolia.iosis.tech/").unwrap(),
             chain_id: crate::primitives::ChainId::StarknetSepolia,
+            deployed_on_chain_id: crate::primitives::ChainId::StarknetSepolia,
             max_requests: 1,
         })
     }
@@ -38,7 +39,7 @@ impl StarknetProvider {
     pub fn new(config: &ProviderConfig) -> Self {
         let rpc_provider = RpcProvider::new(config.provider_url.to_owned(), config.max_requests);
         // TODO: for now starknet is only supported on staging environmnet
-        let indexer = Indexer::new(config.chain_id).staging();
+        let indexer = Indexer::new(config.chain_id, config.deployed_on_chain_id).staging();
         Self {
             rpc_provider,
             header_provider: indexer,
