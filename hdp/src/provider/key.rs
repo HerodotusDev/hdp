@@ -165,22 +165,17 @@ impl<'de> Deserialize<'de> for StarknetHeaderKey {
 pub struct StarknetStorageKey {
     pub chain_id: ChainId,
     pub block_number: u64,
-    pub contract_address: Felt,
-    pub storage_address: Felt,
+    pub address: Felt,
+    pub key: Felt,
 }
 
 impl StarknetStorageKey {
-    pub fn new(
-        chain_id: ChainId,
-        block_number: u64,
-        contract_address: Felt,
-        storage_address: Felt,
-    ) -> Self {
+    pub fn new(chain_id: ChainId, block_number: u64, address: Felt, key: Felt) -> Self {
         Self {
             chain_id,
             block_number,
-            contract_address,
-            storage_address,
+            address,
+            key,
         }
     }
 }
@@ -194,8 +189,8 @@ impl<'de> Deserialize<'de> for StarknetStorageKey {
         struct Helper {
             chain_id: String,
             block_number: u64,
-            contract_address: Felt,
-            storage_address: Felt,
+            address: Felt,
+            key: Felt,
         }
 
         let helper = Helper::deserialize(deserializer)?;
@@ -203,8 +198,8 @@ impl<'de> Deserialize<'de> for StarknetStorageKey {
         Ok(StarknetStorageKey {
             chain_id: ChainId::from_hex_str(&helper.chain_id).expect("invalid deserialize"),
             block_number: helper.block_number,
-            contract_address: helper.contract_address,
-            storage_address: helper.storage_address,
+            address: helper.address,
+            key: helper.key,
         })
     }
 }
@@ -670,7 +665,7 @@ mod tests {
 
     #[test]
     fn test_parse_json_sn_storage_key() {
-        let json = r#"{"type": "StarknetStorageKey", "key": {"chain_id": "0x534E5F5345504F4C4941", "block_number": 4660, "contract_address": "0x1234", "storage_address": "0x1234" }}"#;
+        let json = r#"{"type": "StarknetStorageKey", "key": {"chain_id": "0x534E5F5345504F4C4941", "block_number": 4660, "address": "0x1234", "key": "0x1234" }}"#;
         let parsed: FetchKeyEnvelope = serde_json::from_str(json).unwrap();
         assert_eq!(
             parsed,

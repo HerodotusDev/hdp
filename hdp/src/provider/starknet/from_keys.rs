@@ -120,10 +120,10 @@ impl StarknetProvider {
         let chain_id = keys.iter().map(|x| x.chain_id).next().unwrap();
         for key in keys {
             let mapped_value = address_to_block_range_storage_keys
-                .entry(key.contract_address)
+                .entry(key.address)
                 .or_default();
             let storage_keys = mapped_value.entry(key.block_number).or_default();
-            storage_keys.push(key.storage_address);
+            storage_keys.push(key.key);
         }
 
         // loop through each address and chunk fetch requests
