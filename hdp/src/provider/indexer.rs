@@ -230,7 +230,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_sn_headers_proof() -> Result<(), IndexerError> {
-        let indexer = Indexer::new(ChainId::StarknetSepolia, ChainId::StarknetSepolia).staging();
+        let indexer = Indexer::new(ChainId::StarknetSepolia, ChainId::EthereumSepolia).staging();
         let response = indexer.get_headers_proof(208483, 208483).await?;
         // check header length is 1
         assert!(response.headers.len() == 1);

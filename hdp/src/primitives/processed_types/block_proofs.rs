@@ -15,10 +15,10 @@ pub enum ProcessedBlockProofs {
 }
 
 impl ProcessedBlockProofs {
-    pub fn get_chain_id(&self) -> u128 {
+    pub fn get_chain_id(&self) -> String {
         match self {
-            ProcessedBlockProofs::Evm(evm) => evm.chain_id,
-            ProcessedBlockProofs::StarkNet(starknet) => starknet.chain_id,
+            ProcessedBlockProofs::Evm(evm) => evm.chain_id.to_owned(),
+            ProcessedBlockProofs::StarkNet(starknet) => starknet.chain_id.to_owned(),
         }
     }
 
@@ -35,16 +35,28 @@ impl ProcessedBlockProofs {
             ProcessedBlockProofs::StarkNet(starknet) => Some(starknet),
         }
     }
+
+    pub fn get_mmr_meta(self) -> Vec<MMRMeta> {
+        match self {
+            ProcessedBlockProofs::Evm(evm_proofs) => evm_proofs
+                .mmr_with_headers
+                .into_iter()
+                .map(|m| m.mmr_meta)
+                .collect(),
+            ProcessedBlockProofs::StarkNet(sn_proofs) => sn_proofs
+                .mmr_with_headers
+                .into_iter()
+                .map(|m| m.mmr_meta)
+                .collect(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub struct StarkNetBlockProofs {
-    pub chain_id: u128,
+    pub chain_id: String,
     pub mmr_with_headers: Vec<MMRWithHeaderStarkNet>,
     pub storages: Vec<starknet::storage::ProcessedStorage>,
-    // Since accounts, transactions, and transaction_receipts do not exist for StarkNet,
-    // we omit them or include any StarkNet-specific fields if necessary.
-    // Add any StarkNet-specific fields here.
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
@@ -57,7 +69,7 @@ pub struct MMRWithHeaderStarkNet {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub struct EvmBlockProofs {
-    pub chain_id: u128,
+    pub chain_id: String,
     pub mmr_with_headers: Vec<MMRWithHeader>,
     pub accounts: Vec<ProcessedAccount>,
     pub storages: Vec<ProcessedStorage>,

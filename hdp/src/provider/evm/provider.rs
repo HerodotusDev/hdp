@@ -385,6 +385,7 @@ impl EvmProvider {
 }
 
 impl ProofProvider for EvmProvider {
+    // TODO: it will be later deprecated with datalake deprecation
     fn fetch_proofs<'a>(
         &'a self,
         datalake: &'a crate::primitives::task::datalake::DatalakeCompute,

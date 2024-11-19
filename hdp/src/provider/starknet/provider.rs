@@ -9,7 +9,12 @@ use std::{collections::HashMap, time::Instant};
 use starknet_types_core::felt::Felt;
 use tracing::info;
 
-use crate::provider::{config::ProviderConfig, error::ProviderError, indexer::Indexer};
+use crate::provider::{
+    config::ProviderConfig,
+    error::ProviderError,
+    indexer::Indexer,
+    traits::{AsyncResult, FetchProofsFromKeysResult, FetchProofsResult, ProofProvider},
+};
 
 use super::{rpc::RpcProvider, types::GetProofOutput};
 
@@ -29,8 +34,8 @@ impl Default for StarknetProvider {
         Self::new(&ProviderConfig {
             provider_url: Url::from_str("https://pathfinder.sepolia.iosis.tech/").unwrap(),
             chain_id: crate::primitives::ChainId::StarknetSepolia,
-            deployed_on_chain_id: crate::primitives::ChainId::StarknetSepolia,
-            max_requests: 1,
+            deployed_on_chain_id: crate::primitives::ChainId::EthereumSepolia,
+            max_requests: 100,
         })
     }
 }
@@ -135,5 +140,22 @@ impl StarknetProvider {
         }
 
         result
+    }
+}
+
+impl ProofProvider for StarknetProvider {
+    // TODO: it will be later deprecated with datalake deprecation
+    fn fetch_proofs<'a>(
+        &'a self,
+        _datalake: &'a crate::primitives::task::datalake::DatalakeCompute,
+    ) -> AsyncResult<FetchProofsResult> {
+        unimplemented!("fetch_proofs is not implemented for StarknetProvider");
+    }
+
+    fn fetch_proofs_from_keys(
+        &self,
+        keys: crate::provider::key::CategorizedFetchKeys,
+    ) -> AsyncResult<FetchProofsFromKeysResult> {
+        Box::pin(async move { self.fetch_proofs_from_keys(keys).await })
     }
 }

@@ -148,14 +148,14 @@ impl<'de> Deserialize<'de> for StarknetHeaderKey {
     {
         #[derive(Deserialize)]
         struct Helper {
-            chain_id: u128,
+            chain_id: String,
             block_number: u64,
         }
 
         let helper = Helper::deserialize(deserializer)?;
 
         Ok(StarknetHeaderKey {
-            chain_id: ChainId::from_numeric_id(helper.chain_id).expect("invalid deserialize"),
+            chain_id: ChainId::from_hex_str(&helper.chain_id).expect("invalid deserialize"),
             block_number: helper.block_number,
         })
     }
@@ -165,22 +165,17 @@ impl<'de> Deserialize<'de> for StarknetHeaderKey {
 pub struct StarknetStorageKey {
     pub chain_id: ChainId,
     pub block_number: u64,
-    pub contract_address: Felt,
-    pub storage_address: Felt,
+    pub address: Felt,
+    pub key: Felt,
 }
 
 impl StarknetStorageKey {
-    pub fn new(
-        chain_id: ChainId,
-        block_number: u64,
-        contract_address: Felt,
-        storage_address: Felt,
-    ) -> Self {
+    pub fn new(chain_id: ChainId, block_number: u64, address: Felt, key: Felt) -> Self {
         Self {
             chain_id,
             block_number,
-            contract_address,
-            storage_address,
+            address,
+            key,
         }
     }
 }
@@ -192,19 +187,19 @@ impl<'de> Deserialize<'de> for StarknetStorageKey {
     {
         #[derive(Deserialize)]
         struct Helper {
-            chain_id: u128,
+            chain_id: String,
             block_number: u64,
-            contract_address: Felt,
-            storage_address: Felt,
+            address: Felt,
+            key: Felt,
         }
 
         let helper = Helper::deserialize(deserializer)?;
 
         Ok(StarknetStorageKey {
-            chain_id: ChainId::from_numeric_id(helper.chain_id).expect("invalid deserialize"),
+            chain_id: ChainId::from_hex_str(&helper.chain_id).expect("invalid deserialize"),
             block_number: helper.block_number,
-            contract_address: helper.contract_address,
-            storage_address: helper.storage_address,
+            address: helper.address,
+            key: helper.key,
         })
     }
 }
@@ -223,14 +218,14 @@ impl<'de> Deserialize<'de> for EvmHeaderKey {
     {
         #[derive(Deserialize)]
         struct Helper {
-            chain_id: u128,
+            chain_id: String,
             block_number: BlockNumber,
         }
 
         let helper = Helper::deserialize(deserializer)?;
 
         Ok(EvmHeaderKey {
-            chain_id: ChainId::from_numeric_id(helper.chain_id).expect("invalid deserialize"),
+            chain_id: ChainId::from_hex_str(&helper.chain_id).expect("invalid deserialize"),
             block_number: helper.block_number,
         })
     }
@@ -268,7 +263,7 @@ impl<'de> Deserialize<'de> for EvmAccountKey {
     {
         #[derive(Deserialize)]
         struct Helper {
-            chain_id: u128,
+            chain_id: String,
             block_number: BlockNumber,
             address: Address,
         }
@@ -276,7 +271,7 @@ impl<'de> Deserialize<'de> for EvmAccountKey {
         let helper = Helper::deserialize(deserializer)?;
 
         Ok(EvmAccountKey {
-            chain_id: ChainId::from_numeric_id(helper.chain_id).expect("invalid deserialize"),
+            chain_id: ChainId::from_hex_str(&helper.chain_id).expect("invalid deserialize"),
             block_number: helper.block_number,
             address: helper.address,
         })
@@ -318,7 +313,7 @@ impl<'de> Deserialize<'de> for EvmStorageKey {
     {
         #[derive(Deserialize)]
         struct Helper {
-            chain_id: u128,
+            chain_id: String,
             block_number: BlockNumber,
             address: Address,
             key: StorageKey,
@@ -327,7 +322,7 @@ impl<'de> Deserialize<'de> for EvmStorageKey {
         let helper = Helper::deserialize(deserializer)?;
 
         Ok(EvmStorageKey {
-            chain_id: ChainId::from_numeric_id(helper.chain_id).expect("invalid deserialize"),
+            chain_id: ChainId::from_hex_str(&helper.chain_id).expect("invalid deserialize"),
             block_number: helper.block_number,
             address: helper.address,
             key: helper.key,
@@ -376,7 +371,7 @@ impl<'de> Deserialize<'de> for EvmBlockTxKey {
     {
         #[derive(Deserialize)]
         struct Helper {
-            chain_id: u128,
+            chain_id: String,
             block_number: BlockNumber,
             index: u64,
         }
@@ -384,7 +379,7 @@ impl<'de> Deserialize<'de> for EvmBlockTxKey {
         let helper = Helper::deserialize(deserializer)?;
 
         Ok(EvmBlockTxKey {
-            chain_id: ChainId::from_numeric_id(helper.chain_id).expect("invalid deserialize"),
+            chain_id: ChainId::from_hex_str(&helper.chain_id).expect("invalid deserialize"),
             block_number: helper.block_number,
             index: helper.index,
         })
@@ -425,7 +420,7 @@ impl<'de> Deserialize<'de> for EvmBlockReceiptKey {
     {
         #[derive(Deserialize)]
         struct Helper {
-            chain_id: u128,
+            chain_id: String,
             block_number: BlockNumber,
             index: u64,
         }
@@ -433,7 +428,7 @@ impl<'de> Deserialize<'de> for EvmBlockReceiptKey {
         let helper = Helper::deserialize(deserializer)?;
 
         Ok(EvmBlockReceiptKey {
-            chain_id: ChainId::from_numeric_id(helper.chain_id).expect("invalid deserialize"),
+            chain_id: ChainId::from_hex_str(&helper.chain_id).expect("invalid deserialize"),
             block_number: helper.block_number,
             index: helper.index,
         })
@@ -594,7 +589,7 @@ mod tests {
     #[test]
     fn test_parse_json_header_key() {
         let json =
-            r#"{"type": "EvmHeaderKey", "key": {"chain_id": 11155111, "block_number": 100}}"#;
+            r#"{"type": "EvmHeaderKey", "key": {"chain_id": "0xAA36A7", "block_number": 100}}"#;
         let parsed: FetchKeyEnvelope = serde_json::from_str(json).unwrap();
         assert_eq!(
             parsed,
@@ -604,7 +599,7 @@ mod tests {
 
     #[test]
     fn test_parse_json_account_key() {
-        let json = r#"{"type": "EvmAccountKey", "key": {"chain_id": 1, "block_number": 100, "address": "0x0000000000000000000000000000000000000000"}}"#;
+        let json = r#"{"type": "EvmAccountKey", "key": {"chain_id": "0x1", "block_number": 100, "address": "0x0000000000000000000000000000000000000000"}}"#;
         let parsed: FetchKeyEnvelope = serde_json::from_str(json).unwrap();
         assert_eq!(
             parsed,
@@ -618,7 +613,7 @@ mod tests {
 
     #[test]
     fn test_parse_json_storage_key() {
-        let json = r#"{"type": "EvmStorageKey", "key": {"chain_id": 1, "block_number": 100, "address": "0x0000000000000000000000000000000000000000", "key": "0x0000000000000000000000000000000000000000000000000000000000000000"}}"#;
+        let json = r#"{"type": "EvmStorageKey", "key": {"chain_id": "0x1", "block_number": 100, "address": "0x0000000000000000000000000000000000000000", "key": "0x0000000000000000000000000000000000000000000000000000000000000000"}}"#;
         let parsed: FetchKeyEnvelope = serde_json::from_str(json).unwrap();
         assert_eq!(
             parsed,
@@ -633,8 +628,7 @@ mod tests {
 
     #[test]
     fn test_parse_json_tx_key() {
-        let json =
-            r#"{"type": "EvmBlockTxKey", "key": {"chain_id": 1, "block_number": 100, "index": 1}}"#;
+        let json = r#"{"type": "EvmBlockTxKey", "key": {"chain_id": "0x1", "block_number": 100, "index": 1}}"#;
         let parsed: FetchKeyEnvelope = serde_json::from_str(json).unwrap();
         assert_eq!(
             parsed,
@@ -644,7 +638,7 @@ mod tests {
 
     #[test]
     fn test_parse_json_tx_receipt_key() {
-        let json = r#"{"type": "EvmBlockReceiptKey", "key": {"chain_id": 1, "block_number": 100, "index": 1}}"#;
+        let json = r#"{"type": "EvmBlockReceiptKey", "key": {"chain_id": "0x1", "block_number": 100, "index": 1}}"#;
         let parsed: FetchKeyEnvelope = serde_json::from_str(json).unwrap();
         assert_eq!(
             parsed,
@@ -658,7 +652,7 @@ mod tests {
 
     #[test]
     fn test_parse_json_sn_header_key() {
-        let json = r#"{"type": "StarknetHeaderKey", "key": {"chain_id": 393402133025997798000961, "block_number": 4660 }}"#;
+        let json = r#"{"type": "StarknetHeaderKey", "key": {"chain_id": "0x534E5F5345504F4C4941", "block_number": 4660 }}"#;
         let parsed: FetchKeyEnvelope = serde_json::from_str(json).unwrap();
         assert_eq!(
             parsed,
@@ -671,7 +665,7 @@ mod tests {
 
     #[test]
     fn test_parse_json_sn_storage_key() {
-        let json = r#"{"type": "StarknetStorageKey", "key": {"chain_id": 393402133025997798000961, "block_number": 4660, "contract_address": "0x1234", "storage_address": "0x1234" }}"#;
+        let json = r#"{"type": "StarknetStorageKey", "key": {"chain_id": "0x534E5F5345504F4C4941", "block_number": 4660, "address": "0x1234", "key": "0x1234" }}"#;
         let parsed: FetchKeyEnvelope = serde_json::from_str(json).unwrap();
         assert_eq!(
             parsed,

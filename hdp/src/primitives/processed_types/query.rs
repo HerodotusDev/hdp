@@ -62,8 +62,7 @@ impl ProcessorInput {
         let mmr_metas: Vec<MMRMeta> = self
             .proofs
             .iter()
-            .flat_map(|x| x.clone().get_evm_proofs().unwrap().mmr_with_headers)
-            .map(|mmr_with_header| mmr_with_header.mmr_meta.clone())
+            .flat_map(|x| x.clone().get_mmr_meta())
             .collect();
 
         ProcessorOutput::new(

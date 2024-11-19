@@ -58,10 +58,6 @@ impl Compilable for ModuleVec {
 
         // 3. Categorize fetch keys by chain ID
         let categorized_keys = categorize_fetch_keys(dry_run_module.fetch_keys);
-        if categorized_keys.len() > 1 {
-            // TODO: This is a temporary solution. Need to handle multiple chain IDs in the future
-            panic!("Multiple chain IDs are not supported yet");
-        }
 
         // Initialize maps to store fetched proofs grouped by chain ID
         let mut accounts_map = HashMap::new();
@@ -79,6 +75,8 @@ impl Compilable for ModuleVec {
                 .get(&chain_id)
                 .expect("target task's chain had not been configured.");
             let provider = new_provider_from_config(target_provider_config);
+
+            // TODO: handle starknet
             let results = provider
                 .fetch_proofs_from_keys(keys)
                 .await?

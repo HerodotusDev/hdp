@@ -3,6 +3,7 @@ use std::{
     time::Instant,
 };
 
+use alloy::hex;
 use starknet_crypto::Felt;
 use tracing::info;
 
@@ -37,7 +38,7 @@ impl StarknetProvider {
         };
 
         Ok(ProcessedBlockProofs::StarkNet(StarkNetBlockProofs {
-            chain_id,
+            chain_id: format!("0x{}", hex::encode(chain_id.to_be_bytes())),
             mmr_with_headers: convert_to_mmr_with_sn_headers(mmr_with_headers),
             storages: storages.into_iter().collect(),
         }))
@@ -120,10 +121,10 @@ impl StarknetProvider {
         let chain_id = keys.iter().map(|x| x.chain_id).next().unwrap();
         for key in keys {
             let mapped_value = address_to_block_range_storage_keys
-                .entry(key.contract_address)
+                .entry(key.address)
                 .or_default();
             let storage_keys = mapped_value.entry(key.block_number).or_default();
-            storage_keys.push(key.storage_address);
+            storage_keys.push(key.key);
         }
 
         // loop through each address and chunk fetch requests
@@ -171,8 +172,10 @@ impl StarknetProvider {
 #[cfg(feature = "test_utils")]
 mod tests {
     use super::*;
+    use crate::provider::key::{categorize_fetch_keys, FetchKeyEnvelope};
     use dotenv::dotenv;
     use starknet_crypto::Felt;
+    use std::str::FromStr;
     use std::sync::Once;
 
     static INIT: Once = Once::new();
@@ -186,10 +189,6 @@ mod tests {
     #[tokio::test]
     #[cfg(feature = "test_utils")]
     async fn test_proofs_from_storage_keys() {
-        use std::str::FromStr;
-
-        use crate::provider::key::{categorize_fetch_keys, FetchKeyEnvelope};
-
         initialize();
         let start_fetch = Instant::now();
         let target_chain_id = crate::primitives::ChainId::StarknetSepolia;

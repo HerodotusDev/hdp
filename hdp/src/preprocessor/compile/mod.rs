@@ -1,3 +1,4 @@
+use alloy::hex;
 use alloy::primitives::U256;
 use config::CompilerConfig;
 use std::hash::Hash;
@@ -145,7 +146,7 @@ impl CompilationResult {
                 .unwrap_or_default();
 
             let processed_block = ProcessedBlockProofs::Evm(EvmBlockProofs {
-                chain_id,
+                chain_id: format!("0x{}", hex::encode(chain_id.to_be_bytes())),
                 mmr_with_headers: mmr_with_headers.into_iter().collect(),
                 accounts: accounts.into_iter().collect(),
                 storages: storages.into_iter().collect(),
