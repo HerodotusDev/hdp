@@ -1,4 +1,5 @@
 use clap::{arg, Parser};
+use hdp::primitives::ChainId;
 use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
@@ -59,4 +60,8 @@ pub struct RunModuleArgs {
     /// This will trigger processing(=pie generation) step
     #[arg(short, long, requires("program_input_file"))]
     pub cairo_pie_file: Option<PathBuf>,
+
+    /// Destination chain id
+    #[arg(long)]
+    pub destination_chain_id: ChainId,
 }

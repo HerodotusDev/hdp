@@ -71,7 +71,10 @@ impl ChainId {
 pub struct Indexer {
     url: String,
     client: Client,
+    /// accumulates chain id
     pub from_chain_id: ChainId,
+    /// deployed on chain id
+    pub deployed_on_chain_id: ChainId,
 }
 
 #[derive(Debug)]
@@ -93,10 +96,11 @@ impl IndexerHeadersProofResponse {
 }
 
 impl Indexer {
-    pub fn new(from_chain_id: ChainId) -> Self {
+    pub fn new(from_chain_id: ChainId, deployed_on_chain_id: ChainId) -> Self {
         Self {
             client: Client::new(),
             from_chain_id,
+            deployed_on_chain_id,
             url: HERODOTUS_RS_INDEXER_URL.to_string(),
         }
     }
@@ -134,6 +138,7 @@ impl Indexer {
                 from_block,
                 to_block,
                 self.from_chain_id.get_indexer_chain_id(),
+                self.deployed_on_chain_id.get_indexer_chain_id(),
             ))
             .send()
             .await
@@ -178,15 +183,18 @@ impl Indexer {
         &self,
         from_block: BlockNumber,
         to_block: BlockNumber,
-        from_chain_id: &str,
+        accumulates_chain_id: &str,
+        deployed_on_chain_id: &str,
     ) -> Vec<(String, String)> {
-        // TODO: handle deployed_on_chain dynamically
         let query = vec![
             (
                 "deployed_on_chain".to_string(),
-                ChainId::EthereumSepolia.get_indexer_chain_id().to_string(),
+                deployed_on_chain_id.to_string(),
             ),
-            ("accumulates_chain".to_string(), from_chain_id.to_string()),
+            (
+                "accumulates_chain".to_string(),
+                accumulates_chain_id.to_string(),
+            ),
             ("hashing_function".to_string(), "poseidon".to_string()),
             ("contract_type".to_string(), "AGGREGATOR".to_string()),
             (
@@ -213,7 +221,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_headers_proof() -> Result<(), IndexerError> {
-        let indexer = Indexer::new(ChainId::EthereumSepolia);
+        let indexer = Indexer::new(ChainId::EthereumSepolia, ChainId::EthereumSepolia);
         let response = indexer.get_headers_proof(1, 1).await?;
         // check header length is 1
         assert!(response.headers.len() == 1);
@@ -222,7 +230,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_sn_headers_proof() -> Result<(), IndexerError> {
-        let indexer = Indexer::new(ChainId::StarknetSepolia).staging();
+        let indexer = Indexer::new(ChainId::StarknetSepolia, ChainId::EthereumSepolia).staging();
         let response = indexer.get_headers_proof(208483, 208483).await?;
         // check header length is 1
         assert!(response.headers.len() == 1);
@@ -231,7 +239,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_headers_proof_multiple_blocks() -> Result<(), IndexerError> {
-        let indexer = Indexer::new(ChainId::EthereumSepolia);
+        let indexer = Indexer::new(ChainId::EthereumSepolia, ChainId::EthereumSepolia);
         let response = indexer.get_headers_proof(0, 10).await?;
         // check header length is 11
         assert!(response.headers.len() == 11);
@@ -240,7 +248,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_invalid_query() {
-        let indexer = Indexer::new(ChainId::EthereumSepolia);
+        let indexer = Indexer::new(ChainId::EthereumSepolia, ChainId::EthereumSepolia);
         let response = indexer.get_headers_proof(10, 1).await;
         assert!(matches!(response, Err(IndexerError::InvalidBlockRange)));
     }

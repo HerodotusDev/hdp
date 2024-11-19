@@ -23,6 +23,7 @@ pub struct HdpRunConfig {
     pub batch_proof_file: Option<PathBuf>,
     pub cairo_pie_file: Option<PathBuf>,
     pub save_fetch_keys_file: Option<PathBuf>,
+    pub destination_chain_id: ChainId,
 }
 
 #[cfg(feature = "test_utils")]
@@ -37,6 +38,7 @@ impl Default for HdpRunConfig {
             cairo_pie_file: None,
             batch_proof_file: None,
             save_fetch_keys_file: None,
+            destination_chain_id: ChainId::EthereumSepolia,
         }
     }
 }
@@ -50,6 +52,7 @@ impl HdpRunConfig {
         cli_save_fetch_keys_file: Option<PathBuf>,
         batch_proof_file: Option<PathBuf>,
         cli_cairo_pie_file: Option<PathBuf>,
+        destination_chain_id: ChainId,
     ) -> Self {
         let mut provider_config = HashMap::new();
 
@@ -72,6 +75,7 @@ impl HdpRunConfig {
                     ProviderConfig {
                         provider_url,
                         chain_id,
+                        deployed_on_chain_id: destination_chain_id,
                         max_requests: provider_chunk_size,
                     },
                 );
@@ -102,6 +106,7 @@ impl HdpRunConfig {
             save_fetch_keys_file,
             batch_proof_file,
             cairo_pie_file: cli_cairo_pie_file,
+            destination_chain_id,
         };
 
         debug!("Running with configuration: {:#?}", config);
@@ -135,21 +140,18 @@ pub async fn run(hdp_run_config: &HdpRunConfig, tasks: Vec<TaskEnvelope>) -> Res
     fs::write(&hdp_run_config.program_input_file, input_string)
         .map_err(|e| anyhow::anyhow!("Unable to write input file: {}", e))?;
 
-    match &hdp_run_config.batch_proof_file {
-        Some(batch_proof_file) => {
-            let batch_proof_data = preprocessor_result.into_processor_output();
-            fs::write(
-                batch_proof_file,
-                serde_json::to_string_pretty(&batch_proof_data)
-                    .map_err(|e| anyhow::anyhow!("Failed to serialize processor result: {}", e))?,
-            )
-            .map_err(|e| anyhow::anyhow!("Unable to write output file: {}", e))?;
-            info!(
-                "saved the batch proof file in {}",
-                &batch_proof_file.display()
-            );
-        }
-        None => {}
+    if let Some(batch_proof_file) = &hdp_run_config.batch_proof_file {
+        let batch_proof_data = preprocessor_result.into_processor_output();
+        fs::write(
+            batch_proof_file,
+            serde_json::to_string_pretty(&batch_proof_data)
+                .map_err(|e| anyhow::anyhow!("Failed to serialize processor result: {}", e))?,
+        )
+        .map_err(|e| anyhow::anyhow!("Unable to write output file: {}", e))?;
+        info!(
+            "saved the batch proof file in {}",
+            &batch_proof_file.display()
+        );
     }
 
     info!(
@@ -203,6 +205,7 @@ mod tests {
             None,
             None,
             None,
+            ChainId::EthereumSepolia,
         );
 
         // Assert provider configurations
