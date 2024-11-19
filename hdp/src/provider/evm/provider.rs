@@ -429,7 +429,7 @@ mod tests {
     #[ignore = "too many requests, recommend to run locally"]
     #[tokio::test]
     #[cfg(feature = "test_utils")]
-    async fn test_get_2000_range_of_account_proofs() -> Result<(), ProviderError> {
+    async fn test_get_2000_range_of_account_proofs() -> Result<(), Box<ProviderError>> {
         initialize();
         let start_time = Instant::now();
         let provider = EvmProvider::default();
@@ -448,7 +448,7 @@ mod tests {
     #[ignore = "too many requests, recommend to run locally"]
     #[tokio::test]
     #[cfg(feature = "test_utils")]
-    async fn test_get_2000_range_of_storage_proofs() -> Result<(), ProviderError> {
+    async fn test_get_2000_range_of_storage_proofs() -> Result<(), Box<ProviderError>> {
         initialize();
         let start_time = Instant::now();
         let provider = EvmProvider::default();
@@ -467,7 +467,7 @@ mod tests {
     #[ignore = "too many requests, recommend to run locally"]
     #[tokio::test]
     #[cfg(feature = "test_utils")]
-    async fn test_get_2000_range_of_header_proofs() -> Result<(), ProviderError> {
+    async fn test_get_2000_range_of_header_proofs() -> Result<(), Box<ProviderError>> {
         initialize();
         let start_time = Instant::now();
         let provider = EvmProvider::default();

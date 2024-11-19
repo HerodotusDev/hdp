@@ -140,21 +140,18 @@ pub async fn run(hdp_run_config: &HdpRunConfig, tasks: Vec<TaskEnvelope>) -> Res
     fs::write(&hdp_run_config.program_input_file, input_string)
         .map_err(|e| anyhow::anyhow!("Unable to write input file: {}", e))?;
 
-    match &hdp_run_config.batch_proof_file {
-        Some(batch_proof_file) => {
-            let batch_proof_data = preprocessor_result.into_processor_output();
-            fs::write(
-                batch_proof_file,
-                serde_json::to_string_pretty(&batch_proof_data)
-                    .map_err(|e| anyhow::anyhow!("Failed to serialize processor result: {}", e))?,
-            )
-            .map_err(|e| anyhow::anyhow!("Unable to write output file: {}", e))?;
-            info!(
-                "saved the batch proof file in {}",
-                &batch_proof_file.display()
-            );
-        }
-        None => {}
+    if let Some(batch_proof_file) = &hdp_run_config.batch_proof_file {
+        let batch_proof_data = preprocessor_result.into_processor_output();
+        fs::write(
+            batch_proof_file,
+            serde_json::to_string_pretty(&batch_proof_data)
+                .map_err(|e| anyhow::anyhow!("Failed to serialize processor result: {}", e))?,
+        )
+        .map_err(|e| anyhow::anyhow!("Unable to write output file: {}", e))?;
+        info!(
+            "saved the batch proof file in {}",
+            &batch_proof_file.display()
+        );
     }
 
     info!(
