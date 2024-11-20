@@ -340,6 +340,7 @@ pub async fn run_interactive() -> anyhow::Result<()> {
             None,
             Some(output_file),
             Some(pie_file),
+            false,
             destination_chain_id,
         );
 

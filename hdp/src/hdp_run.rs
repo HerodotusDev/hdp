@@ -22,6 +22,7 @@ pub struct HdpRunConfig {
     pub is_cairo_format: bool,
     pub batch_proof_file: Option<PathBuf>,
     pub cairo_pie_file: Option<PathBuf>,
+    pub is_proof_mode: bool,
     pub save_fetch_keys_file: Option<PathBuf>,
     pub destination_chain_id: ChainId,
 }
@@ -36,6 +37,7 @@ impl Default for HdpRunConfig {
             program_input_file: "program_input.json".into(),
             is_cairo_format: false,
             cairo_pie_file: None,
+            is_proof_mode: false,
             batch_proof_file: None,
             save_fetch_keys_file: None,
             destination_chain_id: ChainId::EthereumSepolia,
@@ -52,6 +54,7 @@ impl HdpRunConfig {
         cli_save_fetch_keys_file: Option<PathBuf>,
         batch_proof_file: Option<PathBuf>,
         cli_cairo_pie_file: Option<PathBuf>,
+        cli_is_proof_mode: bool,
         destination_chain_id: ChainId,
     ) -> Self {
         let mut provider_config = HashMap::new();
@@ -106,6 +109,7 @@ impl HdpRunConfig {
             save_fetch_keys_file,
             batch_proof_file,
             cairo_pie_file: cli_cairo_pie_file,
+            is_proof_mode: cli_is_proof_mode,
             destination_chain_id,
         };
 
@@ -159,23 +163,27 @@ pub async fn run(hdp_run_config: &HdpRunConfig, tasks: Vec<TaskEnvelope>) -> Res
         &hdp_run_config.program_input_file.display()
     );
 
-    if hdp_run_config.cairo_pie_file.is_none() {
+    if hdp_run_config.cairo_pie_file.is_none() && !hdp_run_config.is_proof_mode {
         Ok(())
     } else {
         info!("starting processing the data... ");
-        let pie_file_path = &hdp_run_config
-            .cairo_pie_file
-            .clone()
-            .ok_or_else(|| anyhow::anyhow!("PIE path should be specified"))?;
         let processor = Processor::new(hdp_run_config.sound_run_program_path.clone());
         processor
-            .process(preprocessor_result.as_cairo_format(), pie_file_path)
+            .process(
+                preprocessor_result.as_cairo_format(),
+                hdp_run_config.cairo_pie_file.as_ref(),
+                hdp_run_config.is_proof_mode,
+            )
             .await?;
 
-        info!(
-            "finished processing the data, saved pie file in {}",
-            pie_file_path.display()
-        );
+        match &hdp_run_config.cairo_pie_file {
+            Some(file_path) => info!(
+                "finished processing the data, saved pie file in {}",
+                file_path.display()
+            ),
+            None => info!("finished processing the data, run in proof mode"),
+        }
+
         Ok(())
     }
 }
@@ -205,6 +213,7 @@ mod tests {
             None,
             None,
             None,
+            false,
             ChainId::EthereumSepolia,
         );
 

@@ -14,14 +14,16 @@ use tracing::{debug, info};
 pub struct HdpProcessorConfig {
     pub input_file: PathBuf,
     pub sound_run_program_path: PathBuf,
-    pub cairo_pie_file: PathBuf,
+    pub cairo_pie_file: Option<PathBuf>,
+    pub is_proof_mode: bool,
 }
 
 impl HdpProcessorConfig {
     pub fn init(
         cli_sound_run_cairo_file: Option<PathBuf>,
         cli_input_file: PathBuf,
-        cli_cairo_pie_file: PathBuf,
+        cli_cairo_pie_file: Option<PathBuf>,
+        cli_is_proof_mode: bool,
     ) -> Self {
         let sound_run_cairo_path: PathBuf = cli_sound_run_cairo_file.unwrap_or_else(|| {
             env::var("SOUND_RUN_CAIRO_PATH")
@@ -34,6 +36,7 @@ impl HdpProcessorConfig {
             input_file: cli_input_file,
             sound_run_program_path: sound_run_cairo_path,
             cairo_pie_file: cli_cairo_pie_file,
+            is_proof_mode: cli_is_proof_mode,
         };
 
         debug!("Running with configuration: {:#?}", config);
@@ -54,11 +57,17 @@ impl Processor {
     pub async fn process(
         &self,
         processor_input: ProcessorInput,
-        pie_file_path: &PathBuf,
+        pie_file_path: Option<&PathBuf>,
+        is_proof_mode: bool,
     ) -> Result<()> {
         let cairo_run_input = serde_json::to_string_pretty(&processor_input)
             .expect("Failed to serialize module class");
-        let _ = cairo_run(&self.program_path, cairo_run_input, pie_file_path)?;
+        let _ = cairo_run(
+            &self.program_path,
+            cairo_run_input,
+            pie_file_path,
+            is_proof_mode,
+        )?;
         info!("2️⃣  Processor completed successfully");
         Ok(())
     }
