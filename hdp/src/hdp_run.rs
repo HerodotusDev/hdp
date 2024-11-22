@@ -62,26 +62,29 @@ impl HdpRunConfig {
         // Iterate through environment variables to find PROVIDER_URL and PROVIDER_CHUNK_SIZE configurations
         for (key, value) in env::vars() {
             if let Some(stripped_chain_id) = key.strip_prefix("PROVIDER_URL_") {
-                let chain_id: ChainId = stripped_chain_id
-                    .parse()
-                    .expect("Invalid chain ID in PROVIDER_URL env var");
-                let provider_url: Url = value.parse().expect("Invalid URL in PROVIDER_URL env var");
+                match stripped_chain_id.parse() {
+                    Ok(chain_id) => {
+                        let provider_url: Url =
+                            value.parse().expect("Invalid URL in PROVIDER_URL env var");
 
-                let chunk_size_key = format!("PROVIDER_CHUNK_SIZE_{}", chain_id);
-                let provider_chunk_size: u64 = env::var(&chunk_size_key)
-                    .unwrap_or_else(|_| "40".to_string())
-                    .parse()
-                    .unwrap_or_else(|_| panic!("{} must be a number", chunk_size_key));
+                        let chunk_size_key = format!("PROVIDER_CHUNK_SIZE_{}", chain_id);
+                        let provider_chunk_size: u64 = env::var(&chunk_size_key)
+                            .unwrap_or_else(|_| "40".to_string())
+                            .parse()
+                            .unwrap_or_else(|_| panic!("{} must be a number", chunk_size_key));
 
-                provider_config.insert(
-                    chain_id,
-                    ProviderConfig {
-                        provider_url,
-                        chain_id,
-                        deployed_on_chain_id: destination_chain_id,
-                        max_requests: provider_chunk_size,
-                    },
-                );
+                        provider_config.insert(
+                            chain_id,
+                            ProviderConfig {
+                                provider_url,
+                                chain_id,
+                                deployed_on_chain_id: destination_chain_id,
+                                max_requests: provider_chunk_size,
+                            },
+                        );
+                    }
+                    Err(_) => continue,
+                };
             }
         }
 
