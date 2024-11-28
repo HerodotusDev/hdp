@@ -1,3 +1,4 @@
+use alloy::hex;
 use alloy::primitives::U256;
 use config::CompilerConfig;
 use std::hash::Hash;
@@ -6,7 +7,8 @@ use std::collections::{HashMap, HashSet};
 use thiserror::Error;
 
 use crate::primitives::processed_types::block_proofs::{
-    convert_to_mmr_with_headers, mmr_with_header_vec_to_map, MMRWithHeader, ProcessedBlockProofs,
+    convert_to_mmr_with_headers, mmr_with_header_vec_to_map, EvmBlockProofs, MMRWithHeader,
+    ProcessedBlockProofs,
 };
 use crate::primitives::processed_types::{
     account::ProcessedAccount, receipt::ProcessedReceipt, storage::ProcessedStorage,
@@ -91,7 +93,6 @@ impl CompilationResult {
     pub fn from_single_chain(
         chain_id: u128,
         task_results: Vec<U256>,
-
         mmr_with_headers: HashSet<MMRWithHeader>,
         accounts: HashSet<ProcessedAccount>,
         storages: HashSet<ProcessedStorage>,
@@ -144,14 +145,14 @@ impl CompilationResult {
                 .cloned()
                 .unwrap_or_default();
 
-            let processed_block = ProcessedBlockProofs {
-                chain_id,
+            let processed_block = ProcessedBlockProofs::Evm(EvmBlockProofs {
+                chain_id: format!("0x{}", hex::encode(chain_id.to_be_bytes())),
                 mmr_with_headers: mmr_with_headers.into_iter().collect(),
                 accounts: accounts.into_iter().collect(),
                 storages: storages.into_iter().collect(),
                 transactions: transactions.into_iter().collect(),
                 transaction_receipts: transaction_receipts.into_iter().collect(),
-            };
+            });
 
             processed_block_vec.push(processed_block);
         }

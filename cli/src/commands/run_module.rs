@@ -1,4 +1,5 @@
 use clap::{arg, Parser};
+use hdp::primitives::ChainId;
 use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
@@ -57,6 +58,23 @@ pub struct RunModuleArgs {
     /// Path to save pie file
     ///
     /// This will trigger processing(=pie generation) step
-    #[arg(short, long, requires("program_input_file"))]
+    #[arg(
+        short,
+        long,
+        requires("program_input_file"),
+        conflicts_with = "proof_mode"
+    )]
     pub cairo_pie_file: Option<PathBuf>,
+
+    /// Flag to run `cairo-run` in proof mode
+    ///
+    /// This will trigger processing(=pie generation) step
+    /// By default, it will run in non-proof mode to generate pie
+    /// Note that if this flag is set
+    #[arg(long, default_value_t = false, conflicts_with = "cairo_pie_file")]
+    pub proof_mode: bool,
+
+    /// Destination chain id
+    #[arg(long)]
+    pub destination_chain_id: ChainId,
 }

@@ -5,6 +5,8 @@ use core::{
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use thiserror::Error;
 
+use super::utils::hex_string_to_uint;
+
 #[derive(PartialEq, Eq, Clone, Copy, Hash)]
 pub enum ChainId {
     EthereumMainnet,
@@ -128,6 +130,11 @@ impl ChainId {
                 input: i.to_string(),
             }),
         }
+    }
+
+    /// Parses a hexadecimal string into a ChainId.
+    pub fn from_hex_str(s: &str) -> Result<Self, ParseChainIdError> {
+        ChainId::from_numeric_id(hex_string_to_uint(s))
     }
 
     pub fn to_be_bytes(&self) -> [u8; 16] {

@@ -7,8 +7,10 @@ use crate::primitives::ChainId;
 pub struct ProviderConfig {
     /// provider url
     pub provider_url: Url,
-    /// Chain id
+    /// accumulates chain id
     pub chain_id: ChainId,
+    /// deployed on chain id
+    pub deployed_on_chain_id: ChainId,
     /// Max number of requests to send in parallel
     ///
     /// For default, it is set to 100
@@ -35,6 +37,7 @@ impl Default for ProviderConfig {
         Self {
             provider_url: TEST_RPC_URL.parse().unwrap(),
             chain_id: ChainId::EthereumSepolia,
+            deployed_on_chain_id: ChainId::EthereumSepolia,
             max_requests: TEST_MAX_REQUESTS,
         }
     }

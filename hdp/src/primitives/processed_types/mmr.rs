@@ -25,7 +25,7 @@ impl MMRMeta {
 impl MMRMeta {
     pub fn from_indexer(val: MMRMetaFromNewIndexer) -> Self {
         MMRMeta {
-            id: hex_string_to_uint(&val.mmr_id),
+            id: hex_string_to_uint(&val.mmr_id) as u64,
             root: val.mmr_root,
             size: val.mmr_size,
             peaks: val.mmr_peaks,

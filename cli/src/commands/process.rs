@@ -13,6 +13,16 @@ pub struct ProcessArgs {
     pub sound_run_cairo_file: Option<PathBuf>,
 
     /// Path to save pie file
-    #[arg(short, long)]
-    pub cairo_pie_file: PathBuf,
+    ///
+    /// This will trigger processing(=pie generation) step
+    #[arg(short, long, requires("input_file"), conflicts_with = "proof_mode")]
+    pub cairo_pie_file: Option<PathBuf>,
+
+    /// Flag to run `cairo-run` in proof mode
+    ///
+    /// This will trigger processing(=pie generation) step
+    /// By default, it will run in non-proof mode to generate pie
+    /// Note that if this flag is set
+    #[arg(long, default_value_t = false, conflicts_with = "cairo_pie_file")]
+    pub proof_mode: bool,
 }

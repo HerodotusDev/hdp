@@ -35,35 +35,28 @@ impl RpcProvider {
         }
     }
 
-    /// Get account with proof in given vector of blocks
-    pub async fn get_account_proofs(
-        &self,
-        blocks: Vec<BlockNumber>,
-        address: Felt,
-    ) -> Result<HashMap<BlockNumber, GetProofOutput>, RpcProviderError> {
-        self.get_proofs(blocks, address, None).await
-    }
-
     /// Get storage with proof in given vector of blocks and slot
     pub async fn get_storage_proofs(
         &self,
-        block_range: Vec<BlockNumber>,
-        address: Felt,
-        storage_key: Felt,
-    ) -> Result<HashMap<BlockNumber, GetProofOutput>, RpcProviderError> {
-        self.get_proofs(block_range, address, Some(storage_key))
-            .await
-    }
-
-    async fn get_proofs(
-        &self,
         blocks: Vec<BlockNumber>,
         address: Felt,
-        storage_key: Option<Felt>,
+        storage_keys: Vec<Felt>,
+    ) -> Result<HashMap<BlockNumber, GetProofOutput>, RpcProviderError> {
+        let blocks_with_storage_keys = blocks
+            .into_iter()
+            .map(|block_number| (block_number, storage_keys.clone()))
+            .collect();
+        self.get_proofs(blocks_with_storage_keys, address).await
+    }
+
+    pub async fn get_proofs(
+        &self,
+        blocks_with_storage_keys: Vec<(BlockNumber, Vec<Felt>)>,
+        address: Felt,
     ) -> Result<HashMap<BlockNumber, GetProofOutput>, RpcProviderError> {
         let start_fetch = Instant::now();
         let (rpc_sender, mut rx) = mpsc::channel::<(BlockNumber, GetProofOutput)>(32);
-        self.spawn_proof_fetcher(rpc_sender, blocks, address, storage_key);
+        self.spawn_proof_fetcher(rpc_sender, blocks_with_storage_keys, address);
 
         let mut fetched_proofs = HashMap::new();
         while let Some((block_number, proof)) = rx.recv().await {
@@ -78,13 +71,12 @@ impl RpcProvider {
     fn spawn_proof_fetcher(
         &self,
         rpc_sender: Sender<(BlockNumber, GetProofOutput)>,
-        blocks: Vec<BlockNumber>,
+        blocks_with_storage_keys: Vec<(BlockNumber, Vec<Felt>)>,
         address: Felt,
-        storage_key: Option<Felt>,
     ) {
         let chunk_size = self.chunk_size;
         let provider_clone = self.client.clone();
-        let target_blocks_length = blocks.len();
+        let target_blocks_length = blocks_with_storage_keys.len();
         let url = self.url.clone();
 
         debug!(
@@ -103,16 +95,17 @@ impl RpcProvider {
                 }
                 let fetched_blocks_clone = blocks_map.read().await.clone();
 
-                let blocks_to_fetch: Vec<BlockNumber> = blocks
-                    .iter()
-                    .filter(|block_number| !fetched_blocks_clone.contains(block_number))
-                    .take(chunk_size as usize)
-                    .cloned()
-                    .collect();
+                let blocks_and_keys_to_fetch: Vec<(BlockNumber, Vec<Felt>)> =
+                    blocks_with_storage_keys
+                        .iter()
+                        .filter(|(block_number, _)| !fetched_blocks_clone.contains(block_number))
+                        .take(chunk_size as usize)
+                        .cloned()
+                        .collect();
 
-                let fetch_futures = blocks_to_fetch
+                let fetch_futures = blocks_and_keys_to_fetch
                     .into_iter()
-                    .map(|block_number| {
+                    .map(|(block_number, storage_keys)| {
                         let fetched_blocks_clone = blocks_map.clone();
                         let rpc_sender = rpc_sender.clone();
                         let provider_clone = provider_clone.clone();
@@ -123,7 +116,7 @@ impl RpcProvider {
                                 url,
                                 address,
                                 block_number,
-                                storage_key,
+                                storage_keys,
                             )
                             .await;
                             handle_proof_result(
@@ -149,12 +142,12 @@ async fn pathfinder_get_proof(
     url: Url,
     address: Felt,
     block_number: BlockNumber,
-    storage_key: Option<Felt>,
+    storage_keys: Vec<Felt>,
 ) -> Result<GetProofOutput, RpcProviderError> {
-    let mut keys = Vec::new();
-    if let Some(key) = storage_key {
-        keys.push(key.to_hex_string());
-    }
+    let keys: Vec<String> = storage_keys
+        .into_iter()
+        .map(|k| k.to_hex_string())
+        .collect();
 
     let request = json!({
         "jsonrpc": "2.0",
@@ -170,7 +163,6 @@ async fn pathfinder_get_proof(
     let response = provider.post(url).json(&request).send().await?;
     let response_json =
         serde_json::from_str::<serde_json::Value>(&response.text().await?)?["result"].clone();
-    println!("response_json: {:?}", response_json);
     let get_proof_output: GetProofOutput = serde_json::from_value(response_json)?;
     Ok(get_proof_output)
 }
@@ -206,8 +198,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_100_range_storage_with_proof() {
-        let target_block_start = 56400;
-        let target_block_end = 56500;
+        let target_block_start = 208383;
+        let target_block_end = 208483;
         let target_block_range = (target_block_start..=target_block_end).collect::<Vec<u64>>();
         let provider = test_provider();
         let proof = provider
@@ -217,10 +209,10 @@ mod tests {
                     "0x017E2D0662675DD83B4B58A0A659EAFA131FDD01FA6DABD5002D8815DD2D17A5",
                 )
                 .unwrap(),
-                Felt::from_str(
-                    "0x004C4FB1AB068F6039D5780C68DD0FA2F8742CCEB3426D19667778CA7F3518A9",
+                vec![Felt::from_str(
+                    "0x032ce6490b615c86e31587e14d6140e5a46231d9b8bf870fd708d71140c3ed2f",
                 )
-                .unwrap(),
+                .unwrap()],
             )
             .await
             .unwrap();
@@ -230,55 +222,21 @@ mod tests {
 
         assert_eq!(
             output.state_commitment.unwrap(),
-            Felt::from_str("0x598cf91d9a3a7176d01926e8442b8bd83299168f723cb2d52080e895400d9a1")
+            Felt::from_str("0x16ba8b273b95235c11e0ad8c4238a510282495280df5abe7cbfb3c53e2d9c2d")
                 .unwrap()
         );
 
-        assert_eq!(output.contract_proof.len(), 17);
+        assert_eq!(output.contract_proof.len(), 19);
 
         assert_eq!(
             output.class_commitment.unwrap(),
-            Felt::from_str("0x324d06b207f2891ef395ba1e7a0ef92b61a5772a294a289362dc37b0469c453")
+            Felt::from_str("0x20cce483edc6fbb1290469dfacd96656414689fe82cf60bcc73cda7a1a8a90f")
                 .unwrap()
         );
 
         assert_eq!(
             output.contract_data.clone().unwrap().storage_proofs[0].len(),
-            5
+            4
         );
-    }
-
-    #[tokio::test]
-    async fn test_get_100_range_account_with_proof() {
-        let target_block_start = 156600;
-        let target_block_end = 156700;
-        let target_block_range = (target_block_start..=target_block_end).collect::<Vec<u64>>();
-        let provider = test_provider();
-        let proof = provider
-            .get_account_proofs(
-                target_block_range.clone(),
-                Felt::from_str("0x23371b227eaecd8e8920cd429d2cd0f3fee6abaacca08d3ab82a7cdd")
-                    .unwrap(),
-            )
-            .await
-            .unwrap();
-
-        assert_eq!(proof.len(), target_block_range.len());
-        let output = proof.get(&target_block_start).unwrap();
-        println!("Proof: {:?}", output);
-        assert_eq!(
-            output.state_commitment.unwrap(),
-            Felt::from_str("0x26da0f5f0849cf69b4872ef5dced3ec68ce28c5e3f53207280113abb7feb158")
-                .unwrap()
-        );
-        assert_eq!(output.contract_proof.len(), 23);
-
-        assert_eq!(
-            output.class_commitment.unwrap(),
-            Felt::from_str("0x46c1a0374b8ccf8d928e62ef40974304732c8a28f10b2c494adfabfcff0fa0a")
-                .unwrap()
-        );
-
-        assert!(output.contract_data.is_none());
     }
 }

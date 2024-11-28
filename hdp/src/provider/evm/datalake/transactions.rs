@@ -37,7 +37,7 @@ impl EvmProvider {
         let (fetched_block, mmr) = headers_proofs.get(&datalake.target_block).unwrap();
 
         let processed_header = ProcessedHeader::new(
-            fetched_block.rlp_block_header.clone(),
+            fetched_block.block_header.get_evm_block_header(),
             fetched_block.element_index,
             fetched_block.siblings_hashes.clone(),
         );

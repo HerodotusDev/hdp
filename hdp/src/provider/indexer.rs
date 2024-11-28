@@ -1,5 +1,5 @@
 use crate::{
-    constant::HERODOTUS_RS_INDEXER_URL,
+    constant::{HERODOTUS_RS_INDEXER_STAGING_URL, HERODOTUS_RS_INDEXER_URL},
     primitives::{
         block::header::{
             MMRDataFromNewIndexer, MMRFromNewIndexer, MMRMetaFromNewIndexer, MMRProofFromNewIndexer,
@@ -69,8 +69,12 @@ impl ChainId {
 
 #[derive(Clone)]
 pub struct Indexer {
+    url: String,
     client: Client,
-    pub chain_id: ChainId,
+    /// accumulates chain id
+    pub from_chain_id: ChainId,
+    /// deployed on chain id
+    pub deployed_on_chain_id: ChainId,
 }
 
 #[derive(Debug)]
@@ -92,11 +96,21 @@ impl IndexerHeadersProofResponse {
 }
 
 impl Indexer {
-    pub fn new(chain_id: ChainId) -> Self {
+    pub fn new(from_chain_id: ChainId, deployed_on_chain_id: ChainId) -> Self {
         Self {
             client: Client::new(),
-            chain_id,
+            from_chain_id,
+            deployed_on_chain_id,
+            url: HERODOTUS_RS_INDEXER_URL.to_string(),
         }
+    }
+
+    /// Set indexer environment to staging
+    ///
+    /// Check out documentation: <https://staging.rs-indexer.api.herodotus.cloud/swagger>
+    pub fn staging(mut self) -> Self {
+        self.url = HERODOTUS_RS_INDEXER_STAGING_URL.to_string();
+        self
     }
 
     /// Fetch MMR and headers proof from Herodotus Indexer
@@ -119,8 +133,13 @@ impl Indexer {
 
         let response = self
             .client
-            .get(HERODOTUS_RS_INDEXER_URL)
-            .query(&self._query(from_block, to_block, self.chain_id.get_indexer_chain_id()))
+            .get(&self.url)
+            .query(&self._query(
+                from_block,
+                to_block,
+                self.from_chain_id.get_indexer_chain_id(),
+                self.deployed_on_chain_id.get_indexer_chain_id(),
+            ))
             .send()
             .await
             .map_err(IndexerError::ReqwestError)?;
@@ -164,11 +183,18 @@ impl Indexer {
         &self,
         from_block: BlockNumber,
         to_block: BlockNumber,
-        chain_id: &str,
+        accumulates_chain_id: &str,
+        deployed_on_chain_id: &str,
     ) -> Vec<(String, String)> {
         let query = vec![
-            ("deployed_on_chain".to_string(), chain_id.to_string()),
-            ("accumulates_chain".to_string(), chain_id.to_string()),
+            (
+                "deployed_on_chain".to_string(),
+                deployed_on_chain_id.to_string(),
+            ),
+            (
+                "accumulates_chain".to_string(),
+                accumulates_chain_id.to_string(),
+            ),
             ("hashing_function".to_string(), "poseidon".to_string()),
             ("contract_type".to_string(), "AGGREGATOR".to_string()),
             (
@@ -195,7 +221,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_headers_proof() -> Result<(), IndexerError> {
-        let indexer = Indexer::new(ChainId::EthereumSepolia);
+        let indexer = Indexer::new(ChainId::EthereumSepolia, ChainId::EthereumSepolia);
         let response = indexer.get_headers_proof(1, 1).await?;
         // check header length is 1
         assert!(response.headers.len() == 1);
@@ -203,8 +229,17 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_get_sn_headers_proof() -> Result<(), IndexerError> {
+        let indexer = Indexer::new(ChainId::StarknetSepolia, ChainId::EthereumSepolia).staging();
+        let response = indexer.get_headers_proof(208483, 208483).await?;
+        // check header length is 1
+        assert!(response.headers.len() == 1);
+        Ok(())
+    }
+
+    #[tokio::test]
     async fn test_get_headers_proof_multiple_blocks() -> Result<(), IndexerError> {
-        let indexer = Indexer::new(ChainId::EthereumSepolia);
+        let indexer = Indexer::new(ChainId::EthereumSepolia, ChainId::EthereumSepolia);
         let response = indexer.get_headers_proof(0, 10).await?;
         // check header length is 11
         assert!(response.headers.len() == 11);
@@ -213,7 +248,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_invalid_query() {
-        let indexer = Indexer::new(ChainId::EthereumSepolia);
+        let indexer = Indexer::new(ChainId::EthereumSepolia, ChainId::EthereumSepolia);
         let response = indexer.get_headers_proof(10, 1).await;
         assert!(matches!(response, Err(IndexerError::InvalidBlockRange)));
     }

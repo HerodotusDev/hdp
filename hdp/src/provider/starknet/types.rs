@@ -6,7 +6,7 @@ use starknet_types_core::{felt::Felt, hash::StarkHash};
 
 /// Holds the membership/non-membership of a contract and its associated
 /// contract contract if the contract exists.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 #[skip_serializing_none]
 pub struct GetProofOutput {
     /// The global state commitment for Starknet 0.11.0 blocks onwards, if
@@ -30,7 +30,7 @@ pub struct GetProofOutput {
 /// A node in a Starknet patricia-merkle trie.
 ///
 /// See pathfinders merkle-tree crate for more information.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub enum TrieNode {
     #[serde(rename = "binary")]
     Binary { left: Felt, right: Felt },
@@ -38,7 +38,7 @@ pub enum TrieNode {
     Edge { child: Felt, path: Path },
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub struct Path {
     len: u64,
     value: String,
@@ -63,7 +63,7 @@ impl TrieNode {
 }
 
 /// Holds the data and proofs for a specific contract.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub struct ContractData {
     /// Required to verify the contract state hash to contract root calculation.
     class_hash: Felt,

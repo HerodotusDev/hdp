@@ -70,6 +70,7 @@ pub async fn process_entry_run(args: ProcessArgs) -> Result<()> {
         args.sound_run_cairo_file,
         args.input_file,
         args.cairo_pie_file,
+        args.proof_mode,
     );
     let input_string = fs::read_to_string(&config.input_file)?;
     let preprocessor_result: ProcessorInput = serde_json::from_str(&input_string)
@@ -81,13 +82,20 @@ pub async fn process_entry_run(args: ProcessArgs) -> Result<()> {
     );
     let processor = Processor::new(config.sound_run_program_path.clone());
     processor
-        .process(preprocessor_result, &config.cairo_pie_file)
+        .process(
+            preprocessor_result,
+            config.cairo_pie_file.as_ref(),
+            config.is_proof_mode,
+        )
         .await?;
 
-    info!(
-        "finished processing the data, saved pie file in {}",
-        &config.cairo_pie_file.display()
-    );
+    match &config.cairo_pie_file {
+        Some(file_path) => info!(
+            "finished processing the data, saved pie file in {}",
+            file_path.display()
+        ),
+        None => info!("finished processing the data, run in proof mode"),
+    }
 
     Ok(())
 }
@@ -101,6 +109,8 @@ pub async fn module_entry_run(args: RunModuleArgs) -> Result<()> {
         args.save_fetch_keys_file,
         args.batch_proof_file,
         args.cairo_pie_file,
+        args.proof_mode,
+        args.destination_chain_id,
     );
     let module = Module::new_from_str(
         args.program_hash,
@@ -125,6 +135,8 @@ pub async fn datalake_entry_run(args: RunDatalakeArgs) -> Result<()> {
         None,
         args.batch_proof_file,
         args.cairo_pie_file,
+        args.proof_mode,
+        args.destination_chain_id,
     );
     let parsed_datalake = match args.datalake {
         DataLakeCommands::BlockSampled {
@@ -172,6 +184,7 @@ pub async fn entry_run(args: RunArgs) -> Result<()> {
         fs::read_to_string(args.request_file).expect("No request file exist in the path");
     let parsed: SubmitBatchQuery = serde_json::from_str(&request_context)
         .expect("Invalid format of request. Cannot parse it.");
+
     let config = hdp_run::HdpRunConfig::init(
         args.dry_run_cairo_file,
         args.sound_run_cairo_file,
@@ -180,6 +193,8 @@ pub async fn entry_run(args: RunArgs) -> Result<()> {
         None,
         args.batch_proof_file,
         args.cairo_pie_file,
+        args.proof_mode,
+        parsed.destination_chain_id,
     );
     let module_registry = ModuleRegistry::new();
     let mut task_envelopes = Vec::new();

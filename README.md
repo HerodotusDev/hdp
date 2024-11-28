@@ -89,8 +89,6 @@ Usage: hdp run [OPTIONS] --request-file <REQUEST_FILE> --program-input-file <PRO
 Options:
   -r, --request-file <REQUEST_FILE>
           Pass request as json file
-      --rpc-url <RPC_URL>
-          The RPC URL to fetch the data
       --dry-run-cairo-file <DRY_RUN_CAIRO_FILE>
           dry run contract bootloader program. only used for module task
   -p, --program-input-file <PROGRAM_INPUT_FILE>
@@ -129,35 +127,35 @@ Here is the support matrix indicating which blockchain elements are tested for e
 
 | Field Description                | SUM | AVG | MIN | MAX | COUNT |
 | -------------------------------- | --- | --- | --- | --- | ----- |
-| `account.nonce`                  | ✅  | ✅  | ✅  | ✅  | ✅    |
-| `account.balance`                | ✅  | ✅  | ✅  | ✅  | ✅    |
+| `account.nonce`                  | ✅   | ✅   | ✅   | ✅   | ✅     |
+| `account.balance`                | ✅   | ✅   | ✅   | ✅   | ✅     |
 | `account.storage_root`           | -   | -   | -   | -   | -     |
 | `account.code_hash`              | -   | -   | -   | -   | -     |
-| `storage.key` (numeric value)    | ✅  | ✅  | ✅  | ✅  | ✅    |
+| `storage.key` (numeric value)    | ✅   | ✅   | ✅   | ✅   | ✅     |
 | `storage.key` (hash value)       | -   | -   | -   | -   | -     |
-| `header.difficulty`              | ✅  | ✅  | ✅  | ✅  | ✅    |
-| `header.gas_limit`               | ✅  | ✅  | ✅  | ✅  | ✅    |
-| `header.gas_used`                | ✅  | ✅  | ✅  | ✅  | ✅    |
-| `header.timestamp`               | ✅  | ✅  | ✅  | ✅  | ✅    |
-| `header.base_fee_per_gas`        | ✅  | ✅  | ✅  | ✅  | ✅    |
-| `header.blob_gas_used`           | ✅  | ✅  | ✅  | ✅  | ✅    |
-| `header.excess_blob_gas`         | ✅  | ✅  | ✅  | ✅  | ✅    |
-| `header.nonce`                   | ✅  | ✅  | ✅  | ✅  | ✅    |
+| `header.difficulty`              | ✅   | ✅   | ✅   | ✅   | ✅     |
+| `header.gas_limit`               | ✅   | ✅   | ✅   | ✅   | ✅     |
+| `header.gas_used`                | ✅   | ✅   | ✅   | ✅   | ✅     |
+| `header.timestamp`               | ✅   | ✅   | ✅   | ✅   | ✅     |
+| `header.base_fee_per_gas`        | ✅   | ✅   | ✅   | ✅   | ✅     |
+| `header.blob_gas_used`           | ✅   | ✅   | ✅   | ✅   | ✅     |
+| `header.excess_blob_gas`         | ✅   | ✅   | ✅   | ✅   | ✅     |
+| `header.nonce`                   | ✅   | ✅   | ✅   | ✅   | ✅     |
 | Other `header` elements          | -   | -   | -   | -   | -     |
-| `tx.nonce`                       | ✅  | ✅  | ✅  | ✅  | ✅    |
-| `tx.gas_price`                   | ✅  | ✅  | ✅  | ✅  | ✅    |
-| `tx.gas_limit`                   | ✅  | ✅  | ✅  | ✅  | ✅    |
-| `tx.value`                       | ✅  | ✅  | ✅  | ✅  | ✅    |
-| `tx.v`                           | ✅  | ✅  | ✅  | ✅  | ✅    |
-| `tx.r`                           | ✅  | ✅  | ✅  | ✅  | ✅    |
-| `tx.s`                           | ✅  | ✅  | ✅  | ✅  | ✅    |
-| `tx.chain_id`                    | ✅  | ✅  | ✅  | ✅  | ✅    |
-| `tx.max_fee_per_gas`             | ✅  | ✅  | ✅  | ✅  | ✅    |
-| `tx.max_priority_fee_per_gas`    | ✅  | ✅  | ✅  | ✅  | ✅    |
-| `tx.max_fee_per_blob_gas`        | ✅  | ✅  | ✅  | ✅  | ✅    |
+| `tx.nonce`                       | ✅   | ✅   | ✅   | ✅   | ✅     |
+| `tx.gas_price`                   | ✅   | ✅   | ✅   | ✅   | ✅     |
+| `tx.gas_limit`                   | ✅   | ✅   | ✅   | ✅   | ✅     |
+| `tx.value`                       | ✅   | ✅   | ✅   | ✅   | ✅     |
+| `tx.v`                           | ✅   | ✅   | ✅   | ✅   | ✅     |
+| `tx.r`                           | ✅   | ✅   | ✅   | ✅   | ✅     |
+| `tx.s`                           | ✅   | ✅   | ✅   | ✅   | ✅     |
+| `tx.chain_id`                    | ✅   | ✅   | ✅   | ✅   | ✅     |
+| `tx.max_fee_per_gas`             | ✅   | ✅   | ✅   | ✅   | ✅     |
+| `tx.max_priority_fee_per_gas`    | ✅   | ✅   | ✅   | ✅   | ✅     |
+| `tx.max_fee_per_blob_gas`        | ✅   | ✅   | ✅   | ✅   | ✅     |
 | Other `tx` elements              | -   | -   | -   | -   | -     |
-| `tx_receipt.success`             | ✅  | ✅  | ✅  | ✅  | ✅    |
-| `tx_receipt.cumulative_gas_used` | ✅  | ✅  | ✅  | ✅  | ✅    |
+| `tx_receipt.success`             | ✅   | ✅   | ✅   | ✅   | ✅     |
+| `tx_receipt.cumulative_gas_used` | ✅   | ✅   | ✅   | ✅   | ✅     |
 | Other `tx_receipt` elements      | -   | -   | -   | -   | -     |
 
 _Note: Fields marked with "-" are not applicable for the specified aggregate functions because they do not contain numeric data or the data type is not suitable for these calculations._
@@ -176,19 +174,7 @@ just run-ci-flow
 
 ### Local Run
 
-To run HDP in a stable environment locally, you need to have `cairo-run` installed with the necessary tools in the correct path and locate the compiled Cairo program. If these steps sound tricky to you, just use the Docker image.
-
-To mount in a container environment, you need to create empty `input.json`, `output.json`, and `cairo.pie` files in the root directory of the host machine before running it.
-
-And locate `requeset.json` file on root that contains intended request format.
-
-```sh
-docker-compose build
-
-docker-compose up
-```
-
-For those looking for an already built Docker image, you can pull it from [here](https://hub.docker.com/r/dataprocessor/hdp-runner).
+Full local environment to run, check out this [hdp module template](https://github.com/HerodotusDev/hdp-module-template).
 
 ## License
 

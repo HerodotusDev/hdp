@@ -36,10 +36,11 @@ pub enum CairoRunnerError {
 pub fn cairo_run(
     program_path: &Path,
     input_string: String,
-    pie_file_path: &PathBuf,
+    pie_file_path: Option<&PathBuf>,
+    is_proof_mode: bool,
 ) -> Result<run::RunResult, CairoRunnerError> {
     let cairo_runner = run::Runner::new(program_path);
-    cairo_runner.run(input_string, pie_file_path)
+    cairo_runner.run(input_string, pie_file_path, is_proof_mode)
 }
 
 /// Compatible with cairo-run command, performs dry run

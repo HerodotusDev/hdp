@@ -53,9 +53,9 @@ pub fn felt_to_bytes32(felt: Felt) -> FixedBytes<32> {
 }
 
 /// Convert a hex string into integer
-pub fn hex_string_to_uint(hex_string: &str) -> u64 {
+pub fn hex_string_to_uint(hex_string: &str) -> u128 {
     let hex_string = hex_string.trim_start_matches("0x");
-    u64::from_str_radix(hex_string, 16).expect("Cannot convert hex string to uint")
+    u128::from_str_radix(hex_string, 16).expect("Cannot convert hex string to uint")
 }
 
 #[cfg(test)]

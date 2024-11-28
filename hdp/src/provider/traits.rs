@@ -7,6 +7,7 @@ use super::config::ProviderConfig;
 use super::error::ProviderError;
 use super::evm::provider::EvmProvider;
 use super::key::CategorizedFetchKeys;
+use super::starknet::provider::StarknetProvider;
 use super::types::FetchedDatalake;
 
 pub type FetchProofsResult = Result<FetchedDatalake, ProviderError>;
@@ -36,7 +37,8 @@ pub trait ProofProvider: Send + Sync {
 pub fn new_provider_from_config(config: &ProviderConfig) -> Box<dyn ProofProvider> {
     match config.chain_id {
         ChainId::EthereumMainnet | ChainId::EthereumSepolia => Box::new(EvmProvider::new(config)),
-        // TODO: change chain_id to string
-        _ => panic!("not supported chain id"),
+        ChainId::StarknetSepolia | ChainId::StarknetMainnet => {
+            Box::new(StarknetProvider::new(config))
+        }
     }
 }

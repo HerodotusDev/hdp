@@ -13,7 +13,7 @@ use crate::cairo_runner::CairoRunnerError;
 /// Result of run
 #[derive(Debug)]
 pub struct RunResult {
-    pub pie_path: PathBuf,
+    pub pie_path: Option<PathBuf>,
     pub cairo_run_output: CairoRunOutput,
 }
 
@@ -38,21 +38,37 @@ impl Runner {
     fn _run(
         &self,
         input_file_path: &Path,
-        cairo_pie_file_path: &Path,
+        cairo_pie_file_path: Option<&PathBuf>,
+        is_proof_mode: bool,
     ) -> Result<String, CairoRunnerError> {
-        let task = Command::new("cairo-run")
-            .arg("--program")
-            .arg(&self.program_path)
-            .arg("--layout")
-            .arg("starknet_with_keccak")
-            .arg("--program_input")
-            .arg(input_file_path)
-            .arg("--cairo_pie_output")
-            .arg(cairo_pie_file_path)
-            .arg("--print_output")
-            .arg("--print_info")
-            .stdout(Stdio::piped())
-            .spawn()?;
+        let task = if is_proof_mode {
+            Command::new("cairo-run")
+                .arg("--program")
+                .arg(&self.program_path)
+                .arg("--layout")
+                .arg("starknet_with_keccak")
+                .arg("--program_input")
+                .arg(input_file_path)
+                .arg("--proof_mode")
+                .arg("--print_output")
+                .arg("--print_info")
+                .stdout(Stdio::piped())
+                .spawn()?
+        } else {
+            Command::new("cairo-run")
+                .arg("--program")
+                .arg(&self.program_path)
+                .arg("--layout")
+                .arg("starknet_with_keccak")
+                .arg("--program_input")
+                .arg(input_file_path)
+                .arg("--cairo_pie_output")
+                .arg(cairo_pie_file_path.expect("pie file should be specified in non-proof mode"))
+                .arg("--print_output")
+                .arg("--print_info")
+                .stdout(Stdio::piped())
+                .spawn()?
+        };
 
         let output = task.wait_with_output().expect("Failed to read stdout");
         let output_str = String::from_utf8_lossy(&output.stdout);
@@ -63,7 +79,8 @@ impl Runner {
     pub fn run(
         &self,
         input_string: String,
-        pie_file_path: &PathBuf,
+        pie_file_path: Option<&PathBuf>,
+        is_proof_mode: bool,
     ) -> Result<RunResult, CairoRunnerError> {
         if input_string.is_empty() {
             return Err(CairoRunnerError::EmptyInput);
@@ -73,7 +90,7 @@ impl Runner {
         let input_file_path = input_file.path();
         fs::write(input_file_path, input_string).expect("Failed to write input file");
 
-        let output = self._run(input_file_path, pie_file_path)?;
+        let output = self._run(input_file_path, pie_file_path, is_proof_mode)?;
         let cairo_run_output =
             self.parse_run(output, &PathBuf::from(SOUND_CAIRO_RUN_OUTPUT_FILE))?;
         info!("cairo run output: {:#?}", cairo_run_output);
@@ -82,7 +99,7 @@ impl Runner {
             .expect("Failed to remove cairo run output file");
 
         Ok(RunResult {
-            pie_path: pie_file_path.to_owned(),
+            pie_path: pie_file_path.cloned(),
             cairo_run_output,
         })
     }
@@ -93,7 +110,8 @@ impl Runner {
         output: String,
         cairo_run_output_path: &PathBuf,
     ) -> Result<CairoRunOutput, CairoRunnerError> {
-        let number_of_steps = Regex::new(r"Number of steps: (\d+)").unwrap();
+        let number_of_steps =
+            Regex::new(r"Number of steps: (\d+)").expect("Failed to create regex");
         if let Some(number_of_steps_caps) = number_of_steps.captures(&output) {
             let number_of_steps = number_of_steps_caps[1].parse::<usize>()?;
             info!("number of steps: {:#?}", number_of_steps);

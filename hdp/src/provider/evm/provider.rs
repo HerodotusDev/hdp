@@ -63,7 +63,7 @@ impl Default for EvmProvider {
 impl EvmProvider {
     pub fn new(config: &ProviderConfig) -> Self {
         let rpc_provider = RpcProvider::new(config.provider_url.clone(), config.max_requests);
-        let header_provider = Indexer::new(config.chain_id);
+        let header_provider = Indexer::new(config.chain_id, config.deployed_on_chain_id);
 
         Self {
             rpc_provider,
@@ -202,7 +202,7 @@ impl EvmProvider {
         let start_fetch = Instant::now();
 
         let mut fetched_transaction_proofs = vec![];
-        let mut tx_trie_provider = TxsMptHandler::new(self.tx_provider_url.clone()).unwrap();
+        let mut tx_trie_provider = TxsMptHandler::new(self.tx_provider_url.clone())?;
 
         loop {
             let trie_response = tx_trie_provider
@@ -232,8 +232,7 @@ impl EvmProvider {
             }
 
             let tx_trie_proof = tx_trie_provider
-                .get_proof(tx_index)
-                .unwrap()
+                .get_proof(tx_index)?
                 .into_iter()
                 .map(Bytes::from)
                 .collect::<Vec<_>>();
@@ -302,8 +301,7 @@ impl EvmProvider {
             }
 
             let tx_receipt_trie_proof = tx_receipt_trie_provider
-                .get_proof(tx_index)
-                .unwrap()
+                .get_proof(tx_index)?
                 .into_iter()
                 .map(Bytes::from)
                 .collect::<Vec<_>>();
@@ -387,6 +385,7 @@ impl EvmProvider {
 }
 
 impl ProofProvider for EvmProvider {
+    // TODO: it will be later deprecated with datalake deprecation
     fn fetch_proofs<'a>(
         &'a self,
         datalake: &'a crate::primitives::task::datalake::DatalakeCompute,
@@ -431,7 +430,7 @@ mod tests {
     #[ignore = "too many requests, recommend to run locally"]
     #[tokio::test]
     #[cfg(feature = "test_utils")]
-    async fn test_get_2000_range_of_account_proofs() -> Result<(), ProviderError> {
+    async fn test_get_2000_range_of_account_proofs() -> Result<(), Box<ProviderError>> {
         initialize();
         let start_time = Instant::now();
         let provider = EvmProvider::default();
@@ -450,7 +449,7 @@ mod tests {
     #[ignore = "too many requests, recommend to run locally"]
     #[tokio::test]
     #[cfg(feature = "test_utils")]
-    async fn test_get_2000_range_of_storage_proofs() -> Result<(), ProviderError> {
+    async fn test_get_2000_range_of_storage_proofs() -> Result<(), Box<ProviderError>> {
         initialize();
         let start_time = Instant::now();
         let provider = EvmProvider::default();
@@ -469,7 +468,7 @@ mod tests {
     #[ignore = "too many requests, recommend to run locally"]
     #[tokio::test]
     #[cfg(feature = "test_utils")]
-    async fn test_get_2000_range_of_header_proofs() -> Result<(), ProviderError> {
+    async fn test_get_2000_range_of_header_proofs() -> Result<(), Box<ProviderError>> {
         initialize();
         let start_time = Instant::now();
         let provider = EvmProvider::default();

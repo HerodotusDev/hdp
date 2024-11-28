@@ -1,15 +1,23 @@
-use std::{collections::HashMap, time::Instant};
-
 use alloy::primitives::BlockNumber;
 use itertools::Itertools;
+#[cfg(feature = "test_utils")]
+use reqwest::Url;
+#[cfg(feature = "test_utils")]
+use std::str::FromStr;
+use std::{collections::HashMap, time::Instant};
+
 use starknet_types_core::felt::Felt;
 use tracing::info;
 
-use crate::provider::{config::ProviderConfig, error::ProviderError, indexer::Indexer};
+use crate::provider::{
+    config::ProviderConfig,
+    error::ProviderError,
+    indexer::Indexer,
+    traits::{AsyncResult, FetchProofsFromKeysResult, FetchProofsResult, ProofProvider},
+};
 
 use super::{rpc::RpcProvider, types::GetProofOutput};
 
-type AccountProofsResult = Result<HashMap<BlockNumber, GetProofOutput>, ProviderError>;
 type StorageProofsResult = Result<HashMap<BlockNumber, GetProofOutput>, ProviderError>;
 
 pub struct StarknetProvider {
@@ -17,56 +25,30 @@ pub struct StarknetProvider {
     pub(crate) rpc_provider: RpcProvider,
     /// Header provider
     //TODO: indexer is not supported for starknet yet
-    pub(crate) _header_provider: Indexer,
+    pub(crate) header_provider: Indexer,
 }
 
 #[cfg(feature = "test_utils")]
 impl Default for StarknetProvider {
     fn default() -> Self {
-        Self::new(&ProviderConfig::default())
+        Self::new(&ProviderConfig {
+            provider_url: Url::from_str("https://pathfinder.sepolia.iosis.tech/").unwrap(),
+            chain_id: crate::primitives::ChainId::StarknetSepolia,
+            deployed_on_chain_id: crate::primitives::ChainId::EthereumSepolia,
+            max_requests: 100,
+        })
     }
 }
 
 impl StarknetProvider {
     pub fn new(config: &ProviderConfig) -> Self {
         let rpc_provider = RpcProvider::new(config.provider_url.to_owned(), config.max_requests);
-        let indexer = Indexer::new(config.chain_id);
+        // TODO: for now starknet is only supported on staging environmnet
+        let indexer = Indexer::new(config.chain_id, config.deployed_on_chain_id).staging();
         Self {
             rpc_provider,
-            _header_provider: indexer,
+            header_provider: indexer,
         }
-    }
-
-    /// Fetches the account proofs for the given block range.
-    /// The account proofs are fetched from the RPC provider.
-    ///
-    /// Return:
-    /// - Account proofs mapped by block number
-    pub async fn get_range_of_account_proofs(
-        &self,
-        from_block: BlockNumber,
-        to_block: BlockNumber,
-        increment: u64,
-        address: Felt,
-    ) -> AccountProofsResult {
-        let start_fetch = Instant::now();
-
-        let target_blocks_batch: Vec<Vec<BlockNumber>> =
-            self._chunk_block_range(from_block, to_block, increment);
-
-        let mut fetched_accounts_proofs_with_blocks_map = HashMap::new();
-        for target_blocks in target_blocks_batch {
-            fetched_accounts_proofs_with_blocks_map.extend(
-                self.rpc_provider
-                    .get_account_proofs(target_blocks, address)
-                    .await?,
-            );
-        }
-
-        let duration = start_fetch.elapsed();
-        info!("time taken (Account Proofs Fetch): {:?}", duration);
-
-        Ok(fetched_accounts_proofs_with_blocks_map)
     }
 
     /// Fetches the storage proofs for the given block range.
@@ -91,7 +73,7 @@ impl StarknetProvider {
         for target_blocks in target_blocks_batch {
             processed_accounts.extend(
                 self.rpc_provider
-                    .get_storage_proofs(target_blocks, address, storage_slot)
+                    .get_storage_proofs(target_blocks, address, vec![storage_slot])
                     .await?,
             );
         }
@@ -117,5 +99,63 @@ impl StarknetProvider {
             .into_iter()
             .map(|chunk| chunk.collect())
             .collect()
+    }
+
+    /// Chunks the blocks range into smaller ranges of 800 blocks.
+    /// It simply consider the number of blocks in the range and divide it by 800.
+    /// This is targeted for account and storage proofs in optimized way
+    pub(crate) fn _chunk_vec_blocks_keys(
+        &self,
+        blocks: Vec<(BlockNumber, Vec<Felt>)>,
+    ) -> Vec<Vec<(BlockNumber, Vec<Felt>)>> {
+        blocks.chunks(800).map(|chunk| chunk.to_vec()).collect()
+    }
+
+    /// Chunks the blocks into smaller ranges of 800 blocks.
+    /// This is targeted for indexer to fetch header proofs in optimized way
+    pub(crate) fn _chunk_vec_blocks_for_indexer(
+        &self,
+        blocks: Vec<BlockNumber>,
+    ) -> Vec<Vec<BlockNumber>> {
+        // Sort the blocks
+        let mut sorted_blocks = blocks.clone();
+        sorted_blocks.sort();
+
+        let mut result: Vec<Vec<BlockNumber>> = Vec::new();
+        let mut current_chunk: Vec<BlockNumber> = Vec::new();
+
+        for &block in sorted_blocks.iter() {
+            // Check if the current chunk is empty or if the difference is within 800 blocks
+            if current_chunk.is_empty() || block - current_chunk[0] <= 800 {
+                current_chunk.push(block);
+            } else {
+                // Push the current chunk to result and start a new chunk
+                result.push(current_chunk);
+                current_chunk = vec![block];
+            }
+        }
+
+        if !current_chunk.is_empty() {
+            result.push(current_chunk);
+        }
+
+        result
+    }
+}
+
+impl ProofProvider for StarknetProvider {
+    // TODO: it will be later deprecated with datalake deprecation
+    fn fetch_proofs<'a>(
+        &'a self,
+        _datalake: &'a crate::primitives::task::datalake::DatalakeCompute,
+    ) -> AsyncResult<FetchProofsResult> {
+        unimplemented!("fetch_proofs is not implemented for StarknetProvider");
+    }
+
+    fn fetch_proofs_from_keys(
+        &self,
+        keys: crate::provider::key::CategorizedFetchKeys,
+    ) -> AsyncResult<FetchProofsFromKeysResult> {
+        Box::pin(async move { self.fetch_proofs_from_keys(keys).await })
     }
 }

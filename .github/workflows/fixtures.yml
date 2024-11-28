@@ -37,13 +37,22 @@ jobs:
           git config user.name github-actions
           git config user.email github-actions@github.com
 
+      - name: Clone hdp-cairo repository
+        run: |
+          git clone -b rpc-adjust https://x-access-token:${{ secrets.REPO_ACCESS_TOKEN }}@github.com/HerodotusDev/hdp-cairo.git hdp-cairo || git clone https://x-access-token:${{ secrets.REPO_ACCESS_TOKEN }}@github.com/HerodotusDev/hdp-cairo.git hdp-cairo
+          cd hdp-cairo
+          git checkout rpc-adjust
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+
       - name: Generate .env file
         run: |
           cd hdp-test
           cat << EOF > .env
-          RPC_URL=${{ secrets.RPC_URL }}
           PROVIDER_URL_ETHEREUM_SEPOLIA=${{ secrets.PROVIDER_URL_ETHEREUM_SEPOLIA }}
+          PROVIDER_URL_STARKNET_SEPOLIA=${{ secrets.PROVIDER_URL_STARKNET_SEPOLIA }}
           PROVIDER_CHUNK_SIZE_ETHEREUM_SEPOLIA=${{ secrets.PROVIDER_CHUNK_SIZE_ETHEREUM_SEPOLIA }}
+          PROVIDER_CHUNK_SIZE_STARKNET_SEPOLIA=${{ secrets.PROVIDER_CHUNK_SIZE_STARKNET_SEPOLIA }}
           DRY_RUN_CAIRO_PATH=${{ secrets.DRY_RUN_CAIRO_PATH }}
           SOUND_RUN_CAIRO_PATH=${{ secrets.SOUND_RUN_CAIRO_PATH }}
           SAVE_FETCH_KEYS_FILE=${{ secrets.SAVE_FETCH_KEYS_FILE }}
@@ -51,10 +60,11 @@ jobs:
 
       - name: Set up and generate fixtures
         run: |
-          cd hdp-test
-          make cleanup
+          cd hdp-cairo
           make setup
           source venv/bin/activate
+          cd ../
+          cd hdp-test
           make generate
 
       - name: Commit and push new fixtures

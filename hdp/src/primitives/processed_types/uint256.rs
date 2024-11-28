@@ -256,8 +256,8 @@ mod tests {
     #[test]
     fn test_uint256_serde() {
         let target = Uint256::from_field_element_tuple(
-            felt!("0x1d693b26fded2cc4edb9acbf8133f52d"),
-            felt!("0x2a32ca1db17188d788996d243adbda8d"),
+            felt!("0x476ce5db235461146bb610521645999"),
+            felt!("0x53416ee9311f9a8f7efbc5984b3bceed"),
         );
         let string = serde_json::to_string_pretty(&target).unwrap();
         let json_file = include_str!("../../../../fixtures/primitives/uint256.json");
