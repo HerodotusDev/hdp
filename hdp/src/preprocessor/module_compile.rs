@@ -34,7 +34,7 @@ pub async fn module_compile(
     compile_config: &CompilerConfig,
 ) -> Result<ModuleCompilationResult, CompileError> {
     // Log the target task for debugging purposes
-    info!("target task: {:#?}", task);
+    info!("target task: {:#?}", task.task);
     let dry_run_program_path = compile_config.dry_run_program_path.clone();
 
     // Generate input for the dry run based on the extended modules
