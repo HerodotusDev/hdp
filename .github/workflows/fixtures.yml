@@ -39,9 +39,9 @@ jobs:
 
       - name: Clone hdp-cairo repository
         run: |
-          git clone -b starknet_syscall_handler https://x-access-token:${{ secrets.REPO_ACCESS_TOKEN }}@github.com/HerodotusDev/hdp-cairo.git hdp-cairo || git clone https://x-access-token:${{ secrets.REPO_ACCESS_TOKEN }}@github.com/HerodotusDev/hdp-cairo.git hdp-cairo
+          git clone -b rpc-adjust https://x-access-token:${{ secrets.REPO_ACCESS_TOKEN }}@github.com/HerodotusDev/hdp-cairo.git hdp-cairo || git clone https://x-access-token:${{ secrets.REPO_ACCESS_TOKEN }}@github.com/HerodotusDev/hdp-cairo.git hdp-cairo
           cd hdp-cairo
-          git checkout starknet_syscall_handler
+          git checkout rpc-adjust
           git config user.name github-actions
           git config user.email github-actions@github.com
 
@@ -49,7 +49,6 @@ jobs:
         run: |
           cd hdp-test
           cat << EOF > .env
-          RPC_URL=${{ secrets.RPC_URL }}
           PROVIDER_URL_ETHEREUM_SEPOLIA=${{ secrets.PROVIDER_URL_ETHEREUM_SEPOLIA }}
           PROVIDER_URL_STARKNET_SEPOLIA=${{ secrets.PROVIDER_URL_STARKNET_SEPOLIA }}
           PROVIDER_CHUNK_SIZE_ETHEREUM_SEPOLIA=${{ secrets.PROVIDER_CHUNK_SIZE_ETHEREUM_SEPOLIA }}
