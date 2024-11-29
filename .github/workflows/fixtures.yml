@@ -39,9 +39,8 @@ jobs:
 
       - name: Clone hdp-cairo repository
         run: |
-          git clone -b rpc-adjust https://x-access-token:${{ secrets.REPO_ACCESS_TOKEN }}@github.com/HerodotusDev/hdp-cairo.git hdp-cairo || git clone https://x-access-token:${{ secrets.REPO_ACCESS_TOKEN }}@github.com/HerodotusDev/hdp-cairo.git hdp-cairo
+          git clone https://x-access-token:${{ secrets.REPO_ACCESS_TOKEN }}@github.com/HerodotusDev/hdp-cairo.git hdp-cairo || git clone https://x-access-token:${{ secrets.REPO_ACCESS_TOKEN }}@github.com/HerodotusDev/hdp-cairo.git hdp-cairo
           cd hdp-cairo
-          git checkout rpc-adjust
           git config user.name github-actions
           git config user.email github-actions@github.com
 

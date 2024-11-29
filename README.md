@@ -101,64 +101,17 @@ Options:
           hdp cairo compiled program. main entry point
   -c, --cairo-pie-file <CAIRO_PIE_FILE>
           Path to save pie file
+      --proof-mode
+          Flag to run `cairo-run` in proof mode
   -h, --help
           Print help (see more with '--help')
 ```
 
-## Integration Testing
-
-Integration testing in HDP ensures that the functionality of aggregate functions such as `SUM`, `AVG`, `MIN`, `MAX`, and `COUNT` operates correctly across various numeric fields within the blockchain data structure. These functions are designed specifically for numeric data types, ensuring accurate and reliable computations.
 
 ### Integration Test
 
 The core soundness of HDP relies on generating the correct input file and running the Cairo program. To ensure this, a full integration test flow is necessary to link the pre-processor and processor versions. For continuous integration tests, please refer to the [hdp-test](https://github.com/HerodotusDev/hdp-test) repository as it contains all the cases of supported features in table below.
 
-### Supported Aggregate Functions
-
-- **SUM, AVG, MIN, MAX, COUNT**: These functions are supported only for fields with numeric values.
-
-### Context Required Operation
-
-For a practical example of how to implement context-sensitive operations, refer to the implementation of the `COUNT` function. This example shows how to pass and utilize additional context for operations, which can be particularly useful for conditional processing or complex calculations.
-
-### Function Support Matrix
-
-Here is the support matrix indicating which blockchain elements are tested for each aggregate function. The matrix highlights fields where these functions are applicable.
-
-| Field Description                | SUM | AVG | MIN | MAX | COUNT |
-| -------------------------------- | --- | --- | --- | --- | ----- |
-| `account.nonce`                  | ✅   | ✅   | ✅   | ✅   | ✅     |
-| `account.balance`                | ✅   | ✅   | ✅   | ✅   | ✅     |
-| `account.storage_root`           | -   | -   | -   | -   | -     |
-| `account.code_hash`              | -   | -   | -   | -   | -     |
-| `storage.key` (numeric value)    | ✅   | ✅   | ✅   | ✅   | ✅     |
-| `storage.key` (hash value)       | -   | -   | -   | -   | -     |
-| `header.difficulty`              | ✅   | ✅   | ✅   | ✅   | ✅     |
-| `header.gas_limit`               | ✅   | ✅   | ✅   | ✅   | ✅     |
-| `header.gas_used`                | ✅   | ✅   | ✅   | ✅   | ✅     |
-| `header.timestamp`               | ✅   | ✅   | ✅   | ✅   | ✅     |
-| `header.base_fee_per_gas`        | ✅   | ✅   | ✅   | ✅   | ✅     |
-| `header.blob_gas_used`           | ✅   | ✅   | ✅   | ✅   | ✅     |
-| `header.excess_blob_gas`         | ✅   | ✅   | ✅   | ✅   | ✅     |
-| `header.nonce`                   | ✅   | ✅   | ✅   | ✅   | ✅     |
-| Other `header` elements          | -   | -   | -   | -   | -     |
-| `tx.nonce`                       | ✅   | ✅   | ✅   | ✅   | ✅     |
-| `tx.gas_price`                   | ✅   | ✅   | ✅   | ✅   | ✅     |
-| `tx.gas_limit`                   | ✅   | ✅   | ✅   | ✅   | ✅     |
-| `tx.value`                       | ✅   | ✅   | ✅   | ✅   | ✅     |
-| `tx.v`                           | ✅   | ✅   | ✅   | ✅   | ✅     |
-| `tx.r`                           | ✅   | ✅   | ✅   | ✅   | ✅     |
-| `tx.s`                           | ✅   | ✅   | ✅   | ✅   | ✅     |
-| `tx.chain_id`                    | ✅   | ✅   | ✅   | ✅   | ✅     |
-| `tx.max_fee_per_gas`             | ✅   | ✅   | ✅   | ✅   | ✅     |
-| `tx.max_priority_fee_per_gas`    | ✅   | ✅   | ✅   | ✅   | ✅     |
-| `tx.max_fee_per_blob_gas`        | ✅   | ✅   | ✅   | ✅   | ✅     |
-| Other `tx` elements              | -   | -   | -   | -   | -     |
-| `tx_receipt.success`             | ✅   | ✅   | ✅   | ✅   | ✅     |
-| `tx_receipt.cumulative_gas_used` | ✅   | ✅   | ✅   | ✅   | ✅     |
-| Other `tx_receipt` elements      | -   | -   | -   | -   | -     |
-
-_Note: Fields marked with "-" are not applicable for the specified aggregate functions because they do not contain numeric data or the data type is not suitable for these calculations._
 
 ### Additional Notes
 

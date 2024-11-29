@@ -4,7 +4,7 @@ members = ["cli", "examples/private-input-module", "hdp"]
 
 [workspace.package]
 edition = "2021"
-version = "0.8.0"
+version = "0.9.0"
 license-file = "LICENSE"
 authors = ["Herodotus Data Processor Team"]
 repository = "https://github.com/HerodotusDev/hdp"
