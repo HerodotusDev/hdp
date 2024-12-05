@@ -81,7 +81,7 @@ impl StarknetProvider {
                 .filter(|(block_number, _)| real_target_blocks.contains(block_number))
                 .map(|(_, header_proof)| {
                     ProcessedHeader::new(
-                        header_proof.block_header.get_sn_block_header().fields,
+                        header_proof.block_header.get_sn_block_header().0,
                         header_proof.element_index,
                         header_proof.siblings_hashes,
                     )
