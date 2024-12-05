@@ -472,25 +472,21 @@ pub struct MMRMetaFromNewIndexer {
 }
 
 #[derive(Serialize, Debug, Clone)]
-pub struct RlpBlockHeader {
-    pub value: String,
-}
+pub struct RlpBlockHeader(pub String);
 
 #[derive(Deserialize)]
-struct RawRlpBlockHeader {
-    #[serde(rename = "LittleEndian8ByteChunks")]
-    value_chunks: Vec<String>,
-}
+struct RawRlpBlockHeader(Vec<String>);
 
 impl<'de> Deserialize<'de> for RlpBlockHeader {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
+        println!("Deserializing RLP block header");
         let raw: RawRlpBlockHeader = RawRlpBlockHeader::deserialize(deserializer)?;
 
         let value: String = raw
-            .value_chunks
+            .0
             .into_iter()
             .map(|chunk| {
                 // Remove "0x" prefix if present
@@ -505,13 +501,13 @@ impl<'de> Deserialize<'de> for RlpBlockHeader {
             .collect::<Result<Vec<String>, D::Error>>()?
             .join("");
 
-        Ok(RlpBlockHeader { value })
+        Ok(RlpBlockHeader(value))
     }
 }
 
 impl From<RlpBlockHeader> for Bytes {
     fn from(rlp_block_header: RlpBlockHeader) -> Self {
-        Bytes::from(hex::decode(&rlp_block_header.value).expect("Cannot decode RLP block header"))
+        Bytes::from(hex::decode(&rlp_block_header.0).expect("Cannot decode RLP block header"))
     }
 }
 
@@ -520,45 +516,36 @@ pub struct MMRProofFromNewIndexer {
     pub block_number: u64,
     pub element_hash: String,
     pub element_index: u64,
-    #[serde(flatten)]
     pub block_header: BlockHeaderType,
     pub siblings_hashes: Vec<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(untagged)]
 pub enum BlockHeaderType {
-    Ethereum {
-        #[serde(rename = "rlp_block_header")]
-        rlp_block_header: RlpBlockHeader,
-    },
-    StarkNet {
-        #[serde(rename = "block_header")]
-        block_header: StarkNetBlockHeader,
-    },
+    #[serde(rename = "RlpLittleEndian8ByteChunks")]
+    Ethereum(RlpBlockHeader),
+    #[serde(rename = "Fields")]
+    StarkNet(StarkNetBlockHeader),
 }
 
 impl BlockHeaderType {
     pub fn get_evm_block_header(&self) -> RlpBlockHeader {
         match self {
-            BlockHeaderType::Ethereum { rlp_block_header } => rlp_block_header.clone(),
+            BlockHeaderType::Ethereum(rlp_block_header) => rlp_block_header.clone(),
             _ => panic!("Not an Ethereum block header"),
         }
     }
 
     pub fn get_sn_block_header(&self) -> StarkNetBlockHeader {
         match self {
-            BlockHeaderType::StarkNet { block_header } => block_header.clone(),
+            BlockHeaderType::StarkNet(block_header) => block_header.clone(),
             _ => panic!("Not a StarkNet block header"),
         }
     }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct StarkNetBlockHeader {
-    #[serde(rename = "Fields")]
-    pub fields: Vec<Felt>,
-}
+pub struct StarkNetBlockHeader(pub Vec<Felt>);
 
 #[cfg(test)]
 mod tests {

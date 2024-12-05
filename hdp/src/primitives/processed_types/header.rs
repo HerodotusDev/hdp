@@ -29,7 +29,7 @@ pub struct ProcessedHeader {
 
 impl ProcessedHeader {
     pub fn new(rlp: RlpBlockHeader, leaf_idx: u64, mmr_path: Vec<String>) -> Self {
-        let rlp = hex::decode(rlp.value).expect("Cannot decode RLP block header to bytes");
+        let rlp = hex::decode(rlp.0).expect("Cannot decode RLP block header to bytes");
         let proof = ProcessedHeaderProof::new(leaf_idx, mmr_path);
         Self { rlp, proof }
     }

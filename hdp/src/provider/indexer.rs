@@ -131,18 +131,20 @@ impl Indexer {
 
         let target_length = (to_block - from_block + 1) as usize;
 
-        let response = self
-            .client
-            .get(&self.url)
-            .query(&self._query(
-                from_block,
-                to_block,
-                self.from_chain_id.get_indexer_chain_id(),
-                self.deployed_on_chain_id.get_indexer_chain_id(),
-            ))
-            .send()
-            .await
-            .map_err(IndexerError::ReqwestError)?;
+        let request = self.client.get(&self.url).query(&self._query(
+            from_block,
+            to_block,
+            self.from_chain_id.get_indexer_chain_id(),
+            self.deployed_on_chain_id.get_indexer_chain_id(),
+        ));
+
+        // Print the full URL with query parameters
+        debug!(
+            "Full request URL: {}",
+            request.try_clone().unwrap().build().unwrap().url()
+        );
+
+        let response = request.send().await.map_err(IndexerError::ReqwestError)?;
 
         // validate status
         if response.status().is_success() {
