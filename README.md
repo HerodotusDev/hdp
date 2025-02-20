@@ -1,3 +1,5 @@
+# This repository is deprecated, project is continued in [this](https://github.com/HerodotusDev/hdp-cairo) repository
+
 ![](.github/readme.png)
 
 # Herodotus Data Processor (HDP)
